@@ -1,0 +1,43 @@
+# Object files
+*.o
+*.ko
+
+# Libraries
+#*.lib
+#*.a
+
+# Shared objects (inc. Windows DLLs)
+#*.dll
+#*.so
+#*.so.*
+#*.dylib
+
+# Executables
+#*.exe
+#*.out
+#*.app
+
+# temps
+*~
+
+# CMake
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+# Build dir
+
+b/
+build/
+build_32/
+library/docs/public
+library/docs/internal
+build64/
+build*
+
+#QTCreator
+*.user
+*.user.*
+*.autosave

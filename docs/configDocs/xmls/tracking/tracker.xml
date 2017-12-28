@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<!-- nodes description: <nodeName>default_value</nodeName> Type [unit] [(optional)] - description -->
+
+<tracker>
+    <!-- state tracking of blobs - notify on appearance/disappearance of blobs,
+       keeps blob IDs.
+    -->
+    <inputs>
+        <vec>blobs</vec> <!-- String - Name input list of detected blobs to track -->
+        <fc>fc</fc> <!-- Int - Name input frame counter ; set by the camera, used to decide if a blob is still visible or not -->
+        <img>img</img> <!-- String - Name input image -->
+    </inputs>
+
+    <outputs>
+        <objects>list</objects> <!-- String - Name output list of the tracked objects -->
+        <img>img</img> <!-- String - Name of the debug output image (colorized Mat showing the tracked blobs); 
+	                             only available if renderImage is set to true -->
+        <objects>objects</objects> <!-- String - Name output number of objects tracked -->
+    </outputs>
+
+    <options>
+        <renderImage>false</renderImage> <!-- Bool - Debug flag for displaying input image with detected objects -->
+    </options>
+</tracker>

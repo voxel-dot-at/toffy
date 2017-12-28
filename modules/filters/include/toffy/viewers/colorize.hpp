@@ -1,0 +1,54 @@
+#pragma once
+
+#include <toffy/filter.hpp>
+
+#if OCV_VERSION_MAJOR >= 3
+#  include <opencv2/core.hpp>
+#  include <opencv2/imgproc.hpp>
+#else
+#  include <opencv2/core/core.hpp>
+#  include <opencv2/imgproc/imgproc.hpp>
+#  include <opencv2/contrib/contrib.hpp>
+#endif
+
+namespace toffy {
+/**
+ * @brief Colorizes a single-channel Mat (preferrably depth data) 
+ * @ingroup Viewers
+ *
+ * Takes one single image from the frame and converts it to a Mat in the output frame
+ *
+ * It allows also to scale up or down the image keeping the proportions. 
+ *
+ * \section ex1 Xml Configuration
+ * @include colorize.xml
+ *
+ */
+class Colorize : public Filter	{
+public:
+    Colorize();
+    virtual ~Colorize();
+
+    virtual boost::property_tree::ptree getConfig() const;
+    virtual void updateConfig(const boost::property_tree::ptree &pt);
+
+    virtual bool filter(const Frame& in, Frame& out);
+
+    static const std::string id_name; ///< Filter identifier
+private:
+    double scale, ///< Scale the image keeping the proportions
+	max, ///< Max value for converting to grayscaled
+	min; ///< Min value for converting to grayscaled
+    std::string in_img, out_img, colormap;
+#if OCV_VERSION_MAJOR >= 3
+    cv::ColormapTypes colormap_value;
+#else
+    int colormap_value;
+#endif
+    bool _gray; ///< Flag for converting the image to grayscaled.
+
+    static std::size_t filter_counter; 
+
+    cv::Mat gray, col, scaled, bounds; 
+};
+}

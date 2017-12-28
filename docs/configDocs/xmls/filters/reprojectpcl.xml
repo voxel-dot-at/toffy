@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<reprojectpcl>
+	<global></global> <!-- Node flag force loading config from globals -->
+	<options>
+        <world>true</world> <!-- Bool - flag for transforming the result cloud 
+        	using transf. The transformation must be available -->
+        <transf>bta12world</transf> <!-- String - Name of the transformation in 
+        	frame -->
+    </options>
+	<inputs>
+		<img>depth</img> <!-- String - Name of the input depth image -->
+		<transf>bta12world</transf> <!-- String - Name of the transformation in 
+        	frame -->
+	</inputs>
+	<outputs>
+		<cloud>cloud</cloud> <!-- String - Name of the output cloud -->
+	</outputs>
+</reprojectpcl>

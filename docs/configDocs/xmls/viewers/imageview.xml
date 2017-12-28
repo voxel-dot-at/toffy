@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<imageview>
+    <options>
+        <scale>2</scale> <!-- Double - Scale the image up or down -->
+        <min>0.0</min> <!-- Double - Min value for converting to grayscale -->
+        <max>0.5</max> <!-- Double - Max value for converting to grayscale -->
+        <gray>true</gray> <!-- Bool - Flag to convert the input image to
+            grayscale (CV_8U) using the max and min values. If max and min are
+            not set, the extreme values of the image pixel are used -->
+    </options>
+    <inputs>
+        <img>depth</img> <!-- String - Name of the input image -->
+    </inputs>
+</imageview>

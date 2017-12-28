@@ -1,0 +1,70 @@
+/*! \page use Use guide
+
+ \section use_intro Introduction
+
+ This page shows how to use the minimal application example to run toffy and its
+web control interface.
+
+ You need to have compiled and installed the level distribution. It the cmake
+flag WITH_EXAMPLES is set the example application will minimal_toffy will be installed into your system.
+
+ You can also just compile the example application and do whatever modifications you need.
+
+ The example application source is shown here:
+
+ \include main.cpp
+
+ \subsection use_start Start toffy
+
+ To easily use toffy we need an user interface providing the base functionality to handle the config file and starting the filtering.
+
+ Toffy provides a web interface that could be used everywhere, does not matter the platform. We just need a web browser to display it.
+
+ To start the minimal example application you just need to execute minimal_toffy:
+
+ \code
+ ./minimal_toffy
+ \endcode
+
+ The default server in:
+ -Host: localhost
+ -Port 9999
+ -Html path: /opt/toffy/html
+
+ Once the application is started you should see:
+
+ \code
+ Host: localhost
+ Port: 9999
+ Html path: /opt/toffy/html/
+ INIT PLAYER
+ Player done
+ Started...
+ \endcode
+
+ This means Toffy is running and the user interface is reachable with your favorite browser in:
+
+ http://localhost:9999/
+
+ You will see the toffy control page:
+
+ \image html control_main.png
+
+ From there you can load the configuration file that contains the filter description.
+ We have included the following example for a Bluetechnix ToF camera:
+
+ \include examples/config.xml
+
+ Once we load this config file, we will see the list of successfully loaded filter
+ in the main page. We can now access to the single configuration of each of them:
+
+ \image html control_single.png
+
+ This configuration can be for each filter accessed and changed runtime. Now you just need to
+connect the camera in the bta1 filter and run toffy in the controls:
+
+ \image html control_capturer.png
+
+ Try adding more filter get the desired output or implement new one that fill your computer vision application needs.
+
+*/

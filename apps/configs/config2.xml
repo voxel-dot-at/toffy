@@ -1,0 +1,188 @@
+<?xml version="1.0"?>
+
+<globals>
+<options>
+<!--
+<cameraMatrix type_id="opencv-matrix"><rows>3</rows><cols>3</cols><dt>d</dt><data>8.8345892962843834e+01 0. 7.9460485484676596e+01 0. 8.8395902341635306e+01 5.7816728185872989e+01 0. 0. 1.</data></cameraMatrix>
+<distCoeffs type_id="opencv-matrix"><rows>5</rows><cols>1</cols><dt>d</dt><data>-7.1352694934938371e-02 -3.3342367737975089e-02 2.9389984762416462e-04 -5.4132489349563396e-04 1.1277887575054511e-02</data></distCoeffs>
+<fovx>90.0</fovx>
+<fovy>67.5</fovy>
+-->
+<cameraMatrix type_id="opencv-matrix">
+	<rows>3</rows>
+	<cols>3</cols>
+	<dt>d</dt>
+	<data>2.2355554268657897e+02 0. 1.8565702696980887e+02 0. 2.2380282131331120e+02 1.4053322162372240e+02 0. 0. 1.</data>
+</cameraMatrix>
+<distCoeffs type_id="opencv-matrix">
+	<rows>5</rows>
+	<cols>1</cols>
+	<dt>d</dt>
+	<data>-7.3545728464987706e-02 -2.9933009223724088e-02 -1.4023062920178249e-03 4.3141046460665335e-04 9.4095227235916241e-03</data>
+</distCoeffs>
+
+	</options>
+</globals>
+
+<bta>
+	<name>bta1</name>
+	<options>
+		<!--<loadPath>/media/angel/usb_disk1/Projects/buchele/2015-10-15-19-01.Close.bltstream</loadPath>-->
+		<loadPath>/home/angel/projects/builds/l3vl/1458034800/bta1/hola.bltstream</loadPath>
+		<flip_x>true</flip_x>
+		<center_position>0.0 0.0 0.0</center_position>
+		<rotations>0. 0. 0.</rotations>
+	</options>
+	<autoconnect>false</autoconnect>
+	<fr>20.0</fr>
+	<connection>
+		<verbosity>5</verbosity>
+		<!--
+		// Generic
+			BTA_DeviceTypeGenericEth = 0x0001,
+			BTA_DeviceTypeGenericP100 = 0x0002,
+			BTA_DeviceTypeGenericUart = 0x0003,
+			BTA_DeviceTypeGenericBltstream = 0x000f, 15
+
+			// Etherned products
+			BTA_DeviceTypeArgos3dP310 = 0x9ba6,
+			BTA_DeviceTypeArgos3dP320 = 0xb320,
+			BTA_DeviceTypeSentisTofP510 = 0x5032,
+			BTA_DeviceTypeSentisTofM100 = 0xa9c1,
+			BTA_DeviceTypeTimUp19kS3Eth = 0x795c,
+			BTA_DeviceTypeSentisTofP509 = 0x4859,
+
+			// P100 products
+			BTA_DeviceTypeArgos3dP100 = 0xa3c4,
+			BTA_DeviceTypeTimUp19kS3Spartan6 = 0x13ab,
+
+			// UART products
+			BTA_DeviceTypeEPC610TofModule = 0x7a3d,
+		-->
+		<deviceType>1</deviceType>
+		<frameQueueLength>1</frameQueueLength>
+		<frameMode>0</frameMode>
+		
+		<udpDataIpAddr>
+			<n1>224</n1>
+			<n2>0</n2>
+			<n3>0</n3>
+			<n4>1</n4>
+		</udpDataIpAddr>    
+		<udpDataIpAddrLen>4</udpDataIpAddrLen>
+		<udpDataPort>10002</udpDataPort>
+
+		<tcpDeviceIpAddr>
+			<n1>192</n1>
+			<n2>168</n2>
+			<n3>0</n3>
+			<n4>10</n4>
+		</tcpDeviceIpAddr>
+		<tcpDeviceIpAddrLen>4</tcpDeviceIpAddrLen>
+		<tcpControlPort>10001</tcpControlPort>
+		
+		<!--
+		<__udpControlOutIpAddr></__udpControlOutIpAddr>
+		<__udpControlOutIpAddrLen></__udpControlOutIpAddrLen>
+		<__udpControlOutPort></__udpControlOutPort>
+		<__udpControlInIpAddr></__udpControlInIpAddr>
+		<__udpControlInIpAddrLen></__udpControlInIpAddrLen>
+		<__udpControlInPort></__udpControlInPort>
+		<__tcpDataPort></__tcpDataPort>
+		<__uartPortName></__uartPortName>
+		<__uartBaudRate></__uartBaudRate>
+		<__uartDataBits></__uartDataBits>
+		<__uartStopBits></__uartStopBits>
+		<__uartParity></__uartParity>
+		<__uartTransmitterAddress></__uartTransmitterAddress>
+		<__uartReceiverAddress></__uartReceiverAddress>
+		<__serialNumber></__serialNumber>
+		<__calibFileName></__calibFileName>
+		<__frameMode></__frameMode>
+		<__infoEvent></__infoEvent>
+		<__frameArrived></__frameArrived>
+		<__frameQueueMode></__frameQueueMode>
+		-->
+	</connection>
+</bta>
+
+<amplitudeRange>
+	<inputs>
+		<ampl>ampl</ampl>
+		<depth>depth</depth>
+	</inputs>
+	<options>
+		<minAmpl>300</minAmpl>
+		<maxAmpl>3000</maxAmpl>
+	</options>
+</amplitudeRange>
+
+<!--
+<average>
+	<options>
+		<size>3</size>
+	</options>
+	<inputs>
+		<img>depth</img>
+	</inputs>
+	<outputs>
+		<img>depth</img>
+	</outputs>
+</average>
+-->
+
+<rectify>
+	<global></global>
+	<inputs>
+		<img>depth</img>
+	</inputs>
+</rectify>
+
+<polar2cart>
+	<global></global>
+	<inputs>
+		<img>depth</img>
+	</inputs>
+</polar2cart>
+
+<reprojectpcl>
+	<global></global>
+	<inputs>
+		<img>depth</img>
+	</inputs>
+	<outputs>
+		<cloud>cloud</cloud>
+	</outputs>
+</reprojectpcl>	
+
+<cloudviewpcl>
+	<options>
+		<coordSize>1</coordSize>
+	</options>
+	<inputs>
+		<cloud>cloud</cloud>
+	</inputs>
+</cloudviewpcl>
+
+
+<imageview>
+	<options>
+		<scale>2</scale>
+		<min>0.0</min>
+		<max>0.5</max>
+	</options>
+	<inputs>
+		<img>depth</img>
+	</inputs>
+</imageview>
+
+<imageview>
+	<options>
+		<scale>2</scale>
+		<min>0</min>
+		<max>2000</max>
+	</options>
+	<inputs>
+		<img>ampl</img>
+	</inputs>
+</imageview>

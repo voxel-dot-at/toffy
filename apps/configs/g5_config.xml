@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+
+<globals>
+<options>
+<cameraMatrix type_id="opencv-matrix"><rows>3</rows><cols>3</cols><dt>d</dt><data>8.8345892962843834e+01 0. 7.9460485484676596e+01 0. 8.8395902341635306e+01 5.7816728185872989e+01 0. 0. 1.</data></cameraMatrix>
+<distCoeffs type_id="opencv-matrix"><rows>5</rows><cols>1</cols><dt>d</dt><data>-7.1352694934938371e-02 -3.3342367737975089e-02 2.9389984762416462e-04 -5.4132489349563396e-04 1.1277887575054511e-02</data></distCoeffs>
+<fovx>90.0</fovx>
+<fovy>67.5</fovy>
+	</options>
+</globals>
+
+<bta>
+	<name>bta5</name>
+	<options>
+		<loadPath></loadPath>
+	</options>
+	<autoconnect>true</autoconnect>
+	<fr>14.0</fr>
+	<connection>
+		<verbosity>5</verbosity>
+		<udpDataIpAddr>
+			<n1>224</n1>
+			<n2>0</n2>
+			<n3>0</n3>
+			<n4>1</n4>
+		</udpDataIpAddr>    
+		<udpDataIpAddrLen>4</udpDataIpAddrLen>
+		<udpDataPort>10015</udpDataPort>
+  
+		<tcpDeviceIpAddr>
+			<n1>192</n1>
+			<n2>168</n2>
+			<n3>0</n3>
+			<n4>15</n4>
+		</tcpDeviceIpAddr>
+		<tcpDeviceIpAddrLen>4</tcpDeviceIpAddrLen>
+		<tcpControlPort>10001</tcpControlPort>
+		
+		<frameQueueLength>1</frameQueueLength>
+		<frameMode>0</frameMode>
+		<!--
+		<__udpControlOutIpAddr></__udpControlOutIpAddr>
+		<__udpControlOutIpAddrLen></__udpControlOutIpAddrLen>
+		<__udpControlOutPort></__udpControlOutPort>
+		<__udpControlInIpAddr></__udpControlInIpAddr>
+		<__udpControlInIpAddrLen></__udpControlInIpAddrLen>
+		<__udpControlInPort></__udpControlInPort>
+		<__tcpDataPort></__tcpDataPort>
+		<__uartPortName></__uartPortName>
+		<__uartBaudRate></__uartBaudRate>
+		<__uartDataBits></__uartDataBits>
+		<__uartStopBits></__uartStopBits>
+		<__uartParity></__uartParity>
+		<__uartTransmitterAddress></__uartTransmitterAddress>
+		<__uartReceiverAddress></__uartReceiverAddress>
+		<__serialNumber></__serialNumber>
+		<__calibFileName></__calibFileName>
+		<__frameMode></__frameMode>
+		<__infoEvent></__infoEvent>
+		<__frameArrived></__frameArrived>
+		<__frameQueueMode></__frameQueueMode>
+		-->
+	</connection>
+</bta>
+<!--
+	<bta>
+	<name>bta11</name>
+		<loadPath>
+			/opt/projects/boomerang/data/20150709_tg_recordings/9500us_der_seite_entlang/1436450214943
+		</loadPath>
+		<flip>true</flip>
+		<timeStamped>false</timeStamped>
+		<sensorConfigFile>config/bta_config11.xml</sensorConfigFile>
+</bta>
+
+	<amplitudeRange>
+		<inputs>
+			<ampl>ampl</ampl>
+			<depth>depth</depth>
+		</inputs>
+		<minAmpl>1000</minAmpl>
+		<maxAmpl>8000</maxAmpl>
+	</amplitudeRange>
+
+	<average>
+		<options>
+			<size>20</size>
+		</options>
+		<inputs>
+			<img>depth</img>
+		</inputs>
+		<outputs>
+			<img>depth</img>
+		</outputs>
+	</average>
+
+	<bilateral>
+		<options>
+			<d>5</d>
+			<sigmaColor>10.</sigmaColor>
+			<sigmaSpace>10.</sigmaSpace>
+		</options>
+		<inputs>
+			<img>depth</img>
+		</inputs>
+		<outputs>
+			<img>depth</img>
+		</outputs>
+	</bilateral>
+-->
+	<rectify>
+		<global></global>
+		<inputs>
+			<img>depth</img>
+		</inputs>
+	</rectify>
+	
+	<polar2cart>
+		<global></global>
+		<inputs>
+			<img>depth</img>
+		</inputs>
+	</polar2cart>
+
+	<reprojectpcl>
+		<global></global>
+		<inputs>
+			<img>depth</img>
+		</inputs>
+		<outputs>
+			<cloud>cloud5</cloud>
+		</outputs>
+	</reprojectpcl>
+
+

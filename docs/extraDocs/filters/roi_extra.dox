@@ -1,0 +1,206 @@
+/*! \page roi_extra Guide for using the ROI filter
+
+\addindex roi_extra
+\tableofcontents
+
+\section r1 Creating the region of interest - roi
+
+The roi filter takes an image as input and changes the image values in a defined zone of it based in the pixels values.
+
+The first step is to select the zone of the zone of the image (roi – region of interest) we want the filter to check the values and change them.
+
+We select it defining and start point and the size a rectangle.
+\code
+<options>
+    <x>0</x> <!-- start point in the x axis (horizontal) -->
+    <y>0</y> <!-- start point in the y axis (vertical) -->
+
+    <width>50</width> <!-- horizontal size of the rectangle -->
+    <height>119</height> <!-- vertical size of the rectangle →
+    …
+    …
+</options>
+\endcode
+
+Our roi will be:
+
+\image html roi1.png
+\image latex roi1.png
+
+This rectangle should be related with the image size. If our image is 160X120 pixel (range starts in 0) this region is:
+
+\image html roi2.png
+\image latex roi2.png
+
+As we can see, we will consider the pixel values of the image (orange) inside (or outside) of the region of interest - roi (blue).
+
+If we do not select a roi start point and size, the whole image size will we consider.
+
+\section r2 Select zone to check
+
+Once we have our region defined we can select where we want to check the pixel values. We maybe want to filter inside the selected zone or even we can consider everything outside it.
+This is useful when for example we want to filter everything but the center of the image.
+
+\note version v0.2.8
+
+There is a error in the the definition of this parameter. When not selected or false, the inside part the one to be set. If true, the outside.
+Will be corrected in a new release.
+\code
+<options>
+	<!-- Filter the inside part of the roi. If false or not present outside -->
+	<in>true</in>
+	…
+	…
+
+</options>
+\endcode
+
+Consider this roi:
+
+\image html roi3.png
+\image latex roi3.png
+
+if \<int> is true it will check the blue part, if not, the orange one.
+
+\section r3 Check roi values
+
+We could do different actions to the values of the roi (or the outside):
+
+Set the values
+
+We will set all pixel inside or outside of the roi to a value:
+
+\code
+<options>
+	…
+	<!-- Value to set in the filtered zone -->
+	<outValue>0</outValue>
+	…
+</options>
+\endcode
+
+This means that we will set the values of the roi (or outside) to 0.
+
+
+Set values depending on the input data
+
+We maybe want to set the pixel to 0 only when they are over or below to a limit. For example if we have a depth map (distance), filter pixel which are higher than 1 meter.
+
+We do this setting the following flag to true:
+
+\code
+<options>
+	…
+	<!-- Filter the selected zone by some value. If false or not present,
+	 everything is set to out_value -->
+	<filter>true</filter>
+	…
+</options>
+\endcode
+
+When filter is set to true we should add the limit value and if we want to set pixel over or below this limit:
+
+\code
+<options>
+	…
+	<!-- Filter value below inValues in the selected zone. I false or not
+	 present, filters the values above. -->
+	<below>true</below>
+
+        <!-- Limit value for filtering -->
+        <inValue>0.5</inValue>
+        …
+</options>
+\endcode
+
+This configuration says, set all pixels with a distance lower than 0.5 meters to the \<outValue> (i.e. as before to 0).
+
+\section s4 Configuration in demo app
+
+In the configuration file shipped with the demo apt we have defined 2 zones we are will explain:
+
+\code
+<!--
+Can be used to eliminate artefacts in fixed zones (legs, compartments, etc.)
+while leaving the center console region untouched.
+-->
+<roi>
+  <inputs>
+    <img>depth</img>
+  </inputs>
+  <outputs>
+    <img>depth</img>
+  </outputs>
+  <options>
+    <!-- top left pixel and size of the region that should be filtered, in image pixels -->
+    <x>0</x>
+    <y>0</y>
+    <width>50</width>
+    <height>119</height>
+    <!-- Filter the inside part of the roi. If false or not present outside
+         <in>true</in>
+    -->
+    <!-- Filter the selected zone by some value. If false or not present,
+         everything is set to out_value -->
+    <filter>true</filter>
+    <!-- Filter value below inValues in the selected zone. I false or not
+         present, filters the values above. -->
+    <below>true</below>
+    <!-- Limit value for filtering -->
+    <inValue>0.5</inValue>
+    <!-- Value to set in the filtered zone -->
+    <outValue>0</outValue>
+  </options>
+</roi>
+\endcode
+
+This first roi looks like this:
+
+\image html roi4.png
+\image latex roi4.png
+
+As the configuration says, we set to 0 (\<outValue>0\</outValue> ) all pixel inside the roi (\<in> not set *see note) which are below (\<below>true\</below>) of 0.5 meters (\<inValue>0.5\</inValue> ).
+
+\code
+<roi>
+  <inputs>
+    <img>depth</img>
+  </inputs>
+  <outputs>
+    <img>depth</img>
+  </outputs>
+  <options>
+    <!-- top left pixel and size of the region that should be filtered, in image pixels -->
+    <x>95</x>
+    <y>0</y>
+    <width>65</width>
+    <height>119</height>
+    <!-- Filter the inside part of the roi. If false or not present outside
+         <in>true</in>
+    -->
+    <!-- Filter the selected zone by some value. If false or not present,
+         everything is set to out_value -->
+    <filter>true</filter>
+    <!-- Filter value below inValues in the selected zone. I false or not
+         present, filters the values above. -->
+    <below>true</below>
+    <!-- Limit value for filtering -->
+    <inValue>0.5</inValue>
+    <!-- Value to set in the filtered zone -->
+    <outValue>0</outValue>
+  </options>
+</roi>
+\endcode
+
+Second roi looks like:
+
+\image html roi5.png
+\image latex roi5.png
+
+Again, we set to 0 (\<outValue>0\</outValue> ) all pixel inside the roi (\<in> not set *see note) which are below (\<below>true\</below>) of 0.5 meters (\<inValue>0.5\</inValue> ).
+
+With this 2 regions, we try to filter people legs and body when sitting on the car seats, but we keep values that belong to the shoulder/arm (over 0.5 meters).
+
+The distances are related to the world coordinate system.
+
+*/

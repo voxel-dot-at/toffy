@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+
+<l3vl>
+    <globals>
+    </globals>
+
+    <bta>
+        <name>bta1</name>
+        <options>
+            <!--<loadPath>/</loadPath>-->
+            <center_position>0.0 0.0 0.0</center_position>
+            <rotations>0. 0. 0.</rotations>
+        </options>
+        <autoconnect>false</autoconnect>
+        <fr>20.0</fr>
+        <connection>
+            <verbosity>5</verbosity>
+            <!--
+                // Generic
+                BTA_DeviceTypeGenericEth = 0x0001,
+                BTA_DeviceTypeGenericP100 = 0x0002,
+                BTA_DeviceTypeGenericUart = 0x0003,
+                BTA_DeviceTypeGenericBltstream = 0x000f, 15
+
+		// Etherned products
+		BTA_DeviceTypeArgos3dP310 = 0x9ba6,
+		BTA_DeviceTypeArgos3dP320 = 0xb320,
+		BTA_DeviceTypeSentisTofP510 = 0x5032,
+		BTA_DeviceTypeSentisTofM100 = 0xa9c1,
+		BTA_DeviceTypeTimUp19kS3Eth = 0x795c,
+		BTA_DeviceTypeSentisTofP509 = 0x4859,
+
+		// P100 products
+		BTA_DeviceTypeArgos3dP100 = 0xa3c4,
+		BTA_DeviceTypeTimUp19kS3Spartan6 = 0x13ab,
+
+		// UART products
+		BTA_DeviceTypeEPC610TofModule = 0x7a3d,
+	    -->
+	    <deviceType>1</deviceType>
+	    <frameQueueLength>1</frameQueueLength>
+	    <frameMode>0</frameMode>
+
+	    <udpDataIpAddr>
+		<n1>224</n1>
+		<n2>0</n2>
+		<n3>0</n3>
+		<n4>1</n4>
+	    </udpDataIpAddr>
+	    <udpDataIpAddrLen>4</udpDataIpAddrLen>
+	    <udpDataPort>10002</udpDataPort>
+
+	    <tcpDeviceIpAddr>
+		<n1>192</n1>
+		<n2>168</n2>
+		<n3>0</n3>
+		<n4>10</n4>
+	    </tcpDeviceIpAddr>
+	    <tcpDeviceIpAddrLen>4</tcpDeviceIpAddrLen>
+	    <tcpControlPort>10001</tcpControlPort>
+		
+	    <!--
+		<__udpControlOutIpAddr></__udpControlOutIpAddr>
+		<__udpControlOutIpAddrLen></__udpControlOutIpAddrLen>
+		<__udpControlOutPort></__udpControlOutPort>
+		<__udpControlInIpAddr></__udpControlInIpAddr>
+		<__udpControlInIpAddrLen></__udpControlInIpAddrLen>
+		<__udpControlInPort></__udpControlInPort>
+		<__tcpDataPort></__tcpDataPort>
+		<__uartPortName></__uartPortName>
+		<__uartBaudRate></__uartBaudRate>
+		<__uartDataBits></__uartDataBits>
+		<__uartStopBits></__uartStopBits>
+		<__uartParity></__uartParity>
+		<__uartTransmitterAddress></__uartTransmitterAddress>
+		<__uartReceiverAddress></__uartReceiverAddress>
+		<__serialNumber></__serialNumber>
+		<__calibFileName></__calibFileName>
+		<__frameMode></__frameMode>
+		<__infoEvent></__infoEvent>
+		<__frameArrived></__frameArrived>
+		<__frameQueueMode></__frameQueueMode>
+	    -->
+	</connection>
+    </bta>
+
+    <amplitudeRange>
+        <inputs>
+            <ampl>ampl</ampl>
+            <depth>depth</depth>
+        </inputs>
+        <options>
+            <minAmpl>300</minAmpl>
+            <maxAmpl>3000</maxAmpl>
+        </options>
+    </amplitudeRange>
+
+    <imageview>
+        <options>
+            <scale>2</scale>
+            <min>0.1</min>
+            <max>1.5</max>
+        </options>
+        <inputs>
+            <img>depth</img>
+        </inputs>
+    </imageview>
+
+    <imageview>
+        <options>
+            <scale>2</scale>
+            <min>0</min>
+            <max>2000</max>
+        </options>
+        <inputs>
+            <img>ampl</img>
+        </inputs>
+    </imageview>
+</l3vl>

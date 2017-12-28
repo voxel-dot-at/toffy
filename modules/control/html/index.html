@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link href="/css/style.css" rel="stylesheet" />
+<script src="/scripts/jquery.min.js"></script>
+<script src="/scripts/utils.js"></script>
+<script src="/scripts/jquery.form.min.js"></script>
+
+<style>
+  #progress_bar {
+    margin: 10px 0;
+    padding: 3px;
+    border: 1px solid #000;
+    font-size: 14px;
+    clear: both;
+    opacity: 0;
+    -moz-transition: opacity 1s linear;
+    -o-transition: opacity 1s linear;
+    -webkit-transition: opacity 1s linear;
+  }
+  #progress_bar.loading {
+    opacity: 1.0;
+  }
+  #progress_bar .percent {
+    background-color: #99ccff;
+    height: auto;
+    width: 0;
+  }
+</style>
+
+<script>
+$( document ).ready(function() {
+
+    //Get toffy status
+    function getToffyStatus() {
+    $.getJSON("/toffy")
+        .done( function(data, status) {
+            runningStatus = JSON.parse(data.running);
+	    if (runningStatus == 0) {
+		$("#stepBackward > input").prop('disabled', false);
+		$("#backward > input").prop('disabled', false);
+		$("#forward > input").prop('disabled', false);
+		$("#stepForward > input").prop('disabled', false);
+
+		$("#stop > input").prop('disabled', true);
+
+		$('#connected').html("STOPPED");
+
+	    } else  {
+		$("#stepBackward > input").prop('disabled', true);
+		$("#backward > input").prop('disabled', true);
+		$("#forward > input").prop('disabled', true);
+		$("#stepForward > input").prop('disabled', true);
+		$("#stop > input").prop('disabled', false);
+
+		if (runningStatus == 1) {
+			$('#connected').html("FILTERING >>");
+		} else {
+			$('#connected').html("FILTERING <<");
+		}
+	    }
+    })
+    .fail( function(jqxhr, textStatus, error) {
+        $('body').html('<h1>Toffy server unreachable!</h1>');
+            throw new Error("server unreachable!");
+    });
+    }
+    getToffyStatus();
+
+
+function doFilterList(list, items) {
+    //var items = [];
+    $.each( list, function( key, val ) {
+        if (typeof val === 'object') {
+            var newItems = [];
+            doFilterList(val, newItems);
+            ul = $( "<ul/>", {"class": "my-new-list"});
+            $.each( newItems, function( key, val ) {
+                val.appendTo(ul);
+            });
+            li = $( "<li/>", {id:key});
+            $( "<a/>", {href: "filterbank/" + key,
+                        html: key + " - " + val,
+                        target: "trg"
+                       }).appendTo(li);
+            ul.appendTo(li);
+            items.push(li);
+        } else {
+            li = $( "<li/>", {id:key});
+            $( "<a/>", {href: "/ui/filter/index.html?id=" + key,
+                        html: key + " - " + val,
+                        target: "trg" }).appendTo(li);
+            items.push(li);
+        }
+    });
+}
+    //Build the html list from the filterTree
+    function getFilterTree() {
+        $.getJSON("/toffy/filtertree", function(data, status) {
+        //console.log("flt tree  "  + JSON.stringify(data));
+
+            var items = [];
+            doFilterList(data.filters, items);
+            ul = $( "<ul/>", { "class": "filterList"});
+            $.each( items, function( key, val ) {
+                val.appendTo(ul);
+            });
+            $( "#filters" ).empty();
+            ul.appendTo( "#filters" );
+        });
+    }
+    getFilterTree();
+   	
+	
+    $( "#forward" ).submit(function( event ) {
+
+	// Stop form from submitting normally
+	event.preventDefault();
+	$.get( "/toffy/forward",
+	    function( data ) {
+		getToffyStatus();
+	    }
+	);
+    });
+    $( "#backward" ).submit(function( event ) {
+
+	// Stop form from submitting normally
+	event.preventDefault();
+	$.get( "/toffy/backward",
+	    function( data ) {
+		getToffyStatus();
+	    }
+	);
+    });
+    $( "#stepForward" ).submit(function( event ) {
+
+	// Stop form from submitting normally
+	event.preventDefault();
+	$.get( "/toffy/stepForward",
+	    function( data ) {
+		getToffyStatus();
+	    }
+	);
+    });
+    $( "#stepBackward" ).submit(function( event ) {
+
+	// Stop form from submitting normally
+	event.preventDefault();
+	$.get( "/toffy/stepBackward",
+	    function( data ) {
+		getToffyStatus();
+	    }
+	);
+    });
+
+    $( "#stop" ).submit(function( event ) {
+
+	// Stop form from submitting normally
+	event.preventDefault();
+	$.get( "/toffy/stop",
+	    function( data ) {
+		location.reload();
+	    }
+	);
+    });
+
+    /*$( "#onoff" ).submit(function( event ) {
+
+	    // Stop form from submitting normally
+	    event.preventDefault();
+	    var uri = "/toffy/";
+	    if (runningStatus == true)
+		    uri += "stop";
+	    else
+		    uri += "start"
+	    $.get( uri,
+		    function( data ) {
+			    location.reload();
+		    }
+	    );
+    });*/
+
+    var reader;
+    var progress = document.querySelector('.percent');
+
+    function abortRead() {
+      reader.abort();
+    }
+
+    function errorHandler(evt) {
+      switch(evt.target.error.code) {
+        case evt.target.error.NOT_FOUND_ERR:
+          alert('File Not Found!');
+          break;
+        case evt.target.error.NOT_READABLE_ERR:
+          alert('File is not readable');
+          break;
+        case evt.target.error.ABORT_ERR:
+          break; // noop
+        default:
+          alert('An error occurred reading this file.');
+      };
+    }
+
+    function updateProgress(evt) {
+      // evt is an ProgressEvent.
+      if (evt.lengthComputable) {
+        var percentLoaded = Math.round((evt.loaded / evt.total) * 100);
+        // Increase the progress bar length.
+        if (percentLoaded < 100) {
+          progress.style.width = percentLoaded + '%';
+          progress.textContent = percentLoaded + '%';
+        }
+      }
+    }
+
+    //Reads selected file
+    function handleFileSelect(evt) {
+        // Reset progress indicator on new file selection.
+        progress.style.width = '0%';
+        progress.textContent = '0%';
+
+        reader = new FileReader();
+        reader.onerror = errorHandler;
+        reader.onprogress = updateProgress;
+        reader.onabort = function(e) {
+          alert('File read cancelled');
+        };
+        reader.onloadstart = function(e) {
+          document.getElementById('progress_bar').className = 'loading';
+        };
+        reader.onload = function(e) {
+          // Ensure that the progress bar displays 100% at the end.
+          progress.style.width = '100%';
+          progress.textContent = '100%';
+          setTimeout("document.getElementById('progress_bar').className='';", 1000);
+        }
+
+        // Read in the image file as a binary string.
+        reader.readAsBinaryString(evt.target.files[0]);
+      }
+
+    $( "#loadConfigForm input[name=file]" ).on('change', handleFileSelect);
+
+    function xmlToString(xmlData) { // this functions waits jQuery XML
+
+        var xmlString = undefined;
+
+        if (window.ActiveXObject){
+            xmlString = xmlData[0].xml;
+        }
+
+        if (xmlString === undefined)
+        {
+            var oSerializer = new XMLSerializer();
+            xmlString = oSerializer.serializeToString(xmlData[0]);
+        }
+
+        return xmlString;
+    }
+
+
+    $( "#loadConfigForm" ).submit(function( event ) {
+
+        // Stop form from submitting normally
+        event.preventDefault();
+        /*if (window.File && window.FileReader && window.FileList && window.Blob) {
+          // Great success! All the File APIs are supported.
+        } else {
+          alert('The File APIs are not fully supported in this browser.');
+        }*/
+        if (reader.readyState < 2) {
+            alert("Wait until the file is loaded");
+            return false;
+        }
+
+        //Only needed to do a valdation on the client-side
+        var xmlDoc = $.parseXML(reader.result);
+        var xml = $( xmlDoc );
+        var xmlString = xmlToString(xml);
+        //JSON.stringify($( "#loadConfigForm" ).serializeObject()));
+        $.post( "/toffy/loadConfig",
+            xmlString,
+            function( data ) {
+                if (data.status == "fail") {
+                    alert(data.log)
+                } else
+                //console.log(data);
+                    getFilterTree();
+                    getToffyStatus();
+                //location.reload();
+            }, "json"
+        );
+    });
+
+    $( "#loadConfigRuntimeForm" ).submit(function( event ) {
+
+	// Stop form from submitting normally
+	event.preventDefault();
+	var uri = "/toffy/";
+	$.post( "/toffy/configRuntime/load",
+	    JSON.stringify($( "#loadConfigRuntimeForm" ).serializeObject()),
+	    function( data ) {
+		location.reload();
+	    }, "json"
+	);
+    });
+
+    $( "#saveConfigRuntimeForm" ).submit(function( event ) {
+
+	    // Stop form from submitting normally
+	    event.preventDefault();
+	    var uri = "/toffy/";
+	    $.post( "/toffy/configRuntime/save",
+		    JSON.stringify($( "#saveConfigRuntimeForm" ).serializeObject()),
+		    function( data ) {
+			    //location.reload();
+		    }, "json"
+	    );
+    });
+	
+    $.fn.serializeObject = function() {
+        var o = {};
+        var a = this.serializeArray();
+        $.each(a, function() {
+            if (o[this.name] !== undefined) {
+                if (!o[this.name].push) {
+                    o[this.name] = [o[this.name]];
+                }
+                o[this.name].push(this.value || '');
+            } else {
+                o[this.name] = this.value || '';
+            }
+        });
+        return o;
+    };
+	
+    var curHeight=0, lastHeight=0;
+    var resize = function() {
+	var frame = $( "#filterDets" );
+	curHeight = frame.contents().find('body').height();
+	if ( curHeight != lastHeight ) {
+	    // added some vertical slack for borders, scroll etc.
+	    frame.css('height', ( 24+ (lastHeight = curHeight) )+ 'px' );
+	    console.log("haha!" +  curHeight);
+	}
+    }
+
+    $( "#filterDets" ).load(function() {
+	resize();
+	setInterval(function() {
+	    resize();
+	}, 1000);
+    });
+
+});
+</script>
+</head>
+
+<body>
+<div class="gridItem head">
+  <h1>toffy</h1>
+</div>
+
+<div class="gridItem">
+  <div id="statusDiv">
+	<div class="gridHead"><h3 id="connected"></h3>
+	</div>
+	<ul style="list-style-type: none; margin: 0; padding: 0;">
+		<li style="display: inline;">
+			<form id="stepBackward" style="display: inline;">
+				<input type='submit' value="<"></li>
+			</form>
+		</li>
+		<li style="display: inline;">
+			<form id="backward" style="display: inline;">
+				<input type='submit' value="<<"></li>
+			</form>
+		</li>
+		<li style="display: inline;">
+			<form id="forward" style="display: inline;">
+				<input type='submit' value=">>"></li>
+			</form>
+		</li>
+		<li style="display: inline;">
+			<form id="stepForward" style="display: inline;">
+				<input type='submit' value=">"></li>
+			</form>
+		</li>
+	</ul>
+	<form id="stop">
+		<input type='submit' value="Stop" disabled></li>
+	</form>
+	</form>
+  </div> <!-- statusDiv -->
+</div> <!-- gridItem -->
+
+<iframe id="filterDets" frameborder="0" scrolling="no"  name="trg" class="gridItem" >
+</iframe>
+
+<div class="gridItem groupCtl">
+  <div class="gridHead"><h3>Group controllers</h3></div>
+  <a href="ui/group/bta.html" target="trg">btaGroupControl</a><br>
+  <a href="ui/group/sensor2d.html" target="trg">sensor2dGroupControl</a><br>
+  <a href="ui/group/capturers.html" target="trg">capturersControl</a>
+</div>
+
+
+<div class="gridItem bank">
+  <div class="gridHead"><h3>Filterbank:</h3></div>
+  <div id="filters">
+  </div>
+</div>
+
+<div class="gridItem sysCtl">
+  <div class="gridHead"><h3>System control:</h3></div>
+  <div id="configDiv" style="width: 50%; float: left">
+	<div class="gridHead"><h3 id="config"></h3></div>
+	<form id="loadConfigForm">
+	    <fieldset>
+		<legend>toffy config:</legend>
+		File: <br>
+		<input type="file" name="file" accept=".xml"/>
+		<!--<input type="text" name="file" value="config/config.xml" style="width: 100%;" placeholder="Select config file"/>-->
+		<input type='submit' value="Send" style="float: right;">
+		<div id="progress_bar"><div class="percent">0%</div></div>
+	    </fieldset>
+
+	</form>
+  </div> <!-- configDiv -->
+  <div id="configRuntimeDiv" style="width: 50%; float: left">
+        <div class="gridHead"><h3 id="config"></h3></div>
+        <form id="loadConfigRuntimeForm">
+                <fieldset>
+                    <legend>Load runtime config:</legend>
+                        File: <br>
+                        <input type="text" name="file" value="config/configRuntime.xml" style="width: 100%;">
+                        <input type='submit' value="Load">
+                </fieldset>
+
+        </form>
+        <form id="saveConfigRuntimeForm">
+                <fieldset>
+                    <legend>Save runtime config:</legend>
+                        File: <br>
+                        <input type="text" name="file" value="config/configRuntime.xml" style="width: 100%;">
+                        <input type='submit' value="Save">
+                </fieldset>
+
+        </form>
+  </div> <!-- configRuntimeDiv -->
+</div> <!-- gridItem -->
+<div class="clearfix"> </div>
+
+</body>
+</html>
+
+
+

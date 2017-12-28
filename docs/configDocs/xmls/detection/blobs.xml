@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<blobs>
+  <!--
+       segment input image into separate areas "blobs", 
+       collecting meta data along the line  
+  -->
+	<inputs>
+    	<img>depth</img> <!-- String - Name of the input image -->
+	</inputs>
+	<outputs>
+		<!-- std::vector<l3vl::filters::detection::DetectObject* > - a list of 
+		detected blobs with data -->
+		<blobs>blobs</blobs> <!-- String - Name of the output -->
+	</outputs>
+	<options>
+		<amplFilter>true</amplFilter> <!-- Bool - activates the depth filter by 
+			amplitudes -->
+		<minAmpl>220</minAmpl> <!-- int - min amplitude value. If amplFilter 
+			true, check the amplitude image to remove in the depth image low
+			amplitude pixels. -->
+		<refineBlobs>false</refineBlobs> <!-- Bool - Flag to activate the 
+			FillFlood refinement algorithm -->
+	</options>
+</blobs>

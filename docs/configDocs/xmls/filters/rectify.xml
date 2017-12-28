@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<focus>
+  <inputs>
+    <img>ampl</img> <!-- String - Name of the input image -->
+  </inputs>
+  <outputs>
+    <focus>amplFocus</focus> <!-- name of the slot for the focus value; data format is double -->
+  </outputs>
+</rectify>

@@ -1,0 +1,85 @@
+/*! \page introduction Introduction
+
+\addindex introduction
+\tableofcontents
+
+ Toffy is an image processing library based on filters.
+
+ It allows to create an image processor where the images and their related data
+goes from one filter to the next. The filter can be ordered as we want, creating
+a flexible and reusable tool for processing images or video.
+
+ The filter in l3vl works on a data container called frame that is accessible by
+all of the filters. It does not apply any restriction on the data in the frame.
+Every filter can add, modify or delete data. The user is responsible for setting
+the correct keys and data formats in the filter inputs and outputs.
+
+ Toffy filters can be organised in bank of filter, which will be process
+sequentially. We can combine as many bank and filters as we want. It also allows
+parallel processing of filters. We can execute in different threads bank of
+filters and synchronize them at the end point.
+
+ Toffy is extensible because it provides methods to register runtime your own
+developed filters and use them as any other Toffy core filter. There is not any
+restriction on what you can create and push to Toffy.
+
+ \section introduction_filters Filter
+
+ Filters could be seen as process blocks. They can produce, consume or
+modify data in a container Frame.
+
+ They have static inputs defined as a configuration. This configuration in
+based on Boost Property Tree which allows to define them as XML or JSON
+data/files. A filter is created through a XML config file from where its
+configuration is read. This configuration could be changed runtime using for
+example JSON.
+ Each filter provides a set of public configuration variables identify through
+unique keys.
+
+ The dynamic input is contained in a Frame from where the filter find and cast
+the data they need using unique key values. The Frame in a miscellanea container
+that is always available. The filter is responsible for checking the data format
+when reading key from the Frame.
+
+ \section introduction_filterbank FilterBank
+
+ A filterBank is a filter of filters. It does not process any data but is just
+responsible for executing a group of filters sequentially.
+
+ Every filter should be contained in a filterBank, filterbanks also.
+A FilterFactory is will create them, identify them uniquely, and delete when
+are not needed any more.
+
+ The FilterBank can be treated as an isolated process instance of l3vl, which
+allows for example have global configuration for each FilterBank
+
+ \section introduction_parallelFilter ParallelFilter, Threads and Mux
+
+ Toffy offers the possibility of executing filters (also filterBanks) in
+parallel. It is possible to explicitly define a set of Filters that will be
+executed in separated threads. A synchronice mechanism is used to be sure that
+all parallel filters are done before continuing with the main sequentially
+filterBank.
+
+Every FilterBank declared in a Thread will have its own separated Frame. We
+avoid so overwriting data. The new Frames for each thread does not contain data
+from the base Frame, they are empty.
+
+A barrier will execute one Filter, once all the threads have finished.
+This filter (Mux's) takes a list of Frames and decides how the information
+inside them should be used. After the barrier the Thread Frames are deleted.
+
+ \section introduction_install How to get it
+
+ \todo todo
+
+ \subsection introduction_install_linux Dependencies
+
+ Toffy uses Boost and OpenCV libraries as core dependencies
+
+ Alternatively but not compulsory it also uses:
+ - PCL for 3D and pointcloud filters
+
+ \todo what todo with bta_sensors
+
+*/

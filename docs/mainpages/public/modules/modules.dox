@@ -1,0 +1,65 @@
+/*! \page modules Modules
+
+\addindex modules
+\tableofcontents
+
+\section modules_intro Introduction
+
+The Toffy filters are categorized in different blocks.
+
+In this section you will find an organized relation of all the filter
+categorized in modules. For each filter there is an explanation of is
+functionality, its configuration, the inputs and outputs or data produced.
+
+
+\addindex modules_capturers
+\subsection modules_capturers Capturers
+
+The capturer filters mainly produce the data that will be analyzed by the rest
+of the pipeline. They are responsible for for example grabbing the images from a
+camera sensor beside other data (like timestamp, exposure, etc) and write it in
+the frame container.
+
+For devices, they are wrapper of the drivers that fit the process of Toffy.
+
+- \subpage bta_page
+
+\subsection modules_filters_intro Filters
+
+This page contains a description of Toffy filters that apply some kind of changes
+in an input (or more than one) and produces an output.
+
+They are organised in different groups depending on what they do.
+
+It is also included an configuration example where all possible values are
+described.
+
+\subsubsection filters_section Filter commons
+
+Image processing filters
+
+- \subpage amplitudeRange_page
+
+- \subpage backgroundSubs_page
+
+- \subpage roi_page
+
+\subsubsection filters_detection Detection
+
+Objects detections filters
+
+- \subpage blobs_page
+
+- \subpage tracker_page
+
+- \subpage handDetect_page
+
+
+
+*/
+\addindex modules_viewers
+\subsection modules_viewers_intro Viewers
+
+\todo intro
+
+

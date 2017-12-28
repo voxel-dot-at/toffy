@@ -1,0 +1,17 @@
+/*!
+\page bta_page Bta Bluetechnix sensors capturer filter
+
+\section bta_desc Description
+
+Capture frames from bluetechnix sensors using the BtaWrapper and
+the BtaTofApi.
+
+All elements of the frame are published in the frame.
+
+Allows to save and to playback loaded files using new btastream and
+old .r/.rw files.
+
+\section bta_config Xml Configuration
+\include bta.xml
+
+*/

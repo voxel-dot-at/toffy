@@ -1,0 +1,14 @@
+/*!
+\page amplitudeRange_page Amplitude Range filter
+
+\section amplitudeRange_desc Description
+
+Filters distance data depending on the value of the amplitudes in a depth image.
+
+The filter checks the amplitude values and if it is outside a valid range, set
+that pixel and its correspondence in the depth image to 0.
+
+\section amplitudeRange_conf Xml Configuration
+\include amplituderange.xml
+
+*/
