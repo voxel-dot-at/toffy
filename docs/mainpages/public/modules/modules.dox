@@ -52,11 +52,8 @@ Objects detections filters
 
 - \subpage tracker_page
 
-- \subpage handDetect_page
-
-
-
 */
+
 \addindex modules_viewers
 \subsection modules_viewers_intro Viewers
 
