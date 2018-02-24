@@ -9,7 +9,7 @@
 goes from one filter to the next. The filter can be ordered as we want, creating
 a flexible and reusable tool for processing images or video.
 
- The filter in l3vl works on a data container called frame that is accessible by
+ The filters in toffy works on a data container called frame that is accessible by
 all of the filters. It does not apply any restriction on the data in the frame.
 Every filter can add, modify or delete data. The user is responsible for setting
 the correct keys and data formats in the filter inputs and outputs.
@@ -17,7 +17,7 @@ the correct keys and data formats in the filter inputs and outputs.
  Toffy filters can be organised in bank of filter, which will be process
 sequentially. We can combine as many bank and filters as we want. It also allows
 parallel processing of filters. We can execute in different threads bank of
-filters and synchronize them at the end point.
+filters and synchronise them at the end point.
 
  Toffy is extensible because it provides methods to register runtime your own
 developed filters and use them as any other Toffy core filter. There is not any
@@ -50,7 +50,7 @@ responsible for executing a group of filters sequentially.
 A FilterFactory is will create them, identify them uniquely, and delete when
 are not needed any more.
 
- The FilterBank can be treated as an isolated process instance of l3vl, which
+ The FilterBank can be treated as an isolated process instance of toffy, which
 allows for example have global configuration for each FilterBank
 
  \section introduction_parallelFilter ParallelFilter, Threads and Mux

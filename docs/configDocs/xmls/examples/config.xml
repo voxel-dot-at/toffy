@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<l3vl>
+<toffy>
     <globals>
     </globals>
 
@@ -58,7 +58,7 @@
 	    </tcpDeviceIpAddr>
 	    <tcpDeviceIpAddrLen>4</tcpDeviceIpAddrLen>
 	    <tcpControlPort>10001</tcpControlPort>
-		
+
 	    <!--
 		<__udpControlOutIpAddr></__udpControlOutIpAddr>
 		<__udpControlOutIpAddrLen></__udpControlOutIpAddrLen>
@@ -116,4 +116,4 @@
             <img>ampl</img>
         </inputs>
     </imageview>
-</l3vl>
+</toffy>

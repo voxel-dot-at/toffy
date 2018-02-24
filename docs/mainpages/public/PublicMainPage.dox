@@ -9,7 +9,7 @@ It allows to create an image processor where the images and their related data
 goes from one filter to the next. The filter can be orderer as we want, creating
 a flexible and reusable tool for processing images or video.
 
-The filter in l3vl work on a data container called frame that is accesible by
+The filters in toffy work on a data container called frame that is accesible by
 all of the filters. It does not apply any restriction on the data in the frame.
 Every filter can add, modify or delete data. The user is responsible for setting
 the correct key and data formats in the filter inputs and outputs.
