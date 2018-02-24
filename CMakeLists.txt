@@ -222,7 +222,7 @@ message("OpenCV version found: " ${OpenCV_VERSION})
 if ( ${OpenCV_VERSION_MAJOR} EQUAL 3 )
    find_package( OpenCV COMPONENTS imgproc highgui calib3d videoio tracking REQUIRED )
 else()
-   # opencv 2.4 
+   # opencv 2.4
    find_package( OpenCV COMPONENTS imgproc highgui calib3d video contrib REQUIRED )
 endif()
 message("  OpenCV libs " ${OpenCV_LIBS} )
@@ -383,7 +383,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
     #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/>
     #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/server/include/>
-    #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/server/uri-grammar/src/>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/server/uri-grammar/src/>
 
 
     $<INSTALL_INTERFACE:${INSTALL_LIB_DIR}/>
@@ -606,7 +606,7 @@ SET (CPACK_GENERATOR "DEB;TGZ")
 SET (CPACK_SOURCE_GENERATOR "TGZ")
 SET (CPACK_INCLUDE_TOPLEVEL_DIRECTORY "1")
 SET (CPACK_PACKAGE_NAME ${PROJECT_NAME})
-set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/License.txt")
+set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set (CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 set (CPACK_RESOURCE_FILE_WELCOME "${CMAKE_CURRENT_SOURCE_DIR}/Welcome.txt")
 #set (CPACK_PACKAGE_ICON ".ico")
