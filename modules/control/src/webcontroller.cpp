@@ -1,5 +1,5 @@
 #include <boost/log/trivial.hpp>
-
+#include <iostream>
 #include <toffy/player.hpp>
 
 #include <toffy/web/webcontroller.hpp>
