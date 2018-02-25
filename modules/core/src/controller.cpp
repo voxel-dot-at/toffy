@@ -1,8 +1,10 @@
+#include <iostream>
+#include <boost/log/trivial.hpp>
+
 #include <toffy/controller.hpp>
 #include <toffy/parallelFilter.hpp>
 #include <toffy/common/plugins.hpp>
 
-#include <boost/log/trivial.hpp>
 
 #if OCV_VERSION_MAJOR >= 3
 #  include <opencv2/highgui.hpp>
