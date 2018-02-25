@@ -41,3 +41,4 @@ build*
 *.user
 *.user.*
 *.autosave
+modules/control/server/uri-grammar/config.log
