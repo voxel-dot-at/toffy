@@ -218,7 +218,7 @@ public:
      * - The filter is created through the FilterFactory
      *
      */
-    int loadFileConfig(const std::string& configFile);
+    virtual int loadFileConfig(const std::string& configFile);
 
     //virtual int loadConfig(const boost::property_tree::ptree& pt);
 
@@ -250,7 +250,8 @@ public:
      * @param pt
      * @return Positive on success, negative or 0 if failed
      */
-    virtual int loadConfig(const boost::property_tree::ptree& pt, const std::string& confFile = "");
+     virtual int loadConfig(const boost::property_tree::ptree& pt, const std::string& confFile = "");
+
 
     virtual boost::property_tree::ptree getConfig() const;
 
