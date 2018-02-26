@@ -6,6 +6,7 @@
  *
  *
  */
+#include <iostream>
 
 #include <toffy/player.hpp>
 
@@ -14,7 +15,6 @@
 #else
 #  include <opencv2/highgui/highgui.hpp>
 #endif
-
 
 #ifdef MSVC
 #define WIN32_LEAN_AND_MEAN
@@ -25,7 +25,7 @@
 
 BOOL WINAPI ConsoleHandler(DWORD);
 #else
-#include <sys/signal.h>
+#include <signal.h>
 #endif
 
 #include <boost/program_options.hpp>
