@@ -132,7 +132,11 @@ bool CVTracker::filter(const Frame& in, Frame& out) {
 
     if(!tracker) {
         bbox = cv::minAreaRect(detObj->at(0)->contour).boundingRect();
+#if OCV_VERSION_MAJOR >= 3
+        tracker = cv::TrackerKCF::create( );
+#else
         tracker = cv::Tracker::create( "KCF" );
+#endif
         tracker->init(*img,bbox);
     } else {
         bbox = cv::minAreaRect(detObj->at(0)->contour).boundingRect();
