@@ -47,7 +47,7 @@ boost::property_tree::ptree CloudViewPCL::getConfig() const
 	//key += cloudNames[i];
 	pt.put("inputs."+ _cloudNames[i], _cloudNames[i]);
     }
-    
+
     return pt;
 }
 
@@ -78,16 +78,19 @@ void CloudViewPCL::updateConfig(const boost::property_tree::ptree &pt)
 }
 
 
-void CloudViewPCL::loopViewer() 
+void CloudViewPCL::loopViewer()
 {
+    const std::string ref="reference"; // default id
     std::vector<pcl::visualization::PointCloudColorHandler<pcl::PCLPointCloud2>::Ptr > hdlr;
 
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
 
     pcl::visualization::PCLVisualizer viewer(std::string("3D Viewer ")+id() + " " +_in_cloud);
-
+#if (PCL_MAJOR_VERSION == 1) && (PCL_MINOR_VERSION >= 7)
+    viewer.addCoordinateSystem(_coordSize, ref);
+#else
     viewer.addCoordinateSystem(_coordSize);
-
+#endif
     for (size_t i=0;i<_clouds.size();i++) {
 	double r, g, b;
 	pcl::visualization::getRandomColors (r, g, b );
@@ -113,8 +116,13 @@ void CloudViewPCL::loopViewer()
 	//	clouds[0]->getMinMaxRanges (min, max);
 
 	if (_newCloud) {
-	    viewer.removeCoordinateSystem();
-	    viewer.addCoordinateSystem(_coordSize);
+#if (PCL_MAJOR_VERSION == 1) && (PCL_MINOR_VERSION >= 7)
+	    viewer.removeCoordinateSystem(ref);
+	    viewer.addCoordinateSystem(_coordSize, ref);
+#else
+  viewer.removeCoordinateSystem();
+  viewer.addCoordinateSystem(_coordSize);
+#endif
 	    /*
 	if (!_cube.empty()) {
 	    viewer.removeShape("cube");
@@ -158,7 +166,7 @@ void CloudViewPCL::loopViewer()
     return;
 }
 
-bool CloudViewPCL::filter(const Frame &in, Frame& out) 
+bool CloudViewPCL::filter(const Frame &in, Frame& out)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
 
