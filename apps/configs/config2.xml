@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-
+<toffy>
 <globals>
 <options>
 <!--
@@ -27,8 +27,9 @@
 <bta>
 	<name>bta1</name>
 	<options>
-		<!--<loadPath>/media/angel/usb_disk1/Projects/buchele/2015-10-15-19-01.Close.bltstream</loadPath>-->
-		<loadPath>/home/angel/projects/builds/l3vl/1458034800/bta1/hola.bltstream</loadPath>
+		<!-- loadPath: use absolute path or relative to executable cwd
+		<loadPath>./toffy/1458034800/bta1/hola.bltstream</loadPath>
+			<loadPath>/</loadPath>-->
 		<flip_x>true</flip_x>
 		<center_position>0.0 0.0 0.0</center_position>
 		<rotations>0. 0. 0.</rotations>
@@ -62,13 +63,13 @@
 		<deviceType>1</deviceType>
 		<frameQueueLength>1</frameQueueLength>
 		<frameMode>0</frameMode>
-		
+
 		<udpDataIpAddr>
 			<n1>224</n1>
 			<n2>0</n2>
 			<n3>0</n3>
 			<n4>1</n4>
-		</udpDataIpAddr>    
+		</udpDataIpAddr>
 		<udpDataIpAddrLen>4</udpDataIpAddrLen>
 		<udpDataPort>10002</udpDataPort>
 
@@ -80,7 +81,7 @@
 		</tcpDeviceIpAddr>
 		<tcpDeviceIpAddrLen>4</tcpDeviceIpAddrLen>
 		<tcpControlPort>10001</tcpControlPort>
-		
+
 		<!--
 		<__udpControlOutIpAddr></__udpControlOutIpAddr>
 		<__udpControlOutIpAddrLen></__udpControlOutIpAddrLen>
@@ -153,7 +154,7 @@
 	<outputs>
 		<cloud>cloud</cloud>
 	</outputs>
-</reprojectpcl>	
+</reprojectpcl>
 
 <cloudviewpcl>
 	<options>
@@ -186,3 +187,4 @@
 		<img>ampl</img>
 	</inputs>
 </imageview>
+</toffy>

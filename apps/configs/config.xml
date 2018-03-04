@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<l3vl>
+<toffy>
     <globals>
     	<options>
 			<cameraMatrix type_id="opencv-matrix"><rows>3</rows><cols>3</cols><dt>d</dt><data>8.8345892962843834e+01 0. 7.9460485484676596e+01 0. 8.8395902341635306e+01 5.7816728185872989e+01 0. 0. 1.</data></cameraMatrix>
@@ -9,8 +9,8 @@
     <bta>
         <name>bta1</name>
         <options>
-        	<!--
-        	<loadPath>/home/angel/projects/builds/l3vl/1458034800/bta1/hola.bltstream</loadPath>
+        	<!-- loadPath: use absolute path or relative to executable cwd
+        	<loadPath>./toffy/1458034800/bta1/hola.bltstream</loadPath>
             <loadPath>/</loadPath>-->
             <center_position>0.0 0.0 0.0</center_position>
             <rotations>0. 0. 0.</rotations>
@@ -56,7 +56,7 @@
         </tcpDeviceIpAddr>
         <tcpDeviceIpAddrLen>4</tcpDeviceIpAddrLen>
         <tcpControlPort>10001</tcpControlPort>
-        
+
         <!--
         <__udpControlOutIpAddr></__udpControlOutIpAddr>
         <__udpControlOutIpAddrLen></__udpControlOutIpAddrLen>
@@ -91,8 +91,8 @@
             <maxAmpl>16000</maxAmpl>
         </options>
     </amplitudeRange>
-    
-    
+
+
     <rectify>
 		<global></global>
 		<inputs>
@@ -119,8 +119,8 @@
 		<outputs>
 			<cloud>cloud</cloud>
 		</outputs>
-	</reprojectpcl>	
-    
+	</reprojectpcl>
+
     <imageview>
         <options>
             <scale>2</scale>
@@ -141,11 +141,10 @@
             <img>ampl</img>
         </inputs>
     </imageview>
-    
+
 	<cloudviewpcl>
 		<inputs>
 			<cloud>cloud</cloud>
 		</inputs>
 	</cloudviewpcl>
-</l3vl>
-
+</toffy>
