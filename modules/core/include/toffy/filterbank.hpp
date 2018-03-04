@@ -250,7 +250,9 @@ public:
      * @param pt
      * @return Positive on success, negative or 0 if failed
      */
-     virtual int loadConfig(const boost::property_tree::ptree& pt, const std::string& confFile = "");
+     virtual int loadConfig(const boost::property_tree::ptree& pt, const std::string& confFile);
+
+     virtual int loadConfig(const boost::property_tree::ptree& pt) { return loadConfig(pt, ""); };
 
 
     virtual boost::property_tree::ptree getConfig() const;

@@ -33,7 +33,7 @@ typedef boost::shared_ptr<cv::Mat> matPtr;
  *  runtime. Is the only interface the filter can deal with. It keeps trace the
  *  single instances of the data and assure that they are uniquely identify.
  *
- * A L3vl application does contain only a single frame from where all its filter
+ * A toffy application does contain  a single frame from where all its filter
  *  will manage the data.
  *
  */
