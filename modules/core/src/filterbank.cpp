@@ -1,3 +1,19 @@
+/*
+   Copyright 2018 Simon Vogl <svogl@voxel.at>
+                  Angel Merino-Sastre <amerino@voxel.at>
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
 #include <boost/log/trivial.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -199,17 +215,17 @@ const Filter * FilterBank::getFilter(const std::string& name) const
     return ff->getFilter(name);
 }
 
-const Filter * FilterBank::getFilter(int i) const 
+const Filter * FilterBank::getFilter(int i) const
 {
     return _pipe.at(i);
 }
 
-Filter * FilterBank::getFilter(const std::string& name) 
+Filter * FilterBank::getFilter(const std::string& name)
 {
     return ff->getFilter(name);
 }
 
-Filter * FilterBank::getFilter(int i) 
+Filter * FilterBank::getFilter(int i)
 {
     return _pipe.at(i);
 }
@@ -254,7 +270,7 @@ int FilterBank::countFiltersByType(const std::string& type)
     return cnt;
 }
 
-size_t FilterBank::findPos(std::string name) 
+size_t FilterBank::findPos(std::string name)
 {
     for (size_t i = 0; i < _pipe.size(); i++) {
         if (_pipe.at(i)->name() == name)
@@ -263,7 +279,7 @@ size_t FilterBank::findPos(std::string name)
     return -1;
 }
 
-int FilterBank::remove(std::string name) 
+int FilterBank::remove(std::string name)
 {
     int pos = findPos(name);
     _pipe.erase(_pipe.begin()+pos);
@@ -271,7 +287,7 @@ int FilterBank::remove(std::string name)
     return 1;
 }
 
-int FilterBank::remove(size_t i) 
+int FilterBank::remove(size_t i)
 {
     if (i >= _pipe.size()) {
         BOOST_LOG_TRIVIAL(warning) << "Position i: " << i << "out of bounds.";
@@ -283,7 +299,7 @@ int FilterBank::remove(size_t i)
     return 1;
 }
 
-void FilterBank::clearBank() 
+void FilterBank::clearBank()
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     for (size_t i=0; i<_pipe.size(); i++) {
@@ -313,7 +329,7 @@ void FilterBank::processEvent(Event &e) {
 }
 
 
-void FilterBank::init() 
+void FilterBank::init()
 {
     for (size_t i = 0; i < _pipe.size(); i++) {
         _pipe[i]->init();
@@ -322,7 +338,7 @@ void FilterBank::init()
     Filter::init();
 }
 
-void FilterBank::start() 
+void FilterBank::start()
 {
     for (size_t i = 0; i < _pipe.size(); i++) {
         _pipe[i]->start();
@@ -331,7 +347,7 @@ void FilterBank::start()
     Filter::start();
 }
 
-void FilterBank::stop() 
+void FilterBank::stop()
 {
     for (size_t i = 0; i < _pipe.size(); i++) {
         _pipe[i]->start();
