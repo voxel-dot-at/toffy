@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<exposure>
+    <inputs>
+        <img>frame</img> <!-- String - Camera image to be checked -->
+        <exposure>ex</exposure> <!-- String - name of the exposure value
+            exposed by the camera  -->
+        <gain>gain</gain> <!-- String - name of the gain value to be exposed
+            by the camera -->
+    </inputs>
+    <events> <!-- All events to be executed inside the filter should be
+        declared here  -->
+        <sensor2d>autoExposure</sensor2d> <!-- String the node determines the
+            name of the target and the value the event to be executed -->
+
+    <!-- TODO The EventType is still not selectable by config.
+        The event config reader should be implemented at Filter -->
+    </event>
+</exposure>

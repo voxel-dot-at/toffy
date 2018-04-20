@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+
+<bta>
+    <name>bta1</name> <!-- String - (Optional) Name identifier of the filter. -->
+    <options>
+        <loadPath>file.bltstream</loadPath> <!--String - (Optional) Path to bltstream or folder containing .r/.rw files to load -->
+        <flip_x>true</flip_x> <!--Bool - (Optional) Flip frames around x axis -->
+        <flip_y>true</flip_y> <!--Bool - (Optional) Flip frames around y axis -->
+        <flip>true</flip> <!--Bool - (Optional) Flip frames around x and y axis -->
+        <center_position>0.0 0.0 0.0</center_position> <!--Float array(x,y,z) meters - (Optional) Camera position in wcs -->
+        <rotations>0. 0. 0.</rotations> <!-- Float array(roll,pitch,yaw) degrees - (Optional) Camera rotation in wcs -->
+    </options>
+
+    <!-- This options are used only when the bta capture filter is created. -->
+    <autoconnect>false</autoconnect> <!-- Bool - default:false (Optional) Try to connect when creating the filter -->
+    <it>1500</it> <!-- Bool - (Optional) Set integration time when creating the filter -->
+    <fr>20.0</fr> <!-- Bool - (Optional) Set frame rate when creating the filter -->
+
+    <connection> <!-- Connection data described in BtaWrapper and based on BtaTofApi config object. -->
+        <verbosity>5</verbosity>
+        <!--
+        // Generic
+            BTA_DeviceTypeGenericEth = 0x0001,
+            BTA_DeviceTypeGenericP100 = 0x0002,
+            BTA_DeviceTypeGenericUart = 0x0003,
+            BTA_DeviceTypeGenericBltstream = 0x000f, 15
+
+            // Ethernet products
+            BTA_DeviceTypeArgos3dP310 = 0x9ba6,
+            BTA_DeviceTypeArgos3dP320 = 0xb320,
+            BTA_DeviceTypeSentisTofP510 = 0x5032,
+            BTA_DeviceTypeSentisTofM100 = 0xa9c1,
+            BTA_DeviceTypeTimUp19kS3Eth = 0x795c,
+            BTA_DeviceTypeSentisTofP509 = 0x4859,
+
+            // P100 products
+            BTA_DeviceTypeArgos3dP100 = 0xa3c4,
+            BTA_DeviceTypeTimUp19kS3Spartan6 = 0x13ab,
+
+            // UART products
+            BTA_DeviceTypeEPC610TofModule = 0x7a3d,
+        -->
+        <deviceType>1</deviceType>
+        <frameQueueLength>1</frameQueueLength>
+
+        <!-- Enumeration with valid frame modes. No all cameras support all modes.
+        typedef enum BTA_FrameMode {
+            BTA_FrameModeCurrentConfig = 0,    ///< The sensors settings are not changed and data is passed through (according to device's current calculation/image mode settings)
+            BTA_FrameModeDistAmp,
+            BTA_FrameModeDistAmpFlags,
+            BTA_FrameModeXYZ,
+            BTA_FrameModeXYZAmp,
+            BTA_FrameModeDistAmpColor,
+            BTA_FrameModeXYZAmpFlags,
+            BTA_FrameModeRawPhases,
+            BTA_FrameModeIntensities,
+            BTA_FrameModeDistColor
+        } BTA_FrameMode; -->
+        <frameMode>0</frameMode>
+
+        <!-- The option that provide an ip address are mapped using this structure: -->
+        <udpDataIpAddr>
+            <n1>224</n1>
+            <n2>0</n2>
+            <n3>0</n3>
+            <n4>1</n4>
+        </udpDataIpAddr>
+        <udpDataIpAddrLen>4</udpDataIpAddrLen>
+        <udpDataPort>10002</udpDataPort>
+
+        <tcpDeviceIpAddr>
+            <n1>192</n1>
+            <n2>168</n2>
+            <n3>0</n3>
+            <n4>10</n4>
+        </tcpDeviceIpAddr>
+        <tcpDeviceIpAddrLen>4</tcpDeviceIpAddrLen>
+        <tcpControlPort>10001</tcpControlPort>
+
+    </connection>
+    <!-- Connection object from bta.h. The option names are the same for the xml nodes. For more details refer to BtaTofApi
+    ///   Configuration structure to be passed with BTAopen
+    typedef struct BTA_Config {
+        uint8_t *udpDataIpAddr;        ///< The IP address for the UDP data interface (The address the device is configured to stream to)
+        uint8_t udpDataIpAddrLen;        ///< The length of udpDataIpAddr buffer in [byte]
+        uint16_t udpDataPort;        ///< The port for the UDP data interface (The port the device is configured to stream to)
+        uint8_t *udpControlOutIpAddr;   ///< The IP address for the UDP control interface (outbound connection) (The address to send the command to, where the device awaits commands at)
+        uint8_t udpControlOutIpAddrLen; ///< The length of udpControlOutIpAddr buffer in [byte]
+        uint16_t udpControlOutPort;        ///< The port for the UDP control interface (outbound connection) (The address to send the command to, where the device awaits commands at)
+        uint8_t *udpControlInIpAddr;    ///< The IP address for the UDP control interface (inbound connection) (The address the device should answer to, usually the local IP address)
+        uint8_t udpControlInIpAddrLen;  ///< The length of udpControlInIpAddr buffer in [byte]
+        uint16_t udpControlInPort;        ///< The port for the UDP control interface (inbound connection) (The port the device should answer to)
+        uint8_t *tcpDeviceIpAddr;        ///< The IP address for the TCP data and control interface (The device's IP address)
+        uint8_t tcpDeviceIpAddrLen;        ///< The length of tcpDeviceIpAddr buffer in [byte]
+        uint16_t tcpDataPort;        ///< The port for the TCP data interface (The port the device sends data to)
+        uint16_t tcpControlPort;        ///< The port for the TCP control interface (The port the device awaits commands at)
+
+        uint8_t *uartPortName;        ///< The port name of the UART to use (ASCII coded)
+        uint32_t uartBaudRate;        ///< The UART baud rate
+        uint8_t uartDataBits;        ///< The number of UART data bits used
+        uint8_t uartStopBits;        ///< 0: None, 1: One, 2: Two, 3: 1.5 stop bits
+        uint8_t uartParity;            ///< 0: None, 1: Odd, 2: Even, 3: Mark, 4: Space Parity
+        uint8_t uartTransmitterAddress; ///< The source address for UART communications
+        uint8_t uartReceiverAddress;    ///< The target address for UART communications
+
+        BTA_DeviceType deviceType;        ///< The device type, when not left 0 implies the type of connection to use (Ethernet, USB (P100), UART, Bltstream, ...)
+        uint8_t *pon;            ///< Product Order Number of device to be opened (0 == not specified) (ASCII coded)
+        uint32_t serialNumber;        ///< Serial number of device to be opened (0 == not specified)
+
+        uint8_t *calibFileName;        ///< Name of the lens calibration file to be loaded into SDK (ASCII coded). It is supported by P100 based cameras in order to generate XYZ channels
+        uint8_t *zFactorsFileName;        ///< A filter of the type BTA_FltTypeMath (BTA_FltType) with math type BTA_FltMathTypeMultFM1 (BTA_FltMathType) is instantiated. The file behind zFactorsFileName is loaded as Matrix. And the filter is set to be applied for Z channels.
+        uint8_t *wigglingFileName;        ///< No longer supported, please use BTAwigglingUpdate()
+
+        BTA_FrameMode frameMode;        ///< Frame mode to be set in SDK/device
+
+        FN_BTA_InfoEvent infoEvent;        ///< Callback function pointer to the function to be called upon an informative event (optional but handy for debugging/tracking) (deprecated, use infoEventEx)
+        FN_BTA_InfoEventEx infoEventEx; ///< Callback function pointer to the function to be called upon an informative event (optional but handy for debugging/tracking)
+        uint8_t verbosity;            ///< A value to tell the library when and when not to generate InfoEvents (0: Only critical events, 10: Maximum amount of events)
+        FN_BTA_FrameArrived frameArrived;    ///< Callback function pointer to the function to be called when a frame is ready (optional) (deprecated, use frameArrivedEx)
+        FN_BTA_FrameArrivedEx frameArrivedEx;   ///< Callback function pointer to the function to be called when a frame is ready (optional)
+
+        uint16_t frameQueueLength;        ///< The library queues this amount of frames internally
+        BTA_QueueMode frameQueueMode;   ///< The frame queue configuration parameter
+        uint16_t averageWindowLength;   ///< A filter type BTA_FltTypeAvgsequences is instantiated. averageWindowLength sets the amount of frames to average. 0: do nothing, 1: turn averaging off (set 1 sequence), >1: averaging
+
+        uint8_t *bltstreamFilename;        ///< Only for BtaStreamLib: Specify the file (containing the stream) to read from (ASCII coded)
+    } BTA_Config;
+    -->
+</bta>

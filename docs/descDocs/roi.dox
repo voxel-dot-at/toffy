@@ -1,0 +1,36 @@
+/*!
+\page roi_page Region of Interest filter
+
+\section roi_desc Description
+
+This filter lets us define a zone inside the input image. The shape of this
+ROI is a rectangle and the size is selectable by pixel position in x and y
+coordinates together with width and height.
+
+One we have defined our region of interest we can filter out data in very
+different ways.
+
+- The output value can be simple applied to the inner or the outside pixels
+of the roi. This makes possible for example to remove parts of the image.
+
+- We can filter the image defining a value that will be compared to the
+values of the data in our roi and activate filtering if it is over or below
+the input. It is also possible to select if the inner pixel of the roi or
+all pixel out size will be check.
+
+- We can select an output value to set if the filter activates. We can also
+decide if we want to apply the output value to the pixel values inside of the
+defined roi or outside.
+
+- The output value can be applied to all the pixel in- or outside the roi, or
+just change the values that exceed the filter threshold
+
+\section roi_config Xml Configuration
+\include roi.xml
+
+\section ex3 Extra documentation
+
+A more detailed explanation of what the roi filter is capable of can be
+found in \subpage roi_extra
+
+*/

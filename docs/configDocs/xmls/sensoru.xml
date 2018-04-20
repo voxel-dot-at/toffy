@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+	<sensoru>
+		<flip>true</flip>
+		<timeStamped>0</timeStamped>
+		<outputs>
+				<img>img11</img>
+		</outputs>
+	</sensoru>
+	
+	<!-- Display images published from the sensor. See: TODO -->
+	<imageview> 
+		<scale>0.5</scale>
+		<inputs>
+			<img>img11</img>
+		</inputs>
+	</imageview>
+

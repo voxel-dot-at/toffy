@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+
+	<sensor2d>
+		<url>http://192.168.0.11/sentis.sdp</url>
+		<flip>true</flip>
+		<timeStamped>0</timeStamped>
+		<outputs>
+				<img>img11</img>
+		</outputs>
+	</sensor2d>
+	<imageview>
+		<scale>0.5</scale>
+		<inputs>
+			<img>img11</img>
+		</inputs>
+	</imageview>
+<!--
+	<sensor2d>
+		<url>http://192.168.0.12/sentis.sdp</url>
+		<flip>true</flip>
+		<timeStamped>0</timeStamped>
+		<outputs>
+				<img>img12</img>
+		</outputs>
+	</sensor2d>
+	<sensor2d>
+		<url>http://192.168.0.13/sentis.sdp</url>
+		<flip>true</flip>
+		<timeStamped>0</timeStamped>
+		<outputs>
+				<img>img13</img>
+		</outputs>
+	</sensor2d>
+	<sensor2d>
+		<url>http://192.168.0.14/sentis.sdp</url>
+		<flip>true</flip>
+		<timeStamped>0</timeStamped>
+		<outputs>
+				<img>img14</img>
+		</outputs>
+	</sensor2d>
+
+
+	<imageview>
+		<scale>0.5</scale>
+		<inputs>
+			<img>img11</img>
+		</inputs>
+	</imageview>
+	<imageview>
+		<scale>0.5</scale>
+		<inputs>
+			<img>img12</img>
+		</inputs>
+	</imageview>
+	<imageview>
+		<scale>0.5</scale>
+		<inputs>
+			<img>img13</img>
+		</inputs>
+	</imageview>
+	<imageview>
+		<scale>0.5</scale>
+		<inputs>
+			<img>img14</img>
+		</inputs>
+	</imageview>
+-->
+<!--
+	<bta>
+		<name>bta1</name>
+			<loadPath>
+				/opt/projects/boomerang/data/20150709_tg_recordings/9500us_der_seite_entlang/1436450214943
+			</loadPath>
+		<sensorConfigFile>config/bta_config10.xml</sensorConfigFile>
+	</bta>
+	<bta>
+		<name>bta2</name>
+		<loadPath>
+			/opt/projects/boomerang/data/20150709_tg_recordings/9500us_opposite/1436450809365
+		</loadPath>
+		<sensorConfigFile>
+			config/bta_config11.xml
+		</sensorConfigFile>
+	</bta>
+	<bta>
+		<name>bta3</name>
+		<loadPath>
+			/opt/projects/boomerang/data/20150709_tg_recordings/9500us_der_seite_entlang/1436450623269
+		</loadPath>
+		<sensorConfigFile>
+			config/bta_config12.xml
+		</sensorConfigFile>
+	</bta>
+	<bta>
+		<name>bta4</name>
+		<loadPath>
+			/opt/projects/boomerang/data/20150709_tg_recordings/9500us_opposite/1436450899317
+		</loadPath>
+		<sensorConfigFile>
+			config/bta_config13.xml
+		</sensorConfigFile>
+	</bta>
+	-->
+<!--
+<filterGroup>config/g12_config.xml</filterGroup>
+<filterGroup>config/g14_config.xml</filterGroup>
+<filterGroup>config/merge_config2.xml</filterGroup>
+
+
+<filterGroup>config/g1_config.xml</filterGroup>
+<filterGroup>config/g2_config.xml</filterGroup>
+<filterGroup>config/g3_config.xml</filterGroup>
+<filterGroup>config/g4_config.xml</filterGroup>
+<filterGroup>config/merge_config.xml</filterGroup>
+
+-->
+

@@ -1,0 +1,84 @@
+* {
+    font-family: Arial, sans;
+}
+
+body {
+    background-color: #eee;
+}
+
+div, p, iframe {
+    background-color: #fff;
+}
+
+.clearfix {
+    clear: both;
+    display: block;
+}
+
+#cmdDiv {
+    float: left;
+}
+
+#filters {
+    float: left;
+}
+
+.filterHead {
+    clear: both;
+    display: block;
+    width: 100%;
+}
+
+.gridItem {
+    width: 98%;
+    float: left;
+    display: block;
+    border: 1px solid #eee;
+    clear: both;
+    margin-top: 2px;
+    padding: 0.25em;
+}
+
+a {
+    color: rgb(80, 150, 120);
+}
+
+a.visited {
+    color: rgb(80, 150, 120);
+}
+
+a.active, a.hover {
+    color: rgb(80, 170, 150);
+}
+
+.gridHead {
+    background: #eee;
+    color: rgb(40, 120, 90);
+    min-width: 50%;
+}
+.gridBlock {
+    width: 100%;
+}
+
+.filterBlock {
+    min-width: 25%;
+    float: left;
+    padding: .25em;
+}
+/* iframe with details */
+#filterDets {
+    float: left;
+    min-width: 90%;
+}
+
+.filterDetails {
+    float: left;
+    min-width: 75%;
+    padding: .5em;
+}
+
+.filterDetails #details{
+    float: left;
+    min-width: 100%;
+    width: 100%;
+}

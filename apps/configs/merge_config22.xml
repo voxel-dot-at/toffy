@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+
+<filters>
+<!--
+	<transform>
+		<actions>
+			<rotation1>3.14159265359 0.0 0.0</rotation1>
+		</actions>
+		<inputs>
+			<cloud>merged</cloud>
+		</inputs>
+		<outputs>
+			<cloud>merged</cloud>
+		</outputs>
+	</transform>
+	<split>
+		<axis>x</axis>
+		<min>0</min>
+		<max>4</max>
+		<inputs>
+			<cloud>merged</cloud>
+		</inputs>
+		<outputs>
+			<inliers>merged</inliers>
+			<outliers>outliers</outliers>
+		</outputs>
+	</split>
+	<split>
+		<axis>y</axis>
+		<min>0</min>
+		<max>7</max>
+		<inputs>
+			<cloud>merged</cloud>
+		</inputs>
+		<outputs>
+			<inliers>merged</inliers>
+			<outliers>outliers</outliers>
+		</outputs>
+	</split>		
+
+<groundprojection>
+		<max_x>4</max_x>
+		<max_y>7.5</max_y>
+		<scale>100</scale>
+		<fovx>90.</fovx>
+		<inputs>
+			<cloud>merged</cloud>
+		</inputs>
+		<outputs>
+			<img>ground</img>
+		</outputs>
+	</groundprojection>
+	<range>
+		<min>0.1</min>
+		<max>1.5</max>
+		<inputs>
+			<img>ground</img>
+		</inputs>
+	</range>		
+	<myfilter>
+		<options>
+			<elem>2</elem>
+			<op>2</op>
+			<size>1</size>
+		</options>
+		<inputs>
+			<img>ground</img>
+		</inputs>
+		<outputs>
+			<img>ground</img>
+		</outputs>
+	</myfilter>
+-->
+	<cloudviewpcl>
+		<inputs>
+			<cloud1>cloud0</cloud1>
+			<cloud2>cloud1</cloud2>
+			<cloud3>cloud2</cloud3>
+			<cloud4>cloud3</cloud4>
+			<cloud5>cloud4</cloud5>
+			<cloud6>cloud5</cloud6>
+			<cloud>merged</cloud>
+		</inputs>
+	</cloudviewpcl>
+<!--	
+	<imageview>
+		<scale>1.0</scale>
+		<inputs>
+			<img>ground</img>
+		</inputs>
+	</imageview>
+-->
+</filters>
+

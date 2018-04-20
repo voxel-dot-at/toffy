@@ -1,0 +1,15 @@
+/*!
+\page blobs_page Blob detector filter
+
+\section blobs_desc Description
+
+Blobs is a blob segmentation filter, it takes a b/w image and find contours to
+detect individual regions. This regions/objects are listed in the output to be
+classified by some other filter like the \ref tracker_page
+
+Output is a list of detected regions in the output parameter.
+
+\section blobs_conf Xml Configuration
+\include blobs.xml
+
+*/

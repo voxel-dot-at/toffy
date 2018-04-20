@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<polar2cart>
+	<global></global> <!-- Node flag force loading config from globals -->
+	<inputs>
+		<img>depth</img> <!-- String - Name of the input image -->
+	</inputs>
+	<outputs>
+		<img>depth</img> <!-- String - Name of the input image. if missing or
+			same as input, this will be overwrite -->
+	</outputs>
+</polar2cart>

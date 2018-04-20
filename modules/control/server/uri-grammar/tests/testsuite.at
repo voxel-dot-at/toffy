@@ -1,0 +1,255 @@
+AT_INIT
+
+AT_BANNER([Absolute URIs])
+
+AT_SETUP([Get the scheme])
+AT_CHECK([parse-uri --scheme http://user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [http
+])
+AT_CLEANUP
+
+AT_SETUP([Get the user information])
+AT_CHECK([parse-uri --userinfo http://user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [user
+])
+AT_CLEANUP
+
+AT_SETUP([Get the user information (empty)])
+AT_CHECK([parse-uri --userinfo http://example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [
+])
+AT_CLEANUP
+
+AT_SETUP([Get the host])
+AT_CHECK([parse-uri --host http://user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [example.com
+])
+AT_CLEANUP
+
+AT_SETUP([Get the port])
+AT_CHECK([parse-uri --port http://user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [80
+])
+AT_CLEANUP
+
+AT_SETUP([Get the path])
+AT_CHECK([parse-uri --path http://user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [/foo/bar
+])
+AT_CLEANUP
+
+AT_SETUP([Get the path (no authority)])
+AT_CHECK([parse-uri --path http:/foo/bar?attr=val@%:@frag],
+         [0], [/foo/bar
+])
+AT_CLEANUP
+
+AT_SETUP([Get the path (no authority; rootless path)])
+AT_CHECK([parse-uri --path http:foo/bar?attr=val@%:@frag],
+         [0], [foo/bar
+])
+AT_CLEANUP
+
+AT_SETUP([Get the query])
+AT_CHECK([parse-uri --query http://user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [attr=val
+])
+AT_CLEANUP
+
+AT_SETUP([Get the fragment identifier])
+AT_CHECK([parse-uri --fragment http://user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [frag
+])
+AT_CLEANUP
+
+AT_BANNER([Relative URIs])
+
+AT_SETUP([Get the user information])
+AT_CHECK([parse-uri --userinfo //user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [user
+])
+AT_CLEANUP
+
+AT_SETUP([Get the user information (empty)])
+AT_CHECK([parse-uri --userinfo //example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [
+])
+AT_CLEANUP
+
+AT_SETUP([Get the host])
+AT_CHECK([parse-uri --host //user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [example.com
+])
+AT_CLEANUP
+
+AT_SETUP([Get the port])
+AT_CHECK([parse-uri --port //user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [80
+])
+AT_CLEANUP
+
+AT_SETUP([Get the path])
+AT_CHECK([parse-uri --path //user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [/foo/bar
+])
+AT_CLEANUP
+
+AT_SETUP([Get the path (no authority)])
+AT_CHECK([parse-uri --path /foo/bar?attr=val@%:@frag],
+         [0], [/foo/bar
+])
+AT_CLEANUP
+
+AT_SETUP([Get the path (no authority; rootless path)])
+AT_CHECK([parse-uri --path foo/bar?attr=val@%:@frag],
+         [0], [foo/bar
+])
+AT_CLEANUP
+
+AT_SETUP([Get the query])
+AT_CHECK([parse-uri --query //user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [attr=val
+])
+AT_CLEANUP
+
+AT_SETUP([Get the fragment identifier])
+AT_CHECK([parse-uri --fragment //user@example.com:80/foo/bar?attr=val@%:@frag],
+         [0], [frag
+])
+AT_CLEANUP
+
+AT_BANNER([IPv4 Addresses])
+
+AT_SETUP([127.0.0.1])
+AT_CHECK([parse-uri --host http://user@127.0.0.1:80/foo/bar?attr=val@%:@frag],
+         [0], [127.0.0.1
+])
+AT_CLEANUP
+
+AT_SETUP([10.10.10.10])
+AT_CHECK([parse-uri --host http://user@10.10.10.10:80/foo/bar?attr=val@%:@frag],
+         [0], [10.10.10.10
+])
+AT_CLEANUP
+
+AT_SETUP([255.255.255.255])
+AT_CHECK([parse-uri --host http://user@255.255.255.255:80/foo/bar?attr=val@%:@frag],
+         [0], [255.255.255.255
+])
+AT_CLEANUP
+
+AT_BANNER([IPv6 Addresses])
+
+AT_SETUP([@<:@0000:0000:0000:0000:0000:0000:127.0.0.1@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@0000:0000:0000:0000:0000:0000:127.0.0.1@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@0000:0000:0000:0000:0000:0000:127.0.0.1@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@0000:0000:0000:0000:0000:0000:0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@0000:0000:0000:0000:0000:0000:0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@0000:0000:0000:0000:0000:0000:0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@0:0:0:0:0:0:0:0@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@0:0:0:0:0:0:0:0@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@0:0:0:0:0:0:0:0@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@::0000:0000:0000:0000:0000:0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@::0000:0000:0000:0000:0000:0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@::0000:0000:0000:0000:0000:0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@0000::0000:0000:0000:0000:0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@0000::0000:0000:0000:0000:0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@0000::0000:0000:0000:0000:0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@::0000:0000:0000:0000:0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@::0000:0000:0000:0000:0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@::0000:0000:0000:0000:0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@0000::0000:0000:0000:0000:0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@0000::0000:0000:0000:0000:0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@0000::0000:0000:0000:0000:0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@::0000:0000:0000:0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@::0000:0000:0000:0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@::0000:0000:0000:0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@0000:0000::0000:0000:0000:0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@0000:0000::0000:0000:0000:0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@0000:0000::0000:0000:0000:0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@::0000:0000:0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@::0000:0000:0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@::0000:0000:0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@0000:0000:0000::0000:0000:0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@0000:0000:0000::0000:0000:0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@0000:0000:0000::0000:0000:0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@::0000:0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@::0000:0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@::0000:0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@0000:0000:0000:0000::0000:0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@0000:0000:0000:0000::0000:0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@0000:0000:0000:0000::0000:0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@::0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@::0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@::0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@0000:0000:0000:0000:0000::0000:0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@0000:0000:0000:0000:0000::0000:0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@0000:0000:0000:0000:0000::0000:0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@::0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@::0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@::0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@0000:0000:0000:0000:0000:0000::0000@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@0000:0000:0000:0000:0000:0000::0000@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@0000:0000:0000:0000:0000:0000::0000@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@::@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@::@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@::@:>@
+])
+AT_CLEANUP
+
+AT_SETUP([@<:@0000:0000:0000:0000:0000:0000:0000::@:>@])
+AT_CHECK([parse-uri --host http://user@@<:@0000:0000:0000:0000:0000:0000:0000::@:>@:80/foo/bar?attr=val@%:@frag],
+         [0], [@<:@0000:0000:0000:0000:0000:0000:0000::@:>@
+])
+AT_CLEANUP

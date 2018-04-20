@@ -1,0 +1,156 @@
+/*! \page configuration Configuration
+
+\addindex configuration
+\tableofcontents
+
+  Toffy is configured using XML files where the filters, theirs configuration and
+ the order of execution are defined by nodes.
+ The configuration file is loaded when we want to start using Toffy and defines
+ the processing pipeline.
+
+  For the runtime configuration, Toffy uses Json as data exchange, allowing any
+ interface to access and modify the filter values.
+
+\section configuration_xml XML configuration structure
+
+ The Toffy XML configuration file follows a typed structure that makes able to
+ define any pipeline for processing image data.
+
+The basic structure is:
+
+\code
+    <?xml version="1.0"?>
+    <toffy>
+        <globals>
+            ...
+        </globals>
+
+        <filter1>
+            ...
+        </filter1>
+            ...
+        <filter2>
+            ...
+        </filter2>
+    </toffy>
+\endcode
+
+\subsection configuration_xml_toffy \<toffy>
+
+The node \<toffy> is the root from where we defined the configuration of the
+application. It should be always present and the first level node.
+
+A root Filterbank is also created which will contains all other filter and
+filterbank. It is the start point for the data processing every iteration.
+
+\subsection configuration_xml_globals \<globals>
+
+ The globals node makes possible to define values that could be used by different
+filters. Its really usefull for example if the camera matrix of a image sensor
+should be accessible by several filters. We avoid this way repeat the for each
+filter the camera matrix value.
+
+ We can also set values that are defined for all filters like the log level and
+system configurations.
+
+ The values declared inside the globals can be structure as we want, defining if
+ needed different paths:
+
+\code
+    <globals>
+        <path1>
+            <value></value>
+        </path1>
+        <path2>
+            <value></value>
+        </path2>
+    </globals>
+\endcode
+
+ To make this values accessible to the filters, a node \<global> should be
+ included inside of the filter, at the first level. Inside this node we can
+ indicate the path in the globals where the filter will look for its values.
+
+\code
+    <filter1>
+        <global>path1</global>
+    </filter1>
+\endcode
+
+  The global configuration is the first readed for each filter and will be
+ overwrite in the filter if the save value is declared locally inside the
+ filter. This way we can take some values from the globals and other from the
+ filter configuration.
+
+\subsection configuration_xml_filters \<filter>
+
+The filters are the block unit process of Toffy. To be created and include in the
+processing pipeline we have to include them in a config file.
+
+The filter to be added to the Toffy root filterbank should be at child of the
+\<toffy> node. The type of the filter is indicated as the name of the node:
+
+\code
+<toffy>
+    <globals>
+        ...
+    </globals>
+
+    <average>
+        <global></global>
+        <name></name>
+        <options>
+            ...
+        </options>
+
+        <inputs>
+            ...
+        </inputs>
+
+        <outputs>
+            ...
+        </outputs>
+    </average>
+</toffy>
+\endcode
+
+With this configuration we created an average filter and is added to the root
+filterbank. As there is no other filters, it will be the first for be executed
+in every iteration. If we want to execute another filter (or more filters inside
+a filterbank), we have to define it before average. For executing filters that
+takes data from the average, they should be defined after.
+
+The options, inputs and outputs of a filter are defined by each filter. Please
+check this values in every filter.
+
+\subsection configuration_xml_filters_name \<name>
+
+Every filter has a unique id. By default its create using the filter type string
+and an internal counter. But if we want to give them some semantic value that
+makes easier to understand our processing pipeline, we can use the node \<name>
+to do it.
+
+The filters names should be unique, if a filter name is already detected, it
+will fall to the default naming type+counter.
+
+\subsection configuration_xml_filters_options \<options>
+
+In this part we define any static configuration that the filter offers. The
+values that can be set are explicitly defined in every filter. Any other node
+we add will be ignore.
+
+\subsection configuration_xml_filters_inputs \<inputs>
+
+This node defined the data that will be readed from the Frame container. There
+is no type restriction, the data if referenced by an unique id and each filter
+will define which data is to be readed. It is the responsibility of the user to
+add the correct input key that contains the expected data.
+
+\subsection configuration_xml_filters_outputs \<outputs>
+
+They indicate as the inputs the keys of the data that will be put in the Frame.
+the keys are unique and if a key already exist in the container, it will be
+overwrite. This keys defined in the outputs of a filter should be later on
+referred in the input of the next filters.
+
+*/

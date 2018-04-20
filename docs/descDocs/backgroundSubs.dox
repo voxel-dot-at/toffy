@@ -1,0 +1,21 @@
+/*!
+\page backgroundSubs_page Gesture Zone filter
+
+\section backgroundSubs_desc Description
+
+This filter have two activities:
+- 1 Creates a mask from the input data.
+
+It is necessary to feed the filter with an empty view of the scene we want
+to filter out. The filter average the depth data and saves it.
+
+- 2 Filters the depth image
+
+Once our mask is created, we can load it and all pixel that match with the
+depth values of our mask (with an configurable offset) will be removed from
+the image
+
+\section backgroundSubs_conf Xml Configuration
+\include backgroundsubs.xml
+
+*/

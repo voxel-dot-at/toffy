@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+
+<globals>
+<options>
+<cameraMatrix type_id="opencv-matrix"><rows>3</rows><cols>3</cols><dt>d</dt><data>8.8345892962843834e+01 0. 7.9460485484676596e+01 0. 8.8395902341635306e+01 5.7816728185872989e+01 0. 0. 1.</data></cameraMatrix>
+<distCoeffs type_id="opencv-matrix"><rows>5</rows><cols>1</cols><dt>d</dt><data>-7.1352694934938371e-02 -3.3342367737975089e-02 2.9389984762416462e-04 -5.4132489349563396e-04 1.1277887575054511e-02</data></distCoeffs>
+<fovx>90.0</fovx>
+<fovy>60</fovy>
+	</options>
+</globals>
+<filterBank>
+  <parallelFilter>
+    <!-- parallel threads -->
+    <thread>
+      <filterGroup>config/g0_config.xml</filterGroup>
+    </thread>
+    <thread>
+      <filterGroup>config/g1_config.xml</filterGroup>
+    </thread>
+    <thread>
+      <filterGroup>config/g2_config.xml</filterGroup>
+    </thread>
+    <thread>
+      <filterGroup>config/g3_config.xml</filterGroup>
+    </thread>
+    <thread>
+      <filterGroup>config/g4_config.xml</filterGroup>
+    </thread>
+    <thread>
+      <filterGroup>config/g5_config.xml</filterGroup>
+    </thread>
+    <!-- a multi-filter mux instance to follow -->
+    <barrier>
+      <muxMerge>
+      	<inputs>
+			<cloud1>cloud0</cloud1>
+			<cloud2>cloud1</cloud2>
+			<cloud3>cloud2</cloud3>
+			<cloud4>cloud3</cloud4>
+			<cloud5>cloud4</cloud5>
+			<cloud6>cloud5</cloud6>
+		</inputs>
+		<outputs>
+			<cloud>merged</cloud>
+		</outputs>
+      </muxMerge>
+    </barrier>
+    <!-- ignore the rest - place subsequent filters in the next FB  -->
+  </parallelFilter>
+
+  <filterGroup>config/merge_config22.xml</filterGroup>
+</filterBank>

@@ -1,0 +1,19 @@
+/*!
+\page tracker_page Tracker filter
+
+\section tracker_desc Description
+
+This filter takes a list of blobs each frame and determine if they are the
+same from one frame to the next.
+
+It also checks for the objects changing position or been hidden for short
+time.
+
+Every single object get unique identified and all information about it and
+its "history" are also kept and updated.
+
+
+\section tracker_conf Xml Configuration
+\include tracker.xml
+
+*/

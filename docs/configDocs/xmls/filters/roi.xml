@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+
+<roi>
+  <inputs>
+    <img>depth</img> <!-- String - Input 2d image -->
+  </inputs>
+  
+  <outputs>
+    <img>depth</img> <!-- String - Output filtered image -->
+  </outputs>
+  
+  <options> 
+    <!-- top left pixel and size of the region that should be filtered, 
+    	in image pixels -->
+    <x>0</x>
+    <y>0</y>
+    <width>50</width>
+    <height>119</height>
+    
+    <!-- Filter the inside part of the roi. If false or not present outside -->
+	 <in>true</in>
+	 
+    <!-- Filter the selected zone by some value. If false or not present, 
+		everything is set to out_value -->
+    <filter>true</filter>
+    
+    <!-- Filter value below inValues in the selected zone. I false or not 
+		present, filters the values above. -->
+    <below>true</below>
+    
+    <!-- Limit value for filtering -->
+    <inValue>0.55</inValue>
+    
+    <!-- Value to set in the filtered zone -->
+    <outValue>0</outValue>
+    
+  </options>
+</roi>

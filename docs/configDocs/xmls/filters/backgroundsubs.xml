@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<backgroundSubs>
+	<global></global> <!-- Empty - Node flag to indicate reading option values
+		from the global configs -->
+	<options>
+		<creation>false</creation> <!-- Define if the mask should be created and 
+			saved -->
+		<offset>-0.05</offset> <!-- Double - Noise distance of the neighbor 
+			Point to be consider background -->
+		<filterSpotNoise>true</filterSpotNoise> <!-- Bool - TODO -->
+		<medianFilter>true</medianFilter> <!-- Bool - Flag that activates the 
+			the median filter -->
+	</options>
+	<inputs>
+		<img>depth</img> <!-- String - Name of the input image in Frame -->
+	</inputs>
+</backgroundSubs>

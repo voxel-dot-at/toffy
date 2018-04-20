@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+<link href="/css/style.css" rel="stylesheet" />
+<script src="/scripts/jquery.min.js"></script>
+<script src="/scripts/utils.js"></script>
+
+<style>
+    body {
+        font-family: Monospace;
+        background-color: #f0f0f0;
+        margin: 0px;
+    }
+</style>
+
+<script>
+$( document ).ready(function() {
+
+
+
+
+
+    $.fn.serializeObject = function() {
+            var o = {};
+            var a = this.serializeArray();
+            $.each(a, function() {
+                if (o[this.name] !== undefined) {
+                    if (!o[this.name].push) {
+                        o[this.name] = [o[this.name]];
+                    }
+                    o[this.name].push(this.value || '');
+                } else {
+                    o[this.name] = this.value || '';
+                }
+            });
+            return o;
+    };
+});
+</script>
+</head>
+
+<body>
+<div class="gridItem head">
+  <h1>toffy</h1>
+</div>
+
+<div class="gridItem">
+  <div id="statusDiv">
+      <img srcset="http://localhost:9999/toffy/image/hand.jpg" alt="My default image">
+  </div>
+</div>
+
+<div class="clearfix"> </div>
+
+</body>
+</html>
+
+
+

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<cloudviewpcl>
+	<options>
+		<coordSize>1</coordSize> <!-- Double - Define the size of the coordinate
+			axis displayed -->
+	</options>
+	<inputs>
+		<!-- String - Name of the cloud in the frame. Its posible to add so many
+			cloud as we want. The clouds get a different random color. -->
+		<cloud>cloudInWorld</cloud>
+		<cloud>object</cloud>
+		<cloud>cloud2</cloud>
+	</inputs>
+</cloudviewpcl>

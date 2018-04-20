@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<amplitudeRange>
+    <inputs>
+        <ampl>ampl</ampl> <!-- String - Input amplitudes image -->
+        <depth>depth</depth> <!-- String - Input corresponding depth image -->
+    </inputs>
+    <output> <!-- If not set, the output is the same as the input and the images
+        are overwritten -->
+        <ampl>ampl</ampl> <!-- String - -->
+        <depth>depth</depth> <!-- String - -->
+    </output>
+    <options> <!-- Amplitude values outside the range defined by max and min will
+        be set to 0 -->
+        <minAmpl>250</minAmpl> <!-- int - min amplitude value -->
+        <maxAmpl>5000</maxAmpl> <!-- String - max amplitude value -->
+    </options>
+</amplitudeRange>
