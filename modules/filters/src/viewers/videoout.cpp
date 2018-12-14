@@ -154,10 +154,12 @@ void VideoOut::startSaving(const std::string& file, Frame& in)
   if (!success) {
     cerr << "Opening video file " << file << " failed! " << strerror(errno) << endl;
   }
+  saving = success;
 }
 
 void VideoOut::stopSaving()
 {
 	delete writer;
 	writer = 0;
+  saving = false;
 }
