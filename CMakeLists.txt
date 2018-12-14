@@ -308,9 +308,9 @@ if(NOT WITH_VISUALIZATION)
     )
     list(REMOVE_ITEM src ${rPCL})
     file(GLOB_RECURSE rPCL RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-        "modules/filters/viewers/include/toffy/cloudviewopencv.hpp"
-        "modules/filters/viewers/include/toffy/cloudviewpcl.hpp"
-        "modules/filters/viewers/include/toffy/imageview.hpp"
+        "modules/filters/include/toffy/viewers/cloudviewopencv.hpp"
+        "modules/filters/include/toffy/viewers/cloudviewpcl.hpp"
+        "modules/filters/include/toffy/viewers/imageview.hpp"
     )
     list(REMOVE_ITEM headers ${rPCL})
 endif()
