@@ -67,6 +67,9 @@
 #endif
 
 
+#if defined(HAS_BTA)
+#  include <toffy/bta/initPlugin.hpp>
+#endif
 
 #if defined(PCL_FOUND)
 
@@ -96,11 +99,21 @@ using namespace std;
 
 FilterFactory * FilterFactory::uniqueFactory;
 boost::container::flat_map<std::string, Filter* > FilterFactory::_filters;
-FilterFactory::FilterFactory(){}
+
+FilterFactory::FilterFactory() {
+}
 
 FilterFactory * FilterFactory::getInstance() {
-    if(uniqueFactory == NULL)
-	uniqueFactory = new FilterFactory();
+    if(uniqueFactory == NULL) {
+        uniqueFactory = new FilterFactory();
+
+        // init the linked-in plugins:
+#ifdef HAS_BTA
+        toffy::bta::init(uniqueFactory);
+#else
+#warning bta missing!
+#endif
+    }
     return uniqueFactory;
 }
 
@@ -220,7 +233,7 @@ Filter * FilterFactory::createFilter(std::string type, std::string name) {
 #if defined(PCL_FOUND)
     #ifdef PCL_VISUALIZATION
     else if (type == "reprojectpcl")
-	f = new ReprojectPCL();
+    	f = new ReprojectPCL();
     #ifdef WITH_VISUALIZATION
 	else if (type == "cloudviewpcl")
 	    f = new CloudViewPCL();
@@ -237,9 +250,9 @@ Filter * FilterFactory::createFilter(std::string type, std::string name) {
         f = new MuxMerge();
     #endif
     else if (type == "groundprojection")
-	f = new GroundProjection();
+	    f = new GroundProjection();
     else if (type == "squareDetect")
-	f = new detection::SquareDetect();
+	    f = new detection::SquareDetect();
 #endif
 //#if defined(WITH_SENSOR2D)
 //    else if (type == "sensor2d")
@@ -251,15 +264,16 @@ Filter * FilterFactory::createFilter(std::string type, std::string name) {
 	f = new ParallelFilter();
 
     else {
-	// try an external creator fn:
-	cout << "external " << type << endl;
-	CreateFilterFn fn = creators[type];
-	cout << "external end"<< endl;
-	if (! fn) {
-	    BOOST_LOG_TRIVIAL(warning) << "Unknown filter: " << type;
-	    return NULL;
-	}
-	f = fn();
+        // try an external creator fn:
+        cout << "external " << type << endl;
+        CreateFilterFn fn = creators[type];
+        cout << "external has "<< fn << endl;
+        cout << "external end"<< endl;
+        if (! fn) {
+            BOOST_LOG_TRIVIAL(error) << "Unknown filter: " << type;
+            return NULL;
+        }
+        f = fn();
     }
     BOOST_LOG_TRIVIAL(debug) << "f->name(): " << f->name();
     BOOST_LOG_TRIVIAL(debug) << "f->id(): " << f->id();

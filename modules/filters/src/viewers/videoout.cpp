@@ -109,8 +109,8 @@ bool VideoOut::filter(const Frame& in, Frame& /*out*/)
 			resize(dis,dis,Size(0,0),scale,scale);
 		}
 
-		cvtColor(amp, amp, CV_GRAY2BGR);
-		cvtColor(dis, dis, CV_GRAY2BGR);
+		cvtColor(amp, amp, COLOR_GRAY2BGR);
+		cvtColor(dis, dis, COLOR_GRAY2BGR);
 
 		Mat d(image, Rect(       0 , ofs , dis.cols , dis.rows));
 		Mat a(image, Rect(dis.cols , ofs , amp.cols , amp.rows));

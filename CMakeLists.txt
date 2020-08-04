@@ -102,6 +102,7 @@ endif()
 set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH "Installation directory for CMake files")
 
 
+
 ################################################################################
 # Build config windows - unix - arm
 ################################################################################
@@ -219,15 +220,28 @@ endif()
 find_package( OpenCV COMPONENTS core REQUIRED )
 message("OpenCV version found: " ${OpenCV_VERSION})
 
-if ( ${OpenCV_VERSION_MAJOR} EQUAL 3 )
-   find_package( OpenCV COMPONENTS imgproc highgui calib3d videoio tracking REQUIRED )
-else()
+if ( ${OpenCV_VERSION_MAJOR} EQUAL 2 )
    # opencv 2.4
    find_package( OpenCV COMPONENTS imgproc highgui calib3d video contrib REQUIRED )
+else()
+   find_package( OpenCV COMPONENTS imgproc highgui calib3d videoio tracking REQUIRED )
 endif()
 message("  OpenCV libs " ${OpenCV_LIBS} )
 
 list(APPEND LIBS ${OpenCV_LIBS})
+
+#
+# bta library -- communication with Becom Systems cameras (Argos, Sentis, ...)
+#
+find_package( bta )
+if (${bta_FOUND})
+    include_directories(${bta_INCLUDE_DIRS})
+    list(APPEND LIBS ${bta_LIBRARIES})
+    add_definitions(${bta_DEFINITIONS} -DBTA_ETH -DBTA_P100 -DHAS_BTA)
+    message(INFO " bta definitions ${bta_DEFINITIONS}")
+else()
+    message(WARNING "no bta library!")
+endif()
 
 # TODO why?
 #include_directories( ${CMAKE_BINARY_DIR} )
@@ -241,10 +255,14 @@ file(GLOB_RECURSE headers RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
                     "modules/core/include/"
                     "modules/filters/include/"
                     "modules/control/include/"
+                    "modules/bta/include/"
+                    "modules/io/include/"
                      )
 install(DIRECTORY "modules/core/include/" DESTINATION "include/")
 install(DIRECTORY "modules/filters/include/" DESTINATION "include/")
 install(DIRECTORY "modules/control/include/" DESTINATION "include/")
+install(DIRECTORY "modules/bta/include/" DESTINATION "include/")
+install(DIRECTORY "modules/io/include/" DESTINATION "include/")
 
 #Toffy libraries
 file(GLOB_RECURSE lib_src "libraries/src/*.cpp" "libraries/sensor/*.cpp" )
@@ -378,6 +396,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libraries/sensor/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/core/include/>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/io/include/>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/filters/include/>
     $<BUILD_INTERFACE:${generated_dir}/>
 
@@ -385,10 +405,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/server/include/>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/server/uri-grammar/src/>
 
-
     $<INSTALL_INTERFACE:${INSTALL_LIB_DIR}/>
     $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}/>
     $<INSTALL_INTERFACE:${INSTALL_CMAKE_DIR}/>
+    /usr/local/include
 )
 
 #Options for the build ouput directory

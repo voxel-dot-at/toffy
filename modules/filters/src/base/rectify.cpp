@@ -16,12 +16,16 @@
 */
 #include <iostream>
 
+#include "toffy/base/rectify.hpp"
+
 #if OCV_VERSION_MAJOR >= 3
-    #  include <opencv2/imgproc.hpp>
-    //#  include <opencv2/highgui.hpp>
+#  include <opencv2/imgproc.hpp>
+#  include <opencv2/calib3d.hpp>
+#warning eh da
+//#  include <opencv2/highgui.hpp>
 #else
-    #  include <opencv2/imgproc/imgproc.hpp>
-    #  include <opencv2/highgui/highgui.hpp>
+#  include <opencv2/imgproc/imgproc.hpp>
+#  include <opencv2/highgui/highgui.hpp>
 #endif
 
 #include <boost/log/trivial.hpp>
@@ -30,7 +34,6 @@
 
 #include "toffy/common/filenodehelper.hpp"
 
-#include "toffy/base/rectify.hpp"
 
 using namespace toffy;
 using namespace toffy::filters;
@@ -180,5 +183,3 @@ bool Rectify::filter(const Frame &in, Frame& out) {
 
 	return true;
 }
-
-

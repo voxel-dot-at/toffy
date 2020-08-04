@@ -32,6 +32,15 @@
 #define DLLExport /**/
 #endif
 
+/**
+ */
+#ifdef OpenCV_VERSION_MAJOR
+#  ifndef OCV_MAJOR_VERSION
+#    define OCV_MAJOR_VERSION OpenCV_VERSION_MAJOR
+#  endif
+#endif
+
+
 /** @defgroup Core Core
  *
  * Core module

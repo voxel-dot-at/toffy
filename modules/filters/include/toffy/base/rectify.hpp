@@ -24,7 +24,6 @@
 #  include <opencv2/core/core.hpp>
 #endif
 
-
 namespace toffy {
 namespace filters {
 /**

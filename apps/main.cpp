@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 	//sigemptyset(&sigIntHandler.sa_mask);
 	//sigIntHandler.sa_flags = 0;
 
-	sigaction(SIGINT, &sigIntHandler, NULL);
+//	sigaction(SIGINT, &sigIntHandler, NULL);
 #endif
 	keepRunning = true;
 	int c=' ';

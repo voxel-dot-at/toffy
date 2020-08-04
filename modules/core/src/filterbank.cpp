@@ -164,6 +164,7 @@ int FilterBank::loadConfig(const std::string& configFile,
     if (errors) {
         LOG(error) << errors << " errors detected! Expect this application to FAIL!";
         // but ok, you're the boss...
+        throw std::runtime_error("filterBank::loadConfig() failure");
     }
     return 1;
 }
