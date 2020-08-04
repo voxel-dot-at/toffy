@@ -44,7 +44,7 @@ message (STATUS ${PROJECT_NAME}" version: " ${PROJECT_VERSION_FULL} )
 # User project configuration
 ################################################################################
 option (BUILD_STATIC "Build static version of the library" OFF)
-option (WITHOUT_PCL "Include control classes" OFF)
+option (WITHOUT_PCL "Exclude pointclouds-based classes" OFF)
 option (WITH_VISUALIZATION "Add viewer. Requires GUI" ON)
 #option (WITH_CONTROL "Add Web Control." OFF)
 
