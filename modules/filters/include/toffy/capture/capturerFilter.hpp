@@ -17,7 +17,7 @@
 #pragma once
 
 #include "toffy/filter.hpp"
-#include <toffy/imagesensor.hpp>
+#include <toffy/io/imagesensor.hpp>
 
 #if OCV_VERSION_MAJOR >= 3
 #  include <opencv2/core.hpp>
