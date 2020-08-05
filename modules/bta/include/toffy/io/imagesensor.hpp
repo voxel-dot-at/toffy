@@ -9,7 +9,7 @@
     #define UNIX true
 #endif
 
-#include <toffy/sensor.hpp>
+#include <toffy/io/sensor.hpp>
 #if OCV_VERSION_MAJOR >= 3
 #  include <opencv2/core.hpp>
 #else

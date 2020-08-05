@@ -24,18 +24,6 @@
 
 #include <stdlib.h>
 
-#ifdef BTA_P100
-#warning BTA_P100 1
-#else
-#warning BTA_P100 0
-#endif
-
-#ifdef BTA_ETH
-#warning BTA_ETH 1
-#else
-#warning BTA_ETH 0
-#endif
-
 #define RECONNECT 10
 static int retries = 0;
 

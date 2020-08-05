@@ -15,7 +15,7 @@
 
 #include <bta.h>
 #include <boost/property_tree/ptree.hpp>
-#include <toffy/imagesensor.hpp>
+#include <toffy/io/imagesensor.hpp>
 
 struct network {
     std::string tcp_ip,udp_ip;
