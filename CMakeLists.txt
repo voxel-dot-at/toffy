@@ -46,13 +46,13 @@ message (STATUS ${PROJECT_NAME}" version: " ${PROJECT_VERSION_FULL} )
 option (BUILD_STATIC "Build static version of the library" OFF)
 option (WITHOUT_PCL "Exclude pointclouds-based classes" OFF)
 option (WITH_VISUALIZATION "Add viewer. Requires GUI" ON)
-#option (WITH_CONTROL "Add Web Control." OFF)
+option (WITH_CONTROL "Add Web Control." ON)
 
 message (STATUS "${CMAKE_PROJECT_NAME} options: ")
 message (STATUS "\t BUILD_STATIC: " ${BUILD_STATIC})
 message (STATUS "\t WITHOUT_PCL: " ${WITHOUT_PCL})
 message (STATUS "\t WITH_VISUALIZATION: " ${WITH_VISUALIZATION})
-#message (STATUS "\t WITH_CONTROL: " ${WITH_CONTROL})
+message (STATUS "\t WITH_CONTROL: " ${WITH_CONTROL})
 
 
 #Collect project definitions
@@ -237,8 +237,12 @@ find_package( bta )
 if (${bta_FOUND})
     include_directories(${bta_INCLUDE_DIRS})
     list(APPEND LIBS ${bta_LIBRARIES})
+    list(APPEND LIBS ${bta_LIBRARY})
     add_definitions(${bta_DEFINITIONS} -DBTA_ETH -DBTA_P100 -DHAS_BTA)
-    message(INFO " bta definitions ${bta_DEFINITIONS}")
+    message(INFO " bta inc  ${bta_INCLUDE_DIRS}")
+    message(INFO " bta lib  ${bta_LIBRARIES}")
+    message(INFO " bta lib  ${bta_LIBRARY}")
+    message(INFO " bta defs ${bta_DEFINITIONS}")
 else()
     message(WARNING "no bta library!")
 endif()
@@ -256,13 +260,11 @@ file(GLOB_RECURSE headers RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
                     "modules/filters/include/"
                     "modules/control/include/"
                     "modules/bta/include/"
-                    "modules/io/include/"
                      )
 install(DIRECTORY "modules/core/include/" DESTINATION "include/")
 install(DIRECTORY "modules/filters/include/" DESTINATION "include/")
 install(DIRECTORY "modules/control/include/" DESTINATION "include/")
 install(DIRECTORY "modules/bta/include/" DESTINATION "include/")
-install(DIRECTORY "modules/io/include/" DESTINATION "include/")
 
 #Toffy libraries
 file(GLOB_RECURSE lib_src "libraries/src/*.cpp" "libraries/sensor/*.cpp" )
@@ -310,7 +312,7 @@ if(NOT PCL_VISUALIZATION_FOUND)
         "modules/filters/base/include/toffy/filters/3d/muxMerge.hpp"
         "modules/filters/base/include/toffy/sampleConsensus.hpp"
         "modules/filters/viewers/include/toffy/exportcloud.hpp")
-    list(REMOVE_ITEM headers ${rPCL})
+    #list(REMOVE_ITEM headers ${rPCL})
     #message (DEBUG " headers " ${headers})
     #message (DEBUG " src " ${src})
 else()
