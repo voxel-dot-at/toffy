@@ -438,8 +438,11 @@ int BtaWrapper::capture(char * &buffer) {
     for (i=0; i <= retries; i++) {
         status = BTAgetFrame(handle, &frame, 100);
         if (status != BTA_StatusOk) {
-            BOOST_LOG_TRIVIAL(warning) << "Could no capture frame. status: ";
-
+            if (status == BTA_StatusTimeOut) { // no data available yet - sleep a little
+                BTAsleep(2);
+                continue;
+            }
+            BOOST_LOG_TRIVIAL(warning) << "Could no capture frame. status: " << status;
             continue;
         } else {
             break;
@@ -722,6 +725,7 @@ int BtaWrapper::getAmplitudes(unsigned short * &amplitudes, int &size, char *dat
     BTA_DataFormat dataFormat;
     BTA_Unit unit;
     uint16_t xRes, yRes;
+    int sz = size;
     status = BTAgetAmplitudes(frame, &amplVoid,
                               &dataFormat, &unit,
                               &xRes, &yRes);
@@ -730,9 +734,9 @@ int BtaWrapper::getAmplitudes(unsigned short * &amplitudes, int &size, char *dat
         return -1;
     }
 
-    if (size != xRes * yRes) {
+    if (sz != xRes * yRes) {
         size = xRes * yRes;
-        BOOST_LOG_TRIVIAL(warning) << "Size does not match! " << size ;
+        BOOST_LOG_TRIVIAL(warning) << "Size does not match! " << size << " " << xRes << " " << yRes << " " << (xRes * yRes) << endl;
         BOOST_LOG_TRIVIAL(debug) << "xRes: " << xRes;
         BOOST_LOG_TRIVIAL(debug) << "yRes: " << yRes;
 
