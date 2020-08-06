@@ -37,6 +37,7 @@ std::size_t Bta::_filter_counter = 1;
 const std::string Bta::id_name = "bta";
 
 Bta::Bta(): CapturerFilter(Bta::id_name,_filter_counter),
+    distsSize(0), width(0), height(0),
     _out_depth("depth"), _out_ampl("ampl"), _out_mf("mf"), _out_it("it"),
     _out_fc("fc"), _out_ts("ts"), _out_mt("mt"), _out_lt("lt"), _out_gt("lt")
 {
@@ -153,7 +154,7 @@ bool Bta::filter(const Frame &in, Frame& out) {
         retries++;
         if (connect() < 0) {
             if (retries > RECONNECT) {
-                BOOST_LOG_TRIVIAL(warning) << "Camera not reachable after "
+                BOOST_LOG_TRIVIAL(error) << "Camera not reachable after "
                                            << RECONNECT
                                            << "tries. Stopping toffy.";
                 exit(EXIT_FAILURE);
@@ -191,51 +192,6 @@ bool Bta::filter(const Frame &in, Frame& out) {
                         ((CapturerFilter*)this)->loadPath() + "/" +
                         boost::lexical_cast<std::string>(cnt()) +
                         fileExt());
-// #if !defined(BTA_P100) && !defined(BTA_ETH)
-//         } else /*if (bta_stream)*/ {
-//             //diff = boost::posix_time::microsec_clock::local_time() - start;
-//             //BOOST_LOG_TRIVIAL(info) << "duration start: " << diff.total_milliseconds();
-//             //Plaback with btastream
-//             static float f;
-//             int param = BTA_LibParamStreamAutoPlaybackSpeed;
-//             //cout << "get: " << sensor->getLibParam(param, f) << endl;
-//             //cout << "value: " << f << endl;
-//             if (in.hasKey("backward") || backward()) {
-//                 //f = -1;
-//                 /*param = BTA_LibParamStreamPosIncrement;
-//         sensor->setLibParam(param, f);*/
-//                 if (cnt() <= beginFile()) {
-//                     cnt(endFile());
-//                     f = cnt();
-//                     param = BTA_LibParamStreamPos;
-//                     sensor->setLibParam(param, f);
-//                 } else
-//                     cnt(cnt()-1);
-//             } else {
-//                 //diff = boost::posix_time::microsec_clock::local_time() - start;
-//                 //BOOST_LOG_TRIVIAL(info) << "duration start 2: " << diff.total_milliseconds();
-//                 //f = 1;
-//                 /*param = BTA_LibParamStreamPosIncrement;
-//         sensor->setLibParam(param, f);*/
-//                 cout << "cnt(): " << cnt() << endl;
-//                 if (cnt() >= endFile()) {
-//                     cnt(beginFile());
-//                     f = cnt();
-//                     param = BTA_LibParamStreamPos;
-//                     sensor->setLibParam(param, f);
-//                 } else
-//                     cnt(cnt()+1);
-//             }
-//             f = cnt();
-//             //cout << "cnt: " << f << endl;
-//             //diff = boost::posix_time::microsec_clock::local_time() - start;
-//             //BOOST_LOG_TRIVIAL(info) << "duration before set param: " << diff.total_milliseconds();
-//             param = BTA_LibParamStreamPos;
-//             sensor->setLibParam(param, f);
-
-//             diff = boost::posix_time::microsec_clock::local_time() - start;
-//             BOOST_LOG_TRIVIAL(debug) << "duration param: " << diff.total_milliseconds();
-// #endif
         }
     }
     
@@ -245,19 +201,9 @@ bool Bta::filter(const Frame &in, Frame& out) {
         BOOST_LOG_TRIVIAL(warning) << "Could not capture from sensor.";
 #ifdef BTA_P100
         //Issue in bta lib. We stop the application
-        BOOST_LOG_TRIVIAL(warning)
+        BOOST_LOG_TRIVIAL(error)
                 << "Camera not reacheable. Stopping the app.";
         exit(EXIT_FAILURE);
-        /*
-         BOOST_LOG_TRIVIAL(warning)
-        << "Trying to reconnect....";
-         if (sensor->reConnect() < 0) {
-         BOOST_LOG_TRIVIAL(warning)
-             << "Could not reconnect.";
-         } else
-         BOOST_LOG_TRIVIAL(info)
-             << "Reconnected.";
-         */
 #endif
         //retries++;
         //if (retries > RETRY) {
@@ -266,38 +212,6 @@ bool Bta::filter(const Frame &in, Frame& out) {
         //}
         return false;
     }
-    //retries = 0;
-    //diff = boost::posix_time::microsec_clock::local_time() - start;
-    //BOOST_LOG_TRIVIAL(info) << "duration read: " << diff.total_microseconds();
-    /*
-    // Checks if need to save raw data
-    if ( (in.hasKey(name()+"save") || ((CapturerFilter*)this)->save()) &&
-     !((CapturerFilter*)this)->playback() &&
-     !bta_stream) {
-    //Saving when flags on, and not playback, and not btastream which saves automatically
-    cnt(cnt()+1);
-    if ( in.hasKey(name()+"save") ) {
-    //Old save from frame
-        sensor->saveRaw(boost::any_cast<string>(in.getData(name()+"save")) +
-            boost::lexical_cast<std::string>(cnt()) +
-            RAWFILE,data);
-        BOOST_LOG_TRIVIAL(debug) << "saved: " <<
-                    boost::any_cast<string>(
-                        in.getData(name()+"save")) +
-                    boost::lexical_cast<std::string>(cnt()) +
-                    RAWFILE;
-    } else {
-        sensor->saveRaw(strPath() + "/"
-                + boost::lexical_cast<std::string>(cnt())
-                +RAWFILE,data);
-        BOOST_LOG_TRIVIAL(debug) << "saved: "
-                     << strPath() + "/"
-                    + boost::lexical_cast<std::string>(cnt())
-                    +RAWFILE;
-    }/ * else
-        cnt(0);* /
-    }
-*/
 
     //BOOST_LOG_TRIVIAL(info) << "Start bta filter.";
     unsigned int mf,it;
@@ -334,13 +248,14 @@ bool Bta::filter(const Frame &in, Frame& out) {
 
         width = x;
         height = y;
-        distsSize = width*height;
+        size =distsSize = width*height;
 
         // initialize depth matrix ...:
         d.reset( new cv::Mat(height, width, CV_32F) );
         out.addData(_out_depth, d);
 
         a.reset( new cv::Mat(height, width, CV_16U) );
+        out.addData(_out_ampl, a);
 
     } else {
         d = in.getMatPtr(_out_depth);
@@ -360,7 +275,7 @@ bool Bta::filter(const Frame &in, Frame& out) {
     //unsigned short *amplitude= NULL;
 
     unsigned short* da = a->ptr<unsigned short>();
-    sensor->getAmplitudes( da,size,data);
+    int s2 = sensor->getAmplitudes( da,size,data);
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
     BOOST_LOG_TRIVIAL(debug) << "duration ampl: " << diff.total_microseconds();
@@ -400,28 +315,6 @@ bool Bta::filter(const Frame &in, Frame& out) {
 
     return true;
 }
-
-//TODO MOVE TO OPENCV
-/*
-void Bta::setCamera2Wcs(toffy::Frame& out, std::string name) {
-    boost::shared_ptr<Eigen::Affine3f> f2t(new Eigen::Affine3f());
-
-    //Rotations
-    *f2t = pcl::getTransformation (0, 0, 0,
-                   pcl::deg2rad(rotations().x),
-                   pcl::deg2rad(rotations().y),
-                   pcl::deg2rad(rotations().z));
-    //Correct camera coord system --> 180? in z for argos
-    // *f2t = pcl::getTransformation (0, 0, 0, 0, 0, pcl::deg2rad(180.)) * *f2t;
-    // *f2t = Eigen::Scaling(1.f, 1.f, -1.f) * *f2t;
-    //Translations
-    *f2t = pcl::getTransformation (center_position().x,
-                   center_position().y,
-                   center_position().z, 0, 0, 0) * *f2t;
-
-    out.addData(name,f2t);
-}
-*/
 
 int Bta::connect() {
 
