@@ -186,7 +186,7 @@ public:
      *
      * @return true if processing worked, false on error
      */
-    virtual bool filter(const Frame& in, Frame& out) const { return false; }
+    virtual bool filter(const Frame& /*in*/, Frame& /*out*/) const { return false; }
 
     /**
      * @brief perform a filter operation on in, sending result to out
