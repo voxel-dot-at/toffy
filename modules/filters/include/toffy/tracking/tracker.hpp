@@ -31,14 +31,6 @@ namespace toffy {
 namespace tracking {
 
 /**
- * @brief distance where we consider an object changed position and it is not
- * a different object.
- *
- * @todo Move to config??
- */
-const double maxMergeDistance = 20.;
-
-/**
  * @brief Object tracker filter
  * @ingroup Tracking
  *
@@ -64,7 +56,7 @@ public:
      *
      * @todo Where is this been called
      */
-    const std::vector<toffy::detection::DetectedObject* >& getDecObjs() const { return detObjs; }
+    const std::vector<toffy::detection::DetectedObject* >& getDetObjs() const { return detObjs; }
 
 
 private:
@@ -74,6 +66,7 @@ private:
     std::string _out_img, ///< Name of the modified image
 	_out_objects, ///< List of tracked objects
 	_out_count; ///< # of detected objects
+    int nextId; ///< id for the next newly-found DetectedObject. Strictly incrementing
     double maxMergeDistance;
 
     static std::size_t _filter_counter; ///< Internal filter counter

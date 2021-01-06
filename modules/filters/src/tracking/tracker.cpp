@@ -95,7 +95,6 @@ boost::property_tree::ptree Tracker::getConfig() const {
 }
 
 bool Tracker::filter(const Frame &in, Frame &out) {
-  BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
 
   toffy::Filter::setLoggingLvl();
 
@@ -130,6 +129,8 @@ bool Tracker::filter(const Frame &in, Frame &out) {
     _ts = -1;
   }
 
+  BOOST_LOG_TRIVIAL(debug) << id() << " filter() fc " << _fc << " ts " << _ts ;
+
   // List of tracked objects
   boost::shared_ptr<std::vector<detection::DetectedObject *> > tracked;
   try {
@@ -154,19 +155,24 @@ bool Tracker::filter(const Frame &in, Frame &out) {
   BOOST_LOG_TRIVIAL(debug) << id() << " detObjs: " << detObjs.size();
   BOOST_LOG_TRIVIAL(debug) << id() << " blobs: " << blobs->size();
 
+  // compare the list of already tracked objects against incoming blobs.
+  // finds the nearest candidate; if it is near enough, consider it as the new position
+  // else we might have found a new blob to track: 
   vector<detection::DetectedObject *>::iterator objDetIter = detObjs.begin();
   while (objDetIter != detObjs.end()) {
-    detection::DetectedObject *obj = *objDetIter;
+    detection::DetectedObject *trackedObj = *objDetIter;
     detection::DetectedObject *blob = NULL;
 
     // Compare the object massCenter distances, find best match
     int candidate = -1;                // Flag for potential match
-    double minDis = maxMergeDistance;  // Distance to merge
+    double minDis = maxMergeDistance + .01;  // Distance to merge
     for (size_t j = 0; j < blobs->size(); j++) {
       blob = (*blobs)[j];
       if (!blob) continue;  // For removed blob from input list
 
-      double ndis = norm(obj->massCenter - blob->massCenter);
+      double ndis = norm(trackedObj->massCenter - blob->massCenter);
+
+      // BOOST_LOG_TRIVIAL(debug) << id() << "  (1): " << trackedObj->id << " " << blob->id << " dist " << ndis;
 
       if (ndis < minDis) {
         minDis = ndis;
@@ -178,20 +184,18 @@ bool Tracker::filter(const Frame &in, Frame &out) {
       candidate = -1;
       blob = 0;
     }
+
     if (candidate >= 0) {
       blob = (*blobs)[candidate];
       blob->size = contourArea(blob->contour);
-      /*
-  BOOST_LOG_TRIVIAL(debug) <<
-      "Found candidate object id = " <<
-      blob->id <<
-      "\t" << minDis <<
-      "\t" << blob->size <<
-      "\t" << blob->contour.size() <<
-      "\t" << blob->massCenter;
-  */
+
+      // BOOST_LOG_TRIVIAL(debug)
+      //     << "Found candidate object id = " << blob->id << "\t" << minDis
+      //     << "\t" << blob->size << "\t" << blob->contour.size() << "\t"
+      //     << blob->massCenter << " for " << trackedObj->id;
+
       // found a match, update obj data:
-      obj->update(*blob);
+      trackedObj->update(*blob);
 
       // TODO We destroy the input blob list!!!
       // remove blob from candidates & delete
@@ -199,7 +203,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
       (*blobs)[candidate] = NULL;
 
       // move obj to new state
-      newState.push_back(obj);
+      newState.push_back(trackedObj);
       objDetIter = detObjs.erase(objDetIter);
     } else {
       objDetIter++;
@@ -214,15 +218,21 @@ bool Tracker::filter(const Frame &in, Frame &out) {
       candIter++;
       continue;
     }
+    // BOOST_LOG_TRIVIAL(debug) << id() << "  (2): " << blob->id << " c " << blob->contour.size();
 
     // TODO Parameter?
     if (blob->contour.size() < 4) {
+        // BOOST_LOG_TRIVIAL(debug) << id() << "  (2): ignoring " << blob->id;
+
       delete blob;
       blob = NULL;
       // candIter = candidates.erase(candIter);
-      candIter++;
     } else {
       // init new detected object
+      // BOOST_LOG_TRIVIAL(debug) << id() << "  (2):   new trk " << blob->id << " " << nextId;
+      blob->id = this->nextId++;
+      blob->fc = _fc;
+      blob->ts = boost::posix_time::from_time_t(_ts);
       blob->init();
       /*blob->first_fc = blob->fc;
       blob->first_cts = blob->cts;
@@ -233,9 +243,9 @@ bool Tracker::filter(const Frame &in, Frame &out) {
       >(10));*/
 
       newState.push_back(blob);
-
-      candIter++;
+      // BOOST_LOG_TRIVIAL(debug) << id() << "  (2):       trk " << blob->id;
     }
+    candIter++;
   }
   // TODO do not delete input blobs!
   blobs->clear();
@@ -246,6 +256,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
 
     // TODO Parameter!
     if (abs(_fc - obj->fc) > 5) {
+      // BOOST_LOG_TRIVIAL(debug) << id() << "  (3):       kill " << obj->id;
       delete obj;
     } else {
       newState.push_back(obj);
@@ -262,32 +273,8 @@ bool Tracker::filter(const Frame &in, Frame &out) {
 
   out.addData(_out_objects, tracked);
 
-#if 0
-    // TODO Where come img from?, why we mask it with the objects.
-    BOOST_LOG_TRIVIAL(debug) << "Getting got _in_img: " << _in_img;
-    boost::shared_ptr<cv::Mat> img;
-    try {
-        img = in.getMatPtr(_in_img);
-    } catch(const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning) <<
-                                      "Could not cast input " << _in_img <<
-                                      ", filter  " << id() <<" does not show objects.";
-        return true;
-    }
-
-    detection::DetectedObject *d = tracked->at(0);
-    Mat mask = Mat::zeros(img->size(),CV_8U);
-    for (size_t i = 0; i < tracked->size(); i++) {
-        drawContours( mask, *(tracked->at(i)->contours), tracked->at(i)->idx, Scalar(255),
-                      FILLED, LINE_AA, *(tracked->at(i)->hierarchy));
-        //circle( imgCopy, o->massCenter, 2, Scalar( 0, 255, 255 ), FILLED, LINE_AA);
-    }
-    //imshow("<<<<<", imgCopy);
-    *img = img->setTo(0,~mask);
-#endif
   // Debug, shows image with tracked objects
   if (_render_image) {
-    BOOST_LOG_TRIVIAL(debug) << "Getting got _in_img: " << _in_img;
     boost::shared_ptr<cv::Mat> img;
     try {
       img = in.getMatPtr(_in_img);
@@ -303,7 +290,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
     try {
       img_out = in.getMatPtr(_out_img);
     } catch (const boost::bad_any_cast &) {
-      BOOST_LOG_TRIVIAL(warning)  << id() << " Could not cast output " << _out_img;
+      BOOST_LOG_TRIVIAL(info)  << id() << " Creating outputs.img : " << _out_img;
       img_out.reset(new Mat());
       out.addData(_out_img, img_out);
     }
@@ -323,12 +310,12 @@ void Tracker::showObjects(cv::Mat &depth) {
 
   // BOOST_LOG_TRIVIAL(debug) << "showObjects " << detObjs.size();
   for (size_t i = 0; i < detObjs.size(); i++) {
-    if (detObjs[i]->first_fc == _fc) {
+    if (detObjs[i]->first_fc == (int)_fc) {
       circle(depth, detObjs[i]->massCenter, 4, detObjs[i]->color);
       continue;
     }
     try {
-      if (detObjs[i]->fc == _fc) {
+      if (detObjs[i]->fc == (int)_fc) {
         vector<vector<Point> > contours;
         contours.push_back(detObjs[i]->contour);
         drawContours(depth, contours, 0, detObjs[i]->color, 1, LINE_AA,
@@ -341,7 +328,7 @@ void Tracker::showObjects(cv::Mat &depth) {
     }
   }
 
-  if (dbg) cv::imshow("objectsDetc", depth);
+  if (dbg) cv::imshow(id() + ".objects", depth);
 
   return;
 }
