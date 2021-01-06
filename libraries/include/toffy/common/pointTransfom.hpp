@@ -136,7 +136,7 @@ static inline cv::Point2i pointTo2D(cv::Point3d point, cv::Mat cameraMatrix, cv:
 
 static inline cv::Point3d pointTo3D(cv::Point point, float depthValue)
 {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+        // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
 
 	cv::Point3d out3Dp;
 
@@ -150,7 +150,7 @@ static inline cv::Point3d pointTo3D(cv::Point point, float depthValue)
 
 static inline cv::Point2i pointTo2D(cv::Point3d point)
 {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+        // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
 
 	cv::Point2i out2Dp;
 
