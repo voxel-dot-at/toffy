@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.1)
 
 message (STATUS "CMake version: " ${CMAKE_VERSION} )
 
@@ -164,7 +164,7 @@ else(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
     # TODO check compile options for build type, Debug, Release, ....
     list(APPEND DEFINITIONS -DEIGEN_DONT_VECTORIZE -DEIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT -DEIGEN_SUPPORT_STAGE=99)
-    add_compile_options(-pthread -g -ggdb -Wall -Wno-long-long)
+    add_compile_options(-pthread -g -ggdb -Wall -Wextra -Wno-long-long)
     #ARM complains if pthread not added explicitly
     list(APPEND LIBS pthread)
 endif()
@@ -183,6 +183,15 @@ else(NOT BUILD_STATIC)
     list(APPEND DEFINITIONS -DBOOST_ALL_DYN_LINK -DBOOST_ALL_NO_LIB) #Pcl log and ???, dynamic
     set (LIB_LINK SHARED)
 endif()
+
+
+include_directories(
+        "modules/core/include/"
+        "modules/filters/include/"
+        "modules/control/include/"
+        "modules/bta/include/"
+        )
+
 
 ################################################################################
 # Find dependencies
@@ -265,6 +274,7 @@ install(DIRECTORY "modules/core/include/" DESTINATION "include/")
 install(DIRECTORY "modules/filters/include/" DESTINATION "include/")
 install(DIRECTORY "modules/control/include/" DESTINATION "include/")
 install(DIRECTORY "modules/bta/include/" DESTINATION "include/")
+
 
 #Toffy libraries
 file(GLOB_RECURSE lib_src "libraries/src/*.cpp" "libraries/sensor/*.cpp" )
@@ -587,12 +597,12 @@ add_custom_target(uninstall
 #######################################
 # Generating .pc file for pk-config
 #######################################
-SET(PKG_CONFIG_REQUIRES "opencv boost") # TODO bta missing pk, pcl?
+# SET(PKG_CONFIG_REQUIRES "opencv boost") # TODO bta missing pk, pcl?
 SET(PKG_CONFIG_LIBDIR
     "\${prefix}/lib/"
 )
 SET(PKG_CONFIG_INCLUDEDIR
-    "\${prefix}/include/${PROJECT_NAME}"
+    "\${prefix}/include/"
 )
 SET(PKG_CONFIG_LIBS
     "-L\${libdir} -l${PROJECT_NAME}"
