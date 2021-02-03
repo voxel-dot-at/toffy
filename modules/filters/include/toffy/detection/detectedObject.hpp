@@ -58,7 +58,7 @@ class /*DLLExport*/ TOFFY_EXPORT DetectedObject {
     static int COUNTER; ///< Internal object identifier
 public:
 
-    int id; ///< TODO
+    int id; ///< object id, set by blob detection or tracking algorithms
 
     boost::shared_ptr<boost::circular_buffer<DetectedObject* > > record;
 
@@ -72,6 +72,7 @@ public:
 
     cv::Moments mo; ///< OpenCV moments
     cv::Point2f massCenter; ///< Mass center of the object calculated from the moments
+    double logHu[7]; ///< OpenCV hu moments, log scaled
 
     int fc; ///< Frame counter when the object was last detected
     int cts;  ///< Camera timestamp last detection
@@ -119,5 +120,7 @@ public:
     cv::Point3d massCenter3D;
     float massCenterZ;
 };
+
+typedef std::vector<DetectedObject*> DetectedObjects;
 
 }}

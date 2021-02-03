@@ -73,6 +73,7 @@ DetectedObject& DetectedObject::operator=( const DetectedObject& newDO ) {
     hierarchy = newDO.hierarchy;
     mo = newDO.mo;
     massCenter = newDO.massCenter;
+    memcpy(logHu, newDO.logHu, sizeof(logHu));
     idx = newDO.idx;
     size = newDO.size;
 

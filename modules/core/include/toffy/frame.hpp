@@ -159,6 +159,35 @@ public:
      */
     inline std::string getString(const std::string& key) const;
 
+    // optional variant - returns dfault value if key not present:
+    inline bool optBool(const std::string& key, bool dfault) const;
+    inline unsigned int optUInt(const std::string& key, unsigned int dfault) const;
+    inline int optInt(const std::string& key, int dfault) const;
+    inline double optDouble(const std::string& key, double dfault) const;
+    inline float optFloat(const std::string& key, float dfault) const;
+    inline matPtr optMatPtr(const std::string& key, matPtr dfault) const;
+    inline std::string optString(const std::string& key, std::string& dfault) const;
+
+    // insGet: get a value, if key key does not exist insert it
+    // inline bool optBool(const std::string& key, bool dfault) const;
+    // inline unsigned int optUInt(const std::string& key, unsigned int dfault) const;
+    // inline int optInt(const std::string& key, int dfault) const;
+    // inline double optDouble(const std::string& key, double dfault) const;
+    // inline float optFloat(const std::string& key, float dfault) const;
+    // inline matPtr optMatPtr(const std::string& key, matPtr dfault) const;
+    // inline std::string optString(const std::string& key, std::string& dfault) const;
+
+/*
+    // set :
+    inline bool setGetBool(const std::string& key, bool dfault);
+    inline unsigned int setGetUInt(const std::string& key, unsigned int dfault);
+    inline int setGetInt(const std::string& key, int dfault);
+    inline double setGetDouble(const std::string& key, double dfault);
+    inline float setGetFloat(const std::string& key, float dfault);
+    inline matPtr setGetMatPtr(const std::string& key, Size size, int type);
+    inline std::string setGetString(const std::string& key, std::string& dfault);
+*/  
+
 private:
     /**
      * Data container in frame.
@@ -205,4 +234,30 @@ inline std::string Frame::getString(const std::string& key) const {
     return s;
 }
 
-}
+// optional variant - returns dfault value if key not present:
+inline bool Frame::optBool(const std::string& key, bool dfault) const {
+  return hasKey(key) ? getBool(key) : dfault;
+};
+inline unsigned int Frame::optUInt(const std::string& key,
+                                   unsigned int dfault) const {
+  return hasKey(key) ? getUInt(key) : dfault;
+};
+inline int Frame::optInt(const std::string& key, int dfault) const {
+  return hasKey(key) ? getInt(key) : dfault;
+};
+inline double Frame::optDouble(const std::string& key, double dfault) const {
+  return hasKey(key) ? getDouble(key) : dfault;
+};
+inline float Frame::optFloat(const std::string& key, float dfault) const {
+  return hasKey(key) ? getFloat(key) : dfault;
+};
+
+inline matPtr Frame::optMatPtr(const std::string& key, matPtr dfault) const {
+  return hasKey(key) ? getMatPtr(key) : dfault;
+};
+
+inline std::string Frame::optString(const std::string& key,
+                                    std::string& dfault) const {
+  return hasKey(key) ? getString(key) : dfault;
+};
+}  // namespace toffy

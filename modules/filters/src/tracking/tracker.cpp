@@ -328,7 +328,7 @@ void Tracker::showObjects(cv::Mat &depth) {
     }
   }
 
-  if (dbg) cv::imshow(id() + ".objects", depth);
+  // if (dbg) cv::imshow(id() + ".objects", depth);
 
   return;
 }

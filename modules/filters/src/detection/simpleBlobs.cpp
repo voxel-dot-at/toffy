@@ -224,7 +224,7 @@ void SimpleBlobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
   for (size_t i = 0; i < contours.size(); i++) {
     mu = moments(contours[i]);
     mc = Point2f(mu.m10 / mu.m00, mu.m01 / mu.m00);
-
+    
     if (mc.x != mc.x) {  // skip nan value areas
       // cout << "SKIP nan " << i << " " << mc << " " <<  endl;
       continue;
@@ -247,6 +247,15 @@ void SimpleBlobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
 
     obj->mo = mu;
 
+    double hu[7];
+
+    HuMoments(mu, hu);
+    
+    for(int i = 0; i < 7; i++) {
+      obj->logHu[i] = -1 * copysign(1.0, hu[i]) * log10(abs(hu[i])); 
+    }
+
+    
     // Moving the massCenter if it is outside or in a hole
     if (pointPolygonTest(contours[i], obj->massCenter, false) < 0
         /* in case of a depth image, check distance
@@ -273,9 +282,10 @@ void SimpleBlobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
     if (dbgShape) {
       DetectedObject* o = obj;
       cout << setprecision(3);
-      cout << "BLB " << o->idx << "\t" << o->massCenter.x << "\t"
-           << o->massCenter.y
-           << "\t"
+      cout << "BLB " << o->id << " " << o->idx << "\t" << (int)o->massCenter.x << "\t"
+           << (int)o->massCenter.y << " " << (int)o->size
+           << "\thu ";
+      for (int i=0;i<7;i++) cout << " " << obj->logHu[i];
            //  << o->mo.m00 << "\t" << o->mo.m10 << "\t"
            //  << o->mo.m01 << "\t" << o->mo.m20 << "\t"
            //  << o->mo.m11 << "\t" << o->mo.m02 << "\t"
@@ -290,7 +300,7 @@ void SimpleBlobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
            //  o->mo.nu02
            //  << "\t" << o->mo.nu30 << "\t" << o->mo.nu21 << "\t" << o->mo.nu12
            //  << "\t" << o->mo.nu03
-           << endl;
+      cout  << endl;
     }
   }
 
