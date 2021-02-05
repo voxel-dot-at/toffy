@@ -7,7 +7,7 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/ml/ml.hpp>
 
-#include "toffy/skeletonizers/K3MUpDownSkeletonizer.hpp"
+#include "toffy/skeletonizers/k3mUpDownSkeletonizer.hpp"
 
 using namespace std;
 using namespace cv;
