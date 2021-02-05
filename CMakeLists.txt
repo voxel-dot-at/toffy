@@ -420,7 +420,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     $<INSTALL_INTERFACE:${INSTALL_LIB_DIR}/>
     $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}/>
     $<INSTALL_INTERFACE:${INSTALL_CMAKE_DIR}/>
-    /usr/local/include
 )
 
 #Options for the build ouput directory
