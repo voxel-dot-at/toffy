@@ -1,7 +1,7 @@
 
 #include <iostream>
 #include <toffy/bta/bta.hpp>
-#include <toffy/bta/bta_cb.hpp>
+// #include <toffy/bta/bta_cb.hpp>
 #include <toffy/bta/initPlugin.hpp>
 
 
@@ -20,7 +20,7 @@ void toffy::bta::init(toffy::FilterFactory *ff)
     BOOST_LOG_TRIVIAL(info) << "BTA:: HERE INIT";
     ff->registerCreator(toffy::capturers::Bta::id_name, &toffy::capturers::Bta::creator);
     // callback-based variant - work in progress
-    ff->registerCreator(toffy::capturers::BtaCb::id_name, &toffy::capturers::BtaCb::creator);
+    // ff->registerCreator(toffy::capturers::BtaCb::id_name, &toffy::capturers::BtaCb::creator);
 
 #ifdef WITH_CONTROL
     control::ControllerFactory* cf = control::ControllerFactory::getInstance();
