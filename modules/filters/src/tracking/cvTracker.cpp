@@ -148,7 +148,7 @@ bool CVTracker::filter(const Frame& in, Frame& out) {
 
     if(!tracker) {
         bbox = cv::minAreaRect(detObj->at(0)->contour).boundingRect();
-#if (OCV_VERSION_MAJOR >= 3 ) && (OCV_VERSION_MINOR > 1)
+#if (OCV_VERSION_MAJOR >= 3 ) && (OCV_VERSION_MINOR > 1) || (CV_VERSION_MAJOR >= 4)
         tracker = cv::TrackerKCF::create( );
 #else
         tracker = cv::Tracker::create( "KCF" );
