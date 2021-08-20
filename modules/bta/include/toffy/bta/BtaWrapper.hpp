@@ -48,7 +48,7 @@ public:
     virtual int start() {return connect();}
     virtual int stop() {return disconnect();}
 
-    virtual int getFrame(cv::Mat &image){return -1;}
+    virtual int getFrame(cv::Mat & ){return -1;}
 
     virtual int parseConfig(std::string fileConfig);
     int parseConfig(const boost::property_tree::ptree pt);
@@ -106,6 +106,11 @@ public:
     BTA_DeviceType getDeviceType() const;
     void setDeviceType(const BTA_DeviceType &value);
 
+    bool isAsync() { return async; }
+    void waitForFrame(); // wait for next frame to arrive....
+
+    // queue handling:
+
 private:
     BTA_Config config;
     BTA_Handle handle;
@@ -125,6 +130,7 @@ private:
 #else
     static const int retries = 10;
 #endif
+    bool async; //< set to true if frameArrived* callbacks are used.
 
     unsigned int manufacturer, device;
 

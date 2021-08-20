@@ -74,6 +74,12 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
 
     sensor->parseConfig(bta);
 
+    boost::optional<bool> playbk = bta.get_optional<bool>("playback");
+    if (playbk.is_initialized()) {
+        playback (*playbk);
+        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__ << " playback?" << *playbk;
+    }
+
     boost::optional<bool> autoconnect = bta.get_optional<bool>("autoconnect");
     if (autoconnect.is_initialized()) {
         if (*autoconnect == true) {
@@ -91,6 +97,12 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
     boost::optional<float> fr = bta.get_optional<float>("fr");
     if (fr.is_initialized() && isConnected()) {
         sensor->setFrameRate(*fr);
+    }
+
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__ << " blts? " << sensor->getBltstream();
+    if ( sensor->getBltstream().length() > 0 ) {
+        loadPath(sensor->getBltstream());
+        playback(true);    
     }
 
     return 1;
@@ -139,7 +151,7 @@ boost::property_tree::ptree Bta::getConfig() const
 }
 
 bool Bta::filter(const Frame &in, Frame& out) {
-    //BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " ------------ filter() " << id();
     char * data = NULL;
 
     using namespace boost::posix_time;
@@ -169,10 +181,12 @@ bool Bta::filter(const Frame &in, Frame& out) {
     }
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration pre-capture: " << diff.total_milliseconds();
+    BOOST_LOG_TRIVIAL(debug) << "duration pre-capture: " << diff.total_milliseconds() 
+    << " playback? " << this->playback() << " bta_stream " << bta_stream ;
 
     // Checks if there is a data file to load.
     if ( this->playback() ) {
+
         if (!bta_stream) {
             // PlayBack in r/rw files
             if (in.hasKey("backward") || backward()) {
@@ -192,11 +206,17 @@ bool Bta::filter(const Frame &in, Frame& out) {
                         ((CapturerFilter*)this)->loadPath() + "/" +
                         boost::lexical_cast<std::string>(cnt()) +
                         fileExt());
+        } else {
+            BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " cap";
+            int ret = sensor->capture(data);
+            BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " cap" << ret;
         }
     }
     
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration pre-capture: " << diff.total_microseconds();
+    BOOST_LOG_TRIVIAL(debug) << "duration pre-capture:2 " << diff.total_microseconds();
+
+
     if (!data && !sensor->capture(data)) {
         BOOST_LOG_TRIVIAL(warning) << "Could not capture from sensor.";
 #ifdef BTA_P100
@@ -359,7 +379,9 @@ void Bta::playback(const bool &pb) {
         BOOST_LOG_TRIVIAL(warning) << "Trying to read a bltstream file but the deviceType is not set to BTA_DeviceTypeGenericBltstream (15)!!!";
         return;
     }*/
+
         sensor->setBltstream(((CapturerFilter*)this)->loadPath());
+	
         /*
     if (connect() >= 0) {
         float f = 0;
@@ -391,8 +413,8 @@ int Bta::loadPath(const std::string &newPath) {
     BOOST_LOG_TRIVIAL(debug) << "fsPath.extension(): " << fsPath.extension();
     if (fs::is_regular_file(fsPath) && fsPath.extension() == ".bltstream") {
         if ( !fs::exists(fsPath)) {
-            BOOST_LOG_TRIVIAL(warning) << "Given path " << newPath
-                                       << " does not exist.";
+            BOOST_LOG_TRIVIAL(warning) << "bta::loadPath(): Given path [" << newPath
+                                       << "] does not exist.";
             return -1;
         }
         setLoadPath(newPath);
@@ -404,6 +426,7 @@ int Bta::loadPath(const std::string &newPath) {
         return 1;
     } else {
         bta_stream = false;
+	BOOST_LOG_TRIVIAL(debug) << __LINE__<< "Bta::loadPath here";
         return CapturerFilter::loadPath(newPath);
     }
 }

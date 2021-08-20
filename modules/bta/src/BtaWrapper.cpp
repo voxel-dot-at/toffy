@@ -1,4 +1,4 @@
-#include <iostream>
+*#include <iostream>
 #include <cmath>
 #include <limits>
 #include <boost/property_tree/xml_parser.hpp>
@@ -13,13 +13,30 @@
 
 using namespace std;
 
-
-static void BTA_CALLCONV infoEventCb(BTA_EventId eventId, int8_t *msg) 
+static void BTA_CALLCONV infoEventCbEx2(BTA_Handle /*handle*/, BTA_Status status, int8_t *msg, void *userArg)
 {
-    //printf("   Callback: infoEvent (%d) %s\n", eventId, msg);
-    BOOST_LOG_TRIVIAL(info) << "   Callback: infoEvent (" << eventId << ") " << msg;
-    //cout << "   Callback: infoEvent (" << eventId << ") " << msg << endl;
+    BtaWrapper* bta = (BtaWrapper*)userArg;
+    BOOST_LOG_TRIVIAL(info) << "   BTACallback: infoEvent (" << status << ") " << msg;
 }
+
+static void BTA_CALLCONV frameArrivedEx2(BTA_Handle /*handle*/, BTA_Frame *frame, void* arg, 
+    struct BTA_FrameArrivedReturnOptions* /*frameArrivedReturnOptions*/) {
+    BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx (" << frame->frameCounter << ") " ;
+    BtaWrapper* bta = (BtaWrapper*)arg;
+
+        timeArr = frame->timeStamp;
+        musec = timeArr % 1000;
+        timeArr /= 1000;
+        msec = timeArr % 1000;
+        timeArr /= 1000;
+        sec = timeArr % 60;
+        timeArr /= 60;
+        min = timeArr % 60;
+        hours = timeArr / 60;
+        printf("Frame arrived: Frame no. %d at %02d:%02d:%02d.%03d %03d.\n", frame->frameCounter, hours, min, sec, msec, musec);
+        return;
+}
+
 
 static void errorHandling(BTA_Status status) {
     if (status != BTA_StatusOk) {
@@ -280,19 +297,14 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
         //config.calibFileName = pt.get<uint8_t *>("connection.calibFileName");
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Read bltstreamFilename: "
                                  << bltstreamFilename;
+        if (bltstreamFilename.length() ) {
+            config.deviceType = BTA_DeviceTypeGenericBltstream;
+        }        
     } catch (std::exception &e) {
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
     }
-    /*try {
-        //TODO Check
-        //config.infoEvent = pt.get<FN_BTA_InfoEvent>("connection.infoEvent");
-        //BOOST_LOG_TRIVIAL(debug) << "Read infoEvent: "
-        //	<< config.infoEvent ;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(info) << "Error getting parameters: " << e.what();
-    }*/
-    try {
 
+    try {
         config.verbosity = pt.get<uint8_t>("connection.verbosity");
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Read verbosity: "
                                  << (int)config.verbosity;
@@ -300,12 +312,7 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
     } catch (std::exception &e) {
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
     }
-    try {
-        //TODO Check
-        //config.frameArrived = pt.get<FN_BTA_FrameArrived>("connection.frameArrived");
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
+
     try {
         config.frameQueueLength = pt.get<uint16_t>("connection.frameQueueLength");
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Read frameQueueLength: "
@@ -355,15 +362,24 @@ int BtaWrapper::connect(){
     config.calibFileName = (uint8_t *)calibFileName.c_str();
     config.bltstreamFilename = (uint8_t *)bltstreamFilename.c_str();
 
-    config.infoEvent = infoEventCb;
-    //config.frameArrived = frameArrived;
-    BOOST_LOG_TRIVIAL(info) << "BtaWrapper::connect Read udpDataIpAddr: "
+    config.infoEventEx2 = infoEventCbEx2;
+    config.frameArrivedEx2 = &frameArrivedEx2;
+
+    if (bltstreamFilename.length()) 
+    {
+        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::connect() - enabling playback";
+        config.deviceType = BTA_DeviceTypeBltstream;
+        async = true;
+    }
+
+
+    BOOST_LOG_TRIVIAL(info) << "BtaWrapper::connect() Read udpDataIpAddr: "
                             << (int)config.tcpDeviceIpAddr[0] << "."
                             << (int)config.tcpDeviceIpAddr[1] << "."
                             << (int)config.tcpDeviceIpAddr[2] << "."
                             << (int)config.tcpDeviceIpAddr[3];
 
-    BOOST_LOG_TRIVIAL(info) << "BtaWrapper::connect Read udpDataIpAddr: "
+    BOOST_LOG_TRIVIAL(info) << "BtaWrapper::connect() Read udpDataIpAddr: "
                             << (int)config.udpDataIpAddr[0] << "."
                             << (int)config.udpDataIpAddr[1] << "."
                             << (int)config.udpDataIpAddr[2] << "."
@@ -372,12 +388,12 @@ int BtaWrapper::connect(){
     status = BTAopen(&config, &handle);
     if (status != BTA_StatusOk) {
         BOOST_LOG_TRIVIAL(warning)
-                << "BtaWrapper::connect BTAopen: Could not connect to the camera. status: "
+                << "BtaWrapper::connect() BTAopen: Could not connect to the camera. status: "
                 << status;
         return status;
     }
     BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::connect Camera connected sucessfully. status: "
+            << "BtaWrapper::connect() Camera connected sucessfully. status: "
             << status;
     
     status = BTAgetDeviceInfo(handle, &deviceInfo);
@@ -396,6 +412,12 @@ int BtaWrapper::connect(){
     device = deviceInfo->deviceType;
     BOOST_LOG_TRIVIAL(debug) << "Service running: " << (int)BTAisRunning(handle);
     BOOST_LOG_TRIVIAL(debug) <<"Connection up: " << (int)BTAisConnected(handle);
+
+    if (bltstreamFilename.length()) 
+    {
+        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::connect() - auto playback speed";
+        BTAsetLibParam(handle, BTA_LibParamStreamAutoPlaybackSpeed, 1);
+    }
     
     return 0;
 
@@ -432,11 +454,17 @@ bool BtaWrapper::isConnected() const {
         return 0;
 }
 
+void BtaWrapper::waitForNextFrame() { // wait for next frame to arrive....
+}
+
 int BtaWrapper::capture(char * &buffer) {
     BTA_Frame *frame;
     int i;
+        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::capture()";
+    return 0;
     for (i=0; i <= retries; i++) {
-        status = BTAgetFrame(handle, &frame, 100);
+        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::capture().BTAgetFrame";
+        status = BTAgetFrame(handle, &frame, 1000);
         if (status != BTA_StatusOk) {
             if (status == BTA_StatusTimeOut) { // no data available yet - sleep a little
                 BTAsleep(2);

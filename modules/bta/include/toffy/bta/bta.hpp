@@ -68,11 +68,12 @@ public:
 
     virtual bool playback() const {return CapturerFilter::playback();}
     virtual void playback(const bool &pb);
+
     virtual int loadPath(const std::string &newPath);
     virtual void save(const bool &save);
     virtual void savePath(const std::string &newPath);
 
-    static Filter* creator() {return new Bta();}
+    static Filter* creator() { return new Bta();}
 
     //TODO MOVE TO OPENCV
     //virtual void setCamera2Wcs(toffy::Frame& out, std::string name);
