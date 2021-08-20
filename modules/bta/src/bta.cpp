@@ -207,9 +207,13 @@ bool Bta::filter(const Frame &in, Frame& out) {
                         boost::lexical_cast<std::string>(cnt()) +
                         fileExt());
         } else {
-            BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " cap";
-            int ret = sensor->capture(data);
-            BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " cap" << ret;
+	    BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " cap async? " << sensor->isAsync();
+	    if (sensor->isAsync()) {
+		sensor->waitForNextFrame();
+		data = (char*)this;
+	    } else {
+		BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " what should I do? " ;
+	    }
         }
     }
     
@@ -322,9 +326,13 @@ bool Bta::filter(const Frame &in, Frame& out) {
     diff = boost::posix_time::microsec_clock::local_time() - start;
     BOOST_LOG_TRIVIAL(debug) << "duration add: " << diff.total_microseconds();
 
-    sensor->freeFrame(data);
-    data = NULL;
-
+    if (sensor->isAsync()) {
+	// nothing to do
+    } else {
+	sensor->freeFrame(data);
+	data = NULL;
+    }
+    
     //TODO MOVE TO OPENCV
     //if (!in.hasKey(name()+"2world") || update) {
     //    setCamera2Wcs(out,name()+"2world");
