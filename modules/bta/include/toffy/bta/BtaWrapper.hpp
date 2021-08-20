@@ -107,7 +107,7 @@ public:
     void setDeviceType(const BTA_DeviceType &value);
 
     bool isAsync() { return async; }
-    void waitForFrame(); // wait for next frame to arrive....
+    void waitForNextFrame(); // wait for next frame to arrive....
 
     // queue handling:
 

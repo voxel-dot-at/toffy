@@ -1,14 +1,15 @@
-*#include <iostream>
+#include <iostream>
 #include <cmath>
 #include <limits>
+
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
 
-
 #include <toffy/bta/BtaWrapper.hpp>
 #include <toffy/bta/FrameHeader.hpp>
+
 #include <bta.h>
 
 using namespace std;
@@ -23,18 +24,19 @@ static void BTA_CALLCONV frameArrivedEx2(BTA_Handle /*handle*/, BTA_Frame *frame
     struct BTA_FrameArrivedReturnOptions* /*frameArrivedReturnOptions*/) {
     BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx (" << frame->frameCounter << ") " ;
     BtaWrapper* bta = (BtaWrapper*)arg;
-
-        timeArr = frame->timeStamp;
-        musec = timeArr % 1000;
-        timeArr /= 1000;
-        msec = timeArr % 1000;
-        timeArr /= 1000;
-        sec = timeArr % 60;
-        timeArr /= 60;
-        min = timeArr % 60;
-        hours = timeArr / 60;
-        printf("Frame arrived: Frame no. %d at %02d:%02d:%02d.%03d %03d.\n", frame->frameCounter, hours, min, sec, msec, musec);
-        return;
+    int musec, msec, sec, min, hours;
+    
+    unsigned long timeArr = frame->timeStamp;
+    musec = timeArr % 1000;
+    timeArr /= 1000;
+    msec = timeArr % 1000;
+    timeArr /= 1000;
+    sec = timeArr % 60;
+    timeArr /= 60;
+    min = timeArr % 60;
+    hours = timeArr / 60;
+    printf("Frame arrived: Frame no. %d at %02d:%02d:%02d.%03d %03d.\n", frame->frameCounter, hours, min, sec, msec, musec);
+    return;
 }
 
 
