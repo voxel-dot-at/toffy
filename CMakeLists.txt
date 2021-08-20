@@ -246,7 +246,7 @@ find_package( bta )
 if (${bta_FOUND})
     include_directories(${bta_INCLUDE_DIRS})
     list(APPEND LIBS ${bta_LIBRARIES})
-    list(APPEND LIBS ${bta_LIBRARY})
+    list(APPEND LIBS ${bta_LIBRARY} bta)
     add_definitions(${bta_DEFINITIONS} -DBTA_ETH -DBTA_P100 -DHAS_BTA)
     message(INFO " bta inc  ${bta_INCLUDE_DIRS}")
     message(INFO " bta lib  ${bta_LIBRARIES}")
@@ -462,6 +462,12 @@ target_compile_definitions(toffyRunner PUBLIC "${PROJECT_NAME}_DEBUG=$<CONFIG:De
 target_link_libraries(toffyRunner ${LIBS} dl ${PROJECT_NAME} )
 
 list(APPEND binaries ${CMAKE_CURRENT_BINARY_DIR}/toffyRunner)
+
+
+add_executable (tst_pb apps/tst_pb)
+target_compile_definitions(tst_pb PUBLIC ${DEFINITIONS} PLAT_LINUX "${PROJECT_NAME}_DEBUG=$<CONFIG:Debug>")
+target_link_libraries(tst_pb ${LIBS} dl ${PROJECT_NAME} )
+
 
 ################################################################################
 # Install Stuff
