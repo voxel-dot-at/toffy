@@ -89,16 +89,16 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
                 connect();
         }
     }
-
-    boost::optional<int> it = bta.get_optional<int>("it");
-    if (it.is_initialized() && isConnected()) {
-        sensor->setIntegrationTime(*it);
+    if (! this->playback()) {
+        boost::optional<int> it = bta.get_optional<int>("it");
+        if (it.is_initialized() && isConnected()) {
+            sensor->setIntegrationTime(*it);
+        }
+        boost::optional<float> fr = bta.get_optional<float>("fr");
+        if (fr.is_initialized() && isConnected()) {
+            sensor->setFrameRate(*fr);
+        }
     }
-    boost::optional<float> fr = bta.get_optional<float>("fr");
-    if (fr.is_initialized() && isConnected()) {
-        sensor->setFrameRate(*fr);
-    }
-
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__ << " blts? " << sensor->getBltstream();
     if ( sensor->getBltstream().length() > 0 ) {
         loadPath(sensor->getBltstream());
@@ -209,8 +209,10 @@ bool Bta::filter(const Frame &in, Frame& out) {
         } else {
 	    BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " cap async? " << sensor->isAsync();
 	    if (sensor->isAsync()) {
-		sensor->waitForNextFrame();
-		data = (char*)this;
+	    BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " cap async... " << sensor->isAsync();
+		data = (char*)sensor->waitForNextFrame();
+	    BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " cap async! " << sensor->isAsync();
+
 	    } else {
 		BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " what should I do? " ;
 	    }
@@ -351,13 +353,13 @@ int Bta::connect() {
         if (playback()) {
             float f = 0;
             int param = BTA_LibParamStreamPos;
-            sensor->setLibParam(param, f);
+            // sensor->setLibParam(param, f);
             param = BTA_LibParamStreamTotalFrameCount;
             sensor->getLibParam(param, f);
             cout << "BTA_LibParamStreamTotalFrameCount: " << f << endl;
-            endFile(f-1);
-            beginFile(0);
-            cnt(beginFile()-1);
+            // endFile(f-1);
+            // beginFile(0);
+            // cnt(beginFile()-1);
         } else if (((CapturerFilter*)this)->save() && bta_stream) {
             BOOST_LOG_TRIVIAL(debug) << "strPath(): " << strPath();
             sensor->startGrabbing(strPath());

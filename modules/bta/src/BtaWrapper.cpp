@@ -2,6 +2,7 @@
 #include <cmath>
 #include <limits>
 
+#include <boost/thread.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/core.hpp>
@@ -36,6 +37,7 @@ static void BTA_CALLCONV frameArrivedEx2(BTA_Handle /*handle*/, BTA_Frame *frame
     min = timeArr % 60;
     hours = timeArr / 60;
     printf("Frame arrived: Frame no. %d at %02d:%02d:%02d.%03d %03d.\n", frame->frameCounter, hours, min, sec, msec, musec);
+    bta->updateFrame(frame);
     return;
 }
 
@@ -59,14 +61,21 @@ void BtaWrapper::setBltstream(const std::string &value)
     bltstreamFilename = value;
 }
 
-BtaWrapper::BtaWrapper()
+BtaWrapper::BtaWrapper(): manufacturer(1), device(0),
+    async(false)
 {
-
     handle = 0;
     deviceInfo = NULL;
     //TODO is size really needed;
     //setSize(160, 120);
     //TODO create header with manufacturer codes
+    frames[0] = new BTA_Frame();
+    frames[1] = new BTA_Frame();
+    frameToFill = frames[0];
+    frameInUse = frames[1];
+    toFillIndex=0;
+    hasBeenUpdated=false;
+
     manufacturer = 1;
 }
 
@@ -366,6 +375,7 @@ int BtaWrapper::connect(){
 
     config.infoEventEx2 = infoEventCbEx2;
     config.frameArrivedEx2 = &frameArrivedEx2;
+    config.userArg = this;
 
     if (bltstreamFilename.length()) 
     {
@@ -454,9 +464,6 @@ bool BtaWrapper::isConnected() const {
         return 1;
     else
         return 0;
-}
-
-void BtaWrapper::waitForNextFrame() { // wait for next frame to arrive....
 }
 
 int BtaWrapper::capture(char * &buffer) {
@@ -943,11 +950,11 @@ int BtaWrapper::setIntegrationTime(unsigned int it) {
 }
 
 int BtaWrapper::setFrameRate(float fr) {
-    status = BTAsetFrameRate(handle, fr);
-    BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
-    if (status != BTA_StatusOk) {
-        return -1;
-    }
+    // status = BTAsetFrameRate(handle, fr);
+    // BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
+    // if (status != BTA_StatusOk) {
+    //     return -1;
+    // }
     return 1;
 }
 
@@ -1006,7 +1013,8 @@ int BtaWrapper::saveRaw(string fileName, char *data) {
     f.write ( raw, sizeof(FrameHeader)+data_serialized_size);
     f.close();
     BOOST_LOG_TRIVIAL(debug) << "Saved file: " << fileName;
-    free(raw);
+    delete raw;
+
     return 0;
 }
 
@@ -1025,6 +1033,7 @@ char * BtaWrapper::loadRaw(string rawFile) {
     ret = fread(&header, sizeof(FrameHeader), 1, raw);
     if (ret == 0) {
         BOOST_LOG_TRIVIAL(warning) << "Could not read file: " << rawFile;
+        fclose(raw);
         return NULL;
     }
 
@@ -1039,6 +1048,7 @@ char * BtaWrapper::loadRaw(string rawFile) {
     ret = fread(frame_data, sizeof(char),header.lenght, raw);
     if (ret == 0) {
         BOOST_LOG_TRIVIAL(warning) << "Could not read file: " << rawFile;
+        fclose(raw);
         return NULL;
     }
 
@@ -1067,4 +1077,158 @@ int BtaWrapper::getLibParam(int &param, float &data){
 
 int BtaWrapper::setLibParam(int &param, float &data) {
     return BTAsetLibParam(handle, (BTA_LibParam)param, data);
+}
+
+using namespace std;
+
+static void freeMetaData(BTA_Channel *chan) 
+{
+    for (uint32_t i=0;i<chan->metadataLen;i++) {
+        delete chan->metadata[i];
+    }
+    delete chan->metadata;
+}
+
+static void freeChannel(BTA_Channel *chan) 
+{
+    freeMetaData(chan);
+    delete chan->metadata;
+    delete chan->data;
+    delete chan;
+}
+
+static void freeChannels(BTA_Frame *frame) 
+{
+    for (uint32_t i=0;i<frame->channelsLen;i++) {
+        freeChannel(frame->channels[i]);
+    }
+    delete frame->channels;
+}
+
+static inline void cpyMetaData(BTA_Channel *dst, const BTA_Channel *src) {
+    for (uint32_t i=0;i<src->metadataLen;i++) {
+        BTA_Metadata* s = src->metadata[i];
+        BTA_Metadata* d = dst->metadata[i];
+        if (d->dataLen != s->dataLen) {
+            delete d->data;
+            d->data = new uint8_t[s->dataLen];
+            d->dataLen = s->dataLen;
+        }
+        memcpy(d->data, s->data, d->dataLen);
+    }
+}
+
+static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src) {
+  dst->id = src->id;
+  dst->xRes = src->xRes;
+  dst->yRes = src->yRes;
+  dst->dataFormat = src->dataFormat;
+  dst->unit = src->unit;
+  dst->integrationTime = src->integrationTime;
+  dst->modulationFrequency = src->modulationFrequency;
+  dst->lensIndex = src->lensIndex;
+  dst->flags = src->flags;
+  dst->sequenceCounter = src->sequenceCounter;
+  dst->gain = src->gain;
+
+  // copy data
+  if (src->dataLen != dst->dataLen) {
+    free(dst->data);
+    dst->data = new uint8_t[src->dataLen];
+    dst->dataLen = src->dataLen;
+  }
+  memcpy(dst->data, src->data, dst->dataLen);
+
+  // copy metadata
+  if (src->metadataLen != dst->metadataLen) {
+    freeMetaData(dst);
+    dst->metadata = new BTA_Metadata *[src->metadataLen];
+    for (uint32_t i = 0; i < dst->metadataLen; i++) {
+      dst->metadata[i] = new BTA_Metadata;
+    }
+  }
+  cpyMetaData(dst, src);
+}
+
+static void cpyChannels(BTA_Frame* dst, const BTA_Frame* src) {
+    cout << "cpyChannels " << dst->channelsLen << endl;
+        // num channels does not fit - create new channels array with dummies:
+    if (dst->channelsLen != src->channelsLen) {
+        freeChannels(dst);
+        cout << "cpyChannels realloc " << src->channelsLen << endl;
+
+        dst->channels = new BTA_Channel*[src->channelsLen];
+        dst->channelsLen = src->channelsLen;
+        for (int i=0; i<dst->channelsLen; i++) {
+            dst->channels[i] = new BTA_Channel();
+        }
+    }
+    // walk over channels, compare contents and copy channel by channel
+    for (int i=0; i<dst->channelsLen; i++) {
+        auto s = src->channels[i];
+        auto d = dst->channels[i];
+        if (!d) {
+            d = new BTA_Channel();
+            dst->channels[i] = d;
+        }
+        cout << "cpyChannels c " << i << endl;
+        cpyChannel(d, s);
+    }
+}
+
+static void cpyFrame(BTA_Frame* dst, const BTA_Frame* src) {
+
+    cout << "cpyFrame cl " << src->channelsLen << endl;
+    cout << "cpyFrame cl " << dst->channelsLen << endl;
+
+    dst->firmwareVersionMajor = src->firmwareVersionMajor ;
+    dst->firmwareVersionMinor = src->firmwareVersionMinor ;
+    dst->firmwareVersionNonFunc = src->firmwareVersionNonFunc ;
+    dst->mainTemp = src->mainTemp;
+    dst->ledTemp = src->ledTemp ;
+    dst->genericTemp = src->genericTemp ;
+    dst-> frameCounter= src->frameCounter ;
+    dst->timeStamp = src->timeStamp ;
+    dst->sequenceCounter = src->sequenceCounter ;
+
+    cpyChannels(dst, src);
+}
+
+// queue handling:
+void BtaWrapper::updateFrame(BTA_Frame* frame)
+{
+    {
+        boost::lock_guard<boost::mutex> lock{frameMutex};
+
+        cpyFrame(frameToFill, frame);
+        hasBeenUpdated=true;
+    }
+    newFrameCond.notify_one();
+    cout << "updateFrame " << hasBeenUpdated << endl;
+}
+
+BTA_Frame* BtaWrapper::flipFrame()
+{
+    // boost::lock_guard<boost::mutex> lock(frameMutex);
+
+    hasBeenUpdated=false;
+    BTA_Frame* tmp = frameInUse;
+    frameInUse = frameToFill;
+    frameToFill = tmp;
+
+    return frameInUse;
+}
+
+
+BTA_Frame* BtaWrapper::waitForNextFrame() { // wait for next frame to arrive....
+    // boost::lock_guard<boost::mutex> lock{frameMutex};
+    boost::unique_lock<boost::mutex> lock(frameMutex);
+    cout << "waitForNextFrame " << hasBeenUpdated << endl;
+    while(!hasBeenUpdated)
+    {
+        cout << "waitForNextFrame ..." << endl;
+        newFrameCond.wait(lock);
+    }
+    cout << "waitForNextFrame got one!" << endl;
+    return flipFrame();
 }

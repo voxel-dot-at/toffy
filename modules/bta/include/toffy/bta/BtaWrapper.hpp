@@ -28,8 +28,10 @@
 #define RAWFILE ".r"
 #endif
 
-#include <bta.h>
+#include <boost/thread.hpp>
 #include <boost/property_tree/ptree.hpp>
+
+#include <bta.h>
 #include <toffy/io/imagesensor.hpp>
 
 struct network {
@@ -107,15 +109,17 @@ public:
     void setDeviceType(const BTA_DeviceType &value);
 
     bool isAsync() { return async; }
-    void waitForNextFrame(); // wait for next frame to arrive....
+    BTA_Frame* waitForNextFrame(); // wait for next frame to arrive....
 
     // queue handling:
+    void updateFrame(BTA_Frame* frame); // update the 
 
 private:
     BTA_Config config;
     BTA_Handle handle;
     BTA_Status status;
     BTA_DeviceInfo *deviceInfo;
+
 
     //variables needed to fill pointer in BTA_Config
     uint8_t udpDataIpAddr[6];
@@ -125,16 +129,29 @@ private:
     std::string calibFileName,
     uartPortName,
     bltstreamFilename;
+
 #if defined(BTA_P100)
     static const int retries = 2;
 #else
     static const int retries = 10;
 #endif
-    bool async; //< set to true if frameArrived* callbacks are used.
-
     unsigned int manufacturer, device;
 
-    int width, height;
+    bool async; //< set to true if frameArrived* callbacks are used.
+
+    boost::mutex frameMutex;
+    boost::condition_variable newFrameCond;
+    BTA_Frame* frames[2]; //< array of frames, one is filled by bta lib, the other in use
+    BTA_Frame* frameInUse; // pointer to the current frame
+    BTA_Frame* frameToFill; // pointer to the current frame
+    int toFillIndex; // index of the current frame
+    bool hasBeenUpdated; // do we have new data yet?
+
+    /** change frames, resets hasBeenUpdated
+     * @return the new frame to use for processing (frameInUse)
+    */
+    BTA_Frame* flipFrame();
+
 };
 
 #endif
