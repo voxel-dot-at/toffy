@@ -58,19 +58,18 @@ void ReprojectPCL::updateConfig(const boost::property_tree::ptree &pt) {
 	    fs.getFirstTopLevelNode() >> _cameraMatrix;
 	    cout << fs.getFirstTopLevelNode().name() << endl;
 	    fs.release();
-	} else
+	} else {
 	    BOOST_LOG_TRIVIAL(debug) << "Node cameraMatrix is not opencv.";
-    } else
+    }
+    } else {
 	BOOST_LOG_TRIVIAL(debug) << "Node options.cameraMatrix not found.";
-
+    }
     _in_img = pt.get<string>("inputs.img",_in_img);
     _in_cameraMatrix = pt.get<string>("inputs.cameraMatrix",_in_cameraMatrix);
 
     _out_cloud = pt.get<string>("outputs.cloud",_out_cloud);
     _world = pt.get<bool>("options.world", _world);
     _in_transf = pt.get<string>("inputs.transf",_in_transf);
-
-
 }
 
 boost::property_tree::ptree ReprojectPCL::getConfig() const
@@ -101,7 +100,7 @@ bool ReprojectPCL::filter(const Frame &in, Frame& out) {
 	img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_img));
     } catch(const boost::bad_any_cast &) {
 	BOOST_LOG_TRIVIAL(warning) <<
-				      "Could not cast input " << _in_img <<
+				      "ReprojectPCL::filter() Could not cast input " << _in_img <<
 				      ", filter  " << id() <<" not applied.";
 	return false;
     }
@@ -110,12 +109,13 @@ bool ReprojectPCL::filter(const Frame &in, Frame& out) {
 	    _cameraMatrix= boost::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
 	} catch(const boost::bad_any_cast &) {
 	    BOOST_LOG_TRIVIAL(warning) <<
-					  "Could not read input " << _in_cameraMatrix;
+					  "ReprojectPCL::filter() Could not read input " << _in_cameraMatrix;
+        return false;
 	}
     }
     if (_cameraMatrix.empty()) {
 	BOOST_LOG_TRIVIAL(warning) <<
-				      "No cameraMatrix data, filter " << id() <<" not applied.";
+				      "ReprojectPCL::filter() No cameraMatrix data, filter " << id() <<" not applied.";
 	return false;
     }
 
@@ -145,4 +145,3 @@ bool ReprojectPCL::filter(const Frame &in, Frame& out) {
 
     return true;
 }
-

@@ -25,7 +25,24 @@
 #endif
 
 /**
- * @brief
+ * @brief offset performs multiplicative compensation
+ *
+ * \section ex1 XML Configuration [TODO]
+ * <h4>Inputs</h4>
+ * <ul>
+ * <li> img - the input image to convert 
+ * </ul
+ * <h4>Ouputs</h4>
+ * <ul>
+ * <li> img - the output image (depth per-pixel adjusted by img(*mulValue + sumvalue) 
+ * </ul
+ * <h4>Options</h4>
+ * <ul>
+ * <li> sumValue - (float) min value for the colormap 
+ * <li> mulValue - (float) max value for the colormap
+ * <li> colormap - one of jet / hot/ hsv / rainbow (defaults to jet)
+ * <li> scale - scale factor 
+ * </ul>
  *
  */
 namespace toffy {
@@ -34,7 +51,7 @@ namespace filters {
 class OffSet : public Filter {
 
     std::vector<cv::Rect> _rois;
-    double _sumValue, _mulValue;
+    float _sumValue, _mulValue;
     std::string _in_img, _out_img;
     static std::size_t _filter_counter;
 public:

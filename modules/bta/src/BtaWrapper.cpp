@@ -1,6 +1,8 @@
 #include <iostream>
+#include <fstream>
 #include <cmath>
 #include <limits>
+
 
 #include <boost/thread.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -23,6 +25,10 @@ static void BTA_CALLCONV infoEventCbEx2(BTA_Handle /*handle*/, BTA_Status status
 
 static void BTA_CALLCONV frameArrivedEx2(BTA_Handle /*handle*/, BTA_Frame *frame, void* arg, 
     struct BTA_FrameArrivedReturnOptions* /*frameArrivedReturnOptions*/) {
+        if (! frame ) {
+    BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx NO FRAME " ;
+            return;
+        }
     BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx (" << frame->frameCounter << ") " ;
     BtaWrapper* bta = (BtaWrapper*)arg;
     int musec, msec, sec, min, hours;
@@ -425,10 +431,10 @@ int BtaWrapper::connect(){
     BOOST_LOG_TRIVIAL(debug) << "Service running: " << (int)BTAisRunning(handle);
     BOOST_LOG_TRIVIAL(debug) <<"Connection up: " << (int)BTAisConnected(handle);
 
-    if (bltstreamFilename.length()) 
-    {
+    if (bltstreamFilename.length()) {
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::connect() - auto playback speed";
         BTAsetLibParam(handle, BTA_LibParamStreamAutoPlaybackSpeed, 1);
+        status = BTAsetFrameRate(handle, 2.0f);
     }
     
     return 0;
@@ -531,7 +537,7 @@ int BtaWrapper::registerOp(unsigned int reg, unsigned int data) {
     return 0;
 }
 
-char * BtaWrapper::loadFrame(char *data, std::string ext) {
+char * BtaWrapper::loadFrame(char *data, std::string /*ext*/) {
     BTA_Frame *frame = (BTA_Frame *)malloc(sizeof(BTA_Frame));
     memcpy(frame,data,sizeof(BTA_Frame));
 
@@ -950,11 +956,11 @@ int BtaWrapper::setIntegrationTime(unsigned int it) {
 }
 
 int BtaWrapper::setFrameRate(float fr) {
-    // status = BTAsetFrameRate(handle, fr);
-    // BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
-    // if (status != BTA_StatusOk) {
-    //     return -1;
-    // }
+    status = BTAsetFrameRate(handle, fr);
+    BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
+    if (status != BTA_StatusOk) {
+        return -1;
+    }
     return 1;
 }
 
@@ -988,6 +994,113 @@ int BtaWrapper::stopGrabbing() {
     return 1;
 }
 
+void BtaWrapper::saveAmplCSV(const std::string& fileName) {
+    boost::unique_lock<boost::mutex> lock(frameMutex);
+    uint32_t i;
+    for (i =0 ; i <frameInUse->channelsLen;i++) {
+        if (frameInUse->channels[i]->id == BTA_ChannelIdAmplitude) 
+            break;
+    }
+    if (i >= frameInUse->channelsLen) {
+            BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " could not find channel!";
+        return;
+    }
+    BTA_Channel* chan = frameInUse->channels[i];
+
+    std::cout << "BtaWrapper::saveAmplCSV saving " << chan->xRes << "x"
+              << chan->yRes << " dataformat " << chan->dataFormat << std::endl;
+    ofstream of(fileName, std::ofstream::out);
+
+    uint32_t j = 0;
+
+    if (chan->dataFormat == BTA_DataFormatUInt16) {
+      // BOOST_LOG_TRIVIAL(debug) << "unit: " << unit;
+      unsigned short *ampl = (unsigned short *)chan->data;
+
+      for (uint16_t y = 0; y < chan->yRes; y++) {
+        for (uint16_t x = 0; x < chan->xRes; x++) {
+          of << ampl[j] << ";";
+          j++;
+        }
+        of << '\n';
+      }
+    } else if (chan->dataFormat == BTA_DataFormatFloat32) {
+      float *ampls = (float *)chan->data;
+
+      for (uint16_t y = 0; y < chan->yRes; y++) {
+        for (uint16_t x = 0; x < chan->xRes; x++) {
+          of << (ampls[j]) << ";";
+          j++;
+        }
+        of << '\n';
+      }
+    } else {
+      BOOST_LOG_TRIVIAL(warning) << "Unknown data format! " << chan->dataFormat;
+    }
+
+}
+
+void BtaWrapper::saveDistCSV(const std::string& fileName) {
+    boost::unique_lock<boost::mutex> lock(frameMutex);
+    uint32_t i;
+    for (i = 0; i < frameInUse->channelsLen; i++) {
+      if (frameInUse->channels[i]->id == BTA_ChannelIdDistance) break;
+    }
+    if (i >= frameInUse->channelsLen) {
+      BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " could not find channel!";
+      return;
+    }
+    BTA_Channel *chan = frameInUse->channels[i];
+    std::cout << "BtaWrapper::saveDistCSV saving " << chan->xRes << "x"
+              << chan->yRes << " dataformat " << chan->dataFormat << std::endl;
+    ofstream of(fileName, std::ofstream::out);
+
+    if (chan->dataFormat == BTA_DataFormatUInt16) {
+      // BOOST_LOG_TRIVIAL(debug) << "unit: " << unit;
+      if (chan->unit == BTA_UnitMillimeter) {
+        unsigned short *distances = (unsigned short *)chan->data;
+        uint32_t j = 0;
+
+        for (uint16_t y = 0; y < chan->yRes; y++) {
+          for (uint16_t x = 0; x < chan->xRes; x++) {
+            if (distances[j] <= 0x0001 || distances[j] > 0xFA00) {
+              of << (-1.0f) << ";";
+            } else {
+              of << (distances[j] / 1000.f) << ";";
+            }
+            j++;
+          }
+          of << '\n';
+        }
+      } else {
+        BOOST_LOG_TRIVIAL(warning) << "Unknown unit! " << chan->unit;
+      }
+
+    } else if (chan->dataFormat == BTA_DataFormatFloat32) {
+      if (chan->unit == BTA_UnitMeter) {
+        float *distances = (float *)chan->data;
+        uint32_t j = 0;
+
+        for (uint16_t y = 0; y < chan->yRes; y++) {
+          for (uint16_t x = 0; x < chan->xRes; x++) {
+            if (distances[j] <= 0.001 || distances[j] > 20.0f) {
+              of << (-1.0f) << ";";
+            } else {
+              of << (distances[j]) << ";";
+            }
+            j++;
+          }
+          of << '\n';
+        }
+      } else {
+        BOOST_LOG_TRIVIAL(warning) << "Unknown unit! " << chan->unit;
+      }
+    } else {
+      BOOST_LOG_TRIVIAL(warning) << "Unknown data format! " << chan->dataFormat;
+    }
+      of.close();
+    }
+
 int BtaWrapper::saveRaw(string fileName, char *data) {
 
     size_t data_serialized_size;
@@ -1013,7 +1126,7 @@ int BtaWrapper::saveRaw(string fileName, char *data) {
     f.write ( raw, sizeof(FrameHeader)+data_serialized_size);
     f.close();
     BOOST_LOG_TRIVIAL(debug) << "Saved file: " << fileName;
-    delete raw;
+    delete[] raw;
 
     return 0;
 }
@@ -1110,8 +1223,8 @@ static inline void cpyMetaData(BTA_Channel *dst, const BTA_Channel *src) {
         BTA_Metadata* s = src->metadata[i];
         BTA_Metadata* d = dst->metadata[i];
         if (d->dataLen != s->dataLen) {
-            delete d->data;
-            d->data = new uint8_t[s->dataLen];
+            free(d->data);
+            d->data = malloc(s->dataLen);
             d->dataLen = s->dataLen;
         }
         memcpy(d->data, s->data, d->dataLen);
@@ -1204,7 +1317,7 @@ void BtaWrapper::updateFrame(BTA_Frame* frame)
         hasBeenUpdated=true;
     }
     newFrameCond.notify_one();
-    cout << "updateFrame " << hasBeenUpdated << endl;
+    cout << "updateFrame " << hasBeenUpdated << " " << frameToFill->frameCounter << endl;
 }
 
 BTA_Frame* BtaWrapper::flipFrame()

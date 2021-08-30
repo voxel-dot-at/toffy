@@ -39,7 +39,7 @@ const std::string ImageView::id_name = "imageview";
 
 ImageView::ImageView(): Filter(ImageView::id_name,_filter_counter),
     _scale(1.f), _max(-1), _min(-1), _in_img("img"),
-    _gray(true), _enabled(true)
+    _gray(true), _enabled(true), _waitKey(-1)
 {
     _filter_counter++;
 }
@@ -61,6 +61,7 @@ void ImageView::updateConfig(const boost::property_tree::ptree &pt)
     _min = pt.get<double>("options.min",_min);
     _gray = pt.get<bool>("options.gray",_gray);
     _enabled = pt.get<bool>("options.enabled",_enabled);
+    _waitKey = pt.get<int>("options.waitKey",-1);
 
     _in_img = pt.get<string>("inputs.img",_in_img);
 
@@ -140,6 +141,10 @@ bool ImageView::filter(const Frame &in, Frame& out)
     diff = boost::posix_time::microsec_clock::local_time() - start;
     BOOST_LOG_TRIVIAL(debug) << "ImageView fin: " << diff.total_microseconds();
 
+    if (_waitKey >= 0) {
+    BOOST_LOG_TRIVIAL(debug) << "ImageView waiting: " << _waitKey;
+        waitKey(_waitKey);
+    }
+
     return true;
 }
-

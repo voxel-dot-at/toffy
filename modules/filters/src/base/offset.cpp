@@ -24,6 +24,9 @@
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/foreach.hpp>
 
+#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 #include "toffy/base/offset.hpp"
 
 
@@ -89,62 +92,19 @@ void OffSet::updateConfig(const boost::property_tree::ptree &pt) {
 	    _rois.push_back(roi);
 	}
     } catch (const std::exception& ex) {
-	BOOST_LOG_TRIVIAL(debug) << "Roi values are wrong. Ex:" << ex.what();
+	BOOST_LOG_TRIVIAL(debug) << "no roi found. Using full image.";
     }
 }
 
-/*int OffSet::loadConfig(const FileNode &fn) {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-
-	Filter::loadConfig(fn);
-
-	FileNode offset = fn;
-
-	offset["sumValue"] >> _sumValue;
-	offset["mulValue"] >> _mulValue;
-	BOOST_LOG_TRIVIAL(debug) << "sum_val: " << _sumValue;
-	BOOST_LOG_TRIVIAL(debug) << "mul_val: " << _mulValue;
-
-	//Look for inputs
-	FileNode ios = offset["inputs"];
-	if (ios.empty()) {
-		BOOST_LOG_TRIVIAL(warning) <<
-			"Missing inputs for filter " <<	id() <<
-			" ... using defauts: " << endl <<
-			"img: " << _in_img;
-	} else {
-		ios["img"] >> _in_img;
-		BOOST_LOG_TRIVIAL(debug) << "input img: " << _in_img;
-	}
-
-
-	ios = offset["outputs"];
-	if (ios.empty()) {
-		_out_img = _in_img;
-		BOOST_LOG_TRIVIAL(warning) <<
-			"Missing outputs for filter " <<	id() <<
-			" ... using same as input: " << endl <<
-			"_out_img: " << _out_img;
-	} else {
-		ios["img"] >> _out_img;
-		BOOST_LOG_TRIVIAL(debug) << "output img: " << _out_img;
-	}
-
-	FileNode rois = offset["rois"];
-	for(FileNodeIterator it = rois.begin(); it != rois.end(); ++it)	{
-		Rect roi;
-		(*it)["x"] >> roi.x;
-		(*it)["y"] >> roi.y;
-		(*it)["width"] >> roi.width;
-		(*it)["height"] >> roi.height;
-		_rois.push_back(roi);
-	}
-	return 1;
-}*/
-
 bool OffSet::filter(const Frame &in, Frame& out) const {
 	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-	out = in;
+    using namespace boost::posix_time;
+
+    auto start = microsec_clock::local_time();
+    boost::posix_time::time_duration diff;
+
+
+//	out = in;
 
 	if (_rois.size() == 0) {
 		BOOST_LOG_TRIVIAL(debug) << "depth found";
@@ -160,6 +120,10 @@ bool OffSet::filter(const Frame &in, Frame& out) const {
 			roi *= _mulValue;
 		}
 	}
+
+	    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "OffSet::filter: " << diff.total_microseconds();
+
 	return true;
 }
 
@@ -188,6 +152,3 @@ boost::property_tree::ptree OffSet::getConfig() const
 
     return pt;
 }
-
-
-

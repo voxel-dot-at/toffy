@@ -59,6 +59,7 @@
 #include "toffy/viewers/colorize.hpp"
 #include "toffy/viewers/videoout.hpp"
 //#include "toffy/exposure.hpp"
+#include "toffy/viewers/exportcsv.hpp"
 
 
 #if OCV_VERSION_MAJOR >= 3
@@ -177,6 +178,8 @@ Filter * FilterFactory::createFilter(std::string type, std::string name) {
     else if (type == ImageView::id_name)
 	f = new ImageView();
 #endif
+    else if (type == "exportcsv")
+	f = new ExportCSV();
 
     else if (type == "videoout")
 	f = new VideoOut();

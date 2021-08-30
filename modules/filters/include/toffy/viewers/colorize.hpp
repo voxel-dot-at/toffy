@@ -36,8 +36,22 @@ namespace toffy {
  *
  * It allows also to scale up or down the image keeping the proportions. 
  *
- * \section ex1 Xml Configuration
- * @include colorize.xml
+ * \section ex1 XML Configuration
+ * <h4>Inputs</h4>
+ * <ul>
+ * <li> img - the input image to convert 
+ * </ul
+ * <h4>Ouputs</h4>
+ * <ul>
+ * <li> img - the output image (RGB)
+ * </ul
+ * <h4>Options</h4>
+ * <ul>
+ * <li> min - (float) min value for the colormap 
+ * <li> max - (float) max value for the colormap
+ * <li> colormap - one of jet / hot/ hsv / rainbow (defaults to jet)
+ * <li> scale - scale factor 
+ * </ul>
  *
  */
 class Colorize : public Filter	{

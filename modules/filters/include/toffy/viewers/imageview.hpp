@@ -58,6 +58,7 @@ private:
     std::string _in_img;
     bool _gray; ///< Flag for converting the image to grayscaled.
     bool _enabled; ///< if enabled, show the image, otherwise skip it
+    int _waitKey; ///< timeout for waitKey, set via options. -1 if disabled
     static std::size_t _filter_counter; ///< Internal filter counter
     cv::Mat show;
 };

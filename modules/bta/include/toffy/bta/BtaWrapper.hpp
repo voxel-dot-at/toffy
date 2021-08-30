@@ -108,6 +108,10 @@ public:
     BTA_DeviceType getDeviceType() const;
     void setDeviceType(const BTA_DeviceType &value);
 
+    void saveAmplCSV(const std::string& fileName);
+    void saveDistCSV(const std::string& fileName);
+
+
     bool isAsync() { return async; }
     BTA_Frame* waitForNextFrame(); // wait for next frame to arrive....
 

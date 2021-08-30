@@ -184,5 +184,3 @@ void Average::updateConfig(const boost::property_tree::ptree &pt) {
 
     _out_img = pt.get("outputs.img", _out_img);
 }
-
-

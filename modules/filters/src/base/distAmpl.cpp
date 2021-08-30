@@ -112,9 +112,7 @@ void DistAmpl::updateConfig(const boost::property_tree::ptree &pt)
     //_out_depth = pt.get<string>("outputs.depth",_out_depth);
     //_out_ampl = pt.get<string>("outputs.ampl",_out_ampl);
 
-
     //update = true;
-
 }
 
 boost::property_tree::ptree DistAmpl::getConfig() const
