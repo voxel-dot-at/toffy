@@ -47,6 +47,7 @@
 
 
 #include "toffy/import/dataimporter.hpp"
+#include "toffy/io/csv_source.hpp"
 
 #include "toffy/reproject/reprojectopencv.hpp"
 

@@ -17,9 +17,9 @@
 
 using namespace std;
 
-static void BTA_CALLCONV infoEventCbEx2(BTA_Handle /*handle*/, BTA_Status status, int8_t *msg, void *userArg)
+static void BTA_CALLCONV infoEventCbEx2(BTA_Handle /*handle*/, BTA_Status status, int8_t *msg, void* /*userArg*/)
 {
-    BtaWrapper* bta = (BtaWrapper*)userArg;
+    // BtaWrapper* bta = (BtaWrapper*)userArg;
     BOOST_LOG_TRIVIAL(info) << "   BTACallback: infoEvent (" << status << ") " << msg;
 }
 
@@ -1162,6 +1162,7 @@ char * BtaWrapper::loadRaw(string rawFile) {
     if (ret == 0) {
         BOOST_LOG_TRIVIAL(warning) << "Could not read file: " << rawFile;
         fclose(raw);
+        delete[] frame_data;
         return NULL;
     }
 
