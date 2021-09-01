@@ -17,25 +17,25 @@
 #pragma once
 
 #include "toffy/filter.hpp"
-//#include <opencv2/viz.hpp>
+
+namespace cv {  namespace viz { class Viz3d; }}
 
 namespace toffy {
 
-class CloudViewOpenCv : public Filter	{
-    std::string _in_cloud;
-    //cv::viz::Viz3d *sameWindow;
+class CloudViewOpenCv : public Filter 
+{
 public:
-    CloudViewOpenCv(): Filter("cloudviewopencv"), _in_cloud("cloud") {
-	//sameWindow = new cv::viz::Viz3d();
-    }
-    virtual ~CloudViewOpenCv(){
-	//delete sameWindow;
-    }
+    CloudViewOpenCv();
+    virtual ~CloudViewOpenCv();
 
-    virtual int loadConfig(const boost::property_tree::ptree& pt);
-    virtual boost::property_tree::ptree getConfig() const;
-    virtual void updateConfig(const boost::property_tree::ptree &pt);
+    virtual int loadConfig(const boost::property_tree::ptree& pt) override;
+    virtual boost::property_tree::ptree getConfig() const override;
+    virtual void updateConfig(const boost::property_tree::ptree &pt) override;
 
-    virtual bool filter(const Frame& in, Frame& out) const;
+    virtual bool filter(const Frame& in, Frame& out) const override;
+private:
+    std::string _in_cloud;
+    cv::viz::Viz3d *sameWindow;
 };
+
 }

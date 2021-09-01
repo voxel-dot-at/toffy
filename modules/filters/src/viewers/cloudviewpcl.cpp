@@ -83,7 +83,7 @@ void CloudViewPCL::updateConfig(const boost::property_tree::ptree &pt)
 
 	if (it->first != "<xmlcomment>") {
 	    _cloudNames.push_back( it->second.data() );
-
+        cout << "CloudViewPCL::updateConfig() Listening for cloud " << it->second.data() << endl;
 	    pcl::PCLPointCloud2Ptr p(new pcl::PCLPointCloud2());
 	    _clouds.push_back( p );
 	}

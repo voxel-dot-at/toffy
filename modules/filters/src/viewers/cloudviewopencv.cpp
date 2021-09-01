@@ -17,18 +17,28 @@
 #include <boost/log/trivial.hpp>
 #include <boost/any.hpp>
 
+#include <opencv2/viz.hpp>
+
 #include "toffy/viewers/cloudviewopencv.hpp"
 
 using namespace toffy;
 using namespace cv;
 
+CloudViewOpenCv::CloudViewOpenCv(): Filter("cloudviewopencv"), _in_cloud("cloud") {
+	sameWindow = new cv::viz::Viz3d();
+}
+
+CloudViewOpenCv::~CloudViewOpenCv() { 
+	delete sameWindow; 
+}
+
 int CloudViewOpenCv::loadConfig(const boost::property_tree::ptree& pt) {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "(const boost::property_tree::ptree& pt)";
-    const boost::property_tree::ptree& rectify = pt.get_child(this->type());
+    const boost::property_tree::ptree& conf = pt.get_child(this->type());
 
-    loadGlobals(rectify);
+    loadGlobals(conf);
 
-    updateConfig(rectify);
+    updateConfig(conf);
 
     return true;
 }
@@ -96,13 +106,12 @@ bool CloudViewOpenCv::filter(const Frame &in, Frame& out) const {
 			", filter  " << id() <<" not applied.";
 		return false;
 	}
-	//*sameWindow = viz::getWindowByName("Viz Demo");
+	*sameWindow = viz::getWindowByName("Viz Demo");
 
-	//viz::WCloud cloud_widget(*img3d, viz::Color::green());
-	//sameWindow->showWidget("Coordinate Widget", viz::WCoordinateSystem());
-	//sameWindow->showWidget("Cloud", cloud_widget);
+	viz::WCloud cloud_widget(*img3d, viz::Color::green());
+	sameWindow->showWidget("Coordinate Widget", viz::WCoordinateSystem());
+	sameWindow->showWidget("Cloud", cloud_widget);
 
-	//sameWindow->spinOnce(30, true);
+	sameWindow->spinOnce(30, true);
 	return true;
 }
-

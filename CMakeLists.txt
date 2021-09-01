@@ -233,7 +233,7 @@ if ( ${OpenCV_VERSION_MAJOR} EQUAL 2 )
    # opencv 2.4
    find_package( OpenCV COMPONENTS imgproc highgui calib3d video contrib REQUIRED )
 else()
-   find_package( OpenCV COMPONENTS imgproc highgui calib3d videoio tracking REQUIRED )
+   find_package( OpenCV COMPONENTS imgproc highgui calib3d videoio tracking viz REQUIRED )
 endif()
 message("  OpenCV libs " ${OpenCV_LIBS} )
 
@@ -433,7 +433,7 @@ set_target_properties( ${PROJECT_NAME} PROPERTIES
     DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX}
 )
 
-target_link_libraries( ${PROJECT_NAME} ${LIBS} )
+target_link_libraries( ${PROJECT_NAME} ${LIBS} -L/usr/local/lib bta )
 
 
 #######################################

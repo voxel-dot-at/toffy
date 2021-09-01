@@ -1,6 +1,5 @@
 /*
-   Copyright 2018 Simon Vogl <svogl@voxel.at>
-                  Angel Merino-Sastre <amerino@voxel.at>
+   Copyright 2021 Simon Vogl <svogl@voxel.at>
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
