@@ -44,9 +44,10 @@ const bool dbg=false;
 #endif
 
 std::size_t Bilateral::_filter_counter = 1;
-const std::string Bilateral::id_name = "backgroundSubs";
 
-Bilateral::Bilateral() :Filter("bilateral"), 
+const std::string Bilateral::id_name = "bilateral";
+
+Bilateral::Bilateral() :Filter(Bilateral::id_name), 
 			_in_img("depth"),
 			_out_img("depth"),
 			d(5), sigmaColor(10.), sigmaSpace(10.)
@@ -144,5 +145,3 @@ void Bilateral::updateConfig(const boost::property_tree::ptree &pt) {
 
     _out_img = pt.get("outputs.img", _out_img);
 }
-
-
