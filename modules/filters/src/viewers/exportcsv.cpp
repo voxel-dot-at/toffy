@@ -74,12 +74,12 @@ boost::property_tree::ptree ExportCSV::getConfig() const {
 static void saveMatCSV(const std::string &fileName, const Mat& mat, bool skipZeroes);
 
 bool ExportCSV::filter(const Frame &in, Frame &) {
-  BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+  LOG(debug) << __FUNCTION__ << " " << id();
   matPtr input;
   try {
     input = boost::any_cast<matPtr>(in.getData(_in));
   } catch (const boost::bad_any_cast &) {
-    BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << _in << ", filter  "
+    LOG(warning) << "Could not cast input " << _in << ", filter  "
                                << id() << " not applied.";
     return false;
   }
@@ -96,12 +96,12 @@ bool ExportCSV::filter(const Frame &in, Frame &) {
 
       snprintf(path, _filePattern.length() + 64, _filePattern.c_str(), fc);
     } else {
-      BOOST_LOG_TRIVIAL(warning) << "no suitable file pattern found";
+      LOG(warning) << "no suitable file pattern found";
       snprintf(path, _filePattern.length() + 64,
                "%s", _filePattern.c_str());  // no arg?!
     }
   }
-
+  LOG(info) << " saving to " << path ;
   saveMatCSV(std::string(path), *input, _skip0s);
 
   return true;
@@ -116,7 +116,7 @@ static void saveMatCSV(const std::string &fileName, const Mat& mat, bool skipZer
     case CV_8UC1:
       for (int y = 0; y < mat.rows; y++) {
         for (int x = 0; x < mat.cols; x++) {
-          of << mat.at<char>(x, y) << ";";
+          of << mat.at<char>(y, x) << ";";
           j++;
         }
         of << '\n';
@@ -125,7 +125,7 @@ static void saveMatCSV(const std::string &fileName, const Mat& mat, bool skipZer
     case CV_16UC1:
       for (int y = 0; y < mat.rows; y++) {
         for (int x = 0; x < mat.cols; x++) {
-          of << mat.at<unsigned short>(x, y) << ";";
+          of << mat.at<unsigned short>(y, x) << ";";
           j++;
         }
         of << '\n';
@@ -134,7 +134,7 @@ static void saveMatCSV(const std::string &fileName, const Mat& mat, bool skipZer
     case CV_16SC1:
       for (int y = 0; y < mat.rows; y++) {
         for (int x = 0; x < mat.cols; x++) {
-          of << mat.at<short>(x, y) << ";";
+          of << mat.at<short>(y, x) << ";";
           j++;
         }
         of << '\n';
@@ -143,7 +143,7 @@ static void saveMatCSV(const std::string &fileName, const Mat& mat, bool skipZer
     case CV_32SC1:
       for (int y = 0; y < mat.rows; y++) {
         for (int x = 0; x < mat.cols; x++) {
-          of << mat.at<int>(x, y) << ";";
+          of << mat.at<int>(y, x) << ";";
           j++;
         }
         of << '\n';
@@ -152,7 +152,7 @@ static void saveMatCSV(const std::string &fileName, const Mat& mat, bool skipZer
     case CV_32FC1:
       for (int y = 0; y < mat.rows; y++) {
         for (int x = 0; x < mat.cols; x++) {
-          of << mat.at<float>(y,x) << ";";
+          of << mat.at<float>(y, x) << ";";
           j++;
         }
         of << '\n';
@@ -161,7 +161,7 @@ static void saveMatCSV(const std::string &fileName, const Mat& mat, bool skipZer
     case CV_64FC1:
       for (int y = 0; y < mat.rows; y++) {
         for (int x = 0; x < mat.cols; x++) {
-          of << mat.at<double>(y,x) << ";";
+          of << mat.at<double>(y, x) << ";";
           j++;
         }
         of << '\n';
