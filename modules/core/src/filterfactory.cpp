@@ -179,6 +179,8 @@ Filter * FilterFactory::createFilter(std::string type, std::string name) {
     else if (type == ImageView::id_name)
 	f = new ImageView();
 #endif
+    else if (type == "csvSource")
+	f = new capturers::CSVSource();
     else if (type == "exportcsv")
 	f = new ExportCSV();
 
