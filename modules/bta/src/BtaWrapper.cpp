@@ -29,7 +29,7 @@ static void BTA_CALLCONV frameArrivedEx2(BTA_Handle /*handle*/, BTA_Frame *frame
     BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx NO FRAME " ;
             return;
         }
-    BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx (" << frame->frameCounter << ") " ;
+    // BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx (" << frame->frameCounter << ") " ;
     BtaWrapper* bta = (BtaWrapper*)arg;
     int musec, msec, sec, min, hours;
     

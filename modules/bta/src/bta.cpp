@@ -249,12 +249,6 @@ bool Bta::filter(const Frame &in, Frame& out) {
     out.addData(_out_fc, it );
     out.addData("fc2", it );
 
-    char fnam[128];
-    snprintf(fnam, sizeof(fnam), "data/dist_%u.csv", it);
-    sensor->saveDistCSV(std::string(fnam));
-    snprintf(fnam, sizeof(fnam), "data/ampl_%u.csv", it);
-    sensor->saveAmplCSV(std::string(fnam));
-
     //The timestamp are unlogic.
     sensor->getFrameTime(data, it);
     out.addData(_out_ts, it );
