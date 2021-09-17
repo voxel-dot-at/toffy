@@ -62,10 +62,10 @@ private:
         _out_mt, _out_lt, _out_gt;
 std::vector<int> fcs;
 bool hasFcs;
-int seq; 
+int sequence; 
 bool useSequence;
-  void loadDepth(Frame& f);
-  void loadAmpl(Frame& f);
+  void loadDepth(Frame& frame, cv::Mat& depth);
+  void loadAmpl(Frame& frame, cv::Mat& ampl);
 };
 
 } // capturers
