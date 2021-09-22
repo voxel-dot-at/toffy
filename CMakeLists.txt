@@ -213,11 +213,12 @@ endif()
 
 # PCL
 if(NOT WITHOUT_PCL)
-    find_package(PCL REQUIRED COMPONENTS common visualization filters sample_consensus )
+    find_package(PCL REQUIRED COMPONENTS common visualization filters sample_consensus segmentation features )
     include_directories(${PCL_INCLUDE_DIRS})
     add_definitions(${PCL_DEFINITIONS})
     list(APPEND LIBS ${PCL_LIBRARIES})
     message (STATUS "PCL_INCLUDE_DIRS: " ${PCL_INCLUDE_DIRS})
+    message (STATUS "PCL_LIBRARIES: " ${PCL_LIBRARIES})
     add_definitions(-DPCL_FOUND)
     message (STATUS "PCL_FOUND: " ${PCL_FOUND})
     if (NOT PCL_FOUND)
@@ -455,7 +456,7 @@ target_link_libraries( ${PROJECT_NAME} ${LIBS} -L/usr/local/lib bta )
 #Include configs in demo app
 file(GLOB_RECURSE configs apps/configs/*.xml )
 add_executable (toffyRunner apps/main ${configs})
-#message (DEBUG "DEFINITIONS: ${DEFINITIONS}")
+
 target_compile_definitions(toffyRunner PUBLIC ${DEFINITIONS})
 # toffy_DEBUG only get set alone
 target_compile_definitions(toffyRunner PUBLIC "${PROJECT_NAME}_DEBUG=$<CONFIG:Debug>")
