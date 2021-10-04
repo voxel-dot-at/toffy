@@ -16,45 +16,67 @@
 */
 #pragma once
 
+#include <pcl/point_cloud.h>
+
 #include "toffy/filter.hpp"
 
 /**
- * @brief
- *
+ * @brief SampleConsensus implements access to ransac filters. It reads in a 3D pointset (matPtr) and outputs an inliers and an outliers cloud.
+ * Depending on the sampling mode (line, plane, cylinder), type-specific options are available. 
  */
 namespace toffy {
     namespace filters {
 	namespace f3d {
-	    const int sampleModelUnknown=0;
-	    const int sampleModelLine=1;
-	    const int sampleModelPlane=2;
+            enum sampleType { unknown, line, plane, cylinder, regionGrowing, euclidean };
+            static std::string sampleTypeNames[] = { "unknown", "line", "plane", "cylinder", "regionGrowing", "euclidean" };
 
 	    /** SampleConsensus analyses clouds with a selectable RANSAC model 
 	     */
 	    class SampleConsensus : public Filter {
 	    public:
 		SampleConsensus(): Filter("sampleConsensus"), 
-				   in("cloud"),inliers("inliers"), 
-				   outliers("outliers"), 
-				   model("plane"), threshold(0.02), maxIters(1000) {}
+            in("cloud"),inliers("inliers"), 
+            outliers("outliers"), 
+            model("plane"), threshold(0.02), 
+            minRadius(0.05), maxRadius(0.3),
+            maxIters(1000), type(plane),
+            outputPC2(false),
+            smoothnessThresh(5.0),curvatureThresh(1.0) {}
 
 		virtual ~SampleConsensus() {}
-
-		virtual bool filter(const Frame& in, Frame& out);
-
-		virtual int loadConfig(const boost::property_tree::ptree& pt);
 
 		virtual boost::property_tree::ptree getConfig() const;
 
 		void updateConfig(const boost::property_tree::ptree &pt);
-	    private:
-		std::string in, inliers, outliers, model;
-		double threshold;
-		int maxIters;
-		int mdl; // the numeric value of the model
 
+		virtual bool filter(const Frame& in, Frame& out);
+	    private:
+                bool getInputPoints(const Frame& in, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
+                bool segmentPlane(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                        pcl::PointCloud<pcl::PointXYZ>::Ptr& inliers, 
+                        pcl::PointCloud<pcl::PointXYZ>::Ptr& outliers);
+                bool segmentCylinder(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                        pcl::PointCloud<pcl::PointXYZ>::Ptr& inliers, 
+                        pcl::PointCloud<pcl::PointXYZ>::Ptr& outliers);
+
+                bool runRegionGrowing(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                        Frame& out);
+                bool runEuclidean(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                        Frame& out);
+
+		std::string in, inliers, outliers, model;
+		double threshold, minRadius,maxRadius;
+		int maxIters;
+		sampleType type;
+        bool outputPC2; ///< output PointCloud2 (true) or PointCloud<PointXYZ> (false)
+
+        // regionGrowing wants:
+        double smoothnessThresh; ///< smoothness threshold 
+        double curvatureThresh; ///< curvature threshold
+        
+        // euclidean clustering:
+        double distanceThresh; ///< distance threshold (meters)
 	    };
 	}
     }
 }
-
