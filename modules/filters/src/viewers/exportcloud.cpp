@@ -27,52 +27,8 @@
 using namespace toffy;
 using namespace cv;
 
-/*
-int ExportCloud::loadConfig(const FileNode &fn) {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-
-	FileNode expCloud = fn;
-	if (!checkFileNode(expCloud))
-		return 0;
-
-	expCloud["fileName"] >> _name;
-	expCloud["path"] >> _path;
-	expCloud["sequence"] >> _seq;
-	expCloud["binary"] >> _bin;
-
-	//Look for inputs
-	FileNode ios = expCloud["inputs"];
-	if (ios.empty()) {
-		BOOST_LOG_TRIVIAL(warning) <<
-			"Missing inputs for filter " <<	id() <<
-			" ... using defauts: " <<
-			"\tcloud: " << _in_cloud;
-	} else {
-		ios["cloud"] >> _in_cloud;
-	}
-
-	std::string name;
-	expCloud["name"] >> name;
-	if (!name.empty())
-		this->name(name);
-
-	return 1;
-}
-*/
-
-int ExportCloud::loadConfig(const boost::property_tree::ptree& pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "(const boost::property_tree::ptree& pt)";
-    const boost::property_tree::ptree& rectify = pt.get_child(this->type());
-
-    loadGlobals(rectify);
-
-    updateConfig(rectify);
-
-    return true;
-}
-
 void ExportCloud::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOG(debug) << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -101,18 +57,37 @@ boost::property_tree::ptree ExportCloud::getConfig() const {
     return pt;
 }
 
-bool ExportCloud::filter(const Frame &in, Frame& out) {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
-
+bool ExportCloud::filter(const Frame &in, Frame& /*out*/) {
+	LOG(debug) << " exporting " << _in_cloud;
+#if 0
 	pcl::RangeImagePlanar::Ptr planar;
 	try {
 		planar = boost::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_in_cloud));
 	} catch(const boost::bad_any_cast &) {
-		BOOST_LOG_TRIVIAL(warning) <<
+		LOG(warning) <<
 			"Could not cast input " << _in_cloud <<
 			", filter  " << id() <<" not applied.";
 		return false;
 	}
+#endif
+	pcl::PCLPointCloud2::Ptr planar;
+	try {
+		planar = boost::any_cast<pcl::PCLPointCloud2::Ptr>(in.getData(_in_cloud));
+	} catch(const boost::bad_any_cast &) {
+		LOG(warning) <<
+			"Could not cast input " << _in_cloud <<
+			", filter  " << id() <<" not applied.";
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
+        bool success = getInputPoints(in, cloud);
+        if (success) {
+            planar.reset(new pcl::PCLPointCloud2());
+            pcl::toPCLPointCloud2(*cloud, *planar);
+        } else {
+    		return false;
+        }
+	}
+
 
 	std::string fileName = _path +_fileName;
 	if (_seq) {
@@ -120,8 +95,63 @@ bool ExportCloud::filter(const Frame &in, Frame& out) {
 		fileName += boost::lexical_cast<std::string>(_cnt);
 	}
 	fileName += ".pcd";
-	_w.write (fileName, *planar, _bin);
+	_w.write (fileName, *planar);
 
 	return true;
 }
 
+
+
+bool ExportCloud::getInputPoints(const Frame& in, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
+{
+    pcl::RangeImagePlanar::Ptr p;
+    matPtr img3d;
+
+    try {
+	pcl::PCLPointCloud2Ptr planar;
+	planar = boost::any_cast<pcl::PCLPointCloud2Ptr>(in.getData(_in_cloud));
+	//     if (*planar != nullptr) {
+        pcl::fromPCLPointCloud2(*planar, *cloud);
+	//     } else {
+	//         LOG(error) << "input cloud is null!";
+	//         return false;
+	//     }
+    } catch(const boost::bad_any_cast &) {
+	LOG(warning) <<
+	    "Could not cast input - trying to convert from OCV cloud.";
+
+	// 3d mat
+	try {
+	    matPtr img3d = boost::any_cast<matPtr>(in.getData(_in_cloud));
+	    cloud.reset(new pcl::PointCloud<pcl::PointXYZ>(/*width=*/img3d->cols, /*height=*/img3d->rows));
+	    float *dptr;
+
+	    for (int y=0; y< img3d->rows; y++) {
+		for (int x = 0; x < img3d->cols; x++) {
+		    dptr = img3d->ptr<float>(y, x);
+		    pcl::PointXYZ& pt = cloud->at(x,y);
+		    pt.x = dptr[0];
+		    pt.y = dptr[1];
+		    pt.z = dptr[2];
+		}
+	    }
+	} catch (const boost::bad_any_cast &) {
+	    LOG(warning) << "Could not cast input to matPtr ";
+
+	    // try pointcloud:
+	    try {
+                cloud = boost::any_cast<pcl::PointCloud<pcl::PointXYZ>::Ptr>(in.getData(_in_cloud));
+                LOG(info) << "got cloud size " << cloud->size();
+                LOG(info) << __LINE__;
+	    } catch (const boost::bad_any_cast &) {
+                LOG(warning) << "Could not cast input " << _in_cloud << " to PointCloud<pcl::PointXYZ> "
+			     << _in_cloud << ", filter  " << id() << " not applied.";
+
+
+                return false;
+	    }
+        }
+	LOG(debug) << "YUHUU!!!!";
+    }
+    return true;
+}

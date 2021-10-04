@@ -87,6 +87,7 @@
 #    include "toffy/3d/transform.hpp"
 #  endif
 #  include "toffy/3d/groundprojection.hpp"
+#  include "toffy/viewers/exportcloud.hpp"
 #  include "toffy/detection/squareDetect.hpp"
 
 using namespace toffy::filters::f3d;
@@ -255,6 +256,8 @@ Filter * FilterFactory::createFilter(std::string type, std::string name) {
     else if (type == "muxMerge")
         f = new MuxMerge();
     #endif
+    else if (type == "exportcloud")
+	    f = new ExportCloud();
     else if (type == "groundprojection")
 	    f = new GroundProjection();
     else if (type == "squareDetect")

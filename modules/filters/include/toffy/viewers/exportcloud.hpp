@@ -16,26 +16,34 @@
 */
 #pragma once
 
-#include "toffy/filter.hpp"
+#include <pcl/point_cloud.h>
 #include <pcl/io/pcd_io.h>
+
+#include "toffy/filter.hpp"
 
 namespace toffy {
 
 class ExportCloud : public Filter	{
-    std::string _in_cloud, _path, _fileName;
-    bool _seq, _bin;
-    pcl::PCDWriter _w;
-    int _cnt;
 public:
     ExportCloud(): Filter("exportcloud"),
 	_in_cloud("cloud"), _fileName("cloud"),
-	_seq(false), _cnt(1) {}
+        _pattern(""),_seqName(""),
+	_seq(false), _bin(true), _cnt(1) {}
     virtual ~ExportCloud() {}
 
-    virtual int loadConfig(const boost::property_tree::ptree& pt);
     virtual boost::property_tree::ptree getConfig() const;
+
     virtual void updateConfig(const boost::property_tree::ptree &pt);
 
     virtual bool filter(const Frame& in, Frame& out);
+
+private:
+    std::string _in_cloud, _path, _fileName, _pattern, _seqName;
+    bool _seq, _bin;
+    pcl::PCDWriter _w;
+    int _cnt;
+
+    bool getInputPoints(const Frame& in, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
+
 };
 }
