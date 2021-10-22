@@ -1230,6 +1230,7 @@ static inline void cpyMetaData(BTA_Channel *dst, const BTA_Channel *src) {
         }
         memcpy(d->data, s->data, d->dataLen);
     }
+
 }
 
 static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src) {
@@ -1262,6 +1263,11 @@ static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src) {
     }
   }
   cpyMetaData(dst, src);
+  cout << "cpyChan sq " << dst->sequenceCounter
+  << " it " << dst->integrationTime
+  << " mf " << dst->modulationFrequency
+  << " unit " << dst->unit
+  << endl;
 }
 
 static void cpyChannels(BTA_Frame* dst, const BTA_Frame* src) {
@@ -1306,6 +1312,13 @@ static void cpyFrame(BTA_Frame* dst, const BTA_Frame* src) {
     dst->sequenceCounter = src->sequenceCounter ;
 
     cpyChannels(dst, src);
+
+    cout << "cpyFrame sq "
+         << dst->sequenceCounter
+         //   << " it " << dst->integrationTime
+         //   << " mf " << dst->modulationFrequency
+         //   << " unit " << dst-<unit;
+         << endl;
 }
 
 // queue handling:
