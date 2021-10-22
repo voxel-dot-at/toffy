@@ -47,55 +47,57 @@ Average::Average() :Filter(Average::id_name,_filter_counter),
 
 bool Average::filter(const Frame &in, Frame& out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOG(debug) << __FUNCTION__ <<  " " << id();
 
-    boost::shared_ptr<cv::Mat> img;
-    boost::shared_ptr<cv::Mat> new_img;
+    matPtr img;
+    matPtr new_img;
 
     try {
-	img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_img));
+    	img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_img));
 
     } catch(const boost::bad_any_cast &) {
-	BOOST_LOG_TRIVIAL(warning) <<
-	    "Could not cast input " << _in_img <<
-	    ", filter  " << id() <<" not applied.";
-	return false;
+        LOG(warning) <<
+            "Could not cast input " << _in_img <<
+            ", filter  " << id() <<" not applied.";
+        return false;
     }
     try {
-	if (in.hasKey(_out_img))
-	    new_img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_out_img));
-	else
-	    new_img.reset(new Mat());
+        if (out.hasKey(_out_img)) {
+            new_img = boost::any_cast<boost::shared_ptr<cv::Mat> >(out.getData(_out_img));
+        } else {
+            LOG(info) << "init new_img!";
+            new_img.reset(new Mat());
+        }
     } catch(const boost::bad_any_cast &) {
-	BOOST_LOG_TRIVIAL(warning) <<
-	    "Could not cast output " << _in_img <<
-	    ", filter  " << id() <<" not applied.";
-	return false;
+        LOG(warning) <<
+            "Could not cast output " << _in_img <<
+            ", filter  " << id() <<" not applied.";
+        return false;
     }
 
     //bilateralFilter(*depth, *bi, d, sigmaColor, sigmaSpace, BORDER_REPLICATE);
 
     boost::shared_ptr<cv::Mat> imgadd;
     if (_queue.size() == _size) {
-	BOOST_LOG_TRIVIAL(debug) << "queue FULL";
-	imgadd = _queue.front();
-	_queue.pop_front();
-	img->copyTo(*imgadd);
-	_queue.push_back(imgadd);
+        LOG(debug) << "queue FULL";
+        imgadd = _queue.front();
+        _queue.pop_front();
+        img->copyTo(*imgadd);
+        _queue.push_back(imgadd);
     } else {
-	BOOST_LOG_TRIVIAL(debug) << "Filling queue";
-	imgadd.reset( new Mat(img->clone()));
-	_queue.push_back(imgadd);
-	BOOST_LOG_TRIVIAL(debug) << _queue.size();
+        LOG(debug) << "Filling queue";
+        imgadd.reset( new Mat(img->clone()));
+        _queue.push_back(imgadd);
+        LOG(debug) << _queue.size();
     }
 
     if (img->type() != _dst.type() || img->size() != _dst.size()) {
-	_dst.release();
-	_dst = Mat(img->size(), img->type());
+        _dst.release();
+        _dst = Mat(img->size(), img->type());
     }
     if (img->size() != _cnt.size()) {
-	_cnt.release();
-	_cnt = Mat(img->size(), CV_32S);
+        _cnt.release();
+        _cnt = Mat(img->size(), CV_32S);
     }
     _dst = Scalar::all(0.0);
     _cnt = Scalar::all(0);
@@ -122,13 +124,13 @@ bool Average::filter(const Frame &in, Frame& out)
 
     for(int row = 0; row < _dst.rows; ++row) {
 	dst = _dst.ptr<float>(row);
-	cnt = _cnt.ptr<int>(row);
+        cnt = _cnt.ptr<int>(row);
 
-	for(int col = 0; col < _dst.cols; ++col) {
-	    if (cnt[col] != 0)
-		    dst [col] /= cnt[col];
+        for(int col = 0; col < _dst.cols; ++col) {
+            if (cnt[col] != 0)
+                dst [col] /= cnt[col];
 
-	}
+        }
     }
 
     *new_img = _dst.clone();
@@ -183,4 +185,6 @@ void Average::updateConfig(const boost::property_tree::ptree &pt) {
     _in_img = pt.get("inputs.img", _in_img);
 
     _out_img = pt.get("outputs.img", _out_img);
+
+    LOG(debug) << "averaging " << _size << " " << _in_img << " -> " << _out_img;
 }
