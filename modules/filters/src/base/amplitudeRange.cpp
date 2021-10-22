@@ -88,9 +88,10 @@ boost::property_tree::ptree AmplitudeRange::getConfig() const {
 bool AmplitudeRange::filter(const Frame &in, Frame& out) {
 	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
 
-	boost::shared_ptr<cv::Mat> ampl, depth;
+	matPtr ampl, depth;
+
 	try {
-		ampl = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_ampl));
+		ampl = boost::any_cast<matPtr>(in.getData(_in_ampl));
 	} catch(const boost::bad_any_cast &) {
 		BOOST_LOG_TRIVIAL(warning) <<
 			"Could not cast input " << _in_ampl <<
@@ -99,23 +100,35 @@ bool AmplitudeRange::filter(const Frame &in, Frame& out) {
 	}
 	
 	try {
-		depth = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_depth));
+		depth = boost::any_cast<matPtr>(in.getData(_in_depth));
 	} catch(const boost::bad_any_cast &) {
 		BOOST_LOG_TRIVIAL(warning) <<
 			"Could not cast input " << _in_depth <<
 			", filter  " << id() <<" not applied.";
 		return false;
 	}
+    matPtr maskPtr;
+    if (out.hasKey("mask")) {
+        maskPtr = out.getMatPtr("mask");
+    } else {
+        maskPtr.reset(new cv::Mat(ampl->rows, ampl->cols, CV_8UC1));
+        out.addData("mask", maskPtr);
+    }
 
 	//TODO we need new data at the output
 	//TODO handle aux vars creation
 	Mat minMask = *ampl > _minAmpl;
 	Mat maxMask = *ampl < _maxAmpl;
-	Mat mask = minMask & maxMask;
-	//mask != mask;
+	
+    *maskPtr = minMask & maxMask;
+
+    // debug: 
+    // imshow("mask", *maskPtr);
+
 	Mat newAmpl, newDepth;
-	ampl->copyTo(newAmpl, mask);
-	depth->copyTo(newDepth, mask);
+
+	ampl->copyTo(newAmpl, *maskPtr);
+	depth->copyTo(newDepth, *maskPtr);
 
 	newAmpl.copyTo(*ampl);
 	newDepth.copyTo(*depth);
