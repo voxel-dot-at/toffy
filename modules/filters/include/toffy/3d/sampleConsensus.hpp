@@ -27,8 +27,8 @@
 namespace toffy {
     namespace filters {
 	namespace f3d {
-            enum sampleType { unknown, line, plane, cylinder, regionGrowing, euclidean };
-            static std::string sampleTypeNames[] = { "unknown", "line", "plane", "cylinder", "regionGrowing", "euclidean" };
+            enum sampleType { unknown, line, plane, cylinder, regionGrowing, euclidean, mincut };
+            static std::string sampleTypeNames[] = { "unknown", "line", "plane", "cylinder", "regionGrowing", "euclidean", "min-cut" };
 
 	    /** SampleConsensus analyses clouds with a selectable RANSAC model 
 	     */
@@ -41,7 +41,10 @@ namespace toffy {
             minRadius(0.05), maxRadius(0.3),
             maxIters(1000), type(plane),
             outputPC2(false),
-            smoothnessThresh(5.0),curvatureThresh(1.0) {}
+            smoothnessThresh(5.0),curvatureThresh(1.0),
+            distanceThresh(0.05),
+            minSize(100), maxSize(25000)
+         {}
 
 		virtual ~SampleConsensus() {}
 
@@ -63,6 +66,10 @@ namespace toffy {
                         Frame& out);
                 bool runEuclidean(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
                         Frame& out);
+                bool runEuclideanOld(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                        Frame& out);
+                bool runMinCut(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                        Frame& out);
 
 		std::string in, inliers, outliers, model;
 		double threshold, minRadius,maxRadius;
@@ -76,6 +83,7 @@ namespace toffy {
         
         // euclidean clustering:
         double distanceThresh; ///< distance threshold (meters)
+        int minSize, maxSize;
 	    };
 	}
     }
