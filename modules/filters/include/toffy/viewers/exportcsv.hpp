@@ -29,7 +29,7 @@ public:
     ExportCSV(): Filter("exportcsv"),
 	_in("depth"), _filePattern("depth_%d.csv"),
         _fc(""),
-	_seq(false), _skip0s(false), _cnt(1) {}
+	_seq(false), _skip0s(false), _cnt(0) {}
     virtual ~ExportCSV() {}
 
     virtual int loadConfig(const boost::property_tree::ptree& pt);
