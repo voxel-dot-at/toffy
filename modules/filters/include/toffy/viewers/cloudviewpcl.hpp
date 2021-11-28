@@ -18,9 +18,11 @@
 
 #include <vector>
 
-#include "toffy/filter.hpp"
 #include <boost/thread.hpp>
+
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
+
+#include "toffy/filter.hpp"
 
 namespace toffy {
 /**
