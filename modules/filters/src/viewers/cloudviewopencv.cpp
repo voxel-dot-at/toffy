@@ -97,9 +97,9 @@ int CloudViewOpenCv::loadConfig(const FileNode &fn) {
 bool CloudViewOpenCv::filter(const Frame &in, Frame& out) const {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
 
-	boost::shared_ptr<cv::Mat> img3d;
+	matPtr img3d;
 	try {
-		img3d = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_cloud));
+		img3d = boost::any_cast<matPtr>(in.getData(_in_cloud));
 	} catch(const boost::bad_any_cast &) {
 		BOOST_LOG_TRIVIAL(warning) <<
 			"Could not cast input " << _in_cloud <<

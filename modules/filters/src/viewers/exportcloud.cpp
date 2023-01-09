@@ -19,6 +19,7 @@
 #include <opencv2/core.hpp>
 
 #include <boost/log/trivial.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/any.hpp>
 
 #include "toffy/viewers/exportcloud.hpp"

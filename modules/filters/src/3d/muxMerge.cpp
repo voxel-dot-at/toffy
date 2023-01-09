@@ -116,7 +116,7 @@ bool MuxMerge::filter(const std::vector<Frame*>& in, Frame& out)
 	    return false;
 	}
 
-	pcl::concatenatePointCloud(*output, *rest, *output);
+	pcl::concatenate(*output, *rest, *output);
 	//pcl::PointCloud<pcl::PointXYZ> restXYZ;
 	//pcl::fromPCLPointCloud2 (*rest, restXYZ);
 	//outputXYZ += restXYZ;

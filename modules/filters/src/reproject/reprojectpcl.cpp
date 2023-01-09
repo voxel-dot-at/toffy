@@ -90,35 +90,35 @@ boost::property_tree::ptree ReprojectPCL::getConfig() const
     return pt;
 }
 
-bool ReprojectPCL::filter(const Frame &in, Frame& out) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__  <<  " " << id();
+bool ReprojectPCL::filter(const Frame &in, Frame &out) {
+  LOG(debug) << __FUNCTION__ << " " << id();
 
-    toffy::Filter::setLoggingLvl();
+  toffy::Filter::setLoggingLvl();
 
-    boost::shared_ptr<cv::Mat> img;
+  boost::shared_ptr<cv::Mat> img;
+  try {
+    img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_img));
+  } catch (const boost::bad_any_cast &) {
+    LOG(warning) << "ReprojectPCL::filter() Could not cast input " << _in_img
+                 << ", filter  " << id() << " not applied.";
+    return false;
+  }
+  if (!_in_cameraMatrix.empty()) {
     try {
-	img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_img));
-    } catch(const boost::bad_any_cast &) {
-	BOOST_LOG_TRIVIAL(warning) <<
-				      "ReprojectPCL::filter() Could not cast input " << _in_img <<
-				      ", filter  " << id() <<" not applied.";
-	return false;
+      _cameraMatrix = boost::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
+    } catch (const boost::bad_any_cast &) {
+      LOG(warning) << "ReprojectPCL::filter() Could not read input "
+                   << _in_cameraMatrix;
+      return false;
     }
-    if (!_in_cameraMatrix.empty()) {
-	try {
-	    _cameraMatrix= boost::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
-	} catch(const boost::bad_any_cast &) {
-	    BOOST_LOG_TRIVIAL(warning) <<
-					  "ReprojectPCL::filter() Could not read input " << _in_cameraMatrix;
-        return false;
-	}
-    }
+  }
     if (_cameraMatrix.empty()) {
-	BOOST_LOG_TRIVIAL(warning) <<
-				      "ReprojectPCL::filter() No cameraMatrix data, filter " << id() <<" not applied.";
-	return false;
+      LOG(warning) << "ReprojectPCL::filter() No cameraMatrix data, filter "
+                   << id() << " not applied.";
+      return false;
     }
-
+    LOG(debug) << __LINE__;
+{
     pcl::RangeImagePlanar::Ptr planar (new pcl::RangeImagePlanar);
     planar->setDepthImage (img->ptr<float>(0),
 			   img->cols,img->rows,
@@ -128,20 +128,24 @@ bool ReprojectPCL::filter(const Frame &in, Frame& out) {
 			   _cameraMatrix.at<double>(1,1));
 
     if (_world) {
-	boost::shared_ptr<Eigen::Affine3f> world2camera;
-	try {
-	    //TODO transformation key by parameter
-	    world2camera = boost::any_cast<boost::shared_ptr<Eigen::Affine3f> >(in.getData(_in_transf));//"bta12world"));
-	    pcl::transformPointCloud(*planar, *planar, world2camera->matrix());
+      LOG(debug) << __LINE__ << " has world";
+      boost::shared_ptr<Eigen::Affine3f> world2camera;
+      try {
+        // TODO transformation key by parameter
+        world2camera = boost::any_cast<boost::shared_ptr<Eigen::Affine3f> >(
+            in.getData(_in_transf));  //"bta12world"));
+        pcl::transformPointCloud(*planar, *planar, world2camera->matrix());
 	} catch(const boost::bad_any_cast &) {
 	    BOOST_LOG_TRIVIAL(warning) << "No " <<  _in_transf << " transform found";
 	}
     }
+// LOG(debug) << __LINE__;
+//     pcl::PCLPointCloud2Ptr planarPC2 (new pcl::PCLPointCloud2());
+// LOG(debug) << __LINE__;
+//     pcl::toPCLPointCloud2(*planar,*planarPC2);
+// LOG(debug) << __LINE__;
 
-    pcl::PCLPointCloud2Ptr planarPC2 (new pcl::PCLPointCloud2());
-    pcl::toPCLPointCloud2(*planar,*planarPC2);
-
-    out.addData(_out_cloud,planarPC2);
-
+    out.addData(_out_cloud,planar);
+}
     return true;
 }

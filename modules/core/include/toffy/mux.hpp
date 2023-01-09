@@ -48,7 +48,7 @@ namespace toffy
 	 * @return result of Mux::filter(const std::vector<Frame*>& in,
 	 *				Frame& out)
 	 */
-	virtual bool filter(const Frame& in, Frame& out);
+	virtual bool filter(const Frame& in, Frame& out) override;
 
 	//virtual int loadConfig(const boost::property_tree::ptree& pt)=0;
 	//virtual void updateConfig(const boost::property_tree::ptree &pt)=0;

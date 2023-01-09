@@ -420,12 +420,11 @@ int BtaWrapper::connect(){
         return -1;
     }
     BOOST_LOG_TRIVIAL(debug) << "Retrieved device info: \n"
-                             << "deviceType: " << deviceInfo->deviceType << "\n"
+                             << "deviceType: " << hex << deviceInfo->deviceType << dec << "\n"
                              << "serialNumber: " << deviceInfo->serialNumber << "\n"
-                             << "firmwareVersionMajor: " << deviceInfo->firmwareVersionMajor << "\n"
-                             << "firmwareVersionMinor: " << deviceInfo->firmwareVersionMinor << "\n"
-                             << "firmwareVersionNonFunc: " << deviceInfo->firmwareVersionNonFunc
-                             << "\n";
+                             << "firmware version " << deviceInfo->firmwareVersionMajor << "."
+                             << deviceInfo->firmwareVersionMinor << "."
+                             << deviceInfo->firmwareVersionNonFunc << std::endl;
 
     device = deviceInfo->deviceType;
     BOOST_LOG_TRIVIAL(debug) << "Service running: " << (int)BTAisRunning(handle);
