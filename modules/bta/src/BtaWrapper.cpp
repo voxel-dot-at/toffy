@@ -370,28 +370,23 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
     } catch (std::exception &e) {
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
     }
-    try {
-        bltstreamFilename = pt.get<string>("connection.bltstreamFilename");
-        //config.calibFileName = pt.get<uint8_t *>("connection.calibFileName");
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Read bltstreamFilename: "
-                                 << bltstreamFilename;
-        if (bltstreamFilename.length() ) {
+    pt_optional_get_default<uint16_t>(pt,"connection.frameQueueLength", config.frameQueueLength, 10);
+
+    bool hasFile = pt_optional_get<std::string>(pt,"connection.bltstreamFilename", bltstreamFilename);
+    if (hasFile && bltstreamFilename.length() ) {
             config.deviceType = BTA_DeviceTypeGenericBltstream;
-        }        
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
     }
 
     pt_optional_get_default<uint8_t>(pt,"connection.verbosity", config.verbosity, 5);
 
     pt_optional_get_default<uint16_t>(pt,"connection.frameQueueLength", config.frameQueueLength, 10);
 
-    int32_t val;
-    pt_optional_get<int32_t>(pt,"connection.frameQueueMode", val);
-    config.frameQueueMode = (BTA_QueueMode)val;
+    int32_t i32;
+    pt_optional_get<int32_t>(pt,"connection.frameQueueMode", i32);
+    config.frameQueueMode = (BTA_QueueMode)i32;
 
-    pt_optional_get<int32_t>(pt,"connection.deviceType", val);
-    config.deviceType = (BTA_DeviceType)val;
+    pt_optional_get<int32_t>(pt,"connection.deviceType", i32);
+    config.deviceType = (BTA_DeviceType)i32;
 
     return 0;
 }
