@@ -74,6 +74,11 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
 
     sensor->parseConfig(bta);
 
+    boost::optional<bool> dynOut = bta.get_optional<bool>("options.dynamicOutputs");
+    if (dynOut.is_initialized()) {
+        dynOutputs = *dynOut;
+        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__ << " dynOutputs?" << dynOutputs;
+    }
     boost::optional<bool> playbk = bta.get_optional<bool>("playback");
     if (playbk.is_initialized()) {
         playback (*playbk);
@@ -207,18 +212,23 @@ bool Bta::filter(const Frame &in, Frame& out) {
                         boost::lexical_cast<std::string>(cnt()) +
                         fileExt());
         } else {
-	    BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " cap async? " << sensor->isAsync();
-	    if (sensor->isAsync()) {
-	    BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " cap async... " << sensor->isAsync();
-		data = (char*)sensor->waitForNextFrame();
-	    BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " cap async! " << sensor->isAsync();
+            BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__
+                                     << " cap async? " << sensor->isAsync();
+            if (sensor->isAsync()) {
+                BOOST_LOG_TRIVIAL(debug)
+                    << "bta::filter " << __LINE__ << " cap async... "
+                    << sensor->isAsync();
+                data = (char*)sensor->waitForNextFrame();
+                BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__
+                                         << " cap async! " << sensor->isAsync();
 
-	    } else {
-		BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__ << " what should I do? " ;
-	    }
+            } else {
+                BOOST_LOG_TRIVIAL(debug)
+                    << "bta::filter " << __LINE__ << " what should I do? ";
+            }
         }
     }
-    
+
     diff = boost::posix_time::microsec_clock::local_time() - start;
     BOOST_LOG_TRIVIAL(debug) << "duration pre-capture:2 " << diff.total_microseconds();
 
@@ -265,81 +275,12 @@ bool Bta::filter(const Frame &in, Frame& out) {
     diff = boost::posix_time::microsec_clock::local_time() - start;
     BOOST_LOG_TRIVIAL(debug) << "duration data: " << diff.total_microseconds();
 
-    int size = distsSize, x=0,y=0;
-
-    matPtr a, d;
-    if ( ! out.hasKey(_out_depth) || size != distsSize) {
-        // first iteration - initialize depth matrix
-        sensor->getDisSize(data, x, y);
-
-        width = x;
-        height = y;
-        size =distsSize = width*height;
-
-        // initialize depth matrix ...:
-        d.reset( new cv::Mat(height, width, CV_32F) );
-        out.addData(_out_depth, d);
-
-        a.reset( new cv::Mat(height, width, CV_16U) );
-        out.addData(_out_ampl, a);
-
+    if (dynOutputs) {
+        this->setOutputsDynamic(in, out, start, data);
     } else {
-        d = in.getMatPtr(_out_depth);
-        a = in.getMatPtr(_out_ampl);
-        x = width;
-        y = height;
+        this->setOutputsClassic(in, out, start, data);
     }
 
-    
-    float* f = d->ptr<float>();
-    sensor->getDistances( f ,distsSize,data);
-
-    diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration depth: " << diff.total_microseconds();
-
-    //sensor->getAmpSize(data, x, y);
-    //unsigned short *amplitude= NULL;
-
-    unsigned short* da = a->ptr<unsigned short>();
-    int s2 = sensor->getAmplitudes( da,size,data);
-
-    diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration ampl: " << diff.total_microseconds();
-    
-    if (flip()){
-        cv::flip(*a,*a,-1);
-        cv::flip(*d,*d,-1);
-    } else {
-        if (flip_x()) {
-            cv::flip(*a,*a,1);
-            cv::flip(*d,*d,1);
-        }
-        if (flip_y()) {
-            cv::flip(*a,*a,0);
-            cv::flip(*d,*d,0);
-        }
-    }
-    diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
-
-    out.addData(_out_depth, d );
-    out.addData(_out_ampl, a );
-
-    diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration add: " << diff.total_microseconds();
-
-    if (sensor->isAsync()) {
-	// nothing to do
-    } else {
-        cout << "FREEFRAME!!!" << endl;
-	// sensor->freeFrame(data);
-	data = NULL;
-    }
-    
-    //TODO MOVE TO OPENCV
-    //if (!in.hasKey(name()+"2world") || update) {
-    //    setCamera2Wcs(out,name()+"2world");
-    //}
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
     BOOST_LOG_TRIVIAL(debug) << "duration free: " << diff.total_microseconds();
@@ -506,5 +447,127 @@ void Bta::save(const bool &save) {
         if (this->isConnected())
             sensor->stopGrabbing();
         return CapturerFilter::save(save);
+    }
+}
+
+void Bta::setOutputsClassic(const Frame &in, Frame& out, boost::posix_time::ptime start, char* data)
+{
+    boost::posix_time::time_duration diff;
+    int size = distsSize, x=0,y=0;
+
+    matPtr a, d;
+    if ( ! out.hasKey(_out_depth) || size != distsSize) {
+        // first iteration - initialize depth matrix
+        sensor->getDisSize(data, x, y);
+
+        width = x;
+        height = y;
+        size =distsSize = width*height;
+
+        // initialize depth matrix ...:
+        d.reset( new cv::Mat(height, width, CV_32F) );
+        out.addData(_out_depth, d);
+
+        a.reset( new cv::Mat(height, width, CV_16U) );
+        out.addData(_out_ampl, a);
+
+    } else {
+        d = in.getMatPtr(_out_depth);
+        a = in.getMatPtr(_out_ampl);
+        x = width;
+        y = height;
+    }
+
+    
+    float* f = d->ptr<float>();
+    sensor->getDistances( f ,distsSize,data);
+
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration depth: " << diff.total_microseconds();
+
+    //sensor->getAmpSize(data, x, y);
+    //unsigned short *amplitude= NULL;
+
+    unsigned short* da = a->ptr<unsigned short>();
+    sensor->getAmplitudes( da,size,data);
+
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration ampl: " << diff.total_microseconds();
+    
+    if (flip()){
+        cv::flip(*a,*a,-1);
+        cv::flip(*d,*d,-1);
+    } else {
+        if (flip_x()) {
+            cv::flip(*a,*a,1);
+            cv::flip(*d,*d,1);
+        }
+        if (flip_y()) {
+            cv::flip(*a,*a,0);
+            cv::flip(*d,*d,0);
+        }
+    }
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
+
+    out.addData(_out_depth, d );
+    out.addData(_out_ampl, a );
+
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration add: " << diff.total_microseconds();
+
+    if (sensor->isAsync()) {
+	// nothing to do
+    } else {
+        cout << "FREEFRAME!!!" << endl;
+	// sensor->freeFrame(data);
+	data = NULL;
+    }
+}
+
+void Bta::setOutputsDynamic(const Frame &in, Frame& out, boost::posix_time::ptime start, char* data)
+{
+    BTA_Frame* frame = (BTA_Frame*)data;
+    for (int i=0; i<frame->channelsLen; i++) {
+        BTA_Channel* chan = frame->channels[i];
+        if (!chan) {
+            break;
+        }
+        if (i==0) {
+            width = chan->xRes;
+            height = chan->yRes;
+        }
+        std::string name = getChannelName(chan->id);
+        BOOST_LOG_TRIVIAL(debug) << "dynOut[" << i << "] " << name << " " << chan->dataFormat 
+            << " " << chan->xRes << "x" << chan->yRes
+            << " " << chan->dataLen; 
+
+        matPtr d;
+        // todo: init only if not exist out.getData(name)
+        switch (chan->dataFormat) {
+            case BTA_DataFormatFloat32: {
+                d.reset( new cv::Mat(height, width, CV_32F) );
+                float* f = d->ptr<float>();
+                memcpy(f, chan->data, chan->dataLen);
+                break;
+            }
+            case BTA_DataFormatUInt16: {
+                d.reset( new cv::Mat(height, width, CV_16UC1) );
+                short* f = d->ptr<short>();
+                memcpy(f, chan->data, chan->dataLen);
+                break;
+            }
+            case BTA_DataFormatSInt16: {
+                d.reset( new cv::Mat(height, width, CV_16SC1) );
+                short* f = d->ptr<short>();
+                memcpy(f, chan->data, chan->dataLen);
+                break;
+            }
+            default:
+                BOOST_LOG_TRIVIAL(warning) << "unkown data format! IMPLEMENT " << hex << chan->dataFormat << dec; 
+                continue;
+        }
+
+        out.addData(name, d );
     }
 }

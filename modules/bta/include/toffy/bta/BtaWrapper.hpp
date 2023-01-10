@@ -158,4 +158,7 @@ private:
 
 };
 
+/** get the channel name for a channel id */
+extern std::string getChannelName(BTA_ChannelId cid);
+
 #endif

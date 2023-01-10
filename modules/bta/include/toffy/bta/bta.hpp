@@ -15,6 +15,9 @@
 */
 #pragma once
 
+#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 #include <toffy/capture/capturerFilter.hpp>
 #include <toffy/bta/BtaWrapper.hpp>
 
@@ -82,10 +85,15 @@ private:
     // frame size data
     int distsSize;
     int width, height;
+    bool dynOutputs; // dynamically map output depending on channels present
     std::string _out_depth, _out_ampl,
         _out_mf, _out_it,
         _out_fc, _out_ts,
         _out_mt, _out_lt, _out_gt; ///< Input image name
+
+
+    void setOutputsClassic(const Frame &in, Frame& out, boost::posix_time::ptime start, char* data);
+    void setOutputsDynamic(const Frame &in, Frame& out, boost::posix_time::ptime start, char* data);
 };
 
 }}

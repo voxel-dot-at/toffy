@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cmath>
 #include <limits>
+#include <arpa/inet.h> // inet_aton
 
 
 #include <boost/thread.hpp>
@@ -20,7 +21,7 @@ using namespace std;
 static void BTA_CALLCONV infoEventCbEx2(BTA_Handle /*handle*/, BTA_Status status, int8_t *msg, void* /*userArg*/)
 {
     // BtaWrapper* bta = (BtaWrapper*)userArg;
-    BOOST_LOG_TRIVIAL(info) << "   BTACallback: infoEvent (" << status << ") " << msg;
+    BOOST_LOG_TRIVIAL(info) << "   BTACallback: infoEventEx2 (" << status << ") " << msg;
 }
 
 static void BTA_CALLCONV frameArrivedEx2(BTA_Handle /*handle*/, BTA_Frame *frame, void* arg, 
@@ -29,7 +30,7 @@ static void BTA_CALLCONV frameArrivedEx2(BTA_Handle /*handle*/, BTA_Frame *frame
     BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx NO FRAME " ;
             return;
         }
-    // BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx (" << frame->frameCounter << ") " ;
+    BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx2 (" << frame->frameCounter << ") " ;
     BtaWrapper* bta = (BtaWrapper*)arg;
     int musec, msec, sec, min, hours;
     
@@ -90,6 +91,7 @@ BtaWrapper::~BtaWrapper()
     disconnect();
 } 
 
+
 int BtaWrapper::parseConfig(string configFile) {
     boost::property_tree::ptree pt;
     cout << endl << endl << "---------------------------------- " << endl << endl;
@@ -106,6 +108,50 @@ int BtaWrapper::parseConfig(string configFile) {
         return parseConfig(opt.get());
     } else
         return parseConfig(pt);
+}
+
+/** optionally get a value from the property tree if it exists.
+ * @return true if key exists and the value has been set, false otherwise
+ */
+template<typename T> bool pt_optional_get(const boost::property_tree::ptree pt,
+    const std::string& key, T& val) 
+{
+    boost::optional<T> opt = pt.get_optional<T>(key);
+    if (opt.is_initialized()) {
+        val = *opt;
+        return true;
+    }
+    return false;
+}
+
+/** optionally get a value from the property tree if it exists.
+ * @return true if key exists and the value has been set, false otherwise
+ */
+template<typename T> bool pt_optional_get_default(const boost::property_tree::ptree pt,
+    const std::string& key, T& val, T defaultValue) 
+{
+    boost::optional<T> opt = pt.get_optional<T>(key);
+    if (opt.is_initialized()) {
+        val = *opt;
+        return true;
+    }
+    val = defaultValue;
+    return false;
+}
+
+bool pt_optional_get_ipaddr(const boost::property_tree::ptree pt,
+    const std::string& key, struct in_addr& inaddr, std::string defaultAddress) 
+{
+    boost::optional<std::string> opt = pt.get_optional<std::string>(key);
+    std::string addr = defaultAddress;
+    if (opt.is_initialized()) {
+        std::string addr = *opt;
+    }
+    int success = inet_aton( addr.c_str(), &inaddr);
+    if (!success) {
+        BOOST_LOG_TRIVIAL(warning) << "pt_optional_get_ipaddr() could not parse entry " << key << " : " << addr;
+    }
+    return success == 1;
 }
 
 int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
@@ -128,6 +174,21 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: "
                                  << e.what();
     }
+    bool pres=true;    
+
+    pres = pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddrLen",config.udpDataIpAddrLen,4);
+    pres = true;
+    pres &= pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddr.n1",udpDataIpAddr[0],224);
+    pres &= pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddr.n2",udpDataIpAddr[1],0);
+    pres &= pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddr.n3",udpDataIpAddr[2],0);
+    pres &= pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddr.n4",udpDataIpAddr[3],1);
+    if (pres) {
+        config.udpDataIpAddr = udpDataIpAddr;
+        printf("UDP SET TO %08lx\n", *(long*)udpDataIpAddr);
+    } else {
+        printf("UDP NOT FOUND!\n");       
+    }
+
     try {
         config.udpDataIpAddrLen = pt.get<uint8_t>("connection.udpDataIpAddrLen",4);
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Read udpDataIpAddrLen: "
@@ -135,13 +196,12 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
     } catch (std::exception &e) {
         BOOST_LOG_TRIVIAL(debug) << "Error getting parameters: " << e.what();
     }
-    try {
-        config.udpDataPort = pt.get<uint16_t>("connection.udpDataPort",10002);
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Read udpDataPort: "
-                                 << config.udpDataPort ;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
+
+    pres = pt_optional_get_default<uint16_t>(pt, "connection.udpDataPort",config.udpDataPort,10002);
+    if (pres) {
+        printf("UDP PORT SET TO %d\n", config.udpDataPort);
     }
+    
     try {
         udpControlOutIpAddr[0] = pt.get<uint8_t>("connection.udpControlOutIpAddr.n1");
         udpControlOutIpAddr[1] = pt.get<uint8_t>("connection.udpControlOutIpAddr.n2");
@@ -170,6 +230,7 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
     } catch (std::exception &e) {
         BOOST_LOG_TRIVIAL(debug) << "Error getting parameters: " << e.what();
     }
+    // pt_get_optional_inaddr();
     try {
         udpControlInIpAddr[0] = pt.get<uint8_t>("connection.udpControlInIpAddr.n1");
         udpControlInIpAddr[1] = pt.get<uint8_t>("connection.udpControlInIpAddr.n2");
@@ -321,38 +382,17 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
     }
 
-    try {
-        config.verbosity = pt.get<uint8_t>("connection.verbosity");
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Read verbosity: "
-                                 << (int)config.verbosity;
+    pt_optional_get_default<uint8_t>(pt,"connection.verbosity", config.verbosity, 5);
 
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
+    pt_optional_get_default<uint16_t>(pt,"connection.frameQueueLength", config.frameQueueLength, 10);
 
-    try {
-        config.frameQueueLength = pt.get<uint16_t>("connection.frameQueueLength");
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Read frameQueueLength: "
-                                 << config.frameQueueLength ;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        int32_t frameQueueMode = pt.get<int32_t>("connection.frameQueueMode",BTA_QueueModeDropOldest);
-        BOOST_LOG_TRIVIAL(debug) << "Read frameQueueMode: "
-                                 << config.frameQueueMode ;
-        config.frameQueueMode = (BTA_QueueMode)frameQueueMode;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        int32_t deviceType = pt.get<int32_t>("connection.deviceType",config.deviceType);
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Read deviceType: "
-                                 << config.deviceType;
-        config.deviceType = (BTA_DeviceType)deviceType;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
+    int32_t val;
+    pt_optional_get<int32_t>(pt,"connection.frameQueueMode", val);
+    config.frameQueueMode = (BTA_QueueMode)val;
+
+    pt_optional_get<int32_t>(pt,"connection.deviceType", val);
+    config.deviceType = (BTA_DeviceType)val;
+
     return 0;
 }
 
@@ -389,7 +429,6 @@ int BtaWrapper::connect(){
         config.deviceType = BTA_DeviceTypeBltstream;
         async = true;
     }
-
 
     BOOST_LOG_TRIVIAL(info) << "BtaWrapper::connect() Read udpDataIpAddr: "
                             << (int)config.tcpDeviceIpAddr[0] << "."
@@ -583,8 +622,6 @@ char * BtaWrapper::loadFrame(char *data, std::string /*ext*/) {
         frame->channels[i] = (BTA_Channel *)malloc(sizeof(BTA_Channel));
         memcpy(frame->channels[i],data+pos,sizeof(BTA_Channel));
         //memcpy(frame->channels[i],data+pos,28);
-
-
 
         BOOST_LOG_TRIVIAL(debug) << "frame size: " << sizeof(BTA_Frame);
         BOOST_LOG_TRIVIAL(debug) << "BTA_CHANNEL size: " << sizeof(BTA_Channel);
@@ -1232,6 +1269,43 @@ static inline void cpyMetaData(BTA_Channel *dst, const BTA_Channel *src) {
 
 }
 
+std::string getChannelName(BTA_ChannelId cid)
+{
+    switch (cid) {
+        case BTA_ChannelIdUnknown: return "UNKNOWN";
+        case BTA_ChannelIdDistance: return "distance";
+        case BTA_ChannelIdAmplitude: return "amplitude";
+        case BTA_ChannelIdX: return "x";
+        case BTA_ChannelIdY: return "y";
+        case BTA_ChannelIdZ: return "z";
+        case BTA_ChannelIdConfidence: return "confidence";
+        case BTA_ChannelIdFlags: return "flags";
+        case BTA_ChannelIdPhase0: return "phase0";
+        case BTA_ChannelIdPhase90: return "phase90";
+        case BTA_ChannelIdPhase180: return "phase180";
+        case BTA_ChannelIdPhase270: return "phase270";
+        case BTA_ChannelIdRawPhase: return "rawPhase";
+        case BTA_ChannelIdRawQ: return "rawQ";
+        case BTA_ChannelIdRawI: return "rawI";
+        case BTA_ChannelIdTest: return "test";
+        case BTA_ChannelIdColor: return "color";
+        case BTA_ChannelIdGrayScale: return "gray";
+        case BTA_ChannelIdBalance: return "balance";
+        case BTA_ChannelIdCustom01: return "custom01";
+        case BTA_ChannelIdCustom02: return "custom02";
+        case BTA_ChannelIdCustom03: return "custom03";
+        case BTA_ChannelIdCustom04: return "custom04";
+        case BTA_ChannelIdCustom05: return "custom05";
+        case BTA_ChannelIdCustom06: return "custom06";
+        case BTA_ChannelIdCustom07: return "custom07";
+        case BTA_ChannelIdCustom08: return "custom08";
+        case BTA_ChannelIdCustom09: return "custom09";
+        case BTA_ChannelIdCustom10: return "custom10";
+
+        default: return "UNDEFINED CID!";
+    }
+}
+
 static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src) {
   dst->id = src->id;
   dst->xRes = src->xRes;
@@ -1265,15 +1339,17 @@ static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src) {
   cout << "cpyChan sq " << dst->sequenceCounter
   << " it " << dst->integrationTime
   << " mf " << dst->modulationFrequency
-  << " unit " << dst->unit
+  << " unit " << dst->unit 
+  << " df " << dst->dataFormat
   << endl;
 }
 
 static void cpyChannels(BTA_Frame* dst, const BTA_Frame* src) {
-    cout << "cpyChannels " << dst->channelsLen << endl;
+    cout << "cpyChannels "  << (int)dst->channelsLen << "-" << (int)src->channelsLen << endl;
         // num channels does not fit - create new channels array with dummies:
     if (dst->channelsLen != src->channelsLen) {
         freeChannels(dst);
+        cout << "cpyChannels realloc"  << (int)dst->channelsLen << "-" << (int)src->channelsLen << endl;
         cout << "cpyChannels realloc " << src->channelsLen << endl;
 
         dst->channels = new BTA_Channel*[src->channelsLen];
@@ -1326,6 +1402,8 @@ void BtaWrapper::updateFrame(BTA_Frame* frame)
     {
         boost::lock_guard<boost::mutex> lock{frameMutex};
 
+        cout << "updateFrame inLock"  << frameToFill->frameCounter << endl;
+
         cpyFrame(frameToFill, frame);
         hasBeenUpdated=true;
     }
@@ -1352,7 +1430,7 @@ BTA_Frame* BtaWrapper::waitForNextFrame() { // wait for next frame to arrive....
     cout << "waitForNextFrame " << hasBeenUpdated << endl;
     while(!hasBeenUpdated)
     {
-        cout << "waitForNextFrame ..." << endl;
+        cout << "waitForNextFrame ..." << hasBeenUpdated << endl;
         newFrameCond.wait(lock);
     }
     cout << "waitForNextFrame got one!" << endl;
