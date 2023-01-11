@@ -227,6 +227,20 @@ bool Bta::filter(const Frame &in, Frame& out) {
                     << "bta::filter " << __LINE__ << " what should I do? ";
             }
         }
+    } else { // live connection
+            if (sensor->isAsync()) {
+                BOOST_LOG_TRIVIAL(debug)
+                    << "bta::filter " << __LINE__ << " cap async... "
+                    << sensor->isAsync();
+                data = (char*)sensor->waitForNextFrame();
+                BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__
+                                         << " cap async! " << sensor->isAsync();
+
+            } else {
+                BOOST_LOG_TRIVIAL(debug)
+                    << "bta::filter " << __LINE__ << " what should I do? ";
+            }
+
     }
 
     diff = boost::posix_time::microsec_clock::local_time() - start;

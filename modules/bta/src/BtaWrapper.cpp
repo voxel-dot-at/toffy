@@ -120,6 +120,8 @@ template<typename T> bool pt_optional_get(const boost::property_tree::ptree pt,
     if (opt.is_initialized()) {
         val = *opt;
         return true;
+    } else {
+        BOOST_LOG_TRIVIAL(debug) << "pt_optional_get - could not find " << key;
     }
     return false;
 }
@@ -409,19 +411,24 @@ int BtaWrapper::connect(){
         BOOST_LOG_TRIVIAL(warning) << "The camera is already connected.";
         return -1;
     }
-    config.uartPortName = (uint8_t *)uartPortName.c_str();
-
-    config.calibFileName = (uint8_t *)calibFileName.c_str();
-    config.bltstreamFilename = (uint8_t *)bltstreamFilename.c_str();
-
     config.infoEventEx2 = infoEventCbEx2;
     config.frameArrivedEx2 = &frameArrivedEx2;
     config.userArg = this;
 
+    if (calibFileName.length()) {
+        config.calibFileName = (uint8_t *)calibFileName.c_str();
+    } else {
+        config.calibFileName = NULL;
+    }
+
     if (bltstreamFilename.length()) 
     {
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::connect() - enabling playback";
+        config.bltstreamFilename = (uint8_t *)bltstreamFilename.c_str();
         config.deviceType = BTA_DeviceTypeBltstream;
+        async = true;
+    } else {
+        config.bltstreamFilename = NULL;
         async = true;
     }
 
@@ -508,7 +515,7 @@ bool BtaWrapper::isConnected() const {
 int BtaWrapper::capture(char * &buffer) {
     BTA_Frame *frame;
     int i;
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::capture()";
+        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::capture() async? " << async;
     return 0;
     for (i=0; i <= retries; i++) {
         BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::capture().BTAgetFrame";
@@ -1368,8 +1375,8 @@ static void cpyChannels(BTA_Frame* dst, const BTA_Frame* src) {
 
 static void cpyFrame(BTA_Frame* dst, const BTA_Frame* src) {
 
-    cout << "cpyFrame cl " << src->channelsLen << endl;
-    cout << "cpyFrame cl " << dst->channelsLen << endl;
+    cout << "cpyFrame cl " << (int)src->channelsLen << endl;
+    cout << "cpyFrame cl " << (int)dst->channelsLen << endl;
 
     dst->firmwareVersionMajor = src->firmwareVersionMajor ;
     dst->firmwareVersionMinor = src->firmwareVersionMinor ;

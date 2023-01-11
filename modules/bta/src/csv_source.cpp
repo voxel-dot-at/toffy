@@ -135,9 +135,9 @@ bool CSVSource::filter(const Frame& in, Frame& out) {
   return true;
 }
 
-int CSVSource::connect() {}
-int CSVSource::disconnect() {}
-bool CSVSource::isConnected() {}
+int CSVSource::connect() { return 0; }
+int CSVSource::disconnect() { return 0; }
+bool CSVSource::isConnected() { return true; }
 
 int CSVSource::loadPath(const std::string& newPath) {}
 
