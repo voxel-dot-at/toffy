@@ -74,9 +74,9 @@ void toffy::filters::Range::updateConfig(const boost::property_tree::ptree &pt) 
 bool toffy::filters::Range::filter(const Frame &in, Frame& out) {
 	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
 
-	boost::shared_ptr<cv::Mat> img;
+	matPtr img;
 	try {
-		img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_img));
+		img = boost::any_cast<matPtr>(in.getData(_in_img));
 	} catch(const boost::bad_any_cast &) {
 		BOOST_LOG_TRIVIAL(warning) <<
 			"Could not cast input " << _in_img <<
@@ -84,10 +84,12 @@ bool toffy::filters::Range::filter(const Frame &in, Frame& out) {
 		return false;
 	}
 
-	Mat minMask = *img < _min;
-	Mat maxMask = *img > _max;
-	Mat mask = minMask | maxMask;
-	mask = ~mask;
+	// Mat minMask = *img < _min;
+	// Mat maxMask = *img > _max;
+	// Mat mask = minMask | maxMask;
+	// mask = ~mask;
+
+	Mat mask = (*img >= _min) & (*img <= _max) ;
 
 	if (!img->data) {
 	    BOOST_LOG_TRIVIAL(warning) <<
@@ -97,26 +99,19 @@ bool toffy::filters::Range::filter(const Frame &in, Frame& out) {
 	}
 
 
-	if (_in_img != _out_img) {
-	    boost::shared_ptr<cv::Mat> tmp(new Mat());
-	    img->copyTo(*tmp, mask);
-	    tmp->copyTo(*img);
-	    return true;
-	}
-
-	boost::shared_ptr<cv::Mat> img_out;
+	matPtr img_out;
 	try {
-		img_out = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_out_img));
+		img_out = boost::any_cast<matPtr>(in.getData(_out_img));
 	} catch(const boost::bad_any_cast &) {
-		BOOST_LOG_TRIVIAL(warning) <<
-			"Could not cast input " << _out_img /*<<
-			", filter  " << id() <<" not applied."*/;
+		BOOST_LOG_TRIVIAL(info) << 
+			"Range::filter() Could not cast output " << _out_img << " - initializing it.";
 		img_out.reset(new Mat());
 		img->copyTo(*img_out, mask);
 		out.addData(_out_img,img_out);
 		return true;
 	}
-	img_out.reset(new Mat());
+	//img_out.reset(new Mat());
+    *img_out = 0;
 	img->copyTo(*img_out, mask);
 
 	return true;
@@ -142,5 +137,3 @@ boost::property_tree::ptree toffy::filters::Range::getConfig() const
 
     return pt;
 }
-
-
