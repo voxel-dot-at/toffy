@@ -11,6 +11,7 @@
 #include <boost/log/core.hpp>
 #include <boost/log/expressions.hpp>
 
+#include <toffy/filter_helpers.hpp>
 #include <toffy/bta/BtaWrapper.hpp>
 #include <toffy/bta/FrameHeader.hpp>
 
@@ -110,51 +111,6 @@ int BtaWrapper::parseConfig(string configFile) {
         return parseConfig(pt);
 }
 
-/** optionally get a value from the property tree if it exists.
- * @return true if key exists and the value has been set, false otherwise
- */
-template<typename T> bool pt_optional_get(const boost::property_tree::ptree pt,
-    const std::string& key, T& val) 
-{
-    boost::optional<T> opt = pt.get_optional<T>(key);
-    if (opt.is_initialized()) {
-        val = *opt;
-        return true;
-    } else {
-        BOOST_LOG_TRIVIAL(debug) << "pt_optional_get - could not find " << key;
-    }
-    return false;
-}
-
-/** optionally get a value from the property tree if it exists.
- * @return true if key exists and the value has been set, false otherwise
- */
-template<typename T> bool pt_optional_get_default(const boost::property_tree::ptree pt,
-    const std::string& key, T& val, T defaultValue) 
-{
-    boost::optional<T> opt = pt.get_optional<T>(key);
-    if (opt.is_initialized()) {
-        val = *opt;
-        return true;
-    }
-    val = defaultValue;
-    return false;
-}
-
-bool pt_optional_get_ipaddr(const boost::property_tree::ptree pt,
-    const std::string& key, struct in_addr& inaddr, std::string defaultAddress) 
-{
-    boost::optional<std::string> opt = pt.get_optional<std::string>(key);
-    std::string addr = defaultAddress;
-    if (opt.is_initialized()) {
-        std::string addr = *opt;
-    }
-    int success = inet_aton( addr.c_str(), &inaddr);
-    if (!success) {
-        BOOST_LOG_TRIVIAL(warning) << "pt_optional_get_ipaddr() could not parse entry " << key << " : " << addr;
-    }
-    return success == 1;
-}
 
 int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
 {
@@ -955,7 +911,29 @@ int BtaWrapper::getGenericTemp(char *data, float &gt)
 }
 
 
-unsigned int BtaWrapper::getIntegrationTime(){
+float BtaWrapper::getGlobalOffset()
+{
+    float val;
+    status = BTAgetGlobalOffset(handle, &val);
+    if (status != BTA_StatusOk) {
+        BOOST_LOG_TRIVIAL(warning) << "getGlobalOffset() Status: " << status;
+        return -1;
+    }
+    return val;
+}
+
+int BtaWrapper::setGlobalOffset(float val)
+{
+    status = BTAsetGlobalOffset(handle, val);
+    if (status != BTA_StatusOk) {
+        BOOST_LOG_TRIVIAL(warning) << "setGlobalOffset() Status: " << status;
+        return -1;
+    }
+    return 1;
+}
+
+unsigned int BtaWrapper::getIntegrationTime()
+{
     unsigned int it;
     status = BTAgetIntegrationTime(handle, &it);
     BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
@@ -964,6 +942,7 @@ unsigned int BtaWrapper::getIntegrationTime(){
     }
     return it;
 }
+
 float BtaWrapper::getFrameRate() {
     float fr;
     status = BTAgetFrameRate(handle, &fr);
@@ -1270,6 +1249,7 @@ static inline void cpyMetaData(BTA_Channel *dst, const BTA_Channel *src) {
     }
 
 }
+static bool debugCvt=false;
 
 std::string getChannelName(BTA_ChannelId cid)
 {
@@ -1338,7 +1318,7 @@ static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src) {
     }
   }
   cpyMetaData(dst, src);
-  cout << "cpyChan sq " << dst->sequenceCounter
+  if (debugCvt) cout << "cpyChan sq " << dst->sequenceCounter
   << " it " << dst->integrationTime
   << " mf " << dst->modulationFrequency
   << " unit " << dst->unit 
@@ -1347,12 +1327,12 @@ static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src) {
 }
 
 static void cpyChannels(BTA_Frame* dst, const BTA_Frame* src) {
-    cout << "cpyChannels "  << (int)dst->channelsLen << "-" << (int)src->channelsLen << endl;
+    if (debugCvt) cout << "cpyChannels "  << (int)dst->channelsLen << "-" << (int)src->channelsLen << endl;
         // num channels does not fit - create new channels array with dummies:
     if (dst->channelsLen != src->channelsLen) {
         freeChannels(dst);
-        cout << "cpyChannels realloc"  << (int)dst->channelsLen << "-" << (int)src->channelsLen << endl;
-        cout << "cpyChannels realloc " << src->channelsLen << endl;
+        if (debugCvt) cout << "cpyChannels realloc"  << (int)dst->channelsLen << "-" << (int)src->channelsLen << endl;
+        if (debugCvt) cout << "cpyChannels realloc " << src->channelsLen << endl;
 
         dst->channels = new BTA_Channel*[src->channelsLen];
         dst->channelsLen = src->channelsLen;
@@ -1368,15 +1348,15 @@ static void cpyChannels(BTA_Frame* dst, const BTA_Frame* src) {
             d = new BTA_Channel();
             dst->channels[i] = d;
         }
-        cout << "cpyChannels c " << i << endl;
+        if (debugCvt) cout << "cpyChannels c " << i << endl;
         cpyChannel(d, s);
     }
 }
 
 static void cpyFrame(BTA_Frame* dst, const BTA_Frame* src) {
 
-    cout << "cpyFrame cl " << (int)src->channelsLen << endl;
-    cout << "cpyFrame cl " << (int)dst->channelsLen << endl;
+    if (debugCvt) cout << "cpyFrame cl " << (int)src->channelsLen << endl;
+    if (debugCvt) cout << "cpyFrame cl " << (int)dst->channelsLen << endl;
 
     dst->firmwareVersionMajor = src->firmwareVersionMajor ;
     dst->firmwareVersionMinor = src->firmwareVersionMinor ;
@@ -1390,8 +1370,8 @@ static void cpyFrame(BTA_Frame* dst, const BTA_Frame* src) {
 
     cpyChannels(dst, src);
 
-    cout << "cpyFrame sq "
-         << dst->sequenceCounter
+    if (debugCvt) cout << "cpyFrame sq "
+         << (int)dst->sequenceCounter
          //   << " it " << dst->integrationTime
          //   << " mf " << dst->modulationFrequency
          //   << " unit " << dst-<unit;

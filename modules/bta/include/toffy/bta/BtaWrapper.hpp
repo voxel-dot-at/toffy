@@ -86,10 +86,12 @@ public:
     virtual unsigned int getIntegrationTime();
     virtual float getFrameRate();
     virtual unsigned long getModulationFrequency();
+    virtual float getGlobalOffset();
 
     virtual int setIntegrationTime(unsigned int it);
     virtual int setFrameRate(float fr);
     virtual int setModulationFrequency(unsigned long mf);
+    virtual int setGlobalOffset(float ofsInMm);
 
     int getTemps(char *data, float &mt, float &lt, float &gt);
     int getMainTemp(char *data, float &mt);

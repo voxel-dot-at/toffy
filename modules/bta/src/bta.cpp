@@ -13,6 +13,7 @@
 //#include <pcl/common/transforms.h>
 //#include <pcl/common/angles.h>
 
+#include <toffy/filter_helpers.hpp>
 #include <toffy/bta/bta.hpp>
 /*
 #if OCV_VERSION_MAJOR >= 3
@@ -38,6 +39,8 @@ const std::string Bta::id_name = "bta";
 
 Bta::Bta(): CapturerFilter(Bta::id_name,_filter_counter),
     distsSize(0), width(0), height(0),
+    globalOfs(0),hasGlobalOfs(false),
+    modulationFreq(-1),
     _out_depth("depth"), _out_ampl("ampl"), _out_mf("mf"), _out_it("it"),
     _out_fc("fc"), _out_ts("ts"), _out_mt("mt"), _out_lt("lt"), _out_gt("lt")
 {
@@ -74,11 +77,24 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
 
     sensor->parseConfig(bta);
 
-    boost::optional<bool> dynOut = bta.get_optional<bool>("options.dynamicOutputs");
-    if (dynOut.is_initialized()) {
-        dynOutputs = *dynOut;
-        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__ << " dynOutputs?" << dynOutputs;
+    bool present;
+    present = pt_optional_get(bta, "options.dynamicOutputs", dynOutputs);
+    if (present) {
+        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__ << " dynOutputs? " << dynOutputs;
     }
+
+    present = pt_optional_get(bta, "options.modulationFrequency", modulationFreq);
+    if (present) {
+        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__ << " modulationFreq set to  " << modulationFreq;
+    } else {
+        modulationFreq = -1;
+    }
+    present = pt_optional_get(bta, "options.globalOffset", globalOfs);
+    hasGlobalOfs = present;
+    if (present) {
+        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__ << " globalOffset set to  " << globalOfs;
+    }
+
     boost::optional<bool> playbk = bta.get_optional<bool>("playback");
     if (playbk.is_initialized()) {
         playback (*playbk);
@@ -319,6 +335,21 @@ int Bta::connect() {
         } else if (((CapturerFilter*)this)->save() && bta_stream) {
             BOOST_LOG_TRIVIAL(debug) << "strPath(): " << strPath();
             sensor->startGrabbing(strPath());
+        }
+        if (!playback()) {
+            if (modulationFreq>0) {
+                sensor->setModulationFrequency(modulationFreq);                
+            }
+            if (hasGlobalOfs) {
+                sensor->setGlobalOffset(globalOfs);
+            }
+
+            int freq = sensor->getModulationFrequency();
+            int it = sensor->getIntegrationTime();
+            float ofs = sensor->getGlobalOffset();
+            BOOST_LOG_TRIVIAL(debug) << "ModulationFrequency: " << freq;
+            BOOST_LOG_TRIVIAL(debug) << "IntegrationTime: " << it;
+            BOOST_LOG_TRIVIAL(debug) << "Global offset: " << ofs;
         }
     }
     return result;

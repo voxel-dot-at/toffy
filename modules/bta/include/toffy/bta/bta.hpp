@@ -86,6 +86,11 @@ private:
     int distsSize;
     int width, height;
     bool dynOutputs; // dynamically map output depending on channels present
+
+    float globalOfs;
+    bool hasGlobalOfs;
+    int modulationFreq; // in Hz; -1 if not present
+
     std::string _out_depth, _out_ampl,
         _out_mf, _out_it,
         _out_fc, _out_ts,
