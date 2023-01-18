@@ -25,7 +25,6 @@
 #include "toffy/base/amplitudeRange.hpp"
 #include "toffy/base/cond.hpp"
 #include "toffy/base/distAmpl.hpp"
-#include "toffy/base/extractor.hpp"
 #include "toffy/base/nop.hpp"
 #include "toffy/base/offset.hpp"
 #include "toffy/base/ofsCorr.hpp"
@@ -44,6 +43,7 @@
 #include "toffy/detection/blobs.hpp"
 #include "toffy/detection/blobsDetector.hpp"
 #include <toffy/detection/mask.hpp>
+#include <toffy/detection/keypoints.hpp>
 
 
 #include "toffy/import/dataimporter.hpp"
@@ -158,8 +158,6 @@ Filter * FilterFactory::createFilter(std::string type, std::string name) {
     cout << "FF new " << type << endl;
     if (type == "filterBank")
 	f = new FilterBank();
-    else if (type == "extractor")
-	f = new Extractor();
     else if (type == "offset")
 	f = new OffSet();
     else if (type == "distAmpl")
@@ -218,6 +216,8 @@ Filter * FilterFactory::createFilter(std::string type, std::string name) {
 	f = new Colorize();
     else if (type == "mask")
     f = new detection::Mask();
+    else if (type == "keypoints")
+    f = new detection::Keypoints();
     //else if (type == "exposure")
 	//f = new Exposure();
 
