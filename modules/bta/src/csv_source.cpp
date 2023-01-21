@@ -84,7 +84,8 @@ boost::property_tree::ptree CSVSource::getConfig() const {
     pt.put("outputs.ampl", _out_ampl);
 
     pt.put("options.sequence", sequence);
-    pt.put("options.fcs", fcs);
+    // @TODO export int array
+    //    pt.put("options.fcs", fcs);
 
     return pt;
 }

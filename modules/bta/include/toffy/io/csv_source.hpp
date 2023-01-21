@@ -54,14 +54,12 @@ public:
 
 private:
     // frame size data
-    int distsSize;
     int width, height;
     std::string _amplPattern, _depthPattern, _out_depth, _out_ampl,
         _out_mf, _out_it,
         _out_fc, _out_ts,
         _out_mt, _out_lt, _out_gt;
 std::vector<int> fcs;
-bool hasFcs;
 int sequence; 
 bool useSequence;
   void loadDepth(Frame& frame, cv::Mat& depth);
