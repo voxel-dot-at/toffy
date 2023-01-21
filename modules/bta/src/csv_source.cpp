@@ -45,7 +45,6 @@ CSVSource::~CSVSource() {}
 
 int CSVSource::loadConfig(const boost::property_tree::ptree& pt) {
   BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::loadConfig() " << id();
-  const boost::property_tree::ptree& bta = pt.get_child(type());
 
   Filter::loadConfig(pt);
 
@@ -70,9 +69,25 @@ int CSVSource::loadConfig(const boost::property_tree::ptree& pt) {
   BOOST_LOG_TRIVIAL(debug) << "CSVSource::loadConfig() configured to  " << width
                            << "x" << height << " " << _amplPattern << " "
                            << _depthPattern;
+  return 1;
 }
 
-boost::property_tree::ptree CSVSource::getConfig() const {}
+boost::property_tree::ptree CSVSource::getConfig() const {
+    boost::property_tree::ptree pt;
+
+    pt.put("options.width", width);
+    pt.put("options.height", height);
+
+    pt.put("options.amplPattern", _amplPattern);
+    pt.put("options.depthPattern", _depthPattern);
+    pt.put("outputs.depth", _out_depth);
+    pt.put("outputs.ampl", _out_ampl);
+
+    pt.put("options.sequence", sequence);
+    pt.put("options.fcs", fcs);
+
+    return pt;
+}
 
 void CSVSource::updateConfig(const boost::property_tree::ptree& pt) {
           BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::updateConfig() " << id();
@@ -100,7 +115,7 @@ void CSVSource::updateConfig(const boost::property_tree::ptree& pt) {
                            << _depthPattern << " seq? " << useSequence;
 }
 
-bool CSVSource::filter(const Frame& in, Frame& out) {
+bool CSVSource::filter(const Frame& /*in*/, Frame& out) {
   BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::filter() " << id();
   cv::waitKey(500);
   BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::filter() " << id();
@@ -139,9 +154,9 @@ int CSVSource::connect() { return 0; }
 int CSVSource::disconnect() { return 0; }
 bool CSVSource::isConnected() { return true; }
 
-int CSVSource::loadPath(const std::string& newPath) {}
+int CSVSource::loadPath(const std::string& ) { return 1; }
 
-void CSVSource::loadDepth(Frame& frame, Mat& depth) {
+void CSVSource::loadDepth(Frame& /*frame*/, Mat& depth) {
   char path[1024];
   snprintf(path, sizeof(path), _depthPattern.c_str(), sequence);
 
@@ -153,20 +168,16 @@ void CSVSource::loadDepth(Frame& frame, Mat& depth) {
   }
 
   for (int y = 0; y < height; y++) {
-    int x=0;
     float val;
-    // cout << y << "\t"; 
     for (int x = 0; x < width; x++) {
       fscanf(f, "%g;", &val);
-      // cout << val << " "; 
       depth.at<float>(y,x) = val;
     }
-    // cout <<  endl; 
   }
   fclose(f);
 }
 
-void CSVSource::loadAmpl(Frame& frame, Mat& ampl) {
+void CSVSource::loadAmpl(Frame& /*frame*/, Mat& ampl) {
   char path[1024];
   snprintf(path, sizeof(path), _amplPattern.c_str(), sequence);
 
@@ -178,15 +189,11 @@ void CSVSource::loadAmpl(Frame& frame, Mat& ampl) {
   }
 
   for (int y = 0; y < height; y++) {
-    int x=0;
     int val;
-    // cout << y << "\t"; 
     for (int x = 0; x < width; x++) {
       fscanf(f, "%d;", &val);
-      // cout << val << " "; 
       ampl.at<short>(y,x) = val;
     }
-    // cout <<  endl; 
   }
   fclose(f);        
 }

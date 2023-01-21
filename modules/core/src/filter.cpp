@@ -155,8 +155,8 @@ void Filter::removeListener(const FilterListener* l) {
     }
 }
 
-void Filter::processEvent(Event &e) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+void Filter::processEvent(Event& /*e*/) {
+    BOOST_LOG_TRIVIAL(debug) << id() << " " << __FUNCTION__;
     BOOST_LOG_TRIVIAL(info) << "Filter does not have events declared.";
     return;
 }

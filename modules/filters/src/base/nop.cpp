@@ -36,9 +36,9 @@ using namespace std;
 namespace logging = boost::log;
 
 #ifdef CM_DEBUG
-const bool dbg=true;
+static const bool dbg=true;
 #else
-const bool dbg=false;
+static const bool dbg=false;
 #endif
 
 
