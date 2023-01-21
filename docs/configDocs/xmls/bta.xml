@@ -9,6 +9,8 @@
         <flip>true</flip> <!--Bool - (Optional) Flip frames around x and y axis -->
         <center_position>0.0 0.0 0.0</center_position> <!--Float array(x,y,z) meters - (Optional) Camera position in wcs -->
         <rotations>0. 0. 0.</rotations> <!-- Float array(roll,pitch,yaw) degrees - (Optional) Camera rotation in wcs -->
+
+        <dynamicOutputs>true</dynamicOutputs> <!-- (Optional) map outputs depending on channels present; default:false-->
     </options>
 
     <!-- This options are used only when the bta capture filter is created. -->

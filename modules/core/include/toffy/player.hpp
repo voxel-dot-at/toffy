@@ -23,7 +23,6 @@
 
 #include <toffy/filterfactory.hpp>
 
-#include <boost/thread.hpp>
 #include <boost/log/trivial.hpp>
 
 namespace toffy {
@@ -49,8 +48,10 @@ public:
      * log to a file. By default the info level is set.
      *
      */
-    Player(boost::log::trivial::severity_level severity =
-	    boost::log::trivial::info,bool file=false);
+    Player(boost::log::trivial::severity_level severity,bool file);
+
+    // defaults to debug, false
+    Player();
 
     virtual ~Player();
 

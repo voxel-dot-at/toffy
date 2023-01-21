@@ -80,12 +80,13 @@
 #      include "toffy/viewers/cloudviewpcl.hpp"
 #    endif
 #    include "toffy/reproject/reprojectpcl.hpp"
-#    include "toffy/3d/bbox.hpp"
+#    include "toffy/3d/split.hpp"
 #    include "toffy/3d/merge.hpp"
 #    include "toffy/3d/muxMerge.hpp"
 #    include "toffy/3d/sampleConsensus.hpp"
 #    include "toffy/3d/transform.hpp"
 #  endif
+#  include "toffy/3d/xyz2pcl.hpp"
 #  include "toffy/3d/groundprojection.hpp"
 #  include "toffy/viewers/exportcloud.hpp"
 #  include "toffy/detection/squareDetect.hpp"
@@ -152,7 +153,7 @@ bool  FilterFactory::findFilter(std::string name) const {
 }
 
 
-Filter * FilterFactory::createFilter(std::string type, std::string name) {
+Filter * FilterFactory::createFilter(const std::string& type, std::string /* name */) {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     Filter * f;
     cout << "FF new " << type << endl;
@@ -251,6 +252,8 @@ Filter * FilterFactory::createFilter(std::string type, std::string name) {
         f = new Merge();
     else if (type == "sampleConsensus")
         f = new SampleConsensus();
+    else if (type == "xyz2pcl")
+        f = new Xyz2Pcl();
     else if (type == "split")
         f = new Split();
     else if (type == "muxMerge")

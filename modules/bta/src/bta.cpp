@@ -495,7 +495,7 @@ void Bta::save(const bool &save) {
     }
 }
 
-void Bta::setOutputsClassic(const Frame &in, Frame& out, boost::posix_time::ptime start, char* data)
+void Bta::setOutputsClassic(const Frame &in, Frame& out,const boost::posix_time::ptime& start, char* data)
 {
     boost::posix_time::time_duration diff;
     int size = distsSize, x=0,y=0;
@@ -570,7 +570,7 @@ void Bta::setOutputsClassic(const Frame &in, Frame& out, boost::posix_time::ptim
     }
 }
 
-void Bta::setOutputsDynamic(const Frame &in, Frame& out, boost::posix_time::ptime start, char* data)
+void Bta::setOutputsDynamic(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data)
 {
     BTA_Frame* frame = (BTA_Frame*)data;
     for (int i=0; i<frame->channelsLen; i++) {

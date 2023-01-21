@@ -34,6 +34,9 @@ namespace logging = boost::log;
 namespace sinks = boost::log::sinks;
 namespace keywords = boost::log::keywords;
 
+Player::Player(): Player(logging::trivial::severity_level::debug, false) {
+}
+
 Player::Player(logging::trivial::severity_level severity, bool file) {
     if (file) {
         /*logging::add_console_log(
@@ -45,8 +48,8 @@ Player::Player(logging::trivial::severity_level severity, bool file) {
         // Output message to file
         logging::add_file_log
                 (
-                    keywords::file_name = "Toffy_%N.log", /*< file name pattern >*/
-                    keywords::rotation_size = 5 * 1024 * 1024,/*< rotate files every 10 MiB... >*/
+                    keywords::file_name = "toffy_%N.log", /*< file name pattern >*/
+                    keywords::rotation_size = 10 * 1024 * 1024,/*< rotate files every 10 MiB... >*/
                     keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0), /*< ...or at midnight >*/
                     keywords::format = "[%TimeStamp%]: %Message%", /*< log record format >*/
                     keywords::auto_flush = true,

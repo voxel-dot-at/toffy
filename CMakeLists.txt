@@ -7,6 +7,9 @@ project( toffy )
 SET(CMAKE_COLOR_MAKEFILE ON)
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
 
+set (CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 ################################################################################
 # Cmake modules
 ################################################################################
@@ -18,6 +21,14 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 include(GenerateExportHeader) #(toffy_export.h - TOFFY_EXPORT)
 # Include module with fuction 'write_basic_package_version_file' for ToffyConfig.cmake
 include(CMakePackageConfigHelpers)
+
+
+include_directories(
+        "modules/core/include/"
+        "modules/filters/include/"
+        "modules/control/include/"
+        "modules/bta/include/"
+        )
 
 ################################################################################
 #Version stuff
@@ -59,10 +70,6 @@ message (STATUS "\t WITH_CONTROL: " ${WITH_CONTROL})
 set(DEFINITIONS)
 set(LIBS)
 
-#if(WITH_CONTROL)
-#    list(APPEND DEFINITIONS -DWITH_CONTROL)
-#endif()
-
 #
 # devel settings:
 #
@@ -80,12 +87,12 @@ endif("${CMAKE_BUILD_TYPE}" STREQUAL "")
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     set(${PROJECT_NAME}_DEBUG 1)
-    add_definitions(-DCM_DEBUG )#-DCVVISUAL_DEBUGMODE)
+    add_definitions(-DCM_DEBUG )
 endif()
 MESSAGE(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_DEBUG_POSTFIX -d)
 
-#SET(CMAKE_CXX_FLAGS "-std=c++11")
+# SET(CMAKE_CXX_FLAGS "-std=c++14")
 ################################################################################
 # Install options
 ################################################################################
@@ -184,15 +191,7 @@ else(NOT BUILD_STATIC)
     set (LIB_LINK SHARED)
 endif()
 
-
-include_directories(
-        "modules/core/include/"
-        "modules/filters/include/"
-        "modules/control/include/"
-        "modules/bta/include/"
-        )
-
-
+        
 ################################################################################
 # Find dependencies
 ################################################################################
@@ -230,13 +229,25 @@ endif()
 find_package( OpenCV COMPONENTS core REQUIRED )
 message("OpenCV version found: " ${OpenCV_VERSION})
 
+#
+# OpenCV: for viz and tracking, you need to build opencv with opencv_contrib modules enabled.
+#
 if ( ${OpenCV_VERSION_MAJOR} EQUAL 2 )
    # opencv 2.4
    find_package( OpenCV COMPONENTS imgproc highgui calib3d video contrib REQUIRED )
 else()
-   find_package( OpenCV COMPONENTS imgproc highgui calib3d videoio tracking viz REQUIRED )
+   find_package( OpenCV COMPONENTS viz )
+
+   find_package( OpenCV COMPONENTS imgproc highgui calib3d videoio OPTIONAL_COMPONENTS viz tracking REQUIRED )
+   message("  OpenCV libs " ${OpenCV_LIBS} )
+   list(APPEND LIBS ${OpenCV_LIBS})
+   if(TARGET opencv_viz)
+      message("  OpenCV modules: VIZ FOUND " ${OpenCV_LIBS} )
+   endif()
+   if(TARGET opencv_tracking)
+      message("  OpenCV modules: TRACKING FOUND " ${OpenCV_LIBS} )
+   endif()
 endif()
-message("  OpenCV libs " ${OpenCV_LIBS} )
 
 list(APPEND LIBS ${OpenCV_LIBS})
 
@@ -440,18 +451,6 @@ target_link_libraries( ${PROJECT_NAME} ${LIBS} -L/usr/local/lib bta )
 #######################################
 # Demo app
 #######################################
-# toffy-web
-#find_package(toffy_web QUIET)
-#if (toffy_web_FOUND)
-#    include_directories(${toffy_web_INCLUDE_DIRS})
-#    list(APPEND LIBS ${toffy_web_LIBRARIES})
-#    set(WITH_CONTROL ON)
-#    list(APPEND DEFINITIONS -DWITH_CONTROL=ON)
-#else()
-#    message(STATUS "toffy_web not found")
-#    set(WITH_CONTROL OFF)
-#endif()
-#set(WITH_CONTROL OFF)
 
 #Include configs in demo app
 file(GLOB_RECURSE configs apps/configs/*.xml )
@@ -655,6 +654,7 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSIO
 SET (CPACK_PACKAGE_VENDOR " VoXel Interaction Design ")
 SET (CPACK_PACKAGE_DESCRIPTION "Linz 3D computer vision library")
 #set (CPACK_PACKAGE_DESCRIPTION_FILE "description.txt")
+
 SET (CPACK_PACKAGE_DESCRIPTION_SUMMARY "Linz 3D computer vision library")
 SET (CPACK_PACKAGE_CONTACT "VoXel Interaction Design <office@voxel.at>")
 SET (CPACK_SOURCE_IGNORE_FILES ".*~;")
@@ -678,3 +678,5 @@ endif()
 SET (CPACK_TOPLEVEL_TAG ".${CMAKE_SYSTEM_NAME}-${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
 SET (CPACK_OUTPUT_FILE_PREFIX "${CMAKE_SYSTEM_NAME}-${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
 include (CPack)
+
+add_subdirectory(custom)

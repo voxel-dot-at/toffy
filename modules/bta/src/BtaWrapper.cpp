@@ -1323,6 +1323,7 @@ static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src) {
   << " mf " << dst->modulationFrequency
   << " unit " << dst->unit 
   << " df " << dst->dataFormat
+  << "\t\t" << getChannelName(dst->id)
   << endl;
 }
 

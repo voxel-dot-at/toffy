@@ -23,7 +23,7 @@
 #include <boost/any.hpp>
 
 #include "toffy/viewers/exportcloud.hpp"
-
+#include "toffy/filter_helpers.hpp"
 
 using namespace toffy;
 using namespace cv;
@@ -39,6 +39,8 @@ void ExportCloud::updateConfig(const boost::property_tree::ptree &pt) {
     _path = pt.get("options.path",_path);
     _seq = pt.get<bool>("options.sequence",_seq);
     _bin = pt.get<bool>("options.binary",_bin);
+
+    pt_optional_get_default( pt, "options.xyz",_xyz, false);
 
     _in_cloud = pt.get<std::string>("inputs.cloud",_in_cloud);
 }
@@ -58,7 +60,7 @@ boost::property_tree::ptree ExportCloud::getConfig() const {
     return pt;
 }
 
-bool ExportCloud::filter(const Frame &in, Frame& /*out*/) {
+bool ExportCloud::filter(const Frame &in, Frame& out) {
 	LOG(debug) << " exporting " << _in_cloud;
 #if 0
 	pcl::RangeImagePlanar::Ptr planar;
@@ -71,6 +73,18 @@ bool ExportCloud::filter(const Frame &in, Frame& /*out*/) {
 		return false;
 	}
 #endif
+    if (_xyz) {
+        return exportXyz(in, out);
+    } else {
+        return exportPcl2(in, out);
+    }
+}
+
+bool ExportCloud::exportXyz(const Frame &in, Frame& /*out*/) {
+    return true;
+}
+
+bool ExportCloud::exportPcl2(const Frame &in, Frame& /*out*/) {
 	pcl::PCLPointCloud2::Ptr planar;
 	try {
 		planar = boost::any_cast<pcl::PCLPointCloud2::Ptr>(in.getData(_in_cloud));

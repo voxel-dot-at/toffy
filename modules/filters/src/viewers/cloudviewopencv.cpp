@@ -63,36 +63,6 @@ boost::property_tree::ptree CloudViewOpenCv::getConfig() const {
     return pt;
 }
 
-/*
-int CloudViewOpenCv::loadConfig(const FileNode &fn) {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-
-	FileNode cloudview = fn;
-	if (!checkFileNode(cloudview))
-		return 0;
-
-	//cloudview["scale"] >> _scale;
-	//cloudview["max_width"] >> _max_width;
-
-	//Look for inputs
-	FileNode ios = cloudview["inputs"];
-	if (ios.empty()) {
-		BOOST_LOG_TRIVIAL(warning) <<
-			"Missing inputs for filter " <<	id() <<
-			" ... using defauts: " <<
-			"\tcloud: " << _in_cloud;
-	} else {
-		ios["cloud"] >> _in_cloud;
-	}
-
-	std::string name;
-	cloudview["name"] >> name;
-	if (!name.empty())
-		this->name(name);
-
-	return 1;
-}
-*/
 
 bool CloudViewOpenCv::filter(const Frame &in, Frame& out) const {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();

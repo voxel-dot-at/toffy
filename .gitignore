@@ -42,3 +42,11 @@ build*
 *.user.*
 *.autosave
 modules/control/server/uri-grammar/config.log
+
+
+# data
+*.bltstream
+*.pcd
+*.csv
+*.xml
+*.xslx

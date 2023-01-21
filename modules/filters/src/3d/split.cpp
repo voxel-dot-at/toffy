@@ -27,7 +27,7 @@
 #include <pcl/filters/passthrough.h>
 //#include <pcl/common/transforms.h>
 
-#include "toffy/3d/bbox.hpp"
+#include "toffy/3d/split.hpp"
 
 using namespace toffy;
 using namespace toffy::filters::f3d;

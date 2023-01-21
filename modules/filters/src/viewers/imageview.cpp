@@ -82,7 +82,7 @@ boost::property_tree::ptree ImageView::getConfig() const {
     return pt;
 }
 
-bool ImageView::filter(const Frame &in, Frame& out)
+bool ImageView::filter(const Frame &in, Frame& )
 {
     using namespace boost::posix_time;
 
@@ -94,9 +94,9 @@ bool ImageView::filter(const Frame &in, Frame& out)
     if (!_enabled)
         return true; // skip it - performance tests.
 
-    boost::shared_ptr<cv::Mat> img;
+    matPtr img;
     try {
-        img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_img));
+        img = boost::any_cast<matPtr >(in.getData(_in_img));
     } catch(const boost::bad_any_cast &) {
         BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << _in_img <<
                                       ", filter  " << id() <<" not applied.";

@@ -97,8 +97,8 @@ private:
         _out_mt, _out_lt, _out_gt; ///< Input image name
 
 
-    void setOutputsClassic(const Frame &in, Frame& out, boost::posix_time::ptime start, char* data);
-    void setOutputsDynamic(const Frame &in, Frame& out, boost::posix_time::ptime start, char* data);
+    void setOutputsClassic(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
+    void setOutputsDynamic(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
 };
 
 }}

@@ -26,7 +26,6 @@
 
 //#include <sencam/BtaWrapper.hpp>
 #include <toffy/filter.hpp>
-#include <toffy/base/extractor.hpp>
 
 #include <toffy/base/distAmpl.hpp>
 

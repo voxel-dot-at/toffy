@@ -39,11 +39,14 @@ public:
 
 private:
     std::string _in_cloud, _path, _fileName, _pattern, _seqName;
-    bool _seq, _bin;
+    bool _seq, _bin, _xyz;
     pcl::PCDWriter _w;
     int _cnt;
 
     bool getInputPoints(const Frame& in, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud);
+
+    bool exportPcl2(const Frame& in, Frame& out);
+    bool exportXyz(const Frame& in, Frame& out);
 
 };
 }

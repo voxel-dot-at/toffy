@@ -70,7 +70,7 @@ public:
      * @param name identifier
      * @return Filter *
      */
-    Filter *createFilter(std::string type, std::string name="");
+    Filter *createFilter(const std::string& type, std::string name="");
 
     /**
      * @brief Remove filter

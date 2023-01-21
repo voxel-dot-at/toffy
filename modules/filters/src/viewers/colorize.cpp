@@ -107,9 +107,9 @@ bool Colorize::filter(const Frame &in, Frame& out)
     ///// INPUT 
 
     if ( ! in.hasKey(in_img)) {
-	BOOST_LOG_TRIVIAL(warning) << 	"Could not find input " << in_img <<
-	", filter  " << id() <<" not applied.";
-	return false;
+        BOOST_LOG_TRIVIAL(warning) << 	"Could not find input " << in_img <<
+        ", filter  " << id() <<" not applied.";
+        return false;
     }
     img = in.getMatPtr(in_img);
    
@@ -176,4 +176,3 @@ bool Colorize::filter(const Frame &in, Frame& out)
 
     return true;
 }
-

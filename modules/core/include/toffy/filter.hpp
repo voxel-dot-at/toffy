@@ -230,19 +230,6 @@ public:
     virtual int loadConfig(const boost::property_tree::ptree& pt);
 
     /**
-     * @brief loadFileConfig
-     * @param configFile
-     * @return Positive on success, negative or 0 if failled
-     *
-     * Load the XML file into the property tree. If reading fails
-     * (cannot open file, parse error), an exception is thrown.
-     *
-     * @deprecated We dont want a filter reading files, only the filterbank
-     *
-     */
-    virtual int loadFileConfig(const std::string& configFile);
-
-    /**
      * @brief Put all public config values in a ptree
      * @return ptree
      *
@@ -326,6 +313,20 @@ private:
     filterState state; ///< Filter state
     std::vector<FilterListener*> listeners; ///< listeners
     std::string errMsg; ///< error
+
+
+    /**
+     * @brief loadFileConfig
+     * @param configFile
+     * @return Positive on success, negative or 0 if failled
+     *
+     * Load the XML file into the property tree. If reading fails
+     * (cannot open file, parse error), an exception is thrown.
+     *
+     * @deprecated We dont want a filter reading files, only the filterbank
+     *
+     */
+    virtual int loadFileConfig(const std::string& configFile);
 
 public:
     /**

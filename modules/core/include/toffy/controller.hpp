@@ -138,7 +138,7 @@ public:
 
     int loadConfig(const boost::property_tree::ptree& pt);
 
-    std::vector<void *> const getLoadedFilters() const {return _loads;}
+    const std::vector<void *>& getLoadedFilters() const {return _loads;}
 
 private:
     boost::thread _thread; ///< thread to run the toffy filtering

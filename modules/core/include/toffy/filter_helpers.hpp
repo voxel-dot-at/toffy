@@ -23,6 +23,7 @@
 #include <arpa/inet.h> // inet_aton
 
 #include <boost/property_tree/xml_parser.hpp>
+#include <boost/log/trivial.hpp>
 
 /** optionally get a value from the property tree if it exists.
  * @return true if key exists and the value has been set, false otherwise
