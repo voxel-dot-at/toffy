@@ -40,7 +40,7 @@
 namespace toffy {
 namespace filters {
 namespace smoothing {
-/** perform bilateral filtering of the (depth) channel.
+/** perform averaging of the (depth) channel over multiple frames.
      */
 class DLLExport Average : public Filter {
     std::string _in_img, _out_img;
@@ -68,5 +68,3 @@ public:
 }
 }
 }
-
-
