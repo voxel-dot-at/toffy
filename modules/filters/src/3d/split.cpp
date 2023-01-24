@@ -37,7 +37,7 @@ using namespace std;
 #ifdef CM_DEBUG
 const bool dbg=true;
 #else
-const bool dbg=false;
+// const bool dbg=false;
 #endif
 
 template<typename P>
@@ -52,10 +52,10 @@ size_t bbox_filter(typename pcl::PointCloud<P>::Ptr in,
 	pass.setFilterFieldName (axis);
 	pass.setFilterLimits (min, max);
 
-	pass.setFilterLimitsNegative(false);
+	pass.setNegative(false);
 	pass.filter (*inliers);
 
-	pass.setFilterLimitsNegative(true);
+	pass.setNegative(true);
 	pass.filter (*outliers);
 
 	return inliers->size();
