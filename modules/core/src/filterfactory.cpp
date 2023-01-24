@@ -43,8 +43,6 @@
 #include "toffy/detection/blobs.hpp"
 #include "toffy/detection/blobsDetector.hpp"
 #include <toffy/detection/mask.hpp>
-#include <toffy/detection/keypoints.hpp>
-
 
 #include "toffy/import/dataimporter.hpp"
 #include "toffy/io/csv_source.hpp"
@@ -217,8 +215,6 @@ Filter * FilterFactory::createFilter(const std::string& type, std::string /* nam
 	f = new Colorize();
     else if (type == "mask")
     f = new detection::Mask();
-    else if (type == "keypoints")
-    f = new detection::Keypoints();
     //else if (type == "exposure")
 	//f = new Exposure();
 
