@@ -310,7 +310,7 @@ bool SampleConsensus::segmentCylinder(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 static int cnt = 0;
 
 bool SampleConsensus::runRegionGrowing(
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Frame& out) {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, Frame& /*out*/) {
   pcl::search::Search<pcl::PointXYZ>::Ptr tree(
       new pcl::search::KdTree<pcl::PointXYZ>);
   pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
@@ -401,7 +401,7 @@ bool SampleConsensus::runRegionGrowing(
 }
 
 bool SampleConsensus::runEuclidean(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
-                                   Frame& outf) {
+                                   Frame& /*outf*/) {
   // after cluster_extraction.cpp
   // Creating the KdTree object for the search method of the extraction
   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(
@@ -453,7 +453,7 @@ bool SampleConsensus::runEuclidean(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 }
 
 bool SampleConsensus::runEuclideanOld(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
-                                      Frame& out) {
+                                      Frame& /*out*/) {
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_f(
       new pcl::PointCloud<pcl::PointXYZ>());
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(cloud);
@@ -525,7 +525,7 @@ bool SampleConsensus::runEuclideanOld(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
 }
 
 bool SampleConsensus::runMinCut(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
-                                Frame& out) {
+                                Frame& /*out*/) {
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_f(
       new pcl::PointCloud<pcl::PointXYZ>());
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(cloud);
