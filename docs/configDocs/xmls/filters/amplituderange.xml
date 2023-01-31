@@ -5,11 +5,11 @@
         <ampl>ampl</ampl> <!-- String - Input amplitudes image -->
         <depth>depth</depth> <!-- String - Input corresponding depth image -->
     </inputs>
-    <output> <!-- If not set, the output is the same as the input and the images
+    <outputs> <!-- If not set, the output is the same as the input and the images
         are overwritten -->
         <ampl>ampl</ampl> <!-- String - -->
         <depth>depth</depth> <!-- String - -->
-    </output>
+    </outputs>
     <options> <!-- Amplitude values outside the range defined by max and min will
         be set to 0 -->
         <minAmpl>250</minAmpl> <!-- int - min amplitude value -->
