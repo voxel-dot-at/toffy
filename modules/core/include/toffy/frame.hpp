@@ -16,12 +16,16 @@
 */
 #pragma once
 
-#include <toffy/toffy_export.h>
-#include <toffy/toffy_config.h>
 #include <vector>
+
 #include <boost/any.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/container/flat_map.hpp>
+
+#include <opencv2/core.hpp>
+
+#include <toffy/toffy_export.h>
+#include <toffy/toffy_config.h>
 
 #ifdef MSVC
 #define DLLExport __declspec( dllexport )
@@ -187,6 +191,8 @@ public:
     inline matPtr setGetMatPtr(const std::string& key, Size size, int type);
     inline std::string setGetString(const std::string& key, std::string& dfault);
 */  
+    /** get matPtr, if not set, create and insert a new one: */
+    inline matPtr getSertMatPtr(const std::string& key, cv::Size size, int type);
 
 private:
     /**
@@ -260,4 +266,14 @@ inline std::string Frame::optString(const std::string& key,
                                     std::string& dfault) const {
   return hasKey(key) ? getString(key) : dfault;
 };
+
+
+inline matPtr Frame::getSertMatPtr(const std::string& key, cv::Size size, int type) {
+    if (! hasKey(key)) {
+        matPtr mp(new cv::Mat(size, type));
+        addData(key, mp);
+    }
+    return getMatPtr(key);
+}
+
 }  // namespace toffy
