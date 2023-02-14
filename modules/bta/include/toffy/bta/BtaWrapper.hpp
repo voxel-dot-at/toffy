@@ -120,6 +120,9 @@ public:
     // queue handling:
     void updateFrame(BTA_Frame* frame); // update the 
 
+    bool hasChannels; // set to true if channels have been selected this way
+    BTA_Status setChannels();
+
 private:
     BTA_Config config;
     BTA_Handle handle;
@@ -145,13 +148,19 @@ private:
 
     bool async; //< set to true if frameArrived* callbacks are used.
 
-    boost::mutex frameMutex;
+    boost::mutex frameMutex, fillFrameMutex;
     boost::condition_variable newFrameCond;
+
     BTA_Frame* frames[2]; //< array of frames, one is filled by bta lib, the other in use
     BTA_Frame* frameInUse; // pointer to the current frame
     BTA_Frame* frameToFill; // pointer to the current frame
     int toFillIndex; // index of the current frame
     bool hasBeenUpdated; // do we have new data yet?
+
+    int numChannels; // number of active channels
+    BTA_ChannelSelection channels[8];
+    std::string theChannels; 
+    bool parseChannelSelection(const std::string& chans);
 
     /** change frames, resets hasBeenUpdated
      * @return the new frame to use for processing (frameInUse)
