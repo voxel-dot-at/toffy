@@ -78,10 +78,11 @@ public:
     int cts;  ///< Camera timestamp last detection
     boost::posix_time::ptime ts; ///< System timestamp last detection
     float size; ///< Size in pixels computed by contourArea()
+    cv::Rect bbox; ///< bounding box of the object
 
     // persistent object data - frame invariant:
     cv::Scalar color; ///< Unique color for displaying
-    int first_fc; ///< Frame counter when the object was first detected
+    unsigned int first_fc; ///< Frame counter when the object was first detected
     int first_cts; ///< Camera timestamp first detected
     boost::posix_time::ptime first_ts; ///< System timestamp first detection
 
