@@ -1,4 +1,10 @@
 #include <arpa/inet.h>  // inet_aton
+#include <string.h>
+#include <cmath>
+#include <fstream>
+#include <iostream>
+#include <limits>
+
 #include <bta.h>
 
 #include <boost/log/core.hpp>
@@ -6,10 +12,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/thread.hpp>
-#include <cmath>
-#include <fstream>
-#include <iostream>
-#include <limits>
+
 #include <toffy/bta/BtaWrapper.hpp>
 #include <toffy/bta/FrameHeader.hpp>
 #include <toffy/filter_helpers.hpp>
@@ -108,53 +111,16 @@ int BtaWrapper::parseConfig(string configFile) {
 
 int BtaWrapper::parseConfig(const boost::property_tree::ptree pt) {
     BTAinitConfig(&config);
-    try {
-        // TODO extend to ipv6
-        udpDataIpAddr[0] = pt.get<uint8_t>("connection.udpDataIpAddr.n1", 224);
-        udpDataIpAddr[1] = pt.get<uint8_t>("connection.udpDataIpAddr.n2", 0);
-        udpDataIpAddr[2] = pt.get<uint8_t>("connection.udpDataIpAddr.n3", 0);
-        udpDataIpAddr[3] = pt.get<uint8_t>("connection.udpDataIpAddr.n4", 1);
+    bool pres;
+    
+    pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddrLen", config.udpDataIpAddrLen, 4);
 
-        config.udpDataIpAddr = udpDataIpAddr;
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read udpDataIpAddr: "
-            << (int)pt.get<uint8_t>("connection.udpDataIpAddr.n1", 224) << "."
-            << (int)pt.get<uint8_t>("connection.udpDataIpAddr.n2", 0) << "."
-            << (int)pt.get<uint8_t>("connection.udpDataIpAddr.n3", 0) << "."
-            << (int)pt.get<uint8_t>("connection.udpDataIpAddr.n4", 1);
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    bool pres = true;
+    pt_optional_get_ipaddr(pt, "connection.udpDataIp", (struct in_addr&)udpDataIpAddr, "224.0.0.1");
+    config.udpDataIpAddr = udpDataIpAddr;
 
-    pres = pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddrLen",
-                                            config.udpDataIpAddrLen, 4);
-    pres = true;
-    pres &= pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddr.n1",
-                                             udpDataIpAddr[0], 224);
-    pres &= pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddr.n2",
-                                             udpDataIpAddr[1], 0);
-    pres &= pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddr.n3",
-                                             udpDataIpAddr[2], 0);
-    pres &= pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddr.n4",
-                                             udpDataIpAddr[3], 1);
-    if (pres) {
-        config.udpDataIpAddr = udpDataIpAddr;
-        printf("UDP SET TO %08lx\n", *(long *)udpDataIpAddr);
-    } else {
-        printf("UDP NOT FOUND!\n");
-    }
-
-    try {
-        config.udpDataIpAddrLen =
-            pt.get<uint8_t>("connection.udpDataIpAddrLen", 4);
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read udpDataIpAddrLen: "
-            << (int)config.udpDataIpAddrLen;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug) << "Error getting parameters: " << e.what();
-    }
+// static inline bool pt_optional_get_ipaddr(const boost::property_tree::ptree pt,
+//     const std::string& key, struct in_addr& inaddr, std::string defaultAddress) ;
+// ease use all or none of udpControlOutIpAddr, udpControlOutIpAddrLen and udpControlPort
 
     pres = pt_optional_get_default<uint16_t>(pt, "connection.udpDataPort",
                                              config.udpDataPort, 10002);
@@ -162,44 +128,15 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt) {
         printf("UDP PORT SET TO %d\n", config.udpDataPort);
     }
 
-    try {
-        udpControlOutIpAddr[0] =
-            pt.get<uint8_t>("connection.udpControlOutIpAddr.n1");
-        udpControlOutIpAddr[1] =
-            pt.get<uint8_t>("connection.udpControlOutIpAddr.n2");
-        udpControlOutIpAddr[2] =
-            pt.get<uint8_t>("connection.udpControlOutIpAddr.n3");
-        udpControlOutIpAddr[3] =
-            pt.get<uint8_t>("connection.udpControlOutIpAddr.n4");
+    pt_optional_get<uint8_t>(pt, "connection.udpControlOutIpAddrLen", config.udpControlOutIpAddrLen);
+
+    pt_optional_get<uint16_t>(pt, "connection.udpControlPort", config.udpControlPort);
+
+    pres = pt_optional_get_ipaddr(pt, "connection.udpControlOutIp", (struct in_addr&)udpControlOutIpAddr, "");
+    if (pres) {
         config.udpControlOutIpAddr = udpControlOutIpAddr;
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read udpDataIpAddr: "
-            << (int)pt.get<uint8_t>("connection.udpControlOutIpAddr.n1") << "."
-            << (int)pt.get<uint8_t>("connection.udpControlOutIpAddr.n2") << "."
-            << (int)pt.get<uint8_t>("connection.udpControlOutIpAddr.n3") << "."
-            << (int)pt.get<uint8_t>("connection.udpControlOutIpAddr.n4");
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
     }
-    try {
-        config.udpControlOutIpAddrLen =
-            pt.get<uint8_t>("connection.udpControlOutIpAddrLen");
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read udpControlOutIpAddrLen: "
-            << (int)config.udpControlOutIpAddrLen;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        config.udpControlPort = pt.get<uint16_t>("connection.udpControlPort");
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read udpControlPort: "
-            << config.udpControlPort;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug) << "Error getting parameters: " << e.what();
-    }
+
     // pt_get_optional_inaddr();
     try {
         udpControlInIpAddr[0] =
@@ -264,119 +201,34 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt) {
         BOOST_LOG_TRIVIAL(debug)
             << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
     }
-    try {
-        config.tcpDeviceIpAddrLen =
-            pt.get<uint8_t>("connection.tcpDeviceIpAddrLen", 4);
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read tcpDeviceIpAddrLen: "
-            << (int)config.tcpDeviceIpAddrLen;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        config.tcpDataPort = pt.get<uint16_t>("connection.tcpDataPort");
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::parseConfig Read tcpDataPort: "
-                                 << config.tcpDataPort;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        config.tcpControlPort =
-            pt.get<uint16_t>("connection.tcpControlPort", 10001);
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read tcpControlPort: "
-            << config.tcpControlPort;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
+// static inline bool pt_optional_get_ipaddr(const boost::property_tree::ptree pt,
+//     const std::string& key, struct in_addr& inaddr, std::string defaultAddress) ;
+    
+    pt_optional_get_default<uint8_t>(pt, "connection.tcpDeviceIpAddrLen", config.tcpDeviceIpAddrLen, 4);
 
+    pt_optional_get<uint16_t>(pt, "connection.tcpDataPort", config.tcpDataPort);
+
+    pt_optional_get_default<uint16_t>(pt, "connection.tcpControlPort", config.tcpControlPort, 10001);
+
+    // uart stuff:
+    //
     pt_optional_get<string>(pt, "connection.uartPortName", uartPortName);
+    pt_optional_get<uint32_t>(pt, "connection.uartBaudRate", config.uartBaudRate);
+    pt_optional_get<uint8_t>(pt, "connection.uartDataBits", config.uartDataBits);
+    pt_optional_get<uint8_t>(pt, "connection.uartStopBits", config.uartStopBits);
+    pt_optional_get<uint8_t>(pt, "connection.uartParity", config.uartParity);
+    pt_optional_get<uint8_t>(pt, "connection.uartTransmitterAddress", config.uartTransmitterAddress);
+    pt_optional_get<uint8_t>(pt, "connection.uartReceiverAddress", config.uartReceiverAddress);
+    pt_optional_get<uint32_t>(pt, "connection.serialNumber", config.serialNumber);
 
-    // try {
-    //     uartPortName = pt.get<string>("connection.uartPortName");
-    //     // config.uartPortName = pt.get<int8_t *>("connection.uartPortName");
-    //     BOOST_LOG_TRIVIAL(debug)
-    //         << "BtaWrapper::parseConfig Read uartPortName: " << uartPortName;
-    // } catch (std::exception &e) {
-    //     BOOST_LOG_TRIVIAL(debug)
-    //         << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    // }
-    try {
-        config.uartBaudRate = pt.get<uint32_t>("connection.uartBaudRate");
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read uartBaudRate: "
-            << config.uartBaudRate;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        config.uartDataBits = pt.get<uint8_t>("connection.uartDataBits");
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read uartDataBits: "
-            << config.uartDataBits;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        config.uartStopBits = pt.get<uint8_t>("connection.uartStopBits");
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read uartStopBits: "
-            << config.uartStopBits;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        config.uartParity = pt.get<uint8_t>("connection.uartParity");
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read uartParity: " << config.uartParity;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        config.uartTransmitterAddress =
-            pt.get<uint8_t>("connection.uartTransmitterAddress");
-        BOOST_LOG_TRIVIAL(debug)
-            << "Read uartTransmitterAddress: " << config.uartTransmitterAddress;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        config.uartReceiverAddress =
-            pt.get<uint8_t>("connection.uartReceiverAddress");
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read uartReceiverAddress: "
-            << config.uartReceiverAddress;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        config.serialNumber = pt.get<uint32_t>("connection.serialNumber");
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read serialNumber: "
-            << config.serialNumber;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
-    }
-    try {
-        calibFileName = pt.get<string>("connection.calibFileName");
-        // config.calibFileName = pt.get<uint8_t *>("connection.calibFileName");
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Read calibFileName: " << calibFileName;
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
+    // deprecated...
+    std::string calibFileName;
+    pres = pt_optional_get<string>(pt, "connection.calibFileName", calibFileName);
+    if (pres) {
+        config.calibFileName = (uint8_t *)strdup(calibFileName.c_str());
     }
 
+    // can't auto-convert int32 to FrameMode, so do it manually: 
     try {
         int32_t frameMode =
             pt.get<int32_t>("connection.frameMode", BTA_FrameModeDistAmp);
@@ -387,6 +239,8 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt) {
         BOOST_LOG_TRIVIAL(debug)
             << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
     }
+
+    // channel selection:
     std::string channels;
     hasChannels = pt_optional_get<std::string>(pt, "connection.channels",
                                                channels);
@@ -514,6 +368,12 @@ int BtaWrapper::connect() {
     }
     { // set AEXP, AWB for color sensor 0
         uint32_t regs[] = { 0x03  }; //
+        uint32_t nregs = sizeof(regs);
+        status = BTAwriteRegister(handle, 0x0e1, regs, &nregs );
+        // handle, uint32_t address, uint32_t *data, uint32_t *registerCount
+    }
+    if (false) { // set flying pixel filter
+        uint32_t regs[] = { 0x1 << 13  }; //
         uint32_t nregs = sizeof(regs);
         status = BTAwriteRegister(handle, 0x0e1, regs, &nregs );
         // handle, uint32_t address, uint32_t *data, uint32_t *registerCount
