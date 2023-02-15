@@ -61,6 +61,9 @@ static inline bool pt_optional_get_ipaddr(const boost::property_tree::ptree pt,
 {
     boost::optional<std::string> opt = pt.get_optional<std::string>(key);
     std::string addr = defaultAddress;
+    if (! opt.is_initialized() && defaultAddress.size() == 0) {
+        return false;
+    }
     if (opt.is_initialized()) {
         std::string addr = *opt;
     }
