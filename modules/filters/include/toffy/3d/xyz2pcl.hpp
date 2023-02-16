@@ -43,6 +43,10 @@ namespace toffy {
             bool amplitudes;
             bool pcl2;
 
+            //  border limits, pixel:
+            int borderLeft, borderRight;
+            int borderTop, borderBottom;
+
             bool convertXyz(const Frame& in, Frame& out, toffy::matPtr x,toffy::matPtr y,toffy::matPtr z);
             bool convertXyzA(const Frame& in, Frame& out, toffy::matPtr x,toffy::matPtr y,toffy::matPtr z,toffy::matPtr ampl);
 	    };
