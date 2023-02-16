@@ -36,7 +36,7 @@ template<typename T> bool pt_optional_get(const boost::property_tree::ptree pt,
         val = *opt;
         return true;
     } else {
-        BOOST_LOG_TRIVIAL(debug) << "pt_optional_get - could not find " << key;
+        // BOOST_LOG_TRIVIAL(debug) << "pt_optional_get - key not set: " << key;
     }
     return false;
 }
