@@ -125,6 +125,6 @@ public:
 typedef std::vector<DetectedObject*> DetectedObjects;
 
 typedef boost::shared_ptr<std::vector<DetectedObject*> > objVecPtr;
-typedef boost::shared_ptr<DetectedObject* > objPtr;
+typedef boost::shared_ptr<DetectedObject> detObjPtr;
 
 }}
