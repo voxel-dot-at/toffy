@@ -48,13 +48,15 @@ Bta::Bta()
       _out_ts("ts"),
       _out_mt("mt"),
       _out_lt("lt"),
-      _out_gt("lt") {
+      _out_gt("lt")
+{
     _filter_counter++;
     sensor = new BtaWrapper();
     fileExt(RAWFILE);
 }
 
-Bta::~Bta() {
+Bta::~Bta()
+{
     if (((capturers::CapturerFilter*)this)->save() && isConnected())
         sensor->stopGrabbing();
     disconnect();
@@ -62,7 +64,8 @@ Bta::~Bta() {
     delete sensor;
 }
 
-int Bta::loadConfig(const boost::property_tree::ptree& pt) {
+int Bta::loadConfig(const boost::property_tree::ptree& pt)
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
     const boost::property_tree::ptree& bta = pt.get_child(type());
 
@@ -140,7 +143,8 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt) {
     return 1;
 }
 
-void Bta::updateConfig(const boost::property_tree::ptree& pt) {
+void Bta::updateConfig(const boost::property_tree::ptree& pt)
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
@@ -160,7 +164,8 @@ void Bta::updateConfig(const boost::property_tree::ptree& pt) {
     update = true;
 }
 
-boost::property_tree::ptree Bta::getConfig() const {
+boost::property_tree::ptree Bta::getConfig() const
+{
     boost::property_tree::ptree pt;
 
     pt = CapturerFilter::getConfig();
@@ -178,7 +183,8 @@ boost::property_tree::ptree Bta::getConfig() const {
     return pt;
 }
 
-bool Bta::filter(const Frame& in, Frame& out) {
+bool Bta::filter(const Frame& in, Frame& out)
+{
     BOOST_LOG_TRIVIAL(debug)
         << __FUNCTION__ << " ------------ filter() " << id();
     char* data = NULL;
@@ -319,7 +325,8 @@ bool Bta::filter(const Frame& in, Frame& out) {
     return true;
 }
 
-int Bta::connect() {
+int Bta::connect()
+{
     int result = sensor->connect();
     if (result >= 0) {
         if (playback()) {
@@ -359,7 +366,8 @@ int Bta::connect() {
     return result;
 }
 
-int Bta::disconnect() {
+int Bta::disconnect()
+{
     int result = sensor->disconnect();
     if (result > 0 && ((CapturerFilter*)this)->save() && bta_stream)
         sensor->stopGrabbing();
@@ -368,7 +376,8 @@ int Bta::disconnect() {
 
 bool Bta::isConnected() { return sensor->isConnected(); }
 
-void Bta::playback(const bool& pb) {
+void Bta::playback(const bool& pb)
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     BOOST_LOG_TRIVIAL(debug) << "bta_stream: " << bta_stream;
     BOOST_LOG_TRIVIAL(debug) << "pb: " << pb;
@@ -405,7 +414,8 @@ void Bta::playback(const bool& pb) {
     return;
 }
 
-int Bta::loadPath(const std::string& newPath) {
+int Bta::loadPath(const std::string& newPath)
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     fs::path fsPath(newPath);
     BOOST_LOG_TRIVIAL(debug) << "fsPath.extension(): " << fsPath.extension();
@@ -429,7 +439,8 @@ int Bta::loadPath(const std::string& newPath) {
     }
 }
 
-void Bta::savePath(const std::string& newPath) {
+void Bta::savePath(const std::string& newPath)
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     fs::path fsPath(newPath);
     cout << "is regular: " << fs::is_regular_file(fsPath) << endl;
@@ -443,7 +454,8 @@ void Bta::savePath(const std::string& newPath) {
     }
 }
 
-void Bta::save(const bool& save) {
+void Bta::save(const bool& save)
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     if (save == true) {
         cout << "PATH::: " << getSavePath() << endl;
@@ -497,7 +509,8 @@ void Bta::save(const bool& save) {
 }
 
 void Bta::setOutputsClassic(const Frame& in, Frame& out,
-                            const boost::posix_time::ptime& start, char* data) {
+                            const boost::posix_time::ptime& start, char* data)
+{
     boost::posix_time::time_duration diff;
     int size = distsSize, x = 0, y = 0;
 
@@ -572,7 +585,8 @@ void Bta::setOutputsClassic(const Frame& in, Frame& out,
 
 void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                             const boost::posix_time::ptime& /*start*/,
-                            char* data) {
+                            char* data)
+{
     BTA_Frame* frame = (BTA_Frame*)data;
     for (int i = 0; i < frame->channelsLen; i++) {
         BTA_Channel* chan = frame->channels[i];
@@ -631,6 +645,29 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
 
                 cvtColor(input, *d, COLOR_YUV2BGR_UYVY);
                 // imshow("img", *d);
+                break;
+            }
+            case BTA_DataFormatYuv444UYV: {
+                BOOST_LOG_TRIVIAL(debug) << "img yuv444uyv data! " << (width * height)
+                                         << " " << chan->dataLen;
+                if (!d.get()) {
+                    d.reset(new cv::Mat(height, width, CV_8UC3));
+                }
+                unsigned char* ptr = chan->data;
+                for (int i=0;i<chan->dataLen;i+=3) {
+                    unsigned char u = ptr[0];
+                    unsigned char y = ptr[1];
+                    unsigned char v = ptr[2];
+                    ptr[0] = y;
+                    ptr[1] = u;
+                    ptr[2] = v;
+                    ptr+=3;
+                }
+                Mat input(height, width, CV_8UC3, chan->data);
+
+                cvtColor(input, *d, COLOR_YUV2BGR);
+                imshow("img", *d);
+
                 break;
             }
             default:
