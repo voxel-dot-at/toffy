@@ -611,11 +611,11 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
             d = out.getMatPtr(name);
         }
         switch (chan->dataFormat) {
-            case BTA_DataFormatFloat32: {
+            case BTA_DataFormatUInt8: {
                 if (!d.get()) {
-                    d.reset(new cv::Mat(height, width, CV_32F));
+                    d.reset(new cv::Mat(height, width, CV_8UC1));
                 }
-                float* f = d->ptr<float>();
+                short* f = d->ptr<short>();
                 memcpy(f, chan->data, chan->dataLen);
                 break;
             }
@@ -624,6 +624,14 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                     d.reset(new cv::Mat(height, width, CV_16UC1));
                 }
                 short* f = d->ptr<short>();
+                memcpy(f, chan->data, chan->dataLen);
+                break;
+            }
+            case BTA_DataFormatFloat32: {
+                if (!d.get()) {
+                    d.reset(new cv::Mat(height, width, CV_32F));
+                }
+                float* f = d->ptr<float>();
                 memcpy(f, chan->data, chan->dataLen);
                 break;
             }
@@ -644,7 +652,6 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 Mat input(height, width, CV_8UC2, chan->data);
 
                 cvtColor(input, *d, COLOR_YUV2BGR_UYVY);
-                // imshow("img", *d);
                 break;
             }
             case BTA_DataFormatYuv444UYV: {
@@ -654,7 +661,7 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                     d.reset(new cv::Mat(height, width, CV_8UC3));
                 }
                 unsigned char* ptr = chan->data;
-                for (int i=0;i<chan->dataLen;i+=3) {
+                for (unsigned int i=0;i<chan->dataLen;i+=3) {
                     unsigned char u = ptr[0];
                     unsigned char y = ptr[1];
                     unsigned char v = ptr[2];
