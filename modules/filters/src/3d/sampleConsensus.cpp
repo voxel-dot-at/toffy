@@ -188,17 +188,13 @@ bool SampleConsensus::segmentPlane(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
             pIdx++;
         }
     }
-    // Eigen::VectorXf coeffs;
+
     ransac.getModelCoefficients(coeffs);
-    /*
-    float roll, pitch, yaw;
-    Eigen::Affine3f A;
-    pcl::getEulerAngles ( coeffs, roll, pitch, yaw);
-
-    cout << "PLAN " << coeffs.transpose() << " " << roll << " " << pitch << " "
-    << yaw <<  endl;
-    */
-
+    
+    if (coeffs[3] < 0.) {
+        // ensure distance is always positive & invert normal vector
+        coeffs *= -1.;
+    }
     LOG(info) << "PLAN " << coeffs.transpose() << endl;
     return true;
 }
