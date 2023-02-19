@@ -101,7 +101,7 @@ bool Xyz2Mat::filter(const Frame& in, Frame& out)
     return true;
 }
 
-bool Xyz2Mat::convertXyz(const Frame& in, Frame& out, toffy::matPtr mx,toffy::matPtr my, toffy::matPtr mz)
+bool Xyz2Mat::convertXyz(const Frame&, Frame& out, toffy::matPtr mx,toffy::matPtr my, toffy::matPtr mz)
 {
     typedef pcl::PointXYZ P; 
     pcl::PointCloud<P>::Ptr cloud(new pcl::PointCloud<P>(mx->cols, mx->rows));
@@ -122,7 +122,7 @@ bool Xyz2Mat::convertXyz(const Frame& in, Frame& out, toffy::matPtr mx,toffy::ma
     return true;
 }
 
-bool Xyz2Mat::convertXyzA(const Frame& in, Frame& out, toffy::matPtr mx,toffy::matPtr my,toffy::matPtr mz,toffy::matPtr ampl)
+bool Xyz2Mat::convertXyzA(const Frame&, Frame& out, toffy::matPtr mx,toffy::matPtr my,toffy::matPtr mz,toffy::matPtr ampl)
 {
     typedef pcl::PointXYZRGB P; 
     pcl::PointCloud<P>::Ptr cloud(new pcl::PointCloud<P>);
@@ -133,7 +133,7 @@ bool Xyz2Mat::convertXyzA(const Frame& in, Frame& out, toffy::matPtr mx,toffy::m
         short* pa = ampl->ptr<short>(y,0);
         for (int x=0;x<mx->cols;x++) {
             unsigned char a = ( (*pa++) - min ) / ( max - min ) ; 
-            P p((*px++) / 1000.f, (*py++) / 1000.f, (*pz++) / 1000.f);
+            P p((*px++) / 1000.f, (*py++) / 1000.f, (*pz++) / 1000.f, a ,a ,a);
             cloud->push_back(p);
         }
     }

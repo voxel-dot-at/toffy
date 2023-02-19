@@ -112,7 +112,7 @@ bool Xyz2Pcl::filter(const Frame& in, Frame& out)
     return true;
 }
 
-bool Xyz2Pcl::convertXyz(const Frame& in, Frame& out, toffy::matPtr mx,
+bool Xyz2Pcl::convertXyz(const Frame&, Frame& out, toffy::matPtr mx,
                          toffy::matPtr my, toffy::matPtr mz)
 {
     typedef pcl::PointXYZ P;
@@ -139,12 +139,8 @@ bool Xyz2Pcl::convertXyz(const Frame& in, Frame& out, toffy::matPtr mx,
         // TODO!!!!
         pcl::PCLPointCloud2* cloud_filtered = new pcl::PCLPointCloud2();
         pcl::PCLPointCloud2Ptr cloud2(cloud_filtered);
-        // cloud2.reset(new pcl::PointCloud<pcl::PointXYZ>(/*width=*/mx->cols,
-        // /*height=*/mx->rows));
 
-        // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " C2!  " << id();
-        // pcl::fromPCLPointCloud2(*cloud2, *cloud);
-
+        pcl::toPCLPointCloud2(*cloud,*cloud2 );
         out.addData(out_cloud, cloud2);
     } else {
         // cloudPtr..:
