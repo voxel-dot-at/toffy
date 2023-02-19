@@ -7,7 +7,7 @@ project( toffy )
 SET(CMAKE_COLOR_MAKEFILE ON)
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
 
-set (CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ################################################################################
@@ -679,4 +679,3 @@ SET (CPACK_TOPLEVEL_TAG ".${CMAKE_SYSTEM_NAME}-${CPACK_DEBIAN_PACKAGE_ARCHITECTU
 SET (CPACK_OUTPUT_FILE_PREFIX "${CMAKE_SYSTEM_NAME}-${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
 include (CPack)
 
-add_subdirectory(custom)
