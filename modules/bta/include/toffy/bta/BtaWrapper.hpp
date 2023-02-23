@@ -39,6 +39,9 @@ struct network {
     short tcp_port,udp_port;
 };
 
+const int MAX_CHANNEL_SELECTIONS=8;
+
+
 class DLLExport BtaWrapper : public ImageSensor
 {
 public:
@@ -121,6 +124,11 @@ public:
     void updateFrame(BTA_Frame* frame); // update the 
 
     bool hasChannels; // set to true if channels have been selected this way
+    std::string channelSelectionName(int i) { 
+        return (i>=0 && i<MAX_CHANNEL_SELECTIONS) ? chanSelectionName[i] : "invalid";
+        }
+
+    /** call BTA_SetChannelSelection with the current set of channels */
     BTA_Status setChannels();
 
 private:
@@ -158,8 +166,9 @@ private:
     bool hasBeenUpdated; // do we have new data yet?
 
     int numChannels; // number of active channels
-    BTA_ChannelSelection channels[8];
-    std::string theChannels; 
+    BTA_ChannelSelection channels[MAX_CHANNEL_SELECTIONS];
+    std::string chanSelectionName[MAX_CHANNEL_SELECTIONS];
+    std::string theChannels;  //< comma-separated list of channels as read by xml
     bool parseChannelSelection(const std::string& chans);
 
     /** change frames, resets hasBeenUpdated
@@ -169,7 +178,7 @@ private:
 
 };
 
-/** get the channel name for a channel id */
-extern std::string getChannelName(BTA_ChannelId cid);
+/** get the name of the data type for a channel id */
+extern std::string getChannelTypeName(BTA_ChannelId cid);
 
 #endif

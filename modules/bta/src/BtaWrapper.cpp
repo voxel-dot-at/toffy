@@ -21,7 +21,8 @@ using namespace std;
 
 static void BTA_CALLCONV infoEventCbEx2(BTA_Handle /*handle*/,
                                         BTA_Status status, int8_t *msg,
-                                        void * /*userArg*/) {
+                                        void * /*userArg*/)
+{
     // BtaWrapper* bta = (BtaWrapper*)userArg;
     BOOST_LOG_TRIVIAL(info)
         << "   BTACallback: infoEventEx2 (" << status << ") " << msg;
@@ -29,7 +30,8 @@ static void BTA_CALLCONV infoEventCbEx2(BTA_Handle /*handle*/,
 
 static void BTA_CALLCONV frameArrivedEx2(
     BTA_Handle /*handle*/, BTA_Frame *frame, void *arg,
-    struct BTA_FrameArrivedReturnOptions * /*frameArrivedReturnOptions*/) {
+    struct BTA_FrameArrivedReturnOptions * /*frameArrivedReturnOptions*/)
+{
     if (!frame) {
         BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx NO FRAME ";
         return;
@@ -54,7 +56,8 @@ static void BTA_CALLCONV frameArrivedEx2(
     return;
 }
 
-static void errorHandling(BTA_Status status) {
+static void errorHandling(BTA_Status status)
+{
     if (status != BTA_StatusOk) {
         char statusString[100];
         BTAstatusToString(status, statusString, strlen(statusString));
@@ -65,11 +68,13 @@ static void errorHandling(BTA_Status status) {
 
 std::string BtaWrapper::getBltstream() const { return bltstreamFilename; }
 
-void BtaWrapper::setBltstream(const std::string &value) {
+void BtaWrapper::setBltstream(const std::string &value)
+{
     bltstreamFilename = value;
 }
 
-BtaWrapper::BtaWrapper() : manufacturer(1), device(0), async(false) {
+BtaWrapper::BtaWrapper() : manufacturer(1), device(0), async(false)
+{
     handle = 0;
     deviceInfo = NULL;
     // TODO is size really needed;
@@ -87,7 +92,8 @@ BtaWrapper::BtaWrapper() : manufacturer(1), device(0), async(false) {
 
 BtaWrapper::~BtaWrapper() { disconnect(); }
 
-int BtaWrapper::parseConfig(string configFile) {
+int BtaWrapper::parseConfig(string configFile)
+{
     boost::property_tree::ptree pt;
     cout << endl
          << endl
@@ -109,18 +115,24 @@ int BtaWrapper::parseConfig(string configFile) {
         return parseConfig(pt);
 }
 
-int BtaWrapper::parseConfig(const boost::property_tree::ptree pt) {
+int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
+{
     BTAinitConfig(&config);
     bool pres;
-    
-    pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddrLen", config.udpDataIpAddrLen, 4);
 
-    pt_optional_get_ipaddr(pt, "connection.udpDataIp", (struct in_addr&)udpDataIpAddr, "224.0.0.1");
+    pt_optional_get_default<uint8_t>(pt, "connection.udpDataIpAddrLen",
+                                     config.udpDataIpAddrLen, 4);
+
+    pt_optional_get_ipaddr(pt, "connection.udpDataIp",
+                           (struct in_addr &)udpDataIpAddr, "224.0.0.1");
     config.udpDataIpAddr = udpDataIpAddr;
 
-// static inline bool pt_optional_get_ipaddr(const boost::property_tree::ptree pt,
-//     const std::string& key, struct in_addr& inaddr, std::string defaultAddress) ;
-// ease use all or none of udpControlOutIpAddr, udpControlOutIpAddrLen and udpControlPort
+    // static inline bool pt_optional_get_ipaddr(const
+    // boost::property_tree::ptree pt,
+    //     const std::string& key, struct in_addr& inaddr, std::string
+    //     defaultAddress) ;
+    // ease use all or none of udpControlOutIpAddr, udpControlOutIpAddrLen and
+    // udpControlPort
 
     pres = pt_optional_get_default<uint16_t>(pt, "connection.udpDataPort",
                                              config.udpDataPort, 10002);
@@ -128,11 +140,14 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt) {
         printf("UDP PORT SET TO %d\n", config.udpDataPort);
     }
 
-    pt_optional_get<uint8_t>(pt, "connection.udpControlOutIpAddrLen", config.udpControlOutIpAddrLen);
+    pt_optional_get<uint8_t>(pt, "connection.udpControlOutIpAddrLen",
+                             config.udpControlOutIpAddrLen);
 
-    pt_optional_get<uint16_t>(pt, "connection.udpControlPort", config.udpControlPort);
+    pt_optional_get<uint16_t>(pt, "connection.udpControlPort",
+                              config.udpControlPort);
 
-    pres = pt_optional_get_ipaddr(pt, "connection.udpControlOutIp", (struct in_addr&)udpControlOutIpAddr, "");
+    pres = pt_optional_get_ipaddr(pt, "connection.udpControlOutIp",
+                                  (struct in_addr &)udpControlOutIpAddr, "");
     if (pres) {
         config.udpControlOutIpAddr = udpControlOutIpAddr;
     }
@@ -201,34 +216,45 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt) {
         BOOST_LOG_TRIVIAL(debug)
             << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
     }
-// static inline bool pt_optional_get_ipaddr(const boost::property_tree::ptree pt,
-//     const std::string& key, struct in_addr& inaddr, std::string defaultAddress) ;
-    
-    pt_optional_get_default<uint8_t>(pt, "connection.tcpDeviceIpAddrLen", config.tcpDeviceIpAddrLen, 4);
+    // static inline bool pt_optional_get_ipaddr(const
+    // boost::property_tree::ptree pt,
+    //     const std::string& key, struct in_addr& inaddr, std::string
+    //     defaultAddress) ;
+
+    pt_optional_get_default<uint8_t>(pt, "connection.tcpDeviceIpAddrLen",
+                                     config.tcpDeviceIpAddrLen, 4);
 
     pt_optional_get<uint16_t>(pt, "connection.tcpDataPort", config.tcpDataPort);
 
-    pt_optional_get_default<uint16_t>(pt, "connection.tcpControlPort", config.tcpControlPort, 10001);
+    pt_optional_get_default<uint16_t>(pt, "connection.tcpControlPort",
+                                      config.tcpControlPort, 10001);
 
     // uart stuff:
     //
     pt_optional_get<string>(pt, "connection.uartPortName", uartPortName);
-    pt_optional_get<uint32_t>(pt, "connection.uartBaudRate", config.uartBaudRate);
-    pt_optional_get<uint8_t>(pt, "connection.uartDataBits", config.uartDataBits);
-    pt_optional_get<uint8_t>(pt, "connection.uartStopBits", config.uartStopBits);
+    pt_optional_get<uint32_t>(pt, "connection.uartBaudRate",
+                              config.uartBaudRate);
+    pt_optional_get<uint8_t>(pt, "connection.uartDataBits",
+                             config.uartDataBits);
+    pt_optional_get<uint8_t>(pt, "connection.uartStopBits",
+                             config.uartStopBits);
     pt_optional_get<uint8_t>(pt, "connection.uartParity", config.uartParity);
-    pt_optional_get<uint8_t>(pt, "connection.uartTransmitterAddress", config.uartTransmitterAddress);
-    pt_optional_get<uint8_t>(pt, "connection.uartReceiverAddress", config.uartReceiverAddress);
-    pt_optional_get<uint32_t>(pt, "connection.serialNumber", config.serialNumber);
+    pt_optional_get<uint8_t>(pt, "connection.uartTransmitterAddress",
+                             config.uartTransmitterAddress);
+    pt_optional_get<uint8_t>(pt, "connection.uartReceiverAddress",
+                             config.uartReceiverAddress);
+    pt_optional_get<uint32_t>(pt, "connection.serialNumber",
+                              config.serialNumber);
 
     // deprecated...
     std::string calibFileName;
-    pres = pt_optional_get<string>(pt, "connection.calibFileName", calibFileName);
+    pres =
+        pt_optional_get<string>(pt, "connection.calibFileName", calibFileName);
     if (pres) {
         config.calibFileName = (uint8_t *)strdup(calibFileName.c_str());
     }
 
-    // can't auto-convert int32 to FrameMode, so do it manually: 
+    // can't auto-convert int32 to FrameMode, so do it manually:
     try {
         int32_t frameMode =
             pt.get<int32_t>("connection.frameMode", BTA_FrameModeDistAmp);
@@ -242,8 +268,8 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt) {
 
     // channel selection:
     std::string channels;
-    hasChannels = pt_optional_get<std::string>(pt, "connection.channels",
-                                               channels);
+    hasChannels =
+        pt_optional_get<std::string>(pt, "connection.channels", channels);
     if (hasChannels) {
         cout << "SETTING CHANNELS! " << channels;
         parseChannelSelection(channels);
@@ -280,13 +306,15 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt) {
 
 }*/
 
-int BtaWrapper::reConnect() {
+int BtaWrapper::reConnect()
+{
     handle = 0;
     if (connect()) return 1;
     return 0;
 }
 
-int BtaWrapper::connect() {
+int BtaWrapper::connect()
+{
     if (isConnected()) {
         BOOST_LOG_TRIVIAL(warning) << "The camera is already connected.";
         return -1;
@@ -337,8 +365,7 @@ int BtaWrapper::connect() {
     if (hasChannels) {
         status = setChannels();
         BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::connect() setChannels() status: "
-            << status;
+            << "BtaWrapper::connect() setChannels() status: " << status;
     }
 
     status = BTAgetDeviceInfo(handle, &deviceInfo);
@@ -366,22 +393,23 @@ int BtaWrapper::connect() {
         BTAsetLibParam(handle, BTA_LibParamStreamAutoPlaybackSpeed, 1);
         status = BTAsetFrameRate(handle, 2.0f);
     }
-    { // set AEXP, AWB for color sensor 0
-        uint32_t regs[] = { 0x03  }; //
+    {                              // set AEXP, AWB for color sensor 0
+        uint32_t regs[] = {0x03};  //
         uint32_t nregs = sizeof(regs);
-        status = BTAwriteRegister(handle, 0x0e1, regs, &nregs );
+        status = BTAwriteRegister(handle, 0x0e1, regs, &nregs);
         // handle, uint32_t address, uint32_t *data, uint32_t *registerCount
     }
-    if (false) { // set flying pixel filter
-        uint32_t regs[] = { 0x1 << 13  }; //
+    if (false) {                        // set flying pixel filter
+        uint32_t regs[] = {0x1 << 13};  //
         uint32_t nregs = sizeof(regs);
-        status = BTAwriteRegister(handle, 0x0e1, regs, &nregs );
+        status = BTAwriteRegister(handle, 0x0e1, regs, &nregs);
         // handle, uint32_t address, uint32_t *data, uint32_t *registerCount
     }
     return 0;
 }
 
-bool BtaWrapper::parseChannelSelection(const std::string &chans) {
+bool BtaWrapper::parseChannelSelection(const std::string &chans)
+{
     vector<string> strings;
     istringstream f(chans);
 
@@ -396,12 +424,9 @@ bool BtaWrapper::parseChannelSelection(const std::string &chans) {
 
     cout << strings.size() << " GET channels" << endl;
     BTA_Status ret;
-    // BTA_ChannelSelection channelSelection[32];
-    // int channelSelectionSize;
-    // ret = BTAgetChannelSelection(handle, channelSelection, &channelSelectionSize);
-    // cout << strings.size() << " GOT channels" << channelSelectionSize << endl;
 
-    for (size_t i=0; i< strings.size(); i++) {
+    for (size_t i = 0; i < strings.size(); i++) {
+        chanSelectionName[i] = strings[i];
         if ("x" == strings[i]) {
             channels[i] = BTA_ChannelSelectionX;
         } else if ("y" == strings[i]) {
@@ -426,24 +451,26 @@ bool BtaWrapper::parseChannelSelection(const std::string &chans) {
             channels[i] = BTA_ChannelSelectionAmplitude8;
         } else {
             cout << " WARN! unknown channel " << strings[i] << endl;
+            chanSelectionName[i] = "invalid";
             ret = BTA_StatusInvalidParameter;
         }
     }
     return ret == BTA_StatusOk;
 }
 
-BTA_Status BtaWrapper::setChannels() {
+BTA_Status BtaWrapper::setChannels()
+{
     BTA_Status ret;
     if (!hasChannels) {
         return BTA_StatusIllegalOperation;
-
     }
     cout << " SET CHANS to " << numChannels << endl;
     ret = BTAsetChannelSelection(handle, channels, numChannels);
     return ret;
 }
 
-int BtaWrapper::disconnect() {
+int BtaWrapper::disconnect()
+{
     if (deviceInfo != NULL) {
         status = BTAfreeDeviceInfo(deviceInfo);
         if (status != BTA_StatusOk) {
@@ -465,7 +492,8 @@ int BtaWrapper::disconnect() {
     return 0;
 }
 
-bool BtaWrapper::isConnected() const {
+bool BtaWrapper::isConnected() const
+{
     // cout << "BTAisConnected(handle): " << (int)BTAisConnected(handle) <<
     // endl;
     if (BTAisConnected(handle))
@@ -474,7 +502,8 @@ bool BtaWrapper::isConnected() const {
         return 0;
 }
 
-int BtaWrapper::capture(char *&buffer) {
+int BtaWrapper::capture(char *&buffer)
+{
     BTA_Frame *frame;
     int i;
     BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::capture() async? " << async;
@@ -523,7 +552,8 @@ int BtaWrapper::capture(char *&buffer) {
     return 1;
 }
 
-int BtaWrapper::registerOp(unsigned int reg) {
+int BtaWrapper::registerOp(unsigned int reg)
+{
     uint32_t usValue;
     status = BTAreadRegister(handle, reg, &usValue, 0);
     if (status != BTA_StatusOk) {
@@ -533,7 +563,8 @@ int BtaWrapper::registerOp(unsigned int reg) {
     return usValue;
 }
 
-int BtaWrapper::registerOp(unsigned int reg, unsigned int data) {
+int BtaWrapper::registerOp(unsigned int reg, unsigned int data)
+{
     status = BTAwriteRegister(handle, reg, &data, 0);
     if (status != BTA_StatusOk) {
         BOOST_LOG_TRIVIAL(warning) << "Could write reg. status: " << status;
@@ -543,7 +574,8 @@ int BtaWrapper::registerOp(unsigned int reg, unsigned int data) {
     return 0;
 }
 
-char *BtaWrapper::loadFrame(char *data, std::string /*ext*/) {
+char *BtaWrapper::loadFrame(char *data, std::string /*ext*/)
+{
     BTA_Frame *frame = (BTA_Frame *)malloc(sizeof(BTA_Frame));
     memcpy(frame, data, sizeof(BTA_Frame));
 
@@ -642,7 +674,8 @@ char *BtaWrapper::loadFrame(char *data, std::string /*ext*/) {
     return (char *)frame;
 }
 
-char *BtaWrapper::serializeFrame(char *data, size_t &size) {
+char *BtaWrapper::serializeFrame(char *data, size_t &size)
+{
     BTA_Frame *frame = (BTA_Frame *)data;
     vector<size_t> channels(frame->channelsLen);
     // size_t channels[frame->channelsLen];
@@ -678,8 +711,9 @@ char *BtaWrapper::serializeFrame(char *data, size_t &size) {
         else if (frame->channels[i]->dataFormat == BTA_DataFormatFloat32)
             dataSize = sizeof(unsigned int);
         else {
-            BOOST_LOG_TRIVIAL(error) << "unknown dataFormat: 0x"
-                                     << hex << (int)(frame->channels[i]->dataFormat) << dec;
+            BOOST_LOG_TRIVIAL(error)
+                << "unknown dataFormat: 0x" << hex
+                << (int)(frame->channels[i]->dataFormat) << dec;
         }
 
         channels[i] =
@@ -724,7 +758,8 @@ char *BtaWrapper::serializeFrame(char *data, size_t &size) {
     return raw;
 }
 
-int BtaWrapper::freeFrame(char *data) {
+int BtaWrapper::freeFrame(char *data)
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     BTA_Frame *frame = (BTA_Frame *)data;
     status = BTAfreeFrame(&frame);
@@ -737,7 +772,8 @@ int BtaWrapper::freeFrame(char *data) {
     return 0;
 }
 
-int BtaWrapper::getDistances(float *&depth, int &size, char *data) {
+int BtaWrapper::getDistances(float *&depth, int &size, char *data)
+{
     BTA_Frame *frame = (BTA_Frame *)data;
 
     void *disVoid;
@@ -795,7 +831,8 @@ int BtaWrapper::getDistances(float *&depth, int &size, char *data) {
 }
 
 int BtaWrapper::getAmplitudes(unsigned short *&amplitudes, int &size,
-                              char *data) {
+                              char *data)
+{
     BTA_Frame *frame = (BTA_Frame *)data;
     void *amplVoid;
     BTA_DataFormat dataFormat;
@@ -849,7 +886,8 @@ int BtaWrapper::getAmplitudes(unsigned short *&amplitudes, int &size,
 
 int BtaWrapper::reset() { return BTAsendReset(handle); }
 
-int BtaWrapper::getDisSize(char *data, int &x, int &y) {
+int BtaWrapper::getDisSize(char *data, int &x, int &y)
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     BTA_Frame *frame = (BTA_Frame *)data;
     uint16_t *distances;
@@ -865,7 +903,8 @@ int BtaWrapper::getDisSize(char *data, int &x, int &y) {
     return -1;
 }
 
-int BtaWrapper::getAmpSize(char *data, int &x, int &y) {
+int BtaWrapper::getAmpSize(char *data, int &x, int &y)
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     BTA_Frame *frame = (BTA_Frame *)data;
 
@@ -882,7 +921,8 @@ int BtaWrapper::getAmpSize(char *data, int &x, int &y) {
     return -1;
 }
 
-int BtaWrapper::getFrameTime(char *data, unsigned int &timeStamp) {
+int BtaWrapper::getFrameTime(char *data, unsigned int &timeStamp)
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     BTA_Frame *frame = (BTA_Frame *)data;
     if (frame != NULL) {
@@ -893,7 +933,8 @@ int BtaWrapper::getFrameTime(char *data, unsigned int &timeStamp) {
     return -1;
 }
 
-int BtaWrapper::getFrameCounter(char *data, unsigned int &counter) {
+int BtaWrapper::getFrameCounter(char *data, unsigned int &counter)
+{
     BTA_Frame *frame = (BTA_Frame *)data;
     if (frame != NULL) {
         counter = frame->frameCounter;
@@ -902,7 +943,8 @@ int BtaWrapper::getFrameCounter(char *data, unsigned int &counter) {
     return -1;
 }
 
-int BtaWrapper::getFrameRef(char *data, unsigned int &mf, unsigned int &it) {
+int BtaWrapper::getFrameRef(char *data, unsigned int &mf, unsigned int &it)
+{
     BTA_Frame *frame = (BTA_Frame *)data;
     if (frame != NULL && frame->channelsLen > 0) {
         BTA_Channel *ch = frame->channels[0];
@@ -917,7 +959,8 @@ float mainTemp;  //<<< Main-board/processor temperature sensor in degree Celcius
 float ledTemp;   //<<< Led-board temperature sensor in degree Celcius
 float genericTemp;
 
-int BtaWrapper::getTemps(char *data, float &mt, float &lt, float &gt) {
+int BtaWrapper::getTemps(char *data, float &mt, float &lt, float &gt)
+{
     BTA_Frame *frame = (BTA_Frame *)data;
     mt = frame->mainTemp;
     lt = frame->ledTemp;
@@ -925,23 +968,27 @@ int BtaWrapper::getTemps(char *data, float &mt, float &lt, float &gt) {
     return 1;
 }
 
-int BtaWrapper::getMainTemp(char *data, float &mt) {
+int BtaWrapper::getMainTemp(char *data, float &mt)
+{
     BTA_Frame *frame = (BTA_Frame *)data;
     mt = frame->mainTemp;
     return 1;
 }
-int BtaWrapper::getLedTemp(char *data, float &lt) {
+int BtaWrapper::getLedTemp(char *data, float &lt)
+{
     BTA_Frame *frame = (BTA_Frame *)data;
     lt = frame->ledTemp;
     return 1;
 }
-int BtaWrapper::getGenericTemp(char *data, float &gt) {
+int BtaWrapper::getGenericTemp(char *data, float &gt)
+{
     BTA_Frame *frame = (BTA_Frame *)data;
     gt = frame->genericTemp;
     return 1;
 }
 
-float BtaWrapper::getGlobalOffset() {
+float BtaWrapper::getGlobalOffset()
+{
     float val;
     status = BTAgetGlobalOffset(handle, &val);
     if (status != BTA_StatusOk) {
@@ -951,7 +998,8 @@ float BtaWrapper::getGlobalOffset() {
     return val;
 }
 
-int BtaWrapper::setGlobalOffset(float val) {
+int BtaWrapper::setGlobalOffset(float val)
+{
     status = BTAsetGlobalOffset(handle, val);
     if (status != BTA_StatusOk) {
         BOOST_LOG_TRIVIAL(warning) << "setGlobalOffset() Status: " << status;
@@ -960,7 +1008,8 @@ int BtaWrapper::setGlobalOffset(float val) {
     return 1;
 }
 
-unsigned int BtaWrapper::getIntegrationTime() {
+unsigned int BtaWrapper::getIntegrationTime()
+{
     unsigned int it;
     status = BTAgetIntegrationTime(handle, &it);
     BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
@@ -970,7 +1019,8 @@ unsigned int BtaWrapper::getIntegrationTime() {
     return it;
 }
 
-float BtaWrapper::getFrameRate() {
+float BtaWrapper::getFrameRate()
+{
     float fr;
     status = BTAgetFrameRate(handle, &fr);
     BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
@@ -980,7 +1030,8 @@ float BtaWrapper::getFrameRate() {
     return fr;
 }
 
-unsigned long BtaWrapper::getModulationFrequency() {
+unsigned long BtaWrapper::getModulationFrequency()
+{
     unsigned int it;
     status = BTAgetModulationFrequency(handle, &it);
     BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
@@ -990,7 +1041,8 @@ unsigned long BtaWrapper::getModulationFrequency() {
     return it;
 }
 
-int BtaWrapper::setIntegrationTime(unsigned int it) {
+int BtaWrapper::setIntegrationTime(unsigned int it)
+{
     status = BTAsetIntegrationTime(handle, it);
     BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
     if (status != BTA_StatusOk) {
@@ -999,7 +1051,8 @@ int BtaWrapper::setIntegrationTime(unsigned int it) {
     return 1;
 }
 
-int BtaWrapper::setFrameRate(float fr) {
+int BtaWrapper::setFrameRate(float fr)
+{
     status = BTAsetFrameRate(handle, fr);
     BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
     if (status != BTA_StatusOk) {
@@ -1008,7 +1061,8 @@ int BtaWrapper::setFrameRate(float fr) {
     return 1;
 }
 
-int BtaWrapper::setModulationFrequency(unsigned long mf) {
+int BtaWrapper::setModulationFrequency(unsigned long mf)
+{
     status = BTAsetModulationFrequency(handle, mf);
     BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
     if (status != BTA_StatusOk) {
@@ -1017,7 +1071,8 @@ int BtaWrapper::setModulationFrequency(unsigned long mf) {
     return 1;
 }
 
-int BtaWrapper::startGrabbing(std::string filename) {
+int BtaWrapper::startGrabbing(std::string filename)
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     BTA_GrabbingConfig grabbingConfig;
     status = BTAinitGrabbingConfig(&grabbingConfig);
@@ -1030,14 +1085,16 @@ int BtaWrapper::startGrabbing(std::string filename) {
     return 1;
 }
 
-int BtaWrapper::stopGrabbing() {
+int BtaWrapper::stopGrabbing()
+{
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     status = BTAstartGrabbing(handle, 0);
     errorHandling(status);
     return 1;
 }
 
-void BtaWrapper::saveAmplCSV(const std::string &fileName) {
+void BtaWrapper::saveAmplCSV(const std::string &fileName)
+{
     boost::unique_lock<boost::mutex> lock(frameMutex);
     uint32_t i;
     for (i = 0; i < frameInUse->channelsLen; i++) {
@@ -1083,7 +1140,8 @@ void BtaWrapper::saveAmplCSV(const std::string &fileName) {
     }
 }
 
-void BtaWrapper::saveDistCSV(const std::string &fileName) {
+void BtaWrapper::saveDistCSV(const std::string &fileName)
+{
     boost::unique_lock<boost::mutex> lock(frameMutex);
     uint32_t i;
     for (i = 0; i < frameInUse->channelsLen; i++) {
@@ -1146,7 +1204,8 @@ void BtaWrapper::saveDistCSV(const std::string &fileName) {
     of.close();
 }
 
-int BtaWrapper::saveRaw(string fileName, char *data) {
+int BtaWrapper::saveRaw(string fileName, char *data)
+{
     size_t data_serialized_size;
     char *data_serialized = serializeFrame(data, data_serialized_size);
 
@@ -1178,7 +1237,8 @@ int BtaWrapper::saveRaw(string fileName, char *data) {
     return 0;
 }
 
-char *BtaWrapper::loadRaw(string rawFile) {
+char *BtaWrapper::loadRaw(string rawFile)
+{
     FILE *raw = fopen(rawFile.c_str(), "rb");
     if (raw == NULL) {
         BOOST_LOG_TRIVIAL(warning) << "Could not open file: " << rawFile;
@@ -1224,42 +1284,49 @@ char *BtaWrapper::loadRaw(string rawFile) {
 
 BTA_DeviceType BtaWrapper::getDeviceType() const { return config.deviceType; }
 
-void BtaWrapper::setDeviceType(const BTA_DeviceType &value) {
+void BtaWrapper::setDeviceType(const BTA_DeviceType &value)
+{
     config.deviceType = value;
 }
 
-int BtaWrapper::getLibParam(int &param, float &data) {
+int BtaWrapper::getLibParam(int &param, float &data)
+{
     return BTAgetLibParam(handle, (BTA_LibParam)param, &data);
 }
 
-int BtaWrapper::setLibParam(int &param, float &data) {
+int BtaWrapper::setLibParam(int &param, float &data)
+{
     return BTAsetLibParam(handle, (BTA_LibParam)param, data);
 }
 
 using namespace std;
 
-static void freeMetaData(BTA_Channel *chan) {
+static void freeMetaData(BTA_Channel *chan)
+{
     for (uint32_t i = 0; i < chan->metadataLen; i++) {
         delete chan->metadata[i];
     }
     delete chan->metadata;
 }
 
-static void freeChannel(BTA_Channel *chan) {
+static void freeChannel(BTA_Channel *chan)
+{
     freeMetaData(chan);
     delete chan->metadata;
     delete chan->data;
     delete chan;
 }
 
-static void freeChannels(BTA_Frame *frame) {
+static void freeChannels(BTA_Frame *frame)
+{
     for (uint32_t i = 0; i < frame->channelsLen; i++) {
         freeChannel(frame->channels[i]);
     }
     delete frame->channels;
 }
 
-static inline void cpyMetaData(BTA_Channel *dst, const BTA_Channel *src) {
+static inline void cpyMetaData(BTA_Channel *dst, const BTA_Channel *src)
+{
     for (uint32_t i = 0; i < src->metadataLen; i++) {
         BTA_Metadata *s = src->metadata[i];
         BTA_Metadata *d = dst->metadata[i];
@@ -1273,7 +1340,42 @@ static inline void cpyMetaData(BTA_Channel *dst, const BTA_Channel *src) {
 }
 static bool debugCvt = false;
 
-std::string getChannelName(BTA_ChannelId cid) {
+std::string getChannelSelectionName(BTA_ChannelSelection sel)
+{
+    switch (sel) {
+        case BTA_ChannelSelectionInactive:
+            return "inactive";
+        case BTA_ChannelSelectionDistance:
+            return "distance";
+        case BTA_ChannelSelectionAmplitude:
+            return "amplitude";
+        case BTA_ChannelSelectionX:
+            return "x";
+        case BTA_ChannelSelectionY:
+            return "y";
+        case BTA_ChannelSelectionZ:
+            return "z";
+        case BTA_ChannelSelectionConfidence:
+            return "confidence";
+        case BTA_ChannelSelectionHeightMap:
+            return "heightmap";
+        case BTA_ChannelSelectionStdev:
+            return "stdev";
+        case BTA_ChannelSelectionColor0:
+            return "color0";
+        case BTA_ChannelSelectionOverlay0:
+            return "overlay0";
+        case BTA_ChannelSelectionColor1:
+            return "color1";
+        case BTA_ChannelSelectionOverlay1:
+            return "overlay1";
+        case BTA_ChannelSelectionAmplitude8:
+            return "amplitude8";
+    }
+}
+
+std::string getChannelTypeName(BTA_ChannelId cid)
+{
     switch (cid) {
         case BTA_ChannelIdUnknown:
             return "UNKNOWN";
@@ -1339,7 +1441,8 @@ std::string getChannelName(BTA_ChannelId cid) {
     }
 }
 
-static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src) {
+static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src)
+{
     dst->id = src->id;
     dst->xRes = src->xRes;
     dst->yRes = src->yRes;
@@ -1373,10 +1476,11 @@ static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src) {
         cout << "cpyChan sq " << dst->sequenceCounter << " it "
              << dst->integrationTime << " mf " << dst->modulationFrequency
              << " unit " << dst->unit << " df " << dst->dataFormat << "\t\t"
-             << getChannelName(dst->id) << endl;
+             << getChannelTypeName(dst->id) << endl;
 }
 
-static void cpyChannels(BTA_Frame *dst, const BTA_Frame *src) {
+static void cpyChannels(BTA_Frame *dst, const BTA_Frame *src)
+{
     if (debugCvt)
         cout << "cpyChannels " << (int)dst->channelsLen << "-"
              << (int)src->channelsLen << endl;
@@ -1408,7 +1512,8 @@ static void cpyChannels(BTA_Frame *dst, const BTA_Frame *src) {
     }
 }
 
-static void cpyFrame(BTA_Frame *dst, const BTA_Frame *src) {
+static void cpyFrame(BTA_Frame *dst, const BTA_Frame *src)
+{
     if (debugCvt) cout << "cpyFrame cl " << (int)src->channelsLen << endl;
     if (debugCvt) cout << "cpyFrame cl " << (int)dst->channelsLen << endl;
 
@@ -1434,7 +1539,8 @@ static void cpyFrame(BTA_Frame *dst, const BTA_Frame *src) {
 }
 
 // queue handling:
-void BtaWrapper::updateFrame(BTA_Frame *frame) {
+void BtaWrapper::updateFrame(BTA_Frame *frame)
+{
     {
         boost::lock_guard<boost::mutex> lock{fillFrameMutex};
 
@@ -1448,7 +1554,8 @@ void BtaWrapper::updateFrame(BTA_Frame *frame) {
          << endl;
 }
 
-BTA_Frame *BtaWrapper::flipFrame() {
+BTA_Frame *BtaWrapper::flipFrame()
+{
     hasBeenUpdated = false;
     boost::lock_guard<boost::mutex> lock{fillFrameMutex};
 
@@ -1459,8 +1566,8 @@ BTA_Frame *BtaWrapper::flipFrame() {
     return frameInUse;
 }
 
-BTA_Frame *
-BtaWrapper::waitForNextFrame() {  // wait for next frame to arrive....
+BTA_Frame *BtaWrapper::waitForNextFrame()
+{  // wait for next frame to arrive....
     // boost::lock_guard<boost::mutex> lock{frameMutex};
     boost::unique_lock<boost::mutex> lock(frameMutex);
     cout << "waitForNextFrame " << hasBeenUpdated << endl;

@@ -597,13 +597,25 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
             width = chan->xRes;
             height = chan->yRes;
         }
-        std::string name = getChannelName(chan->id);
+        std::string name = getChannelTypeName(chan->id);
+        std::string sel = "unknown";
+        if (sensor->hasChannels) {
+            sel = sensor->channelSelectionName(i);
+        }
         BOOST_LOG_TRIVIAL(debug)
-            << "dynOut[" << i << "] " << name << " " << chan->dataFormat << " "
+            << "dynOut[" << i << "] " << name << " " << sel << " " << chan->dataFormat << " "
             << chan->xRes << "x" << chan->yRes << " " << chan->dataLen;
-        if (name == "x") {  // xyz coordinates in this frame
 
-        } else if (name == "depth") {  // depth / ampl in this frame
+        if (sensor->hasChannels) {
+            // check for data type vs. channel name
+            if (sensor->hasChannels && name == "color") {  // override color type with actual channel name
+                    BOOST_LOG_TRIVIAL(debug) << " channel nameset name " << name << " to sel " << sel;
+                name = sel; 
+            } else {
+                if (name != sel) {
+                    BOOST_LOG_TRIVIAL(warning) << " channel name mismatch - check your config! name " << name << " sel " << sel;
+                }
+            }
         }
 
         matPtr d;
