@@ -682,10 +682,11 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                     ptr[2] = v;
                     ptr+=3;
                 }
-                Mat input(height, width, CV_8UC3, chan->data);
-
+		Mat input(height, width, CV_8UC3, chan->data);
                 cvtColor(input, *d, COLOR_YUV2BGR);
-                imshow("img", *d);
+
+                // debug:
+                // imshow("img", *d);
 
                 break;
             }
