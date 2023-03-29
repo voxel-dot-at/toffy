@@ -7,7 +7,7 @@ project( toffy )
 SET(CMAKE_COLOR_MAKEFILE ON)
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ################################################################################
@@ -190,7 +190,6 @@ else(NOT BUILD_STATIC)
     list(APPEND DEFINITIONS -DBOOST_ALL_DYN_LINK -DBOOST_ALL_NO_LIB) #Pcl log and ???, dynamic
     set (LIB_LINK SHARED)
 endif()
-
         
 ################################################################################
 # Find dependencies
@@ -203,6 +202,7 @@ find_package(Boost
     REQUIRED)
 #include_directories(${Boost_INCLUDE_DIRS})
 list(APPEND LIBS ${Boost_LIBRARIES})
+add_definitions(-DBOOST_ALL_DYN_LINK )
 
 if(NOT MSVC)
     find_package(PkgConfig)
@@ -226,28 +226,18 @@ if(NOT WITHOUT_PCL)
 endif()
 
 # OpenCV
-find_package( OpenCV COMPONENTS core REQUIRED )
-message("OpenCV version found: " ${OpenCV_VERSION})
 
-#
-# OpenCV: for viz and tracking, you need to build opencv with opencv_contrib modules enabled.
-#
-if ( ${OpenCV_VERSION_MAJOR} EQUAL 2 )
-   # opencv 2.4
-   find_package( OpenCV COMPONENTS imgproc highgui calib3d video contrib REQUIRED )
-else()
-   find_package( OpenCV COMPONENTS viz )
-
-   find_package( OpenCV COMPONENTS imgproc highgui calib3d videoio OPTIONAL_COMPONENTS viz tracking REQUIRED )
-   message("  OpenCV libs " ${OpenCV_LIBS} )
-   list(APPEND LIBS ${OpenCV_LIBS})
-   if(TARGET opencv_viz)
-      message("  OpenCV modules: VIZ FOUND " ${OpenCV_LIBS} )
-   endif()
-   if(TARGET opencv_tracking)
-      message("  OpenCV modules: TRACKING FOUND " ${OpenCV_LIBS} )
-   endif()
+find_package( OpenCV COMPONENTS core imgproc highgui calib3d videoio OPTIONAL_COMPONENTS viz tracking REQUIRED )
+message("  OpenCV libs " ${OpenCV_LIBS} )
+list(APPEND LIBS ${OpenCV_LIBS})
+if(TARGET opencv_viz)
+    message("  OpenCV modules: VIZ FOUND " ${OpenCV_LIBS} )
 endif()
+if(TARGET opencv_tracking)
+    message("  OpenCV modules: TRACKING FOUND " ${OpenCV_LIBS} )
+endif()
+
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 list(APPEND LIBS ${OpenCV_LIBS})
 
@@ -256,150 +246,162 @@ list(APPEND LIBS ${OpenCV_LIBS})
 #
 find_package( bta )
 if (${bta_FOUND})
-    include_directories(${bta_INCLUDE_DIRS})
-    list(APPEND LIBS ${bta_LIBRARIES})
-    list(APPEND LIBS ${bta_LIBRARY} bta)
-    add_definitions(${bta_DEFINITIONS} -DBTA_ETH -DBTA_P100 -DHAS_BTA)
     message(INFO " bta inc  ${bta_INCLUDE_DIRS}")
     message(INFO " bta lib  ${bta_LIBRARIES}")
-    message(INFO " bta lib  ${bta_LIBRARY}")
     message(INFO " bta defs ${bta_DEFINITIONS}")
+    include_directories(${bta_INCLUDE_DIRS})
+    list(APPEND LIBS ${bta_LIBRARIES} )
 else()
     message(WARNING "no bta library!")
 endif()
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/uri-grammar/src)
+
+add_subdirectory(libraries)
+
+add_subdirectory(modules)
+
+add_library( ${PROJECT_NAME} SHARED init.cpp)
+target_link_libraries( ${PROJECT_NAME} PUBLIC
+    toffy_modules toffy_libs
+    ${LIBS}  )
+install (TARGETS ${PROJECT_NAME}
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin)
+
 # TODO why?
 #include_directories( ${CMAKE_BINARY_DIR} )
 
-################################################################################
-# Finding sources and headers
-################################################################################
-# TODO define what is core, how to remove modules
-file(GLOB_RECURSE src "modules/*.cpp" )
-file(GLOB_RECURSE headers RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-                    "modules/core/include/"
-                    "modules/filters/include/"
-                    "modules/control/include/"
-                    "modules/bta/include/"
-                     )
-install(DIRECTORY "modules/core/include/" DESTINATION "include/")
-install(DIRECTORY "modules/filters/include/" DESTINATION "include/")
-install(DIRECTORY "modules/control/include/" DESTINATION "include/")
-install(DIRECTORY "modules/bta/include/" DESTINATION "include/")
+# # ################################################################################
+# # # Finding sources and headers
+# # ################################################################################
+# # # TODO define what is core, how to remove modules
+# # file(GLOB_RECURSE src "modules/*.cpp" )
+# # file(GLOB_RECURSE headers RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+# #                     "modules/core/include/"
+# #                     "modules/filters/include/"
+# #                     "modules/control/include/"
+# #                     "modules/bta/include/"
+# #                      )
+# # install(DIRECTORY "modules/core/include/" DESTINATION "include/")
+# # install(DIRECTORY "modules/filters/include/" DESTINATION "include/")
+# # install(DIRECTORY "modules/control/include/" DESTINATION "include/")
+# # install(DIRECTORY "modules/bta/include/" DESTINATION "include/")
 
 
-#Toffy libraries
-file(GLOB_RECURSE lib_src "libraries/src/*.cpp" "libraries/sensor/*.cpp" )
-list(APPEND src ${lib_src})
-install(DIRECTORY "libraries/include/" DESTINATION "include/")
+# # #Toffy libraries
+# # file(GLOB_RECURSE lib_src "libraries/src/*.cpp" "libraries/sensor/*.cpp" )
+# # list(APPEND src ${lib_src})
+# # install(DIRECTORY "libraries/include/" DESTINATION "include/")
 
-#Remove pcl depend filter if not pcl
-if(NOT PCL_FOUND)
-    # TODO
-    message(STATUS "PCL_FOUND: " ${PCL_FOUND})
-    file(GLOB_RECURSE rPCL reprojectpcl.cpp cloudviewpcl.cpp transform.cpp
-        exportcloud.cpp bbox.cpp groundprojection.cpp merge.cpp
-        muxMerge.cpp sampleConsensus.cpp boundbox.cpp
-        squareDetect.cpp)
-    list(REMOVE_ITEM src ${rPCL})
-    file(GLOB_RECURSE rPCL RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+# # #Remove pcl depend filter if not pcl
+# # if(NOT PCL_FOUND)
+# #     # TODO
+# #     message(STATUS "PCL_FOUND: " ${PCL_FOUND})
+# #     file(GLOB_RECURSE rPCL reprojectpcl.cpp cloudviewpcl.cpp transform.cpp
+# #         exportcloud.cpp bbox.cpp groundprojection.cpp merge.cpp
+# #         muxMerge.cpp sampleConsensus.cpp boundbox.cpp
+# #         squareDetect.cpp)
+# #     list(REMOVE_ITEM src ${rPCL})
+# #     file(GLOB_RECURSE rPCL RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
 
-        "modules/filters/include/toffy/3d/*.hpp"
+# #         "modules/filters/include/toffy/3d/*.hpp"
 
-        "modules/filters/converters/include/toffy/reprojectpcl.hpp"
+# #         "modules/filters/converters/include/toffy/reprojectpcl.hpp"
 
-        "modules/filters/viewers/include/toffy/cloudviewpcl.hpp"
-        "modules/filters/viewers/include/toffy/exportcloud.hpp"
+# #         "modules/filters/viewers/include/toffy/cloudviewpcl.hpp"
+# #         "modules/filters/viewers/include/toffy/exportcloud.hpp"
 
-        "modules/filters/detection/include/toffy/squareDetect.hpp"
-    )
-    list(REMOVE_ITEM headers ${rPCL})
-    #message (DEBUG " headers " ${headers})
-    #message (DEBUG " src " ${src})
-endif()
+# #         "modules/filters/detection/include/toffy/squareDetect.hpp"
+# #     )
+# #     list(REMOVE_ITEM headers ${rPCL})
+# #     #message (DEBUG " headers " ${headers})
+# #     #message (DEBUG " src " ${src})
+# # endif()
 
-# TODO
-if(NOT PCL_VISUALIZATION_FOUND)
-    message (STATUS " WITH_VISUALIZATION: " ${WITH_VISUALIZATION})
-    file(GLOB_RECURSE rPCL reprojectpcl.cpp cloudviewpcl.cpp transform.cpp
-        exportcloud.cpp bbox.cpp merge.cpp muxMerge.cpp sampleConsensus.cpp
-    )
-    list(REMOVE_ITEM src ${rPCL})
-    file(GLOB_RECURSE rPCL RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-        "modules/filters/base/include/toffy/reprojectpcl.hpp"
-        "modules/filters/viewers/include/toffy/cloudviewpcl.hpp"
-        "modules/filters/base/include/toffy/bbox.hpp"
-        "modules/filters/base/include/toffy/transform.hpp"
-        "modules/filters/base/include/toffy/merge.hpp"
-        "modules/filters/base/include/toffy/filters/3d/muxMerge.hpp"
-        "modules/filters/base/include/toffy/sampleConsensus.hpp"
-        "modules/filters/viewers/include/toffy/exportcloud.hpp")
-    #list(REMOVE_ITEM headers ${rPCL})
-    #message (DEBUG " headers " ${headers})
-    #message (DEBUG " src " ${src})
-else()
-    message(STATUS "PCL_VISUALIZATION_FOUND: " ${PCL_VISUALIZATION_FOUND})
-    list(APPEND ${${CMAKE_PROJECT_NAME}_DEFINITIONS} -DPCL_VISUALIZATION)
-    add_definitions(-DPCL_VISUALIZATION)
-endif()
+# # # TODO
+# # if(NOT PCL_VISUALIZATION_FOUND)
+# #     message (STATUS " WITH_VISUALIZATION: " ${WITH_VISUALIZATION})
+# #     file(GLOB_RECURSE rPCL reprojectpcl.cpp cloudviewpcl.cpp transform.cpp
+# #         exportcloud.cpp bbox.cpp merge.cpp muxMerge.cpp sampleConsensus.cpp
+# #     )
+# #     list(REMOVE_ITEM src ${rPCL})
+# #     file(GLOB_RECURSE rPCL RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+# #         "modules/filters/base/include/toffy/reprojectpcl.hpp"
+# #         "modules/filters/viewers/include/toffy/cloudviewpcl.hpp"
+# #         "modules/filters/base/include/toffy/bbox.hpp"
+# #         "modules/filters/base/include/toffy/transform.hpp"
+# #         "modules/filters/base/include/toffy/merge.hpp"
+# #         "modules/filters/base/include/toffy/filters/3d/muxMerge.hpp"
+# #         "modules/filters/base/include/toffy/sampleConsensus.hpp"
+# #         "modules/filters/viewers/include/toffy/exportcloud.hpp")
+# #     #list(REMOVE_ITEM headers ${rPCL})
+# #     #message (DEBUG " headers " ${headers})
+# #     #message (DEBUG " src " ${src})
+# # else()
+# #     message(STATUS "PCL_VISUALIZATION_FOUND: " ${PCL_VISUALIZATION_FOUND})
+# #     list(APPEND ${${CMAKE_PROJECT_NAME}_DEFINITIONS} -DPCL_VISUALIZATION)
+# #     add_definitions(-DPCL_VISUALIZATION)
+# # endif()
 
-if(NOT WITH_VISUALIZATION)
-    message(STATUS "PCL_VISUALIZATION_FOUND: " ${PCL_VISUALIZATION_FOUND})
-    file(GLOB_RECURSE rPCL cloudviewpcl.cpp cloudviewopencv.cpp
-        imageview.cpp
-    )
-    list(REMOVE_ITEM src ${rPCL})
-    file(GLOB_RECURSE rPCL RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-        "modules/filters/include/toffy/viewers/cloudviewopencv.hpp"
-        "modules/filters/include/toffy/viewers/cloudviewpcl.hpp"
-        "modules/filters/include/toffy/viewers/imageview.hpp"
-    )
-    list(REMOVE_ITEM headers ${rPCL})
-endif()
+# # if(NOT WITH_VISUALIZATION)
+# #     message(STATUS "PCL_VISUALIZATION_FOUND: " ${PCL_VISUALIZATION_FOUND})
+# #     file(GLOB_RECURSE rPCL cloudviewpcl.cpp cloudviewopencv.cpp
+# #         imageview.cpp
+# #     )
+# #     list(REMOVE_ITEM src ${rPCL})
+# #     file(GLOB_RECURSE rPCL RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+# #         "modules/filters/include/toffy/viewers/cloudviewopencv.hpp"
+# #         "modules/filters/include/toffy/viewers/cloudviewpcl.hpp"
+# #         "modules/filters/include/toffy/viewers/imageview.hpp"
+# #     )
+# #     list(REMOVE_ITEM headers ${rPCL})
+# # endif()
 
-# Remove filters not compatible with OpenCV 3
-if ( ${OpenCV_VERSION_MAJOR} EQUAL 2 )
-   # opencv 2.X
-   file(GLOB_RECURSE rOpenCv cvTracker.cpp)
-   list(REMOVE_ITEM src ${rOpenCv})
-   message(STATUS " REMOVING " ${rOpenCv} )
-   file(GLOB_RECURSE rOpenCv RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-       "modules/filters/include/toffy/tracking/cvTracker.hpp")
-   list(REMOVE_ITEM headers ${rOpenCv})
-endif()
+# # # Remove filters not compatible with OpenCV 3
+# # if ( ${OpenCV_VERSION_MAJOR} EQUAL 2 )
+# #    # opencv 2.X
+# #    file(GLOB_RECURSE rOpenCv cvTracker.cpp)
+# #    list(REMOVE_ITEM src ${rOpenCv})
+# #    message(STATUS " REMOVING " ${rOpenCv} )
+# #    file(GLOB_RECURSE rOpenCv RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+# #        "modules/filters/include/toffy/tracking/cvTracker.hpp")
+# #    list(REMOVE_ITEM headers ${rOpenCv})
+# # endif()
 
-# TODO
-list(APPEND toffy_SRC ${headers} ${src})
+# # # TODO
+# # list(APPEND toffy_SRC ${headers} ${src})
 
-################################################################################
-# Create lib and target
-################################################################################
-add_library (${PROJECT_NAME} ${LIB_LINK} ${toffy_SRC})
+# ################################################################################
+# # Create lib and target
+# ################################################################################
+# add_library (${PROJECT_NAME} ${LIB_LINK} ${toffy_SRC})
 
-#Build target dir for config, export and package files
+# #Build target dir for config, export and package files
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
-# Add definitions for targets
-# Values:
-#   * Debug: -Dtoffy_DEBUG=1
-#   * Release: -Dtoffy_DEBUG=0
-#   * other: -Dtoffy_DEBUG=X
-#message (DEBUG "DEFINITIONS: ${DEFINITIONS}")
-target_compile_definitions(${PROJECT_NAME} PUBLIC ${DEFINITIONS})
-# toffy_DEBUG only get set alone
-target_compile_definitions(${PROJECT_NAME} PUBLIC "${PROJECT_NAME}_DEBUG=$<CONFIG:Debug>")
+# # Add definitions for targets
+# # Values:
+# #   * Debug: -Dtoffy_DEBUG=1
+# #   * Release: -Dtoffy_DEBUG=0
+# #   * other: -Dtoffy_DEBUG=X
+# #message (DEBUG "DEFINITIONS: ${DEFINITIONS}")
+# target_compile_definitions(${PROJECT_NAME} PUBLIC ${DEFINITIONS})
+# # toffy_DEBUG only get set alone
+# target_compile_definitions(${PROJECT_NAME} PUBLIC "${PROJECT_NAME}_DEBUG=$<CONFIG:Debug>")
 
 
-# Generate Export header toffy_export.h with toffy_EXPORT:
-set(export_h "${generated_dir}/${PROJECT_NAME}/${PROJECT_NAME}_export.h")
-GENERATE_EXPORT_HEADER(${PROJECT_NAME}
-    EXPORT_FILE_NAME ${export_h}
-)
-list(APPEND headers ${export_h})
-#install(
-#    FILES ${export_h}
-#    DESTINATION "${INSTALL_INCLUDE_DIR}/common/"
-#)
+# # Generate Export header toffy_export.h with toffy_EXPORT:
+# set(export_h "${generated_dir}/${PROJECT_NAME}/${PROJECT_NAME}_export.h")
+# GENERATE_EXPORT_HEADER(${PROJECT_NAME}
+#     EXPORT_FILE_NAME ${export_h}  
+# )
+# list(APPEND headers ${export_h})
+# #install(
+# #    FILES ${export_h}
+# #    DESTINATION "${INSTALL_INCLUDE_DIR}/common/"
+# #)
 
 
 # Generate Config file toffy_config.h
@@ -407,67 +409,50 @@ set(config_h_in "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}_config.h.in")
 set(config_h "${generated_dir}/${PROJECT_NAME}/${PROJECT_NAME}_config.h")
 configure_file("${config_h_in}" "${config_h}")
 list(APPEND headers ${config_h})
-#install(
-#    FILES ${config_h}
-#    DESTINATION "${INSTALL_INCLUDE_DIR}/common"
-#)
-
-#Adding the headers
-#Hint. This has to be add manually.
-target_include_directories(${PROJECT_NAME} PUBLIC
-#For using the library without install
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libraries/include/>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libraries/sensor/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/core/include/>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/io/include/>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/filters/include/>
-    $<BUILD_INTERFACE:${generated_dir}/>
-
-    #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/>
-    #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/server/include/>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/server/uri-grammar/src/>
-
-    $<INSTALL_INTERFACE:${INSTALL_LIB_DIR}/>
-    $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}/>
-    $<INSTALL_INTERFACE:${INSTALL_CMAKE_DIR}/>
+install(
+   FILES ${config_h}
+   DESTINATION "${INSTALL_INCLUDE_DIR}/common"
 )
 
-#Options for the build ouput directory
-set_target_properties( ${PROJECT_NAME} PROPERTIES
-# TODO check more properties
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/bin"
-    VERSION ${PROJECT_VERSION_FULL}
-    SOVERSION ${PROJECT_VERSION_FULL}
-    DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX}
-)
+# #Adding the headers
+# #Hint. This has to be add manually.
+# target_include_directories(${PROJECT_NAME} PUBLIC
+# #For using the library without install
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libraries/include/>
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libraries/sensor/include>
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/core/include/>
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/>
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/>
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/io/include/>
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/filters/include/>
+#     $<BUILD_INTERFACE:${generated_dir}/>
 
-target_link_libraries( ${PROJECT_NAME} ${LIBS} -L/usr/local/lib bta )
+#     #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/>
+#     #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/server/include/>
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/server/uri-grammar/src/>
+
+#     $<INSTALL_INTERFACE:${INSTALL_LIB_DIR}/>
+#     $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}/>
+#     $<INSTALL_INTERFACE:${INSTALL_CMAKE_DIR}/>
+# )
+
+# #Options for the build ouput directory
+# set_target_properties( ${PROJECT_NAME} PROPERTIES
+# # TODO check more properties
+#     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
+#     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
+#     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/bin"
+#     VERSION ${PROJECT_VERSION_FULL}
+#     SOVERSION ${PROJECT_VERSION_FULL}
+#     DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX}
+# )
 
 
 #######################################
 # Demo app
 #######################################
 
-#Include configs in demo app
-file(GLOB_RECURSE configs apps/configs/*.xml )
-add_executable (toffyRunner apps/main ${configs})
-
-target_compile_definitions(toffyRunner PUBLIC ${DEFINITIONS})
-# toffy_DEBUG only get set alone
-target_compile_definitions(toffyRunner PUBLIC "${PROJECT_NAME}_DEBUG=$<CONFIG:Debug>")
-target_link_libraries(toffyRunner ${LIBS} dl ${PROJECT_NAME} )
-
-list(APPEND binaries ${CMAKE_CURRENT_BINARY_DIR}/toffyRunner)
-
-
-add_executable (tst_pb apps/tst_pb)
-target_compile_definitions(tst_pb PUBLIC ${DEFINITIONS} PLAT_LINUX "${PROJECT_NAME}_DEBUG=$<CONFIG:Debug>")
-target_link_libraries(tst_pb ${LIBS} dl ${PROJECT_NAME} )
-
+add_subdirectory(apps)
 
 ################################################################################
 # Install Stuff
@@ -515,7 +500,7 @@ install(
 #if( NOT BUILD_STATIC)
 install(
     TARGETS ${PROJECT_NAME}
-    EXPORT ${targets_export_name}
+    EXPORT ${targets_export_name} 
     LIBRARY
         DESTINATION "${INSTALL_LIB_DIR}" COMPONENT library INCLUDES NAMELINK_SKIP
     ARCHIVE
@@ -678,4 +663,3 @@ endif()
 SET (CPACK_TOPLEVEL_TAG ".${CMAKE_SYSTEM_NAME}-${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
 SET (CPACK_OUTPUT_FILE_PREFIX "${CMAKE_SYSTEM_NAME}-${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
 include (CPack)
-
