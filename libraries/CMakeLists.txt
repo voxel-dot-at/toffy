@@ -1,8 +1,12 @@
 add_subdirectory(src)
 
-add_library(toffy_libs STATIC init.cpp)
-target_link_libraries(toffy_libs toffy_lib_common toffy_lib_tracer toffy_lib_graphs toffy_lib_skel)
-install (TARGETS toffy_libs
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin)
+add_library(toffy_libs OBJECT 
+    $<TARGET_OBJECTS:toffy_lib_common> 
+    $<TARGET_OBJECTS:toffy_lib_tracer> 
+    $<TARGET_OBJECTS:toffy_lib_graphs> 
+    $<TARGET_OBJECTS:toffy_lib_skel> 
+    $<TARGET_OBJECTS:toffy_tracking> 
+    init.cpp
+    )
+
+install(DIRECTORY "include/" DESTINATION "include/")

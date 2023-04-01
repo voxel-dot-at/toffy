@@ -1,4 +1,4 @@
-add_library(toffy_core STATIC 
+add_library(toffy_core OBJECT 
     controller.cpp
     event.cpp
     filter.cpp
@@ -10,4 +10,5 @@ add_library(toffy_core STATIC
     parallelFilter.cpp
     player.cpp
     )
+
 target_link_libraries(  toffy_core ${LIBS} )

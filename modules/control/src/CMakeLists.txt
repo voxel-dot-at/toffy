@@ -1,7 +1,7 @@
 
 include_directories(../server/uri-grammar)
 
-add_library(toffy_control STATIC 
+add_library(toffy_control SHARED 
     capturersController.cpp
     controllerFactory.cpp
     filterController.cpp
@@ -12,3 +12,4 @@ add_library(toffy_control STATIC
     sensorusbController.cpp
     webcontroller.cpp
     )
+target_link_libraries(toffy_control toffy_control_server toffy ${LIBS})

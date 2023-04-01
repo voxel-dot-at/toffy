@@ -1,4 +1,4 @@
-add_library(toffy_lib_common STATIC 
+add_library(toffy_lib_common OBJECT 
     filenodehelper.cpp
     )
 

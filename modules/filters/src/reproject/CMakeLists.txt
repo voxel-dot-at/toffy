@@ -1,4 +1,4 @@
-add_library(toffy_reproject STATIC 
+add_library(toffy_reproject OBJECT 
     reprojectopencv.cpp
     reprojectpcl.cpp
     )

@@ -1,4 +1,5 @@
-add_library(toffy_lib_skel STATIC 
+add_library(toffy_lib_skel OBJECT
+
     depthSkeletonizer.cpp          
     erodeSkeletonizer.cpp
     k3mSkeletonizer.cpp

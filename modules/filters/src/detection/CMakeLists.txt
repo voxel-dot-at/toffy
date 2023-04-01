@@ -1,4 +1,4 @@
-add_library(toffy_detection STATIC 
+add_library(toffy_detection OBJECT 
     blobs.cpp
     blobsDetector.cpp
     detectedObject.cpp

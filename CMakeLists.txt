@@ -23,13 +23,6 @@ include(GenerateExportHeader) #(toffy_export.h - TOFFY_EXPORT)
 include(CMakePackageConfigHelpers)
 
 
-include_directories(
-        "modules/core/include/"
-        "modules/filters/include/"
-        "modules/control/include/"
-        "modules/bta/include/"
-        )
-
 ################################################################################
 #Version stuff
 ################################################################################
@@ -92,7 +85,7 @@ endif()
 MESSAGE(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_DEBUG_POSTFIX -d)
 
-# SET(CMAKE_CXX_FLAGS "-std=c++14")
+
 ################################################################################
 # Install options
 ################################################################################
@@ -107,8 +100,6 @@ else()
   set(DEF_INSTALL_CMAKE_DIR lib/cmake/${PROJECT_NAME})
 endif()
 set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH "Installation directory for CMake files")
-
-
 
 ################################################################################
 # Build config windows - unix - arm
@@ -160,8 +151,6 @@ if(MSVC)
                 string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
             endif(${flag_var} MATCHES "/MDd")
         endforeach(flag_var)
-
-
     endif()
 
     #Set where is the BtaTofApi in windows, In unix we asume BtaConfig.cmake installed
@@ -255,45 +244,60 @@ else()
     message(WARNING "no bta library!")
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/uri-grammar/src)
+
+include_directories(
+        "${CMAKE_CURRENT_SOURCE_DIR}/libraries/include/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/core/include/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/filters/include/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/uri-grammar/src"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/"
+        )
 
 add_subdirectory(libraries)
 
 add_subdirectory(modules)
 
-add_library( ${PROJECT_NAME} SHARED init.cpp)
-target_link_libraries( ${PROJECT_NAME} PUBLIC
-    toffy_modules toffy_libs
-    ${LIBS}  )
-install (TARGETS ${PROJECT_NAME}
+add_library( ${PROJECT_NAME} SHARED 
+    # libs
+    $<TARGET_OBJECTS:toffy_libs> 
+    $<TARGET_OBJECTS:toffy_lib_common> 
+    $<TARGET_OBJECTS:toffy_lib_tracer> 
+    $<TARGET_OBJECTS:toffy_lib_graphs> 
+    $<TARGET_OBJECTS:toffy_lib_skel> 
+    $<TARGET_OBJECTS:toffy_tracking> 
+
+    # modules:
+    $<TARGET_OBJECTS:toffy_bta> 
+    $<TARGET_OBJECTS:toffy_core> 
+    # filters
+    $<TARGET_OBJECTS:toffy_filters> 
+
+    $<TARGET_OBJECTS:toffy_base> 
+    $<TARGET_OBJECTS:toffy_3d> 
+    $<TARGET_OBJECTS:toffy_capture> 
+    $<TARGET_OBJECTS:toffy_detection> 
+    $<TARGET_OBJECTS:toffy_import> 
+    $<TARGET_OBJECTS:toffy_reproject> 
+    $<TARGET_OBJECTS:toffy_smoothing> 
+    $<TARGET_OBJECTS:toffy_tracking> 
+    $<TARGET_OBJECTS:toffy_viewers> 
+    )
+
+target_link_libraries( ${PROJECT_NAME} PUBLIC    ${LIBS}  )
+install (TARGETS ${PROJECT_NAME} 
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin)
 
-# TODO why?
-#include_directories( ${CMAKE_BINARY_DIR} )
-
+    
 # # ################################################################################
 # # # Finding sources and headers
 # # ################################################################################
-# # # TODO define what is core, how to remove modules
-# # file(GLOB_RECURSE src "modules/*.cpp" )
-# # file(GLOB_RECURSE headers RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-# #                     "modules/core/include/"
-# #                     "modules/filters/include/"
-# #                     "modules/control/include/"
-# #                     "modules/bta/include/"
-# #                      )
-# # install(DIRECTORY "modules/core/include/" DESTINATION "include/")
-# # install(DIRECTORY "modules/filters/include/" DESTINATION "include/")
-# # install(DIRECTORY "modules/control/include/" DESTINATION "include/")
-# # install(DIRECTORY "modules/bta/include/" DESTINATION "include/")
 
 
 # # #Toffy libraries
-# # file(GLOB_RECURSE lib_src "libraries/src/*.cpp" "libraries/sensor/*.cpp" )
-# # list(APPEND src ${lib_src})
-# # install(DIRECTORY "libraries/include/" DESTINATION "include/")
 
 # # #Remove pcl depend filter if not pcl
 # # if(NOT PCL_FOUND)
@@ -393,15 +397,15 @@ set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 
 # # Generate Export header toffy_export.h with toffy_EXPORT:
-# set(export_h "${generated_dir}/${PROJECT_NAME}/${PROJECT_NAME}_export.h")
-# GENERATE_EXPORT_HEADER(${PROJECT_NAME}
-#     EXPORT_FILE_NAME ${export_h}  
-# )
-# list(APPEND headers ${export_h})
-# #install(
-# #    FILES ${export_h}
-# #    DESTINATION "${INSTALL_INCLUDE_DIR}/common/"
-# #)
+set(export_h "${generated_dir}/${PROJECT_NAME}/${PROJECT_NAME}_export.h")
+GENERATE_EXPORT_HEADER(${PROJECT_NAME}
+    EXPORT_FILE_NAME ${export_h}  
+)
+list(APPEND headers ${export_h})
+install(
+   FILES ${export_h}
+   DESTINATION "${INSTALL_INCLUDE_DIR}/"
+)
 
 
 # Generate Config file toffy_config.h
@@ -413,40 +417,6 @@ install(
    FILES ${config_h}
    DESTINATION "${INSTALL_INCLUDE_DIR}/common"
 )
-
-# #Adding the headers
-# #Hint. This has to be add manually.
-# target_include_directories(${PROJECT_NAME} PUBLIC
-# #For using the library without install
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libraries/include/>
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libraries/sensor/include>
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/core/include/>
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/>
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/>
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/io/include/>
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/filters/include/>
-#     $<BUILD_INTERFACE:${generated_dir}/>
-
-#     #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/>
-#     #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/server/include/>
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/modules/control/server/uri-grammar/src/>
-
-#     $<INSTALL_INTERFACE:${INSTALL_LIB_DIR}/>
-#     $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}/>
-#     $<INSTALL_INTERFACE:${INSTALL_CMAKE_DIR}/>
-# )
-
-# #Options for the build ouput directory
-# set_target_properties( ${PROJECT_NAME} PROPERTIES
-# # TODO check more properties
-#     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-#     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib"
-#     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${PROJECT_NAME}/bin"
-#     VERSION ${PROJECT_VERSION_FULL}
-#     SOVERSION ${PROJECT_VERSION_FULL}
-#     DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX}
-# )
-
 
 #######################################
 # Demo app

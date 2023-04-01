@@ -1,4 +1,4 @@
-add_library(toffy_tracking STATIC 
+add_library(toffy_tracking OBJECT 
     tracker.cpp
     cvTracker.cpp
     )

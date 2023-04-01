@@ -1,5 +1,5 @@
 
-# add_library(toffy_modules STATIC init.cpp)
+include_directories( "${CMAKE_CURRENT_SOURCE_DIR}/../include/" )
 
 add_subdirectory(base)
 

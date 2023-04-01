@@ -1,4 +1,4 @@
-add_library(toffy_capture STATIC 
+add_library(toffy_capture OBJECT 
     capturerFilter.cpp
     )
 

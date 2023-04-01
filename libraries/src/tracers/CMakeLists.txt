@@ -1,4 +1,4 @@
-add_library(toffy_lib_tracer STATIC 
+add_library(toffy_lib_tracer OBJECT 
     pruner.cpp
     segmentTracer.cpp
     segments.cpp

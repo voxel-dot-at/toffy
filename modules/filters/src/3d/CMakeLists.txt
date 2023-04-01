@@ -1,4 +1,4 @@
-add_library(toffy_3d STATIC 
+add_library(toffy_3d OBJECT 
     boundbox.cpp
     groundprojection.cpp
     merge.cpp

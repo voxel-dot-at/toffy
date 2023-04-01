@@ -1,4 +1,4 @@
-add_library(toffy_import STATIC 
+add_library(toffy_import OBJECT 
     dataimporter.cpp
     )
 
