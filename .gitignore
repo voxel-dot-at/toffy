@@ -50,3 +50,5 @@ modules/control/server/uri-grammar/config.log
 *.csv
 *.xml
 *.xslx
+
+.dirstamp
