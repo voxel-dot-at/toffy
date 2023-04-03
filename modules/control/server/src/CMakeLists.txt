@@ -1,4 +1,4 @@
-add_library(toffy_control_server STATIC 
+add_library(toffy_web_server OBJECT 
     connection.cpp
     connection_manager.cpp
     mime_types.cpp

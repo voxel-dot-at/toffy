@@ -240,6 +240,8 @@ if (${bta_FOUND})
     message(INFO " bta defs ${bta_DEFINITIONS}")
     include_directories(${bta_INCLUDE_DIRS})
     list(APPEND LIBS ${bta_LIBRARIES} )
+    set(HAS_BTA 1)
+    add_definitions(-DHAS_BTA=1)
 else()
     message(WARNING "no bta library!")
 endif()
@@ -283,6 +285,10 @@ add_library( ${PROJECT_NAME} SHARED
     $<TARGET_OBJECTS:toffy_smoothing> 
     $<TARGET_OBJECTS:toffy_tracking> 
     $<TARGET_OBJECTS:toffy_viewers> 
+
+    # web
+    $<TARGET_OBJECTS:toffy_web_server> 
+    $<TARGET_OBJECTS:toffy_web_objs> 
     )
 
 target_link_libraries( ${PROJECT_NAME} PUBLIC    ${LIBS}  )

@@ -6,12 +6,12 @@ add_subdirectory(filters)
 
 add_subdirectory(control)
 
-add_library(toffy_modules OBJECT
-    $<TARGET_OBJECTS:toffy_core> 
-    $<TARGET_OBJECTS:toffy_bta> 
-    $<TARGET_OBJECTS:toffy_filters> 
-    init.cpp 
-    )
+# add_library(toffy_modules OBJECT
+#     $<TARGET_OBJECTS:toffy_core> 
+#     $<TARGET_OBJECTS:toffy_bta> 
+#     $<TARGET_OBJECTS:toffy_filters> 
+#     init.cpp 
+#     )
 
 # target_link_libraries(toffy_modules 
 #     )
