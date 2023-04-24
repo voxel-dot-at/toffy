@@ -104,7 +104,8 @@ bool SampleConsensus::filter(const Frame& in, Frame& out)
         case plane:
             success = segmentPlane(cloud, pi, po, coeffs);
             if (success) {
-                out.addData("coeffs", coeffs);
+                boost::shared_ptr<Eigen::VectorXf> vec(new Eigen::VectorXf(coeffs));
+                out.addData("coeffs", vec);
             }
             break;
         case cylinder:
