@@ -6,7 +6,6 @@ add_library(toffy_libs OBJECT
     $<TARGET_OBJECTS:toffy_lib_graphs> 
     $<TARGET_OBJECTS:toffy_lib_skel> 
     $<TARGET_OBJECTS:toffy_tracking> 
-    init.cpp
     )
 
 install(DIRECTORY "include/" DESTINATION "include/")
