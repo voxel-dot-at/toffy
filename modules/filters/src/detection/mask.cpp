@@ -16,15 +16,10 @@
 */
 #include <math.h>
 
-#if OCV_VERSION_MAJOR >= 3
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgcodecs.hpp>
-#else
-#  include <opencv2/core/core.hpp>
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/calib3d/calib3d.hpp>
-#endif
+#include <opencv2/highgui.hpp>
 
 #include <boost/log/trivial.hpp>
 #include <toffy/common/filenodehelper.hpp>
