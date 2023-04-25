@@ -207,7 +207,7 @@ if(NOT WITHOUT_PCL)
     list(APPEND LIBS ${PCL_LIBRARIES})
     message (STATUS "PCL_INCLUDE_DIRS: " ${PCL_INCLUDE_DIRS})
     message (STATUS "PCL_LIBRARIES: " ${PCL_LIBRARIES})
-    add_definitions(-DPCL_FOUND)
+    add_definitions(-DPCL_FOUND=1)
     message (STATUS "PCL_FOUND: " ${PCL_FOUND})
     if (NOT PCL_FOUND)
         set(WITHOUT_PCL 1)
@@ -229,6 +229,8 @@ endif()
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 list(APPEND LIBS ${OpenCV_LIBS})
+
+add_definitions(-O2)
 
 #
 # bta library -- communication with Becom Systems cameras (Argos, Sentis, ...)
@@ -292,12 +294,14 @@ add_library( ${PROJECT_NAME} SHARED
     )
 
 target_link_libraries( ${PROJECT_NAME} PUBLIC    ${LIBS}  )
+set_property(TARGET ${PROJECT_NAME} PROPERTY VERSION ${PROJECT_VERSION})
+set_property(TARGET ${PROJECT_NAME} PROPERTY SOVERSION ${PROJECT_VERSION})
 install (TARGETS ${PROJECT_NAME} 
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin)
 
-    
+
 # # ################################################################################
 # # # Finding sources and headers
 # # ################################################################################
