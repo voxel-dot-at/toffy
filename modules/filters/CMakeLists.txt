@@ -1,7 +1,7 @@
 
 add_subdirectory(src)
 
-add_library(toffy_filters OBJECT init.cpp 
+add_library(toffy_filters OBJECT 
     $<TARGET_OBJECTS:toffy_base> 
     $<TARGET_OBJECTS:toffy_3d> 
     $<TARGET_OBJECTS:toffy_capture> 
