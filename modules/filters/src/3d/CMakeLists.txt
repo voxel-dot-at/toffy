@@ -10,4 +10,4 @@ add_library(toffy_3d OBJECT
     xyz2pcl.cpp
     )
 
-target_link_libraries(  toffy_3d toffy_core ${LIBS} )
+# target_link_libraries(  toffy_3d toffy_core ${LIBS} )
