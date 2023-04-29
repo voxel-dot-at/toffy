@@ -1544,14 +1544,13 @@ void BtaWrapper::updateFrame(BTA_Frame *frame)
     {
         boost::lock_guard<boost::mutex> lock{fillFrameMutex};
 
-        cout << "updateFrame inLock" << frameToFill->frameCounter << endl;
+        // cout << "updateFrame inLock " << frameToFill->frameCounter << endl;
 
         cpyFrame(frameToFill, frame);
         hasBeenUpdated = true;
     }
     newFrameCond.notify_one();
-    cout << "updateFrame " << hasBeenUpdated << " " << frameToFill->frameCounter
-         << endl;
+    // cout << "updateFrame " << hasBeenUpdated << " " << frameToFill->frameCounter << endl;
 }
 
 BTA_Frame *BtaWrapper::flipFrame()
@@ -1570,11 +1569,11 @@ BTA_Frame *BtaWrapper::waitForNextFrame()
 {  // wait for next frame to arrive....
     // boost::lock_guard<boost::mutex> lock{frameMutex};
     boost::unique_lock<boost::mutex> lock(frameMutex);
-    cout << "waitForNextFrame " << hasBeenUpdated << endl;
+    // cout << "waitForNextFrame " << hasBeenUpdated << endl;
     while (!hasBeenUpdated) {
-        cout << "waitForNextFrame ..." << hasBeenUpdated << endl;
+      // cout << "waitForNextFrame ..." << hasBeenUpdated << endl;
         newFrameCond.wait(lock);
     }
-    cout << "waitForNextFrame got one!" << endl;
+    // cout << "waitForNextFrame got one!" << endl;
     return flipFrame();
 }
