@@ -51,15 +51,12 @@ int ControllerFactory::deleteController(std::string name)
 
 FilterController *ControllerFactory::getController(Filter *f)
 {
-    try {
-        return _controllers.at(f->id());
-//    } catch (std::out_of_range &e) {
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(info)
-            << f->id() << " not found. Instantiating default controller";
+    auto it = _controllers.find(f->id());
+    if( it ==  _controllers.end() ) {
+        return createController(f);
+    } else {
+        return it->second;
     }
-
-    return createController(f);
 }
 
 FilterController *ControllerFactory::createController(Filter *f)
