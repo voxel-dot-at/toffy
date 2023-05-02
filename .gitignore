@@ -48,7 +48,6 @@ modules/control/server/uri-grammar/config.log
 *.bltstream
 *.pcd
 *.csv
-*.xml
 *.xslx
 
 .dirstamp

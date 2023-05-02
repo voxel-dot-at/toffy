@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<toffy>
+  <plugins></plugins>
+  <globals>
+    <options>
+      <!-- log level for BOOST*LOG: 0 == debug, 1== info, 2==warning... ; can be set per-filter -->
+      <loglvl>0</loglvl>
+    </options>
+  </globals>
+
+  <cond>
+    <name>theCondition</name>
+    <options>
+    </options>
+    <filterBank>
+      <imageview></imageview>
+      <imageview></imageview>
+    </filterBank>
+  </cond>
+</toffy>
