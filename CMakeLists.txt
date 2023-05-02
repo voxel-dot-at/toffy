@@ -51,6 +51,7 @@ option (BUILD_STATIC "Build static version of the library" OFF)
 option (WITHOUT_PCL "Exclude pointclouds-based classes" OFF)
 option (WITH_VISUALIZATION "Add viewer. Requires GUI" ON)
 option (WITH_CONTROL "Add Web Control." ON)
+option (BUILD_TESTS "Build test code." ON)
 
 message (STATUS "${CMAKE_PROJECT_NAME} options: ")
 message (STATUS "\t BUILD_STATIC: " ${BUILD_STATIC})
@@ -267,6 +268,11 @@ add_subdirectory(libraries)
 
 add_subdirectory(modules)
 
+
+# ################################################################################
+# # Create lib and target
+# ################################################################################
+
 add_library( ${PROJECT_NAME} SHARED 
     # libs
     $<TARGET_OBJECTS:toffy_libs> 
@@ -306,96 +312,6 @@ install (TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION bin)
 
 
-# # ################################################################################
-# # # Finding sources and headers
-# # ################################################################################
-
-
-# # #Toffy libraries
-
-# # #Remove pcl depend filter if not pcl
-# # if(NOT PCL_FOUND)
-# #     # TODO
-# #     message(STATUS "PCL_FOUND: " ${PCL_FOUND})
-# #     file(GLOB_RECURSE rPCL reprojectpcl.cpp cloudviewpcl.cpp transform.cpp
-# #         exportcloud.cpp bbox.cpp groundprojection.cpp merge.cpp
-# #         muxMerge.cpp sampleConsensus.cpp boundbox.cpp
-# #         squareDetect.cpp)
-# #     list(REMOVE_ITEM src ${rPCL})
-# #     file(GLOB_RECURSE rPCL RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-
-# #         "modules/filters/include/toffy/3d/*.hpp"
-
-# #         "modules/filters/converters/include/toffy/reprojectpcl.hpp"
-
-# #         "modules/filters/viewers/include/toffy/cloudviewpcl.hpp"
-# #         "modules/filters/viewers/include/toffy/exportcloud.hpp"
-
-# #         "modules/filters/detection/include/toffy/squareDetect.hpp"
-# #     )
-# #     list(REMOVE_ITEM headers ${rPCL})
-# #     #message (DEBUG " headers " ${headers})
-# #     #message (DEBUG " src " ${src})
-# # endif()
-
-# # # TODO
-# # if(NOT PCL_VISUALIZATION_FOUND)
-# #     message (STATUS " WITH_VISUALIZATION: " ${WITH_VISUALIZATION})
-# #     file(GLOB_RECURSE rPCL reprojectpcl.cpp cloudviewpcl.cpp transform.cpp
-# #         exportcloud.cpp bbox.cpp merge.cpp muxMerge.cpp sampleConsensus.cpp
-# #     )
-# #     list(REMOVE_ITEM src ${rPCL})
-# #     file(GLOB_RECURSE rPCL RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-# #         "modules/filters/base/include/toffy/reprojectpcl.hpp"
-# #         "modules/filters/viewers/include/toffy/cloudviewpcl.hpp"
-# #         "modules/filters/base/include/toffy/bbox.hpp"
-# #         "modules/filters/base/include/toffy/transform.hpp"
-# #         "modules/filters/base/include/toffy/merge.hpp"
-# #         "modules/filters/base/include/toffy/filters/3d/muxMerge.hpp"
-# #         "modules/filters/base/include/toffy/sampleConsensus.hpp"
-# #         "modules/filters/viewers/include/toffy/exportcloud.hpp")
-# #     #list(REMOVE_ITEM headers ${rPCL})
-# #     #message (DEBUG " headers " ${headers})
-# #     #message (DEBUG " src " ${src})
-# # else()
-# #     message(STATUS "PCL_VISUALIZATION_FOUND: " ${PCL_VISUALIZATION_FOUND})
-# #     list(APPEND ${${CMAKE_PROJECT_NAME}_DEFINITIONS} -DPCL_VISUALIZATION)
-# #     add_definitions(-DPCL_VISUALIZATION)
-# # endif()
-
-# # if(NOT WITH_VISUALIZATION)
-# #     message(STATUS "PCL_VISUALIZATION_FOUND: " ${PCL_VISUALIZATION_FOUND})
-# #     file(GLOB_RECURSE rPCL cloudviewpcl.cpp cloudviewopencv.cpp
-# #         imageview.cpp
-# #     )
-# #     list(REMOVE_ITEM src ${rPCL})
-# #     file(GLOB_RECURSE rPCL RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-# #         "modules/filters/include/toffy/viewers/cloudviewopencv.hpp"
-# #         "modules/filters/include/toffy/viewers/cloudviewpcl.hpp"
-# #         "modules/filters/include/toffy/viewers/imageview.hpp"
-# #     )
-# #     list(REMOVE_ITEM headers ${rPCL})
-# # endif()
-
-# # # Remove filters not compatible with OpenCV 3
-# # if ( ${OpenCV_VERSION_MAJOR} EQUAL 2 )
-# #    # opencv 2.X
-# #    file(GLOB_RECURSE rOpenCv cvTracker.cpp)
-# #    list(REMOVE_ITEM src ${rOpenCv})
-# #    message(STATUS " REMOVING " ${rOpenCv} )
-# #    file(GLOB_RECURSE rOpenCv RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-# #        "modules/filters/include/toffy/tracking/cvTracker.hpp")
-# #    list(REMOVE_ITEM headers ${rOpenCv})
-# # endif()
-
-# # # TODO
-# # list(APPEND toffy_SRC ${headers} ${src})
-
-# ################################################################################
-# # Create lib and target
-# ################################################################################
-# add_library (${PROJECT_NAME} ${LIB_LINK} ${toffy_SRC})
-
 # #Build target dir for config, export and package files
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
@@ -431,6 +347,14 @@ install(
    FILES ${config_h}
    DESTINATION "${INSTALL_INCLUDE_DIR}/common"
 )
+
+#######################################
+# Tests
+#######################################
+
+if( ${BUILD_TESTS})
+    add_subdirectory(tests)
+endif()
 
 #######################################
 # Demo app
