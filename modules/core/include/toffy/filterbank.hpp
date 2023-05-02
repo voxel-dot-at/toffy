@@ -23,7 +23,7 @@
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 
 #ifdef MSVC
-#define DLLExport __declspec( dllexport )
+#define DLLExport __declspec(dllexport)
 #define RAWFILE ".rw"
 #else
 #define DLLExport /**/
@@ -52,11 +52,10 @@ namespace toffy {
  * @see FilterBank::loadFileConfig()
  *
  */
-class TOFFY_EXPORT FilterBank: public Filter
+class TOFFY_EXPORT FilterBank : public Filter
 {
-public:
-
-    static const std::string id_name; ///< Const with the filter type
+   public:
+    static const std::string id_name;  ///< Const with the filter type
 
     /**
      * @brief FilterBank
@@ -64,8 +63,8 @@ public:
      */
     FilterBank() : Filter(id_name, _filter_counter), ready(0)
     {
-	ff = FilterFactory::getInstance();
-	this->bank(this);
+        ff = FilterFactory::getInstance();
+        this->bank(this);
     }
 
     /**
@@ -73,10 +72,11 @@ public:
      * @param type
      * @param counter
      */
-    FilterBank(std::string type, std::size_t counter) : Filter(type, counter), ready(0)
+    FilterBank(std::string type, std::size_t counter)
+        : Filter(type, counter), ready(0)
     {
-	ff = FilterFactory::getInstance();
-	this->bank(this);
+        ff = FilterFactory::getInstance();
+        this->bank(this);
     }
 
     /**
@@ -95,9 +95,10 @@ public:
      * @param pos int
      * @param f Filter
      */
-    void insert(int pos, Filter* f) {
-	std::vector<Filter*>::iterator it = _pipe.begin();
-	_pipe.insert(it+pos, f);
+    void insert(int pos, Filter* f)
+    {
+        std::vector<Filter*>::iterator it = _pipe.begin();
+        _pipe.insert(it + pos, f);
     }
 
     /**
@@ -114,7 +115,7 @@ public:
      * @deprecated We want the getFilter to be local to the FilterBank
      *
      */
-    const Filter * getFilter(const std::string& name) const;
+    const Filter* getFilter(const std::string& name) const;
 
     /**
      * @brief const getFilter by position
@@ -122,7 +123,7 @@ public:
      * @return Filter
      *
      */
-    const Filter * getFilter(int i) const;
+    const Filter* getFilter(int i) const;
 
     /**
      * @brief getFilter by name
@@ -133,14 +134,14 @@ public:
      * @deprecated We want the getFilter to be local to the FilterBank
      *
      */
-    Filter * getFilter(const std::string& name);
+    Filter* getFilter(const std::string& name);
 
     /**
      * @brief getFilter by position
      * @param i
      * @return Filter
      */
-    Filter * getFilter(int i);
+    Filter* getFilter(int i);
 
     /**
      * @brief Gets all filter in a FilterBank by type
@@ -150,8 +151,7 @@ public:
      *
      * @todo Move to FilterFactory and reimplement localy
      */
-    int getFiltersByType(const std::string& type,
-					 std::vector<Filter *> &vec);
+    int getFiltersByType(const std::string& type, std::vector<Filter*>& vec);
 
     /**
      * @brief Counts all filter in a FilterBank by type
@@ -187,7 +187,7 @@ public:
      * @brief Get ne number of filter in the FilterBank
      * @return size_t
      */
-    size_t size() const {return _pipe.size();}
+    size_t size() const { return _pipe.size(); }
 
     /**
      * @brief processEvent
@@ -195,7 +195,7 @@ public:
      *
      * @todo Document
      */
-    virtual void processEvent(Event &e);
+    virtual void processEvent(Event& e);
 
     /**
      * @brief Runs all defined filters and accumulate result for external api
@@ -236,7 +236,7 @@ public:
      */
     virtual int loadFileConfig(const std::string& configFile);
 
-    //virtual int loadConfig(const boost::property_tree::ptree& pt);
+    // virtual int loadConfig(const boost::property_tree::ptree& pt);
 
     /**
      * @brief Returns the FilterBank that contains this FilterBank
@@ -258,7 +258,7 @@ public:
      * local to FilterBank globals
      *
      */
-    const boost::property_tree::ptree& getGlobals(std::string node  = "");
+    const boost::property_tree::ptree& getGlobals(std::string node = "");
 
     /**
      * @brief Recursive version
@@ -266,10 +266,13 @@ public:
      * @param pt
      * @return Positive on success, negative or 0 if failed
      */
-     virtual int loadConfig(const boost::property_tree::ptree& pt, const std::string& confFile);
+    virtual int loadConfig(const boost::property_tree::ptree& pt,
+                           const std::string& confFile);
 
-     virtual int loadConfig(const boost::property_tree::ptree& pt) { return loadConfig(pt, ""); };
-
+    virtual int loadConfig(const boost::property_tree::ptree& pt)
+    {
+        return loadConfig(pt, "");
+    };
 
     virtual boost::property_tree::ptree getConfig() const;
 
@@ -288,8 +291,7 @@ public:
     virtual void start();
     virtual void stop();
 
-protected:
-
+   protected:
     /**
      * @brief Load a set of Filter in the FilterBank
      * @param confFile
@@ -301,9 +303,10 @@ protected:
      * \<filterBank> node or the base node \<toffy>
      *
      */
-    virtual int loadConfig(const std::string& confFile,
-			   const boost::property_tree::ptree::const_iterator& begin,
-			   const boost::property_tree::ptree::const_iterator& end);
+    virtual int loadConfig(
+        const std::string& confFile,
+        const boost::property_tree::ptree::const_iterator& begin,
+        const boost::property_tree::ptree::const_iterator& end);
 
     /**
      * @brief Loads a single Filter from the ptree
@@ -324,8 +327,9 @@ protected:
      * @todo Add node for loading in a separated FilterBank in the same file
      *
      */
-    virtual int handleConfigItem(const std::string& confFile,
-			   const boost::property_tree::ptree::const_iterator& it);
+    virtual int handleConfigItem(
+        const std::string& confFile,
+        const boost::property_tree::ptree::const_iterator& it);
 
     /**
      * @brief Creates a new filter instance based on the iterator contents
@@ -337,27 +341,28 @@ protected:
      *
      */
     virtual Filter* instantiateFilter(
-	    const boost::property_tree::ptree::const_iterator& it);
+        const boost::property_tree::ptree::const_iterator& it);
 
     int loadPlugins(const boost::property_tree::ptree& pt);
 
-private:
+   private:
+    FilterFactory* ff;           ///< Pointer to the FilterFactory
+    std::vector<Filter*> _pipe;  ///< Filter container
 
-    FilterFactory *ff; ///< Pointer to the FilterFactory
-    std::vector<Filter*> _pipe; ///< Filter container
+    boost::property_tree::ptree
+        _globalConfig;  ///< Ptree to local to FilterBank globals
 
-    boost::property_tree::ptree _globalConfig; ///< Ptree to local to FilterBank globals
+    boost::interprocess::interprocess_semaphore ready;  ///< TODO
 
-    boost::interprocess::interprocess_semaphore ready; ///< TODO
-
-    static std::size_t _filter_counter; ///< Internal Filter counter
+    static std::size_t _filter_counter;  ///< Internal Filter counter
 
     /**
-     * @brief Overrides the Filter loadGlobals to save the local FilterBank globals
+     * @brief Overrides the Filter loadGlobals to save the local FilterBank
+     * globals
      * @param pt
      * @return Positive on success, negative or 0 if failed
      */
     virtual int loadGlobals(const boost::property_tree::ptree& pt);
 };
 
-}
+}  // namespace toffy

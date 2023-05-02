@@ -30,73 +30,73 @@ using namespace toffy;
 std::size_t ParallelFilter::_filter_counter = 1;
 const std::string ParallelFilter::id_name = "parallelFilter";
 
-ParallelFilter::~ParallelFilter() 
+ParallelFilter::~ParallelFilter()
 {
-    for (size_t i=0;i<lanes.size();i++) {
-	lanes[i]->stop();
-	delete lanes[i];
+    for (size_t i = 0; i < lanes.size(); i++) {
+        lanes[i]->stop();
+        delete lanes[i];
     }
 }
 
-int ParallelFilter::handleConfigItem(const std::string& confFile,
-				     const boost::property_tree::ptree::const_iterator& it)
+int ParallelFilter::handleConfigItem(
+    const std::string& confFile,
+    const boost::property_tree::ptree::const_iterator& it)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ":: "<< type() << " " << it->first ;
+    BOOST_LOG_TRIVIAL(debug)
+        << __FUNCTION__ << ":: " << type() << " " << it->first;
 
-    cout << "PF::handle "  << it->first << endl;
+    cout << "PF::handle " << it->first << endl;
     if (it->first == "parallelFilter") {
-	// recurse
- 	return loadConfig(confFile, it->second.begin(), it->second.end());
+        // recurse
+        return loadConfig(confFile, it->second.begin(), it->second.end());
     } else if (it->first == "thread") {
-	cout << "PF::THREAD FOUND!"<< endl;
-	Filter* f;
-	if ( it->second.size() > 1 
-	     ) {
-	    // instantiate a filterbank
-	    FilterBank* fb = new FilterBank();
+        cout << "PF::THREAD FOUND!" << endl;
+        Filter* f;
+        if (it->second.size() > 1) {
+            // instantiate a filterbank
+            FilterBank* fb = new FilterBank();
 
-	    fb->bank(NULL);
-	    fb->loadConfig( it->second );
-	    
-	    f=fb;
-	} else if (it->second.begin()->first == "filterGroup") {
-	    // instantiate a filterbank
-	    FilterBank* fb = new FilterBank();
-	    const boost::property_tree::ptree pt = it->second.begin()->second;
+            fb->bank(NULL);
+            fb->loadConfig(it->second);
 
-	    cout << "DD " << pt.data() << endl;
-	    fb->bank(NULL);
-	    fb->loadFileConfig(pt.data());
+            f = fb;
+        } else if (it->second.begin()->first == "filterGroup") {
+            // instantiate a filterbank
+            FilterBank* fb = new FilterBank();
+            const boost::property_tree::ptree pt = it->second.begin()->second;
 
-	    f=fb;
-	} else {
-	    const boost::property_tree::ptree pt = it->second;
-	    f = instantiateFilter(pt.begin() );
-	}
+            cout << "DD " << pt.data() << endl;
+            fb->bank(NULL);
+            fb->loadFileConfig(pt.data());
 
-	FilterThread* ft = new FilterThread(f);
-	lanes.push_back(ft);
+            f = fb;
+        } else {
+            const boost::property_tree::ptree pt = it->second;
+            f = instantiateFilter(pt.begin());
+        }
 
-	add(f); // book-keeping
+        FilterThread* ft = new FilterThread(f);
+        lanes.push_back(ft);
+
+        add(f);  // book-keeping
 
     } else if (it->first == "barrier") {
-	boost::property_tree::ptree::const_iterator child = it->second.begin();
-	cout << "PF::BARRIER FOUND! "<< child->first << endl;
+        boost::property_tree::ptree::const_iterator child = it->second.begin();
+        cout << "PF::BARRIER FOUND! " << child->first << endl;
 
-	Filter* f = instantiateFilter( child );
-	
-	f->loadConfig( it->second );
+        Filter* f = instantiateFilter(child);
 
-	this->mux = (Mux*) f;
+        f->loadConfig(it->second);
 
-	add(f); // book-keeping
+        this->mux = (Mux*)f;
+
+        add(f);  // book-keeping
 
     } else {
-	//return FilterBank::handleConfigItem(confFile, it);
+        // return FilterBank::handleConfigItem(confFile, it);
     }
     return 1;
 }
-
 
 bool ParallelFilter::filter(const Frame& in, Frame& out)
 {
@@ -104,47 +104,44 @@ bool ParallelFilter::filter(const Frame& in, Frame& out)
     size_t i;
     // sync all threads to get one result
     res.resize(lanes.size());
-    for (i=0 ; i<lanes.size() ; i++) {
-	cout << "ParallelFilter::filter.deq " << i << endl;
-	res[i] = lanes[i]->dequeue();
+    for (i = 0; i < lanes.size(); i++) {
+        cout << "ParallelFilter::filter.deq " << i << endl;
+        res[i] = lanes[i]->dequeue();
     }
     cout << "ParallelFilter::filter.deqed " << endl;
 
     if (mux) {
-	mux->filter(res, out);
+        mux->filter(res, out);
     } else {
-	BOOST_LOG_TRIVIAL(debug) << name() << "::" << __FUNCTION__ << " --> No Muxer found! " ;
+        BOOST_LOG_TRIVIAL(debug)
+            << name() << "::" << __FUNCTION__ << " --> No Muxer found! ";
     }
 
     // release frames again
-    for ( i=0 ; i<lanes.size() ; i++) {
-	lanes[i]->enqueue(res[i]);
+    for (i = 0; i < lanes.size(); i++) {
+        lanes[i]->enqueue(res[i]);
     }
 
     return true;
 }
 
-
-
 void ParallelFilter::init()
 {
-    for (size_t i=0;i<lanes.size();i++) {
-	lanes[i]->init(2);
+    for (size_t i = 0; i < lanes.size(); i++) {
+        lanes[i]->init(2);
     }
 }
 
-
 void ParallelFilter::start()
 {
-    for (size_t i=0;i<lanes.size();i++) {
-	lanes[i]->start();
+    for (size_t i = 0; i < lanes.size(); i++) {
+        lanes[i]->start();
     }
 }
 
 void ParallelFilter::stop()
 {
-    for (size_t i=0;i<lanes.size();i++) {
-	lanes[i]->stop();
+    for (size_t i = 0; i < lanes.size(); i++) {
+        lanes[i]->stop();
     }
 }
-
