@@ -107,7 +107,7 @@ int FilterBank::handleConfigItem(const std::string& configFile,
             return -1;
         }
         //FilterBank* fb = new FilterBank();
-        BOOST_LOG_TRIVIAL(debug) << "FG RECURSE NEW FB #" << it->second.size();
+        BOOST_LOG_TRIVIAL(debug) << "FG RECURSE NEW FB #" << it->second.size() << " " << it->second.data();
         fb->loadFileConfig(it->second.data());
         add(fb);
         // Ignore comments and global options
@@ -135,7 +135,7 @@ Filter* FilterBank::instantiateFilter(const boost::property_tree::ptree::const_i
         pnode.add_child(it->first, it->second);
         string old = f->name();
 
-        BOOST_LOG_TRIVIAL(debug) << "FB INSTANTIATE FILTER:: config "  << endl;
+        BOOST_LOG_TRIVIAL(debug) << "FB INSTANTIATE FILTER:: config "  << it->first << endl;
         f->bank(this);
         f->loadConfig( pnode );
         //ff->renameFilter(f, old, f->name());
@@ -176,20 +176,22 @@ void FilterBank::add(Filter* f) {
 
 int FilterBank::loadConfig(const boost::property_tree::ptree& pt, const std::string& confFile /*= ""*/)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-    boost::property_tree::ptree ptRead = pt;
-    boost::optional< boost::property_tree::ptree& > pfilters = ptRead.get_child_optional( "toffy" );
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__ << " " << confFile;
+    // const boost::property_tree::ptree& ptRead = pt;
+    boost::optional< const boost::property_tree::ptree& > pfilters = pt.get_child_optional( "toffy" );
     //TODO we keep working with configs not enclosed in a root <toffy> for compatibility
     if( !pfilters ) {
         BOOST_LOG_TRIVIAL(warning)
                 << "Could not open config file: "
                 << "Missing root node <toffy>.\n"
                 << "Add <toffy> as root node to remove this error.";
-        //return -1;
-    } else
-        ptRead = *pfilters;
-    loadGlobals(ptRead);
-    return loadConfig(confFile, ptRead.begin(), ptRead.end());
+        return -1;
+    } else {
+        const boost::property_tree::ptree& ptRead = *pfilters;
+        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " first node " << ptRead.begin()->first;
+        loadGlobals(ptRead);
+        return loadConfig(confFile, ptRead.begin(), ptRead.end());
+    }
 }
 
 int FilterBank::loadFileConfig(const std::string& confFile) {
@@ -199,16 +201,16 @@ int FilterBank::loadFileConfig(const std::string& confFile) {
     try {
         boost::property_tree::read_xml(confFile, pt);
 
+        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " first node " << pt.begin()->first;
+
     } catch (boost::property_tree::xml_parser_error &e) {
         BOOST_LOG_TRIVIAL(error) << "FB Could not open config file: "
                                  << e.filename() << ". " << e.what()
                                  << ", in line: " << e.line();
         return -1;
     }
-
+    // if needed for inherited filterbanks, use FilterBank:: here to avoid confusion with embedded files 
     return loadConfig(pt,confFile);
-
-    return 1;
 }
 
 const Filter * FilterBank::getFilter(const std::string& name) const

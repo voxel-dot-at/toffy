@@ -16,31 +16,40 @@
 */
 #pragma once
 
+#include <string>
+
 #include "toffy/filterbank.hpp"
 
 namespace toffy {
 namespace filters {
 /**
- * @brief A nop filter - doing nothing.
+ * @brief A conditional filter - run the encapulating filterbank if a condition
+ * is met.
  * @ingroup Filters
  *
- * Rationale: use the \<nop> \</nop> elements to inactivate portions of a filter
- * bank, no need for xml comments that cannot be nested.
  */
-class Cond : public FilterBank {
-
-public:
+class Cond : public FilterBank
+{
+   public:
     Cond();
     virtual ~Cond() {}
 
-
-    //virtual int loadConfig(const boost::property_tree::ptree& pt);
-
     virtual boost::property_tree::ptree getConfig() const;
-    //virtual void updateConfig(const boost::property_tree::ptree &pt);
+
+    virtual void updateConfig(const boost::property_tree::ptree &pt);
+
     virtual bool filter(const Frame& in, Frame& out);
 
-private:
-    bool enabled; ///< switch if the contained filters shall be run or not
+    void enable() { enabled = true; }
+    void disable() { enabled = false; }
+
+    // derived from FilterBank:
+    virtual int loadConfig(const boost::property_tree::ptree& pt, const std::string& confFile = "");
+    
+   private:
+    bool enabled;  ///< switch if the contained filters shall be run or not
+    std::string opt_file;  ///< the filename of the sub-filterbank to load
 };
-}}
+
+}  // namespace filters
+}  // namespace toffy
