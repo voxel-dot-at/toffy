@@ -1,6 +1,7 @@
 
-if ( ${PCL_VISUALIZATION_FOUND} )
-    message (STATUS "PCL_VIZ in 3D: " ${PCL_VISUALIZATION_FOUND})
+message (STATUS "PCL_VIZ in 3D: " ${PCL_VISUALIZATION_FOUND})
+
+if ( ${PCL_FOUND} )
     set(PCL_SRCS 
         boundbox.cpp
         groundprojection.cpp

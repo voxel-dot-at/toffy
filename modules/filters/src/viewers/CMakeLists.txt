@@ -1,13 +1,20 @@
-#include_directories( "${CMAKE_CURRENT_SOURCE_DIR}/../../include/" )
-message("SRC ${CMAKE_CURRENT_SOURCE_DIR}/../include/")
+
+if ( ${PCL_VISUALIZATION_FOUND} )
+    set(PCL_SRCS 
+        cloudviewpcl.cpp
+    )
+else() 
+    set(PCL_SRCS "" )
+endif()
+
 add_library(toffy_viewers OBJECT 
     cloudviewopencv.cpp
-    cloudviewpcl.cpp
     colorize.cpp
     exportcloud.cpp
     exportcsv.cpp
     imageview.cpp
     videoout.cpp
+    ${PCL_SRCS}
     )
 
 # target_link_libraries(  toffy_viewers toffy_core ${LIBS} )
