@@ -101,6 +101,20 @@ else()
 endif()
 set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH "Installation directory for CMake files")
 
+
+#
+# set these early to override pollution by installed versions
+#
+include_directories(
+        "${CMAKE_CURRENT_SOURCE_DIR}/libraries/include/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/core/include/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/filters/include/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/uri-grammar/src"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/"
+        )
+
 ################################################################################
 # Build config windows - unix - arm
 ################################################################################
@@ -201,12 +215,13 @@ endif()
 
 # PCL
 if(NOT WITHOUT_PCL)
-    find_package(PCL REQUIRED COMPONENTS common visualization filters sample_consensus segmentation features )
+    find_package(PCL COMPONENTS common filters sample_consensus segmentation features visualization)
     include_directories(${PCL_INCLUDE_DIRS})
     add_definitions(${PCL_DEFINITIONS})
     list(APPEND LIBS ${PCL_LIBRARIES})
     message (STATUS "PCL_INCLUDE_DIRS: " ${PCL_INCLUDE_DIRS})
     message (STATUS "PCL_LIBRARIES: " ${PCL_LIBRARIES})
+    message (STATUS "PCL_VIZ: " ${PCL_VISUALIZATION_FOUND})
     add_definitions(-DPCL_FOUND=1)
     message (STATUS "PCL_FOUND: " ${PCL_FOUND})
     if (NOT PCL_FOUND)
@@ -247,17 +262,6 @@ if (${bta_FOUND})
 else()
     message(WARNING "no bta library!")
 endif()
-
-
-include_directories(
-        "${CMAKE_CURRENT_SOURCE_DIR}/libraries/include/"
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/core/include/"
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/"
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/"
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/filters/include/"
-        "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/uri-grammar/src"
-        "${CMAKE_CURRENT_BINARY_DIR}/generated/"
-        )
 
 add_subdirectory(libraries)
 
