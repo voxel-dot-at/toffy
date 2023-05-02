@@ -76,7 +76,7 @@ int Controller::processRequest(http::server::connection_ptr con,
                                const http::server::request &req,
                                http::server::reply &rep)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " M= " << req.method;
     std::string &jsonReply = rep.content;
     Action action(req);
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
@@ -293,7 +293,8 @@ int Controller::processRequest(http::server::connection_ptr con,
             return false;
         }
 
-        BOOST_LOG_TRIVIAL(debug) << "Filter id: " << f->type();
+        BOOST_LOG_TRIVIAL(debug)
+            << "Filter name: " << name << " type " << f->type();
 
         // if (f->type() == "bta") {
         /*    BtaController btaC(f);
@@ -319,6 +320,7 @@ int Controller::processRequest(http::server::connection_ptr con,
         //} else {
         FilterController *fc =
             ControllerFactory::getInstance()->getController(f);
+        cout << " ... fc" << fc << endl;
         if (!fc->doAction(action, jsonReply)) {
             return false;
         }
@@ -342,7 +344,8 @@ void Controller::collectFilters(std::string &log, toffy::FilterBank *bank,
         const Filter *f = bank->getFilter(i);
         // std::cout << "    filter " << f->name() << std::endl;
         log = "inspecting " + f->name();
-        if (f->type() == "filterBank" || f->type() == "parallelFilter") {
+        if (dynamic_cast<const toffy::FilterBank *>(f) != 0 ||
+            f->type() == "filterBank" || f->type() == "parallelFilter") {
             const FilterBank *fb = static_cast<const FilterBank *>(f);
 
             // jsonList.push_back(std::make_pair("",
@@ -364,7 +367,8 @@ void Controller::collectFilterTree(std::string &log, toffy::FilterBank *bank,
         const Filter *f = bank->getFilter(i);
         // std::cout << "    filter " << f->name() << std::endl;
         log = "inspecting " + f->name();
-        if (f->type() == "filterBank" || f->type() == "parallelFilter") {
+        if (dynamic_cast<const toffy::FilterBank *>(f) != 0 ||
+            f->type() == "filterBank" || f->type() == "parallelFilter") {
             const FilterBank *fb = static_cast<const FilterBank *>(f);
 
             boost::property_tree::ptree sublist;
@@ -377,7 +381,7 @@ void Controller::collectFilterTree(std::string &log, toffy::FilterBank *bank,
 }
 
 void Controller::loopImage(http::server::connection_ptr con,
-                           const http::server::request &/*req*/,
+                           const http::server::request & /*req*/,
                            http::server::reply &rep, std::string name)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
@@ -576,12 +580,12 @@ std::string base64EncodeData(std::vector<uint8_t> data)
     return ss.str();
 }
 
+#if defined(ENABLE_PCL)
 void Controller::loopCloud(http::server::connection_ptr con,
                            const http::server::request &req,
                            http::server::reply &rep)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-#if defined(ENABLE_PCL)
     rep.headers.resize(3);
     rep.headers[0].name = "Content-Length";
     // rep.headers[0].value =
@@ -666,12 +670,19 @@ void Controller::loopCloud(http::server::connection_ptr con,
     //}
     cout << "THREAD ends: " << endl;
     // exit(0);
-#endif
     BOOST_LOG_TRIVIAL(debug) << "Thread " << __FUNCTION__ << " ends";
 }
+#else
+void Controller::loopCloud(http::server::connection_ptr /*con*/,
+                           const http::server::request & /*req*/,
+                           http::server::reply & /*rep*/)
+{
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+}
+#endif
 
 void Controller::loopAction(http::server::connection_ptr con,
-                            const http::server::request &/*req*/,
+                            const http::server::request & /*req*/,
                             http::server::reply &rep)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
