@@ -45,7 +45,7 @@ template<typename T> bool pt_optional_get(const boost::property_tree::ptree pt,
  * @return true if key exists and the value has been set, false otherwise
  */
 template<typename T> bool pt_optional_get_default(const boost::property_tree::ptree pt,
-    const std::string& key, T& val, T defaultValue) 
+    const std::string& key, T& val, const T& defaultValue) 
 {
     boost::optional<T> opt = pt.get_optional<T>(key);
     if (opt.is_initialized()) {
