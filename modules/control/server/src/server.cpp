@@ -27,7 +27,7 @@ server::server(const std::string& address, const std::string& port, const std::s
   // Register to handle the signals that indicate when the server should exit.
   // It is safe to register for the same signal multiple times in a program,
   // provided all registration for the specified signal is made through Asio.
-    signals_.add(SIGINT);
+  //    signals_.add(SIGINT);
     signals_.add(SIGTERM);
     #if defined(SIGQUIT)
       signals_.add(SIGQUIT);
