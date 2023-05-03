@@ -602,18 +602,24 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
         if (sensor->hasChannels) {
             sel = sensor->channelSelectionName(i);
         }
-        BOOST_LOG_TRIVIAL(debug)
-            << "dynOut[" << i << "] " << name << " " << sel << " " << chan->dataFormat << " "
-            << chan->xRes << "x" << chan->yRes << " " << chan->dataLen;
+        // BOOST_LOG_TRIVIAL(debug)
+        //     << "dynOut[" << i << "] " << name << " " << sel << " " <<
+        //     chan->dataFormat << " "
+        //     << chan->xRes << "x" << chan->yRes << " " << chan->dataLen;
 
         if (sensor->hasChannels) {
             // check for data type vs. channel name
-            if (sensor->hasChannels && name == "color") {  // override color type with actual channel name
-                    BOOST_LOG_TRIVIAL(debug) << " channel nameset name " << name << " to sel " << sel;
-                name = sel; 
+            if (sensor->hasChannels &&
+                name ==
+                    "color") {  // override color type with actual channel name
+                // BOOST_LOG_TRIVIAL(debug) << " channel nameset name " << name
+                // << " to sel " << sel;
+                name = sel;
             } else {
                 if (name != sel) {
-                    BOOST_LOG_TRIVIAL(warning) << " channel name mismatch - check your config! name " << name << " sel " << sel;
+                    BOOST_LOG_TRIVIAL(warning)
+                        << " channel name mismatch - check your config! name "
+                        << name << " sel " << sel;
                 }
             }
         }
@@ -656,8 +662,9 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 break;
             }
             case BTA_DataFormatYuv422: {
-                BOOST_LOG_TRIVIAL(debug) << "img yuv data! " << (width * height)
-                                         << " " << chan->dataLen;
+                // BOOST_LOG_TRIVIAL(debug) << "img yuv data! " << (width *
+                // height)
+                //                          << " " << chan->dataLen;
                 if (!d.get()) {
                     d.reset(new cv::Mat(height, width, CV_8UC3));
                 }
@@ -667,22 +674,24 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 break;
             }
             case BTA_DataFormatYuv444UYV: {
-                BOOST_LOG_TRIVIAL(debug) << "img yuv444uyv data! " << (width * height)
-                                         << " " << chan->dataLen;
+                // BOOST_LOG_TRIVIAL(debug) << "img yuv444uyv data! " << (width
+                // * height)
+                //                          << " " << chan->dataLen;
                 if (!d.get()) {
                     d.reset(new cv::Mat(height, width, CV_8UC3));
                 }
+                // @TODO optimize
                 unsigned char* ptr = chan->data;
-                for (unsigned int i=0;i<chan->dataLen;i+=3) {
+                for (unsigned int i = 0; i < chan->dataLen; i += 3) {
                     unsigned char u = ptr[0];
                     unsigned char y = ptr[1];
                     unsigned char v = ptr[2];
                     ptr[0] = y;
                     ptr[1] = u;
                     ptr[2] = v;
-                    ptr+=3;
+                    ptr += 3;
                 }
-		Mat input(height, width, CV_8UC3, chan->data);
+                Mat input(height, width, CV_8UC3, chan->data);
                 cvtColor(input, *d, COLOR_YUV2BGR);
 
                 // debug:
