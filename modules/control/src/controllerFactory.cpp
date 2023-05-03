@@ -37,15 +37,15 @@ ControllerFactory::~ControllerFactory()
     _controllers.clear();
 }
 
-int ControllerFactory::deleteController(std::string name)
+int ControllerFactory::deleteController(const std::string& name)
 {
-    /* boost::container::flat_map<std::string, Filter* >::iterator it;
-     it = _filters.find(name);
-     if (it != _filters.end() ) {
+     boost::container::flat_map<std::string, FilterController* >::iterator it;
+     it = _controllers.find(name);
+     if (it != _controllers.end() ) {
+         _controllers.erase(it);
          delete it->second;
-         _filters.erase(it);
          return 1;
-     }*/
+     }
     return 0;
 }
 
@@ -84,7 +84,7 @@ FilterController *ControllerFactory::createController(Filter *f)
 }
 
 int ControllerFactory::getControllersByType(
-    const std::string &type, std::vector<FilterController *> &vec)
+    const std::string& /*type*/, std::vector<FilterController *> &vec)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     for (boost::container::flat_map<std::string, FilterController *>::iterator

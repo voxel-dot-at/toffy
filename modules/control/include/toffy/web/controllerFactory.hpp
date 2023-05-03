@@ -46,7 +46,7 @@ public:
 
     control::FilterController *createController(Filter *f);
 
-    int deleteController(std::string name);
+    int deleteController(const std::string& name);
 
     //int updateFilter(std::string name, const cv::FileNode &fn) const;
 
