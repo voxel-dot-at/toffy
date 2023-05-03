@@ -97,8 +97,8 @@ int ParallelFilter::handleConfigItem(
     }
     return 1;
 }
-
-bool ParallelFilter::filter(const Frame& in, Frame& out)
+//@TODO: TEST! works right now for filterbanks with integrated image source (bta), but not if input frame is from extern.
+bool ParallelFilter::filter(const Frame& /*in*/, Frame& out)
 {
     std::vector<Frame*> res;
     size_t i;
