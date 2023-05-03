@@ -63,6 +63,8 @@ public:
      */
     virtual bool doAction(Action &action, std::string &log);
 
+    virtual bool getMetaData(Action &action, std::string &log);
+
 private:
     toffy::Filter *_f;
     toffy::Controller *_base;
