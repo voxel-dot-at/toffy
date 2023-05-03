@@ -107,14 +107,15 @@ bool Action::url_decode(std::string in) {
       return EXIT_FAILURE;
     }
 
-  BOOST_LOG_TRIVIAL(debug)
-      << "Parsing uri_grammar succeeded, found entries:";
-  BOOST_LOG_TRIVIAL(debug)
-      << "-path: "
-      << std::string(c.path.begin(), c.path.end());
-  BOOST_LOG_TRIVIAL(debug)
-      << "-query: "
-      << std::string(c.query.begin(), c.query.end());
+//   BOOST_LOG_TRIVIAL(debug)
+//       << "Parsing uri_grammar succeeded, found entries:";
+//   BOOST_LOG_TRIVIAL(debug)
+//       << "    -path: "
+//       << std::string(c.path.begin(), c.path.end());
+//   BOOST_LOG_TRIVIAL(debug)
+//       << "    -query: "
+//       << std::string(c.query.begin(), c.query.end());
+
   path_parse( c.path.begin(), c.path.end());
   if ( c.query.begin() != c.query.end() )
   params_parse( c.query.begin(), c.query.end() );
@@ -129,9 +130,9 @@ bool Action::path_parse( iterator_type begin, iterator_type const &end) {
       BOOST_LOG_TRIVIAL(warning) << "Parsing path failed";
       return EXIT_FAILURE;
     }
-  BOOST_LOG_TRIVIAL(debug) << "Parsing path succeeded, found entries:";
-  for (uriparser::vertorStr::iterator it = _items.begin(); it != _items.end(); ++it)
-    BOOST_LOG_TRIVIAL(debug) << *it;
+//   BOOST_LOG_TRIVIAL(debug) << "Parsing path succeeded, found entries:";
+//   for (uriparser::vertorStr::iterator it = _items.begin(); it != _items.end(); ++it)
+//     BOOST_LOG_TRIVIAL(debug) << "    " << *it;
   return true;
 }
 
