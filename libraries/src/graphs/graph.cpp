@@ -24,7 +24,7 @@ BoundingBox Graph::getBoundingBox()
     d = tmpPoints[0]->y;
     l = tmpPoints[0]->x;
     r = tmpPoints[0]->x;
-    for(int j = 1; j < tmpPoints.size();j++){
+    for(auto j = 1; j < tmpPoints.size();j++){
         if(tmpPoints[j]->y < u){
             u = tmpPoints[j]->y;
         }

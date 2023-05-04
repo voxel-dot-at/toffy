@@ -36,7 +36,7 @@ RasterSegment::RasterSegment(const RasterSegment& o) : id(o.id), start(o.start),
     };
 
 RasterSegment::~RasterSegment() {
-    for (int i=0;i<pts.size();i++)
+    for (auto i=0;i<pts.size();i++)
 	    delete pts[i];
     pts.clear();
 }
@@ -53,7 +53,7 @@ void RasterSegment::points(std::vector<RasterPoint*>& points) const
 {
     points.push_back(start);
 
-    for (int i=0;i<pts.size();i++) {
+    for (auto i=0;i<pts.size();i++) {
         points.push_back(pts[i]);
     }
     points.push_back(end);
@@ -113,7 +113,7 @@ void RasterSegment::extend(){
     }
     RasterPoint* cor = 0;
     if(!pts.empty()){
-        for(int i = 0; i < pts.size();i++){
+        for(auto i = 0; i < pts.size();i++){
             if(pts[i]->type == cornerPoint) cor = pts[i];
         }
     }
@@ -204,7 +204,7 @@ void paintSegment(Mat& disMax, const RasterSegment& seg, Scalar color, int thick
 	p1 = seg.start;
 
 
-	for (int i = 0; i < pts.size(); i++) {
+	for (auto i = 0; i < pts.size(); i++) {
 		line(disMax, *p1, *pts[i], color, thickness);
 
 		if (((RasterPoint*) (p1))->type == crossingPoint)
