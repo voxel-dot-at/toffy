@@ -7,13 +7,22 @@ else()
     set(PCL_SRCS "" )
 endif()
 
+message("OPENCV VIZ? " ${OPENCV_VIZ_FOUND})
+if ( ${OPENCV_VIZ_FOUND} )
+    set(VIZ_SRCS 
+        cloudviewopencv.cpp
+    )
+else() 
+    set(VIZ_SRCS "" )
+endif()
+
 add_library(toffy_viewers OBJECT 
-    cloudviewopencv.cpp
     colorize.cpp
     exportcloud.cpp
     exportcsv.cpp
     imageview.cpp
     videoout.cpp
+    ${VIZ_SRCS}
     ${PCL_SRCS}
     )
 
