@@ -4,7 +4,7 @@ if ( ${PCL_VISUALIZATION_FOUND} )
         cloudviewpcl.cpp
     )
 else() 
-    messate("pcl viz module not found - will NOT build cloudviewpcl")
+    message("pcl viz module not found - will NOT build cloudviewpcl")
     set(PCL_SRCS "" )
 endif()
 
@@ -14,7 +14,7 @@ if ( ${OPENCV_VIZ_FOUND} )
         cloudviewopencv.cpp
     )
 else() 
-    messate("opencv viz module not found - will NOT build cloudviewopencv")
+    message("opencv viz module not found - will NOT build cloudviewopencv")
     set(VIZ_SRCS "" )
 endif()
 
