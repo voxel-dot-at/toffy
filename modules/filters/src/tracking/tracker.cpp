@@ -310,7 +310,7 @@ void Tracker::showObjects(cv::Mat &depth) {
 
   // BOOST_LOG_TRIVIAL(debug) << "showObjects " << detObjs.size();
   for (size_t i = 0; i < detObjs.size(); i++) {
-    if (detObjs[i]->first_fc == (int)_fc) {
+    if (detObjs[i]->first_fc == _fc) {
       circle(depth, detObjs[i]->massCenter, 4, detObjs[i]->color);
       continue;
     }
