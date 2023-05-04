@@ -1,0 +1,47 @@
+uri_grammar version 0.3
+
+Copyright 2009 Braden McDaniel <braden@endoframe.com>
+
+Available from <http://code.google.com/p/uri-grammar/>
+
+See the "NEWS" file for a list of changes in this release.
+
+
+About
+=====
+
+   uri_grammar is a Spirit grammar for parsing URIs.  Spirit is a C++
+parser framework available at <http://spirit.sourceforge.net>.  Spirithttp://uri-grammar.googlecode.com/svn/trunk/
+is part of the Boost suite of C++ libraries available at
+<http://boost.org>.
+
+
+License terms
+=============
+
+   uri_grammar is available under the Boost source license.  For
+details, refer to the file "COPYING" included in this distribution.
+
+
+Installation
+============
+
+   Refer to the file "INSTALL" for detailed installation instructions.
+
+
+Bug reports
+===========
+
+   Please use uri_grammar's issue tracker to report any bugs you
+encounter:
+
+   <http://code.google.com/p/uri-grammar/issues/entry>
+
+
+Mailing lists
+=============
+
+   The uri-grammar mailing list is for discussion of the use and
+development of uri_grammar.  You can join this list at:
+
+   <http://groups.google.com/group/uri-grammar>
