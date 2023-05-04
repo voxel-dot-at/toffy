@@ -11,7 +11,6 @@ add_library(toffy_base STATIC
     range.cpp
     rectify.cpp
     roi.cpp
-    init.cpp
     )
 
 target_link_libraries(  toffy_base toffy_core ${LIBS} )
