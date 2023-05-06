@@ -199,6 +199,17 @@ endif()
 # Find dependencies
 ################################################################################
 
+# rapidjson
+include(ExternalProject)
+include("${CMAKE_SOURCE_DIR}/cmake/rapidjson.cmake")
+include_directories(
+    ${RAPIDJSON_INCLUDE_DIR}
+)
+#    ${CMAKE_SOURCE_DIR}/include
+#    ${GFLAGS_INCLUDE_DIR}
+#    ${BENCHMARK_INCLUDE_DIR}
+
+
 # Boost
 find_package(Boost
     COMPONENTS log log_setup program_options system
@@ -246,7 +257,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 list(APPEND LIBS ${OpenCV_LIBS})
 
-add_definitions(-O2)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+add_definitions(-O2 -fPIC)
 
 #
 # bta library -- communication with Becom Systems cameras (Argos, Sentis, ...)

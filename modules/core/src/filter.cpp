@@ -24,6 +24,7 @@
 #include <boost/foreach.hpp>
 
 #include <toffy/filter.hpp>
+#include <toffy/filter_helpers.hpp>
 
 #if OCV_VERSION_MAJOR >= 3
 #  include <opencv2/core.hpp>
@@ -51,9 +52,9 @@ Filter::Filter(std::string type, std::size_t counter /*= -1*/):
 {
     _filter_counter++;
     if (counter > 0)
-        this->_id = _type + boost::lexical_cast<std::string>(counter);
+        this->_id = _type + "_" + boost::lexical_cast<std::string>(counter);
     else
-        this->_id = _type + boost::lexical_cast<std::string>(_filter_counter);
+        this->_id = _type + "_" + boost::lexical_cast<std::string>(_filter_counter);
     this->name(this->_id);
 #ifdef CM_DEBUG
     _log_lvl = logging::trivial::debug;
@@ -88,6 +89,7 @@ int Filter::loadConfig(const boost::property_tree::ptree& pt)
     const boost::property_tree::ptree& node = pt.get_child(_type);
 
     _name = node.get("name", _name);
+    BOOST_LOG_TRIVIAL(debug) << id() << "::loadConfig NAME SET TO " << _name;
 
     loadGlobals(node);
 
@@ -131,8 +133,8 @@ void Filter::updateConfig(const boost::property_tree::ptree &pt)
     _log_lvl =
             static_cast<boost::log::trivial::severity_level>(
                 pt.get<int>("options.loglvl",_log_lvl));
-    //setLoggingLvl();
-
+   pt_optional_get_default(pt, "name", _name, _name);
+   std::cout << id() << "::updateConfig NAME SET TO " << _name << std::endl; 
 }
 
 void Filter::setState(filterState state) {

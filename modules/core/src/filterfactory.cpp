@@ -48,33 +48,12 @@
 
 #include "toffy/reproject/reprojectopencv.hpp"
 
-#include "toffy/tracking/tracker.hpp"
-
-#ifdef WITH_VISUALIZATION
-#include "toffy/viewers/imageview.hpp"
-#include "toffy/viewers/cloudviewopencv.hpp"
-#endif
-#include "toffy/viewers/colorize.hpp"
-#include "toffy/viewers/videoout.hpp"
-//#include "toffy/exposure.hpp"
-#include "toffy/viewers/exportcsv.hpp"
-
-#if OCV_VERSION_MAJOR >= 3
-// OpenCV 3.x compatible filters:
-#include <toffy/tracking/cvTracker.hpp>
-#endif
-
 #if defined(HAS_BTA)
 #include <toffy/bta/initPlugin.hpp>
 #endif
 
 #if defined(PCL_FOUND)
 
-#ifdef PCL_VISUALIZATION
-#ifdef WITH_VISUALIZATION
-#include "toffy/viewers/cloudviewpcl.hpp"
-#endif
-#endif
 #include "toffy/reproject/reprojectpcl.hpp"
 #include "toffy/3d/split.hpp"
 #include "toffy/3d/merge.hpp"
@@ -88,6 +67,17 @@
 
 using namespace toffy::filters::f3d;
 #endif
+
+/****** forward declarations for init functions of the single sub-libs: */
+namespace toffy {
+    namespace viewers {
+        extern void initFilters(FilterFactory& factory);
+    }
+    namespace tracking {
+        extern void initFilters(FilterFactory& factory);
+    }
+}
+
 
 // TODO Create a header with a list of filters
 #include <boost/log/trivial.hpp>
@@ -112,6 +102,8 @@ FilterFactory* FilterFactory::getInstance()
 #else
 #warning bta missing!
 #endif
+        toffy::tracking::initFilters(*uniqueFactory);
+        toffy::viewers::initFilters(*uniqueFactory);
     }
     return uniqueFactory;
 }
@@ -174,20 +166,10 @@ Filter* FilterFactory::createFilter(const std::string& type,
 #ifdef WITH_VISUALIZATION
     else if (type == ReprojectOpenCv::id_name)
         f = new ReprojectOpenCv();
-    else if (type == "cloudviewopencv")
-        f = new CloudViewOpenCv();
-    else if (type == ImageView::id_name)
-        f = new ImageView();
 #endif
     else if (type == "csvSource")
         f = new capturers::CSVSource();
-    else if (type == "exportcsv")
-        f = new ExportCSV();
 
-    else if (type == "videoout")
-        f = new VideoOut();
-    // else if (type == "bta")
-    //	f = new Bta();
     else if (type == "amplitudeRange")
         f = new AmplitudeRange();
     else if (type == "range")
@@ -210,39 +192,21 @@ Filter* FilterFactory::createFilter(const std::string& type,
         f = new detection::Blobs();
     else if (type == detection::BlobsDetector::id_name)
         f = new detection::BlobsDetector();
-
     else if (type == "focus")
         f = new Focus();
-    else if (type == "colorize")
-        f = new Colorize();
     else if (type == "mask")
         f = new detection::Mask();
-    // else if (type == "exposure")
-    // f = new Exposure();
-
     else if (type == "dataImporter")
         f = new import::DataImporter();
-    else if (type == "tracker")
-        f = new tracking::Tracker();
     else if (type == "roi")
         f = new Roi();
     else if (type == BackgroundSubs::id_name)
         f = new BackgroundSubs();
 
-#if OCV_VERSION_MAJOR >= 3
-    // OpenCV 3.x compatible filters:
-    else if (type == tracking::CVTracker::id_name)
-        f = new tracking::CVTracker();
-#endif
-
 #if defined(PCL_FOUND)
 #ifdef PCL_VISUALIZATION
     else if (type == "reprojectpcl")
         f = new ReprojectPCL();
-#ifdef WITH_VISUALIZATION
-    else if (type == "cloudviewpcl")
-        f = new CloudViewPCL();
-#endif
 #endif
     else if (type == "transform")
         f = new Transform();
