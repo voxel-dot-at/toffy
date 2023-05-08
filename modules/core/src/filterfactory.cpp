@@ -183,9 +183,10 @@ Filter* FilterFactory::createFilter(const std::string& type,
         f = new smoothing::Bilateral();
     else if (type == "average")
         f = new smoothing::Average();
+#if OPENCV_TRACKING
     else if (type == toffy::filters::smoothing::KalmanAverage::id_name)
         f = new smoothing::KalmanAverage();
-
+#endif
     else if (type == "objectTrack")
         f = new detection::ObjectTrack();
     else if (type == "blobs")
