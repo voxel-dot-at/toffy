@@ -87,6 +87,9 @@ private:
     int width, height;
     bool dynOutputs; // dynamically map output depending on channels present
 
+    uint32_t eth0Config;
+    bool hasEth0Config;
+
     float globalOfs;
     bool hasGlobalOfs;
     int modulationFreq; // in Hz; -1 if not present

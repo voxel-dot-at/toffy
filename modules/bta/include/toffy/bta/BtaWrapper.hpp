@@ -70,6 +70,7 @@ public:
     virtual int getLibParam(int &param, float &data);
     virtual int setLibParam(int &param, float &data);
 
+    void setEth0Config(uint32_t reg) { eth0Config = reg; }
     //virtual unsigned short getImgType();
     //virtual int getData(unsigned char* data, int size);
     virtual int getDistances(float * &depth, int &size, char *data);
@@ -139,6 +140,7 @@ private:
 
 
     //variables needed to fill pointer in BTA_Config
+    uint32_t eth0Config;
     uint8_t udpDataIpAddr[6];
     uint8_t tcpDeviceIpAddr[6];
     uint8_t udpControlOutIpAddr[6];

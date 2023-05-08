@@ -106,6 +106,14 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
                                  << " globalOffset set to  " << globalOfs;
     }
 
+    present = pt_optional_get(bta, "options.eth0Config", eth0Config);
+    hasEth0Config = present;
+    if (present) {
+        sensor->setEth0Config(eth0Config);
+        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__
+                                 << " eth0Config set to  " << eth0Config;
+    }
+
     boost::optional<bool> playbk = bta.get_optional<bool>("playback");
     if (playbk.is_initialized()) {
         playback(*playbk);

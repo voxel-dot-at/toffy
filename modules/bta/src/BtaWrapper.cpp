@@ -86,6 +86,7 @@ BtaWrapper::BtaWrapper() : manufacturer(1), device(0), async(false)
     frameInUse = frames[1];
     toFillIndex = 0;
     hasBeenUpdated = false;
+    eth0Config = 0x06; // factory default
 
     manufacturer = 1;
 }
