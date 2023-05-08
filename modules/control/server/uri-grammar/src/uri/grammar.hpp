@@ -29,6 +29,7 @@ struct ipv4_grammar :
 
     ipv4_grammar(): ipv4_grammar::base_type(ipv4address)
     {
+        using namespace boost:placeholders;
 	using boost::spirit::qi::eps;
 	using boost::spirit::qi::_1;
 	using boost::spirit::qi::_val;
