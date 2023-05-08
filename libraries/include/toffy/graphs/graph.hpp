@@ -16,7 +16,7 @@
 #pragma once
 
 #include "toffy/graphs/raster.hpp"
-#include "toffy/graphs/BoundingBox.hpp"
+#include "toffy/graphs/boundingBox.hpp"
 
 #include <vector>
 
