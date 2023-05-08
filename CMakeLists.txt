@@ -200,11 +200,11 @@ endif()
 ################################################################################
 
 # rapidjson
-include(ExternalProject)
-include("${CMAKE_SOURCE_DIR}/cmake/rapidjson.cmake")
-include_directories(
-    ${RAPIDJSON_INCLUDE_DIR}
-)
+#include(ExternalProject)
+#include("${CMAKE_SOURCE_DIR}/cmake/rapidjson.cmake")
+#include_directories(
+#    ${RAPIDJSON_INCLUDE_DIR}
+#)
 #    ${CMAKE_SOURCE_DIR}/include
 #    ${GFLAGS_INCLUDE_DIR}
 #    ${BENCHMARK_INCLUDE_DIR}
