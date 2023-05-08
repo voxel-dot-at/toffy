@@ -57,8 +57,9 @@
 #endif
 
 // using namespace toffy;
-using namespace toffy::control;
+using namespace boost::placeholders;
 using namespace std;
+using namespace toffy::control;
 
 /*Controller * Controller::_controller;
 
