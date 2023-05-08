@@ -62,15 +62,13 @@ public:
     virtual int disconnect();
     virtual bool isConnected() const;
     virtual int capture(char * &buffer);
-    virtual int registerOp(unsigned int reg);
-    virtual int registerOp(unsigned int reg, unsigned int data);
+
     int startGrabbing(std::string filename);
     int stopGrabbing();
 
     virtual int getLibParam(int &param, float &data);
     virtual int setLibParam(int &param, float &data);
 
-    void setEth0Config(uint32_t reg) { eth0Config = reg; }
     //virtual unsigned short getImgType();
     //virtual int getData(unsigned char* data, int size);
     virtual int getDistances(float * &depth, int &size, char *data);
@@ -96,6 +94,9 @@ public:
     virtual int setFrameRate(float fr);
     virtual int setModulationFrequency(unsigned long mf);
     virtual int setGlobalOffset(float ofsInMm);
+
+    uint32_t readRegister(uint32_t reg);
+    int writeRegister(uint32_t reg, uint32_t val);
 
     int getTemps(char *data, float &mt, float &lt, float &gt);
     int getMainTemp(char *data, float &mt);
@@ -140,7 +141,6 @@ private:
 
 
     //variables needed to fill pointer in BTA_Config
-    uint32_t eth0Config;
     uint8_t udpDataIpAddr[6];
     uint8_t tcpDeviceIpAddr[6];
     uint8_t udpControlOutIpAddr[6];

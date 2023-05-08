@@ -86,7 +86,6 @@ BtaWrapper::BtaWrapper() : manufacturer(1), device(0), async(false)
     frameInUse = frames[1];
     toFillIndex = 0;
     hasBeenUpdated = false;
-    eth0Config = 0x06; // factory default
 
     manufacturer = 1;
 }
@@ -553,7 +552,7 @@ int BtaWrapper::capture(char *&buffer)
     return 1;
 }
 
-int BtaWrapper::registerOp(unsigned int reg)
+uint32_t BtaWrapper::readRegister(unsigned int reg)
 {
     uint32_t usValue;
     status = BTAreadRegister(handle, reg, &usValue, 0);
@@ -564,7 +563,7 @@ int BtaWrapper::registerOp(unsigned int reg)
     return usValue;
 }
 
-int BtaWrapper::registerOp(unsigned int reg, unsigned int data)
+int BtaWrapper::writeRegister(uint32_t reg, uint32_t data)
 {
     status = BTAwriteRegister(handle, reg, &data, 0);
     if (status != BTA_StatusOk) {

@@ -38,6 +38,8 @@ Bta::Bta()
       width(0),
       height(0),
       globalOfs(0),
+      eth0Config(6),
+      hasEth0Config(false),
       hasGlobalOfs(false),
       modulationFreq(-1),
       _out_depth("depth"),
@@ -108,11 +110,6 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
 
     present = pt_optional_get(bta, "options.eth0Config", eth0Config);
     hasEth0Config = present;
-    if (present) {
-        sensor->setEth0Config(eth0Config);
-        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__
-                                 << " eth0Config set to  " << eth0Config;
-    }
 
     boost::optional<bool> playbk = bta.get_optional<bool>("playback");
     if (playbk.is_initialized()) {
@@ -357,6 +354,9 @@ int Bta::connect()
             }
             if (hasGlobalOfs) {
                 sensor->setGlobalOffset(globalOfs);
+            }
+            if (hasEth0Config) {
+                sensor->writeRegister(0x240, eth0Config);
             }
 
             int freq = sensor->getModulationFrequency();
