@@ -2,7 +2,9 @@
 
 #include <toffy/filterfactory.hpp>
 
-#include <toffy/tracking/cvTracker.hpp>
+#if OPENCV_TRACKING
+#  include <toffy/tracking/cvTracker.hpp>
+#endif
 #include <toffy/tracking/tracker.hpp>
 
 namespace toffy {
