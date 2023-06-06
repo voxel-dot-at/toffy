@@ -161,7 +161,7 @@ private:
     boost::mutex frameMutex, fillFrameMutex;
     boost::condition_variable newFrameCond;
 
-    BTA_Frame* frames[2]; //< array of frames, one is filled by bta lib, the other in use
+    BTA_Frame* frames[3]; //< array of frames, one is filled by bta lib, the other in use
     BTA_Frame* frameInUse; // pointer to the current frame
     BTA_Frame* frameToFill; // pointer to the current frame
     int toFillIndex; // index of the current frame
