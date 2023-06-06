@@ -131,7 +131,7 @@ bool GroundProjection::filter(const Frame &in, Frame &out)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
 
-    double maxSizeX, maxSizeY, fl_x_reciprocal, fl_y_reciprocal;
+    double maxSizeX, maxSizeY, fl_x_reciprocal = 1., fl_y_reciprocal = 1.;
     Point2d center;
     Size imgSize(160, 120);
 
