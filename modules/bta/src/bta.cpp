@@ -40,6 +40,8 @@ Bta::Bta()
       globalOfs(0),
       eth0Config(6),
       hasEth0Config(false),
+      interfaceConfig(0),
+      hasIfConfig(false),
       hasGlobalOfs(false),
       modulationFreq(-1),
       _out_depth("depth"),
@@ -110,6 +112,9 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
 
     present = pt_optional_get(bta, "options.eth0Config", eth0Config);
     hasEth0Config = present;
+
+    present = pt_optional_get(bta, "options.interfaceConfig", interfaceConfig);
+    hasIfConfig = present;
 
     boost::optional<bool> playbk = bta.get_optional<bool>("playback");
     if (playbk.is_initialized()) {
@@ -210,12 +215,13 @@ bool Bta::filter(const Frame& in, Frame& out)
                 BOOST_LOG_TRIVIAL(error)
                     << "Camera not reachable after " << RECONNECT
                     << "tries. Stopping toffy.";
-                exit(EXIT_FAILURE);
+                exit(EXIT_FAILURE); // @TODO report failure to filterBank?
             } else {
                 BOOST_LOG_TRIVIAL(warning)
                     << "Could not reconnect to device. Retry: " << retries;
                 return false;
             }
+            sleep(1); // BAD SYNC CALL, but without camera connection, there's nothing to do...
         } else {
             retries = 0;
         }
@@ -356,9 +362,12 @@ int Bta::connect()
                 sensor->setGlobalOffset(globalOfs);
             }
             if (hasEth0Config) {
-                sensor->writeRegister(0x240, eth0Config);
+                sensor->writeRegister(0x0240, eth0Config);
             }
-
+            if (hasIfConfig) {
+                sensor->writeRegister(0x00fa, interfaceConfig);
+            }
+            
             int freq = sensor->getModulationFrequency();
             int it = sensor->getIntegrationTime();
             float ofs = sensor->getGlobalOffset();

@@ -92,6 +92,9 @@ private:
     uint32_t eth0Config;
     bool hasEth0Config;
 
+    uint32_t interfaceConfig; // 0xfa InterfaceConfig
+    bool hasIfConfig;
+
     bool hasGlobalOfs;
     int modulationFreq; // in Hz; -1 if not present
 
