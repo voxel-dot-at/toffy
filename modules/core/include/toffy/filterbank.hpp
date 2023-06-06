@@ -212,7 +212,7 @@ class TOFFY_EXPORT FilterBank : public Filter
      * (cannot open file, parse error), an exception is thrown.
      * Checks the root node
      *
-     * The loading filter secuence is as follows:
+     * The loading filter sequence is as follows:
      *
      * - loadFileConfig is the first method to be call (from the base
      * FilterBank in the Player)
