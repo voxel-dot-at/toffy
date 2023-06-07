@@ -129,7 +129,7 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
     pres = pt_optional_get_default<uint8_t>(pt, "connection.shmDataEnabled",
                                             config.shmDataEnabled, 0);
     if (pres) {
-        BOOST_LOG_TRIVIAL(debug) << "shmDataEnabled is set!";
+        BOOST_LOG_TRIVIAL(debug) << "shmDataEnabled is set! now=" << (int)config.shmDataEnabled;
     }
 
     // n.b. we DON't set the default mcast channel 224.0.0.1 ;
@@ -316,6 +316,9 @@ int BtaWrapper::connect()
                                 << (int)config.udpDataIpAddr[2] << "."
                                 << (int)config.udpDataIpAddr[3] << ".";
     }
+    BOOST_LOG_TRIVIAL(info) << "BtaWrapper::connect() shm " << (int)config.shmDataEnabled;
+    // hack on:
+    // config.shmDataEnabled = 1;
 
     status = BTAopen(&config, &handle);
     if (status != BTA_StatusOk) {
