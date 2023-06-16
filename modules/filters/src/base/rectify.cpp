@@ -18,22 +18,14 @@
 
 #include "toffy/base/rectify.hpp"
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#  include <opencv2/calib3d.hpp>
-#warning eh da
-//#  include <opencv2/highgui.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/highgui/highgui.hpp>
-#endif
+#include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
 
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
 #include "toffy/common/filenodehelper.hpp"
-
 
 using namespace toffy;
 using namespace toffy::filters;
@@ -42,11 +34,6 @@ using namespace std;
 namespace logging = boost::log;
 namespace fs = boost::filesystem;
 
-#ifdef CM_DEBUG
-const bool dbg=true;
-#else
-const bool dbg=false;
-#endif
 
 std::size_t Rectify::_filter_counter = 1;
 
