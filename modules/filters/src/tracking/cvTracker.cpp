@@ -19,15 +19,10 @@
 #include <boost/log/trivial.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#  include <opencv2/highgui.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/highgui/highgui.hpp>
-#endif
-
+#include "toffy/filter_helpers.hpp"
 #include <toffy/tracking/cvTracker.hpp>
 
 
@@ -198,4 +193,3 @@ void CVTracker::showObjects(cv::Mat& depth) {
 
     return;
 }
-

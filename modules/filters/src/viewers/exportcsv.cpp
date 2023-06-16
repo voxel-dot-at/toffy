@@ -13,13 +13,16 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include "toffy/viewers/exportcsv.hpp"
 
-#include <boost/any.hpp>
-#include <boost/log/trivial.hpp>
 #include <fstream>
 #include <iostream>
+
+#include <boost/any.hpp>
+
 #include <opencv2/core.hpp>
+
+#include "toffy/filter_helpers.hpp"
+#include "toffy/viewers/exportcsv.hpp"
 
 using namespace toffy;
 using namespace cv;

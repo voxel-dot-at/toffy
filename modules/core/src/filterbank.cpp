@@ -22,6 +22,7 @@
 #include <boost/foreach.hpp>
 
 #include "toffy/filterbank.hpp"
+#include "toffy/filter_helpers.hpp"
 #include "toffy/event.hpp"
 #include <toffy/common/plugins.hpp>
 #include <iostream>

@@ -17,14 +17,10 @@
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-#else
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#endif
 
+#include "toffy/filter_helpers.hpp"
 #include "toffy/smoothing/kalmanaverage.hpp"
 
 #include <iostream>

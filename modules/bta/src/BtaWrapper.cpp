@@ -1535,8 +1535,8 @@ BTA_Frame *BtaWrapper::flipFrame()
     BTA_Frame *tmp = frameInUse;
     frameInUse = frameToFill;
     frameToFill = tmp;  // ->ftf == fiu
-    cout << "flip fill " << frameToFill->sequenceCounter << " use "
-         << frameInUse->sequenceCounter << endl;
+    cout << "flip fill " << (int)frameToFill->sequenceCounter << " use "
+         << (int)frameInUse->sequenceCounter << endl;
     return frameInUse;
 }
 

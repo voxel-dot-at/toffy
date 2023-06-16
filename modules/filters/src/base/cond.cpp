@@ -30,12 +30,6 @@ using namespace cv;
 using namespace std;
 namespace logging = boost::log;
 
-#ifdef CM_DEBUG
-const bool dbg = true;
-#else
-const bool dbg = false;
-#endif
-
 static std::string theName("cond");
 static int counter = 0;
 

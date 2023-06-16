@@ -25,6 +25,11 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/log/trivial.hpp>
 
+
+/* enable nice(r) logging by providing a short-hand version
+ */
+#define LOG(lvl)    BOOST_LOG_TRIVIAL(lvl) << id() << "::" << __FUNCTION__ << "() : "
+
 /** optionally get a value from the property tree if it exists.
  * @return true if key exists and the value has been set, false otherwise
  */
@@ -70,6 +75,8 @@ static inline bool pt_optional_get_ipaddr(const boost::property_tree::ptree pt,
     int success = inet_aton( addr.c_str(), &inaddr);
     if (!success) {
         BOOST_LOG_TRIVIAL(warning) << "pt_optional_get_ipaddr() could not parse entry " << key << " : " << addr;
+    } else {
+        BOOST_LOG_TRIVIAL(info) << "pt_optional_get_ipaddr set " << key << " " << addr;
     }
     return success == 1;
 }

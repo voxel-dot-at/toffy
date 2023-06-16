@@ -38,7 +38,7 @@ OffsetCorr::OffsetCorr(): Filter("offsetCorr"), in_ampl("ampl"), in_depth("depth
 }
 
 
-bool OffsetCorr::filter(const toffy::Frame& in, toffy::Frame& out)
+bool OffsetCorr::filter(const toffy::Frame& in, toffy::Frame& /*out*/)
 {
 	matPtr ampl = in.getMatPtr(in_ampl);
 	matPtr d = in.getMatPtr(in_depth);
