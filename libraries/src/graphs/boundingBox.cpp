@@ -1,6 +1,6 @@
 #include <math.h>
 
-#include "toffy/graphs/BoundingBox.hpp"
+#include "toffy/graphs/boundingBox.hpp"
 
 BoundingBox::BoundingBox()
 {
