@@ -14,20 +14,16 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#  include <opencv2/highgui.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/highgui/highgui.hpp>
-#endif
 
-#include <boost/log/trivial.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+
 #include <boost/any.hpp>
 
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "toffy/filter_helpers.hpp"
 #include "toffy/viewers/imageview.hpp"
 
 using namespace toffy;

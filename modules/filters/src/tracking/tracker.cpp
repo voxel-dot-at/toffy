@@ -18,14 +18,10 @@
 #include <boost/log/trivial.hpp>
 #include <iostream>
 
-#if CV_VERSION_MAJOR >= 4 || OCV_VERSION_MAJOR >= 3
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#else
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#endif
 
+#include "toffy/filter_helpers.hpp"
 #include "toffy/tracking/tracker.hpp"
 
 using namespace toffy;

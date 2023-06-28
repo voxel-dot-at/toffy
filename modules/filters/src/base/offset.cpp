@@ -22,12 +22,12 @@
 
 #include <boost/log/trivial.hpp>
 #include <boost/foreach.hpp>
-//#include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 
 #include "toffy/base/offset.hpp"
+#include "toffy/filter_helpers.hpp"
 
 using namespace toffy;
 using namespace toffy::filters;
@@ -35,11 +35,6 @@ using namespace cv;
 using namespace std;
 namespace logging = boost::log;
 
-#ifdef CM_DEBUG
-static const bool dbg = true;
-#else
-static const bool dbg = false;
-#endif
 
 std::size_t OffSet::_filter_counter = 1;
 const std::string OffSet::id_name = "offset";

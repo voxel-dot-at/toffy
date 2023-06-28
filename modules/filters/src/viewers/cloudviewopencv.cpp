@@ -19,6 +19,7 @@
 
 #include <opencv2/viz.hpp>
 
+#include "toffy/filter_helpers.hpp"
 #include "toffy/viewers/cloudviewopencv.hpp"
 
 using namespace toffy;

@@ -16,9 +16,9 @@
 */
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
+#include "toffy/filter_helpers.hpp"
 #include "toffy/smoothing/average.hpp"
 
 using namespace toffy;
@@ -26,12 +26,6 @@ using namespace toffy::filters::smoothing;
 using namespace cv;
 using namespace std;
 namespace logging = boost::log;
-
-#ifdef CM_DEBUG
-const bool dbg=true;
-#else
-const bool dbg=false;
-#endif
 
 std::size_t Average::_filter_counter = 1;
 const std::string Average::id_name = "average";

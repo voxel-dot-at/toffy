@@ -413,6 +413,3 @@ void Filter::error(const std::string& e) {
 }
 }
 
-/* enforce nice(r) logging by providing a short-hand version
- */
-#define LOG(lvl)    BOOST_LOG_TRIVIAL(lvl) << id() << "::" << __FUNCTION__ << "() : "

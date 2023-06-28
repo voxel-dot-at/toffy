@@ -21,9 +21,9 @@
 #include <pcl/range_image/range_image_planar.h>
 #include <pcl/common/transforms.h>
 
-#include <boost/log/trivial.hpp>
 #include <boost/any.hpp>
 
+#include "toffy/filter_helpers.hpp"
 #include "toffy/common/filenodehelper.hpp"
 
 #include "toffy/reproject/reprojectpcl.hpp"

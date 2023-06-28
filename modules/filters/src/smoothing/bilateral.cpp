@@ -16,17 +16,13 @@
 */
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
+
+#include "toffy/filter_helpers.hpp"
 #include <boost/algorithm/string/case_conv.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#  include <opencv2/highgui.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/highgui/highgui.hpp>
-#endif
+#include <opencv2/imgproc/imgproc.hpp>
+# include <opencv2/highgui/highgui.hpp>
 
 #include "toffy/smoothing/bilateral.hpp"
 
@@ -37,11 +33,6 @@ using namespace std;
 namespace logging = boost::log;
 namespace fs = boost::filesystem;
 
-#ifdef CM_DEBUG
-const bool dbg=true;
-#else
-const bool dbg=false;
-#endif
 
 std::size_t Bilateral::_filter_counter = 1;
 

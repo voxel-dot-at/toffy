@@ -28,6 +28,7 @@
 #  include <Windows.h>
 #endif
 
+#include "toffy/filter_helpers.hpp"
 #include "toffy/viewers/cloudviewpcl.hpp"
 
 using namespace toffy;

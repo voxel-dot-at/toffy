@@ -28,6 +28,7 @@
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "toffy/filter_helpers.hpp"
 #include "toffy/viewers/colorize.hpp"
 
 using namespace toffy;

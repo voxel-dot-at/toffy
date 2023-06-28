@@ -17,11 +17,7 @@
 
 #include <iostream>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#endif
+#include <opencv2/imgproc.hpp>
 
 #include <boost/log/trivial.hpp>
 
@@ -32,12 +28,6 @@ using namespace toffy::filters;
 using namespace cv;
 using namespace std;
 namespace logging = boost::log;
-
-#ifdef CM_DEBUG
-const bool dbg=true;
-#else
-const bool dbg=false;
-#endif
 
 std::size_t toffy::filters::Range::_filter_counter = 1;
 

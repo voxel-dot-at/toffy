@@ -22,8 +22,8 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/any.hpp>
 
-#include "toffy/viewers/exportcloud.hpp"
 #include "toffy/filter_helpers.hpp"
+#include "toffy/viewers/exportcloud.hpp"
 
 using namespace toffy;
 using namespace cv;
