@@ -133,6 +133,9 @@ public:
     /** call BTA_SetChannelSelection with the current set of channels */
     BTA_Status setChannels();
 
+    typedef enum  { disconnected, connecting, connected, error } ConnState;
+    ConnState getState() const { return state; }
+    
 private:
     BTA_Config config;
     BTA_Handle handle;
@@ -178,7 +181,6 @@ private:
     */
     BTA_Frame* flipFrame();
 
-    typedef enum  { disconnected, connecting, connected } ConnState;
     ConnState state;
 };
 
