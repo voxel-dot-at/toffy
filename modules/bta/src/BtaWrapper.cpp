@@ -335,6 +335,7 @@ int BtaWrapper::connect()
         BOOST_LOG_TRIVIAL(warning) << "BtaWrapper::connect() BTAopen: Could "
                                       "not connect to the camera. status: "
                                    << status;
+        state = disconnected;
         return status;
     }
     BOOST_LOG_TRIVIAL(debug)
