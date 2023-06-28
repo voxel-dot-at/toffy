@@ -25,7 +25,7 @@ static void BTA_CALLCONV infoEventCbEx2(BTA_Handle /*handle*/,
 {
     // BtaWrapper* bta = (BtaWrapper*)userArg;
     if (status == BTA_StatusOk) {
-        BOOST_LOG_TRIVIAL(info)
+        BOOST_LOG_TRIVIAL(debug)
             << "   BTACallback: infoEventEx2 (" << status << ") " << msg;
     } else {
         BOOST_LOG_TRIVIAL(warning)
@@ -38,11 +38,13 @@ static void BTA_CALLCONV frameArrivedEx2(
     struct BTA_FrameArrivedReturnOptions * /*frameArrivedReturnOptions*/)
 {
     if (!frame) {
-        BOOST_LOG_TRIVIAL(info) << "   BTACallback: frameArrivedEx2 NO FRAME ";
+        BOOST_LOG_TRIVIAL(warning) << "   BTACallback: frameArrivedEx2 NO FRAME ";
         return;
     }
-    BOOST_LOG_TRIVIAL(info)
+/*
+    BOOST_LOG_TRIVIAL(debug)
         << "   BTACallback: frameArrivedEx2 (" << frame->frameCounter << ") ";
+*/
     BtaWrapper *bta = (BtaWrapper *)arg;
     int musec, msec, sec, min, hours;
 
@@ -55,8 +57,10 @@ static void BTA_CALLCONV frameArrivedEx2(
     timeArr /= 60;
     min = timeArr % 60;
     hours = timeArr / 60;
+/*
     printf("Frame arrived: Frame no. %d at %02d:%02d:%02d.%03d %03d.\n",
            frame->frameCounter, hours, min, sec, msec, musec);
+*/
     bta->updateFrame(frame);
     return;
 }
@@ -1545,8 +1549,10 @@ BTA_Frame *BtaWrapper::flipFrame()
     BTA_Frame *tmp = frameInUse;
     frameInUse = frameToFill;
     frameToFill = tmp;  // ->ftf == fiu
-    cout << "flip fill " << (int)frameToFill->sequenceCounter << " use "
-         << (int)frameInUse->sequenceCounter << endl;
+
+    //cout << "flip fill " << (int)frameToFill->sequenceCounter << " use "
+    //     << (int)frameInUse->sequenceCounter << endl;
+
     return frameInUse;
 }
 
