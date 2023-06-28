@@ -46,6 +46,7 @@ static void BTA_CALLCONV frameArrivedEx2(
         << "   BTACallback: frameArrivedEx2 (" << frame->frameCounter << ") ";
 */
     BtaWrapper *bta = (BtaWrapper *)arg;
+ /*
     int musec, msec, sec, min, hours;
 
     unsigned long timeArr = frame->timeStamp;
@@ -57,7 +58,7 @@ static void BTA_CALLCONV frameArrivedEx2(
     timeArr /= 60;
     min = timeArr % 60;
     hours = timeArr / 60;
-/*
+
     printf("Frame arrived: Frame no. %d at %02d:%02d:%02d.%03d %03d.\n",
            frame->frameCounter, hours, min, sec, msec, musec);
 */
