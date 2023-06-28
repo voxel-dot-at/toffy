@@ -78,7 +78,7 @@ void BtaWrapper::setBltstream(const std::string &value)
     bltstreamFilename = value;
 }
 
-BtaWrapper::BtaWrapper() : manufacturer(1), device(0), async(false)
+BtaWrapper::BtaWrapper() : manufacturer(1), device(0), async(false),state(disconnected)
 {
     handle = 0;
     deviceInfo = NULL;
@@ -283,6 +283,12 @@ int BtaWrapper::connect()
         BOOST_LOG_TRIVIAL(warning) << "The camera is already connected.";
         return -1;
     }
+    if (state == connecting) {
+        BOOST_LOG_TRIVIAL(info) << "The camera is already connecting.";
+        return -1;
+    }
+    state = connecting;
+
     config.infoEventEx2 = infoEventCbEx2;
     config.frameArrivedEx2 = &frameArrivedEx2;
     config.userArg = this;
@@ -374,6 +380,8 @@ int BtaWrapper::connect()
         status = BTAwriteRegister(handle, 0x0e1, regs, &nregs);
         // handle, uint32_t address, uint32_t *data, uint32_t *registerCount
     }
+
+    state = connected;
     return 0;
 }
 
@@ -458,6 +466,8 @@ int BtaWrapper::disconnect()
         // Setting the handle to 0 as the bta_p100 keeps returning connected
         handle = 0;
     }
+    state = disconnected;
+    
     return 0;
 }
 
@@ -465,7 +475,7 @@ bool BtaWrapper::isConnected() const
 {
     // cout << "BTAisConnected(handle): " << (int)BTAisConnected(handle) <<
     // endl;
-    if (BTAisConnected(handle))
+    if (state == connecting || state == connected || BTAisConnected(handle))
         return 1;
     else
         return 0;

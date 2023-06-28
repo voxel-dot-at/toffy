@@ -178,6 +178,8 @@ private:
     */
     BTA_Frame* flipFrame();
 
+    typedef enum  { disconnected, connecting, connected } ConnState;
+    ConnState state;
 };
 
 /** get the name of the data type for a channel id */
