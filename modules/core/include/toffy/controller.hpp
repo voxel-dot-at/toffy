@@ -17,8 +17,9 @@
 #ifndef __toffy_CONTROLLER_HPP__
 #define __toffy_CONTROLLER_HPP__
 
-#include <toffy/filterbank.hpp>
 #include <boost/thread.hpp>
+
+#include <toffy/filterbank.hpp>
 #include <toffy/frame.hpp>
 
 namespace toffy {

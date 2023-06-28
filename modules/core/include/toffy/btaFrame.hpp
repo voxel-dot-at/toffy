@@ -17,6 +17,7 @@
 #pragma once
 
 #include <vector>
+
 #include <boost/any.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/container/flat_map.hpp>

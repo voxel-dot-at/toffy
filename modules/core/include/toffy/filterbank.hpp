@@ -17,10 +17,12 @@
 #pragma once
 
 #include <vector>
-#include "toffy/filterfactory.hpp"
+
 #include <boost/container/flat_set.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
+
+#include "toffy/filterfactory.hpp"
 
 #ifdef MSVC
 #define DLLExport __declspec(dllexport)

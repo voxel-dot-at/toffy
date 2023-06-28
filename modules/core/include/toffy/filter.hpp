@@ -16,9 +16,6 @@
 */
 #pragma once
 
-#include <toffy/toffy_export.h>
-#include <toffy/toffy_config.h>
-
 #include <vector>
 
 #include <boost/property_tree/ptree.hpp>
@@ -30,14 +27,6 @@
 #define DLLExport __declspec( dllexport )
 #else
 #define DLLExport /**/
-#endif
-
-/**
- */
-#ifdef OpenCV_VERSION_MAJOR
-#  ifndef OCV_MAJOR_VERSION
-#    define OCV_MAJOR_VERSION OpenCV_VERSION_MAJOR
-#  endif
 #endif
 
 
@@ -412,4 +401,3 @@ void Filter::error(const std::string& e) {
     setState(filterError);
 }
 }
-
