@@ -344,8 +344,14 @@ int BtaWrapper::connect()
 
     if (hasChannels) {
         status = setChannels();
+        if (status < 0) {
+            BOOST_LOG_TRIVIAL(warning)
+                << "BtaWrapper::connect() setChannels() failed with: " << status;
+            state = error;
+        } else {
         BOOST_LOG_TRIVIAL(debug)
             << "BtaWrapper::connect() setChannels() status: " << status;
+        }
     }
 
     status = BTAgetDeviceInfo(handle, &deviceInfo);
