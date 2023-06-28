@@ -356,7 +356,8 @@ int BtaWrapper::connect()
 
     status = BTAgetDeviceInfo(handle, &deviceInfo);
     if (status != BTA_StatusOk) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not get device info.";
+        BOOST_LOG_TRIVIAL(warning) << "Could not get device info. " << status;
+        state = error;
         return -1;
     }
     BOOST_LOG_TRIVIAL(debug)
@@ -913,10 +914,8 @@ int BtaWrapper::getAmpSize(char *data, int &x, int &y)
 
 int BtaWrapper::getFrameTime(char *data, unsigned int &timeStamp)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     BTA_Frame *frame = (BTA_Frame *)data;
     if (frame != NULL) {
-        BOOST_LOG_TRIVIAL(debug) << "timeStamp: " << frame->timeStamp;
         timeStamp = frame->timeStamp;
         return 1;
     }
