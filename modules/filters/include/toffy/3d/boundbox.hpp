@@ -18,13 +18,9 @@
 
 #include <cfloat>
 #include <iostream>
-#include "toffy/toffy_config.h"
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#endif
+#include <opencv2/imgproc.hpp>
+
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>

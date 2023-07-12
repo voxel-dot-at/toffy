@@ -16,14 +16,12 @@
 */
 #pragma once
 
+#include <boost/log/trivial.hpp>
+
 #include <toffy/toffy_export.h>
-#include <toffy/toffy_config.h>
-
 #include <toffy/controller.hpp>
-
 #include <toffy/filterfactory.hpp>
 
-#include <boost/log/trivial.hpp>
 
 namespace toffy {
 /**

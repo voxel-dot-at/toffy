@@ -16,15 +16,9 @@
 */
 #pragma once
 
-#include "toffy/toffy_config.h"
+#include <opencv2/imgproc.hpp>
+
 #include "toffy/mux.hpp"
-
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#endif
-
 
 
 /**

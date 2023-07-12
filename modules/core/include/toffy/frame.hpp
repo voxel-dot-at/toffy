@@ -25,7 +25,6 @@
 #include <opencv2/core.hpp>
 
 #include <toffy/toffy_export.h>
-#include <toffy/toffy_config.h>
 
 #ifdef MSVC
 #define DLLExport __declspec( dllexport )

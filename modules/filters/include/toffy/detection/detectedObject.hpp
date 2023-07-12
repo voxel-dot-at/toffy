@@ -17,7 +17,6 @@
 #pragma once
 
 #include <toffy/toffy_export.h>
-#include <toffy/toffy_config.h>
 
 #if OCV_VERSION_MAJOR >= 3
 #  include <opencv2/imgproc.hpp>

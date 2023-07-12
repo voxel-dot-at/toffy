@@ -113,7 +113,7 @@ include_directories(
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/filters/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/uri-grammar/src"
-        "${CMAKE_CURRENT_BINARY_DIR}/generated/"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/"        
         )
 
 ################################################################################
@@ -246,6 +246,9 @@ endif()
 find_package( OpenCV COMPONENTS core imgproc highgui calib3d videoio OPTIONAL_COMPONENTS viz tracking REQUIRED )
 message("  OpenCV libs " ${OpenCV_LIBS} )
 list(APPEND LIBS ${OpenCV_LIBS})
+message("OpenCV " ${OpenCV_VERSION_MAJOR} "." ${OpenCV_VERSION_MAJOR} "." ${OpenCV_VERSION_PATCH})
+add_definitions(-DOCV_VERSION_MAJOR=${OpenCV_VERSION_MAJOR} -DOCV_VERSION_MINOR=${OpenCV_VERSION_MINOR} -DOCV_VERSION_PATCH=${OpenCV_VERSION_PATCH})
+
 if(TARGET opencv_viz)
     message("  OpenCV modules: VIZ FOUND " ${OpenCV_LIBS} )
 endif()
@@ -449,38 +452,38 @@ INSTALL( PROGRAMS ${binaries}
 #)
 #endif()
 
-#######################################
-# Install well looking header
-#######################################
+# #######################################
+# # Install well looking header
+# #######################################
 
-#Look for all headers and get path fomarted nicely
-foreach( file ${headers} )
-    #message (DEBUG "dir: ${file}")
-    get_filename_component( dir ${file} DIRECTORY )
-    #message (DEBUG "dir: ${dir}")
-    if(NOT dir MATCHES "(.*)toffy/")
-        LIST( APPEND headers_dirs "${dir}" )
-    else()
-        string(FIND "${dir}" "toffy" pos REVERSE)
-        MATH(EXPR pos "${pos}+4")
-        #MATH(EXPR <output variable> <math expression>)
-        string(SUBSTRING "${dir}" 0 "${pos}" subdir)
-        #message (DEBUG "dir: ${dir}")
-        #message (DEBUG "pos: ${pos}")
-        #message (DEBUG "subdir: ${subdir}")
-        LIST( APPEND headers_dirs "${subdir}" )
-    endif()
-endforeach()
-list( REMOVE_DUPLICATES headers_dirs )
+# #Look for all headers and get path fomarted nicely
+# foreach( file ${headers} )
+#     #message (DEBUG "dir: ${file}")
+#     get_filename_component( dir ${file} DIRECTORY )
+#     #message (DEBUG "dir: ${dir}")
+#     if(NOT dir MATCHES "(.*)toffy/")
+#         LIST( APPEND headers_dirs "${dir}" )
+#     else()
+#         string(FIND "${dir}" "toffy" pos REVERSE)
+#         MATH(EXPR pos "${pos}+4")
+#         #MATH(EXPR <output variable> <math expression>)
+#         string(SUBSTRING "${dir}" 0 "${pos}" subdir)
+#         #message (DEBUG "dir: ${dir}")
+#         #message (DEBUG "pos: ${pos}")
+#         #message (DEBUG "subdir: ${subdir}")
+#         LIST( APPEND headers_dirs "${subdir}" )
+#     endif()
+# endforeach()
+# list( REMOVE_DUPLICATES headers_dirs )
 
-#Install toffy headers
-INSTALL( FILES ${headers}
-    #DIRECTORY ${headers_dirs}
-    #DESTINATION include
-    DESTINATION ${INSTALL_INCLUDE_DIR}
-    COMPONENT headers
-    #FILES_MATCHING PATTERN "*.hpp"
-)
+# #Install toffy headers
+# INSTALL( FILES ${headers}
+#     #DIRECTORY ${headers_dirs}
+#     #DESTINATION include
+#     DESTINATION ${INSTALL_INCLUDE_DIR}
+#     COMPONENT headers
+#     #FILES_MATCHING PATTERN "*.hpp"
+# )
 
 #######################################
 # Copying headers to build directory for windows

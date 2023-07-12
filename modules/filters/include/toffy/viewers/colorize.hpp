@@ -18,14 +18,8 @@
 
 #include <toffy/filter.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/core.hpp>
-#  include <opencv2/imgproc.hpp>
-#else
-#  include <opencv2/core/core.hpp>
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/contrib/contrib.hpp>
-#endif
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
 
 namespace toffy {
 /**

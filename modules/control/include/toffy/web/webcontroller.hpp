@@ -16,8 +16,6 @@
 #pragma once
 
 #include <toffy/player.hpp>
-#include <toffy/toffy_export.h>
-#include <toffy/toffy_config.h>
 
 #include <toffy/web/server/server.hpp>
 #include <toffy/web/requestController.hpp>
