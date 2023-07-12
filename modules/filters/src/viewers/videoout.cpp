@@ -18,16 +18,10 @@
 
 #include <iostream>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/highgui.hpp>
-#  include <opencv2/imgproc.hpp>
-#  include <opencv2/imgproc/types_c.h>
-#  include <opencv2/videoio.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/highgui/highgui.hpp>
-#  include <opencv2/video/video.hpp>
-#endif
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc/types_c.h>
+#include <opencv2/videoio.hpp>
 
 #include <boost/log/trivial.hpp>
 
@@ -146,11 +140,9 @@ void VideoOut::startSaving(const std::string& file, Frame& in)
 
 
   image = Mat(amp->rows*scale + ofs, (amp->cols+dis->cols)*scale, CV_8UC3);
-#if OCV_VERSION_MAJOR >= 3
+
   bool success = writer->open(file, writer->fourcc('X','2','6','4'), 20, image.size());
-#else
-  bool success = writer->open(file, CV_FOURCC('X','2','6','4'), 20, image.size());
-#endif
+
   if (!success) {
     cerr << "Opening video file " << file << " failed! " << strerror(errno) << endl;
   }
