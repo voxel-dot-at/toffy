@@ -80,7 +80,7 @@ void Xyz2Pcl::updateConfig(const boost::property_tree::ptree& pt)
     pt_optional_get_default(pt, "options.borderTop", borderTop, 30);
     pt_optional_get_default(pt, "options.borderBottom", borderBottom, 30);
     pt_optional_get_default(pt, "options.borderLeft", borderLeft, 30);
-    pt_optional_get_default(pt, "options.borderLeft", borderLeft, 30);
+    pt_optional_get_default(pt, "options.borderRight", borderRight, 30);
 }
 
 bool Xyz2Pcl::filter(const Frame& in, Frame& out)
@@ -119,10 +119,12 @@ bool Xyz2Pcl::convertXyz(const Frame&, Frame& out, toffy::matPtr mx,
 //    pcl::PointCloud<P>::Ptr cloud(new pcl::PointCloud<P>(mx->cols, mx->rows));
     pcl::PointCloud<P>::Ptr cloud(new pcl::PointCloud<P>());
     pcl::PCLPointCloud2::Ptr p;
+
     for (int y = borderTop; y < mx->rows - borderBottom; y++) {
         short* px = mx->ptr<short>(y, 0);
         short* py = my->ptr<short>(y, 0);
         short* pz = mz->ptr<short>(y, 0);
+
         for (int x = borderLeft; x < mx->cols - borderRight; x++) {
             // P& p = cloud->at(x, y);
             P p;
@@ -135,6 +137,7 @@ bool Xyz2Pcl::convertXyz(const Frame&, Frame& out, toffy::matPtr mx,
             //   p.z = (*pz++) / 1000.f;
         }
     }
+
     if (pcl2) {
         // TODO!!!!
         pcl::PCLPointCloud2* cloud_filtered = new pcl::PCLPointCloud2();
