@@ -35,7 +35,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/thread/thread.hpp>
 
-#include <toffy/toffy_config.h>
+// #include <toffy/toffy_config.h>
 
 #include <toffy/web/server/connection.hpp>
 #include <toffy/web/server/mime_types.hpp>

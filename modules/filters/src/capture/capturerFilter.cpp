@@ -34,7 +34,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include "toffy/toffy_config.h"
+//#include "toffy/toffy_config.h"
 #include "toffy/common/filenodehelper.hpp"
 
 #include "toffy/capture/capturerFilter.hpp"

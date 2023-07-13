@@ -15,7 +15,7 @@
    limitations under the License.
 */
 #include "toffy/filterfactory.hpp"
-#include <toffy/toffy_config.h>
+//#include <toffy/toffy_config.h>
 
 // from core/include:
 #include "toffy/parallelFilter.hpp"
