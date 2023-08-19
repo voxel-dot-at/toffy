@@ -58,8 +58,7 @@ private:
 	_morphoIter, ///< Number of iteration
 	_morphoType; ///< Type of operation. @see cv::MorphTypes
 
-    bool refineBlobs, ///< Flag to activate the Fillflood refinement algorithm
-	_morpho, ///< Flag(default:false) activate the morphology operation
+	bool _morpho, ///< Flag(default:false) activate the morphology operation
 	sharpenEdges, /// Flag @todo
 	_filterInternals; ///< Flag(default:false) remove blobs with holes
 

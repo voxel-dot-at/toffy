@@ -34,7 +34,6 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-//#include "toffy/toffy_config.h"
 #include "toffy/common/filenodehelper.hpp"
 
 #include "toffy/capture/capturerFilter.hpp"
@@ -331,7 +330,7 @@ void CapturerFilter::updateConfig(const boost::property_tree::ptree &pt)
 
 
 // TODO MOVE TO SOMEWHERE ELSE
-static inline double rad2deg(double rad){return rad*(180/M_PI);}//Convert radians to degrees
+// static inline double rad2deg(double rad){return rad*(180/M_PI);}//Convert radians to degrees
 static inline double deg2rad(double deg){return deg*(M_PI/180);}//Convert degrees to radians
 
 

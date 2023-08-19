@@ -31,16 +31,6 @@ using namespace toffy::detection;
 //using namespace cv;
 using namespace std;
 
-#ifdef toffy_DEBUG
-const bool dbg=true;
-#if OCV_VERSION_MAJOR >= 3
-#include <opencv2/highgui.hpp>
-#else
-#  include <opencv2/highgui/highgui.hpp>
-#endif
-#else
-const bool dbg=false;
-#endif
 
 std::size_t Mask::_filter_counter = 1;
 const std::string Mask::id_name = "mask";
