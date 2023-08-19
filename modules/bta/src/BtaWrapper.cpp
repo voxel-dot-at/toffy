@@ -506,7 +506,7 @@ int BtaWrapper::capture(char *&buffer)
         if (status != BTA_StatusOk) {
             if (status ==
                 BTA_StatusTimeOut) {  // no data available yet - sleep a little
-                BTAsleep(2);
+                sleep(2);
                 continue;
             }
             BOOST_LOG_TRIVIAL(warning)
@@ -1403,8 +1403,8 @@ std::string getChannelTypeName(BTA_ChannelId cid)
             return "test";
         case BTA_ChannelIdColor:
             return "color";
-        case BTA_ChannelIdGrayScale:
-            return "gray";
+        // case BTA_ChannelIdGrayScale:
+        //     return "gray";
         case BTA_ChannelIdBalance:
             return "balance";
         case BTA_ChannelIdCustom01:
