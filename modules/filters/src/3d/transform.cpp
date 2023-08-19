@@ -33,11 +33,6 @@ using namespace toffy::filters::f3d;
 using namespace cv;
 using namespace std;
 
-#ifdef CM_DEBUG
-const bool dbg=true;
-#else
-const bool dbg=false;
-#endif
 
 std::size_t Transform::_filter_counter = 1;
 const std::string Transform::id_name = "transform";
@@ -176,4 +171,3 @@ void Transform::updateConfig(const boost::property_tree::ptree &pt)
 
 
 }
-

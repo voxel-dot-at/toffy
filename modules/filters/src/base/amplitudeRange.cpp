@@ -16,13 +16,8 @@
 */
 #include <iostream>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#  include <opencv2/highgui.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/highgui/highgui.hpp>
-#endif
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
@@ -36,10 +31,6 @@ using namespace cv;
 using namespace std;
 namespace logging = boost::log;
 namespace fs = boost::filesystem;
-
-#ifndef CM_DEBUG
-    const bool dbg=false;
-#endif
 
 std::size_t AmplitudeRange::_filter_counter = 1;
 const std::string AmplitudeRange::id_name = "amplitudeRange";

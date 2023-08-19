@@ -17,17 +17,14 @@
 
 #include <iostream>
 #include <iomanip>
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#  include <opencv2/highgui.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/highgui/highgui.hpp>
-#endif
+
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 
+#include <toffy/filter_helpers.hpp>
 #include <toffy/btaFrame.hpp>
 #include <toffy/common/pointTransfom.hpp>
 
@@ -37,11 +34,9 @@
 
 
 #ifdef toffy_DEBUG
-const bool dbg=true;
-const bool dbgShape=true;
+static const bool dbgShape=true;
 #else
-const bool dbg=false;
-const bool dbgShape=false;
+static const bool dbgShape=false;
 #endif
 
 
@@ -171,8 +166,8 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
 
 void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedObject*>& detObj)
 {
+    UNUSED(ampl);
     BOOST_LOG_TRIVIAL(debug) << __FILE__ << ": " <<__FUNCTION__;
-
 
     //Filter
     Mat m = img.clone();
@@ -352,6 +347,7 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
 void Blobs::refineBlob(cv::Mat& dist, int fc,
                        toffy::detection::DetectedObject* o)
 {
+    UNUSED(fc);
     Mat mask(dist.size(), CV_8UC1);
 
     float dlt=0.025;       // 2.5cm max depth change between pixels

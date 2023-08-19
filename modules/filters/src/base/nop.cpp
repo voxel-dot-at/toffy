@@ -17,14 +17,6 @@
 
 #include <iostream>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#  include <opencv2/highgui.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/highgui/highgui.hpp>
-#endif
-
 #include <boost/log/trivial.hpp>
 
 #include "toffy/base/nop.hpp"
@@ -34,13 +26,6 @@ using namespace toffy::filters;
 using namespace cv;
 using namespace std;
 namespace logging = boost::log;
-
-#ifdef CM_DEBUG
-static const bool dbg=true;
-#else
-static const bool dbg=false;
-#endif
-
 
 Nop::Nop(): Filter("nop")
 {

@@ -25,6 +25,8 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/log/trivial.hpp>
 
+// for silencing warnings of unused parameters, use UNUSED(param); as in:
+#define UNUSED(expr) do { (void)(expr); } while (0)
 
 /* enable nice(r) logging by providing a short-hand version
  */

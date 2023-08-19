@@ -16,13 +16,7 @@
 */
 #include <iostream>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#  include <opencv2/highgui.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/highgui/highgui.hpp>
-#endif
+#include <opencv2/imgproc.hpp>
 
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
@@ -34,14 +28,10 @@ using namespace toffy;
 using namespace toffy::filters;
 using namespace cv;
 using namespace std;
+
 namespace logging = boost::log;
 namespace fs = boost::filesystem;
 
-#ifdef CM_DEBUG
-const bool dbg=true;
-#else
-const bool dbg=false;
-#endif
 
 const std::string Focus::id_name = "focus";
 
@@ -57,7 +47,7 @@ void Focus::updateConfig(const boost::property_tree::ptree &pt) {
 
     Filter::updateConfig(pt);
 
-    boost::optional<const boost::property_tree::ptree& > ocvo = pt.get_child_optional( "options.cameraMatrix" );
+    // boost::optional<const boost::property_tree::ptree& > ocvo = pt.get_child_optional( "options.cameraMatrix" );
 
     in_img = pt.get<string>("inputs.img",in_img);
     out_focus = pt.get<string>("outputs.focus",out_focus);
@@ -107,5 +97,3 @@ bool Focus::filter(const Frame &in, Frame& out) {
 
 	return true;
 }
-
-

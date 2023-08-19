@@ -14,18 +14,11 @@
    limitations under the License.
 */
 
-#include <boost/foreach.hpp>
 #include <boost/log/trivial.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
 #include <opencv2/calib3d.hpp>
-#include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#else
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#endif
+// #include <opencv2/highgui.hpp>
 
 #include <pcl/conversions.h>
 #include <pcl/point_cloud.h>
@@ -157,6 +150,7 @@ bool Xyz2Pcl::convertXyzA(const Frame& in, Frame& out, toffy::matPtr mx,
                           toffy::matPtr my, toffy::matPtr mz,
                           toffy::matPtr ampl)
 {
+    UNUSED(in);
     typedef pcl::PointXYZRGB P;
     pcl::PointCloud<P>::Ptr cloud(new pcl::PointCloud<P>);
     for (int y = 0; y < mx->rows; y++) {
@@ -166,7 +160,8 @@ bool Xyz2Pcl::convertXyzA(const Frame& in, Frame& out, toffy::matPtr mx,
         short* pa = ampl->ptr<short>(y, 0);
         for (int x = 0; x < mx->cols; x++) {
             unsigned char a = ((*pa++) - min) / (max - min);
-            P p((*px++) / 1000.f, (*py++) / 1000.f, (*pz++) / 1000.f);
+            P p((*px++) / 1000.f, (*py++) / 1000.f, (*pz++) / 1000.f,
+            a,a,a);
             cloud->push_back(p);
         }
     }
