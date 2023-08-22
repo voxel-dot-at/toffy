@@ -49,18 +49,21 @@ class Filter;
 /**
  * @brief Filter running state definitions
  */
-enum filterState {
+enum filterState
+{
     filterLoaded,
     filterIdle,
     filterRunning,
     filterPaused,
-    filterError};
+    filterError
+};
 
 /**
  * @brief The FilterListener class
  */
-class FilterListener {
-public:
+class FilterListener
+{
+   public:
     /**
      * @brief stateChanged
      * @param source
@@ -72,15 +75,20 @@ public:
 /**
  * @brief The Port class
  */
-class Port { // meta data to be done...
-public:
+class Port
+{  // meta data to be done...
+   public:
     /**
      * @brief The portDir enum
      */
-    enum portDir { portIn, portOut };
+    enum portDir
+    {
+        portIn,
+        portOut
+    };
 
-    portDir dir; ///< dir
-    std::string name; ///< name
+    portDir dir;       ///< dir
+    std::string name;  ///< name
 };
 
 /**
@@ -90,14 +98,14 @@ public:
  * This class define how is a filter and is capabilities.
  *
  */
-class TOFFY_EXPORT Filter {
+class TOFFY_EXPORT Filter
+{
+    std::string _id,  ///< Internal id of the single instance of the filter
+        _name,        ///< id alias @deprecated Is the same as id
+        _type;        ///< Type id of the filter
 
-    std::string _id, ///< Internal id of the single instance of the filter
-    _name, ///< id alias @deprecated Is the same as id
-    _type; ///< Type id of the filter
-
-    Filter *_bank; ///< reference to the filter bank whre the filter resides
-    //static std::size_t _filter_counter;
+    Filter* _bank;  ///< reference to the filter bank whre the filter resides
+    // static std::size_t _filter_counter;
 
     /*
      * From boost trivial log
@@ -116,10 +124,9 @@ class TOFFY_EXPORT Filter {
      */
     boost::log::trivial::severity_level _log_lvl;
 
-public:
-
-    bool dbg, ///< flag for activating debug options (images view, log, etc)
-    update; ///< Flag for indicating config updated
+   public:
+    bool dbg,    ///< flag for activating debug options (images view, log, etc)
+        update;  ///< Flag for indicating config updated
 
     /**
      * @brief Filter
@@ -131,7 +138,7 @@ public:
      */
     virtual ~Filter();
 
-    boost::log::trivial::severity_level logLvl() const {return _log_lvl;}
+    boost::log::trivial::severity_level logLvl() const { return _log_lvl; }
 
     /**
      * @brief getCounter
@@ -143,7 +150,7 @@ public:
      * @brief Getter type
      * @return std::string The type of the filter
      */
-    const std::string& type() const { return _type;}
+    const std::string& type() const { return _type; }
 
     /**
      * @brief Getter name
@@ -152,7 +159,7 @@ public:
      * Name of the filter is by default a combination of type+counter
      * at least the users indicates a name explicitly in the config
      */
-    const std::string& name() const { return _name;}
+    const std::string& name() const { return _name; }
 
     /**
      * @brief Setter name
@@ -161,14 +168,17 @@ public:
      * Name of the filter is by default a combination of type+counter
      * at least the users indicates a name explicitly in the config
      */
-    void name(std::string n) {_name = n;}
+    void name(std::string n) { _name = n; }
 
     /** perform a filter operation on in, sending result to out
      * both Mat's may refer to the same memory region.
      *
      * @return true if processing worked, false on error
      */
-    virtual bool filter(const Frame& /*in*/, Frame& /*out*/) const { return false; }
+    virtual bool filter(const Frame& /*in*/, Frame& /*out*/) const
+    {
+        return false;
+    }
 
     /**
      * @brief perform a filter operation on in, sending result to out
@@ -182,16 +192,17 @@ public:
      * the const filter method defined above.
      *
      */
-    virtual bool filter(const Frame& in, Frame& out) {
+    virtual bool filter(const Frame& in, Frame& out)
+    {
         const Filter& constF = *this;
-        return constF.filter(in, out) ;
+        return constF.filter(in, out);
     }
 
     /**
      * @brief id
      * @return
      */
-    const std::string& id() const {return _id;}
+    const std::string& id() const { return _id; }
 
     /**
      * @brief loadConfig
@@ -234,7 +245,7 @@ public:
      * It just update the config values.
      *
      */
-    virtual void updateConfig(const boost::property_tree::ptree &pt);
+    virtual void updateConfig(const boost::property_tree::ptree& pt);
 
     /**
      * @brief Look for global nodes that contain information for the filter
@@ -249,19 +260,19 @@ public:
      * them to the globals.
      *
      */
-    void loadGlobals(const boost::property_tree::ptree &pt);
+    void loadGlobals(const boost::property_tree::ptree& pt);
 
     /**
      * @brief Getter filterBank
      * @return FilterBank
      */
-    Filter * bank() const {return _bank;}
+    Filter* bank() const { return _bank; }
 
     /**
      * @brief Setter FilterBank
      * @param bank FilterBank where the filter resides
      */
-    void bank(Filter * bank) {_bank=bank;}
+    void bank(Filter* bank) { _bank = bank; }
 
     /**
      * @brief processEvent
@@ -274,11 +285,9 @@ public:
      * Every filter must discribe his availabled events.
      *
      */
-    virtual void processEvent(Event &e);
+    virtual void processEvent(Event& e);
 
-
-protected:
-
+   protected:
     /**
      * @brief Base constructor for any filter
      * @param type [in] Id of the filter
@@ -291,11 +300,10 @@ protected:
      *  \addtogroup State_handling
      *  @{
      */
-private:
-    filterState state; ///< Filter state
-    std::vector<FilterListener*> listeners; ///< listeners
-    std::string errMsg; ///< error
-
+   private:
+    filterState state;                       ///< Filter state
+    std::vector<FilterListener*> listeners;  ///< listeners
+    std::string errMsg;                      ///< error
 
     /**
      * @brief loadFileConfig
@@ -310,7 +318,7 @@ private:
      */
     virtual int loadFileConfig(const std::string& configFile);
 
-public:
+   public:
     /**
      * @brief getState
      * @return
@@ -364,8 +372,15 @@ public:
      */
     void setLoggingLvl();
 
+    /**
+     * @brief set boost log level to one of debug, info,... defaults to info if
+     * not parseable
+     *
+     * @param level
+     */
+    void setLogLevel(const std::string& level);
 
-protected:
+   protected:
     /**
      * @brief set the filter state and notify listeners on a change.
      */
@@ -374,23 +389,19 @@ protected:
     /*! @} End Group State_handling*/
 };
 
-
-
-void Filter::init() {
+void Filter::init()
+{
     errMsg = "";
     setState(filterIdle);
 }
 
-void Filter::start() {
-    setState(filterRunning);
-}
+void Filter::start() { setState(filterRunning); }
 
-void Filter::stop() {
-    setState(filterIdle);
-}
+void Filter::stop() { setState(filterIdle); }
 
-void Filter::error(const std::string& e) {
+void Filter::error(const std::string& e)
+{
     errMsg = e;
     setState(filterError);
 }
-}
+}  // namespace toffy
