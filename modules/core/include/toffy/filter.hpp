@@ -23,13 +23,6 @@
 
 #include <toffy/frame.hpp>
 
-#ifdef MSVC
-#define DLLExport __declspec( dllexport )
-#else
-#define DLLExport /**/
-#endif
-
-
 /** @defgroup Core Core
  *
  * Core module
@@ -198,7 +191,7 @@ public:
      * @brief id
      * @return
      */
-    std::string id() const {return _id;}
+    const std::string& id() const {return _id;}
 
     /**
      * @brief loadConfig
