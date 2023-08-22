@@ -1,15 +1,18 @@
-#include <toffy/web/sensor2dGroupController.hpp>
-#include <toffy/web/sensor2dController.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/lexical_cast.hpp>
-//#include <toffy/sensor2d.hpp>
 #include <boost/property_tree/json_parser.hpp>
+
+#include <toffy/filter_helpers.hpp>
+#include <toffy/web/sensor2dGroupController.hpp>
+#include <toffy/web/sensor2dController.hpp>
+//#include <toffy/sensor2d.hpp>
 
 namespace toffy {
 namespace control {
 using namespace std;
 
 bool Sensor2dGroupController::doAction(Action &action, std::string &log) {
+    UNUSED(action);
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     boost::property_tree::ptree jOutput;
     std::stringstream ss;

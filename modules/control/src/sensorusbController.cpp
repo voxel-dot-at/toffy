@@ -1,14 +1,17 @@
-#include <toffy/web/sensorusbController.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/lexical_cast.hpp>
-//#include <toffy/sensorusb.hpp>
 #include <boost/property_tree/json_parser.hpp>
+
+#include <toffy/filter_helpers.hpp>
+#include <toffy/web/sensorusbController.hpp>
+//#include <toffy/sensorusb.hpp>
 
 namespace toffy {
 namespace control {
 using namespace std;
 
 bool SensorUSBController::doAction(Action &action, std::string &log) {
+    UNUSED(action);
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     std::stringstream ss;
     boost::property_tree::ptree jOutput;

@@ -41,6 +41,7 @@ bool FilterController::doAction(Action &action, std::string &log)
 
 bool FilterController::getMetaData(Action &action, std::string &log)
 {
+    UNUSED(action);
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     std::stringstream ss;
     boost::property_tree::ptree jOutput;
@@ -49,4 +50,5 @@ bool FilterController::getMetaData(Action &action, std::string &log)
     jOutput.add("status", "ok");
     boost::property_tree::json_parser::write_json(ss, jOutput);
     log = ss.str();
+    return true;
 }
