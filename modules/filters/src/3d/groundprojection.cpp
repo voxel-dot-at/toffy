@@ -38,12 +38,6 @@ using namespace toffy::filters::f3d;
 using namespace cv;
 using namespace std;
 
-#ifdef CM_DEBUG
-const bool dbg = true;
-#else
-const bool dbg = false;
-#endif
-
 std::size_t GroundProjection::_filter_counter = 1;
 const std::string GroundProjection::id_name = "groundprojection";
 

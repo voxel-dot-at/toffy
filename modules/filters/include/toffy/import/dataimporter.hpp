@@ -21,22 +21,22 @@
 namespace toffy {
 namespace import {
 
-    class DataImporter : public Filter
-    {
-	static std::size_t _filter_counter;
-	std::vector<std::pair<std::string,boost::any> > _data;
-    public:
-	DataImporter();
-	virtual ~DataImporter(){}
+class DataImporter : public Filter
+{
+    static std::size_t _filter_counter;
+    std::vector<std::pair<std::string, boost::any> > _data;
 
-	//virtual int loadConfig(const boost::property_tree::ptree& pt);
+   public:
+    DataImporter();
+    virtual ~DataImporter() {}
 
-	virtual boost::property_tree::ptree getConfig() const;
-	void updateConfig(const boost::property_tree::ptree &pt);
+    // virtual int loadConfig(const boost::property_tree::ptree& pt);
 
-	virtual bool filter(const Frame& in, Frame& out);
+    virtual boost::property_tree::ptree getConfig() const;
+    void updateConfig(const boost::property_tree::ptree& pt);
 
-    };
+    virtual bool filter(const Frame& in, Frame& out);
+};
 
-}
-}
+}  // namespace import
+}  // namespace toffy

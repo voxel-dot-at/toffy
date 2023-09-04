@@ -38,14 +38,6 @@
 #include "toffy/detection/detectedObject.hpp"
 #include "toffy/detection/squareDetect.hpp"
 
-#ifdef CM_DEBUG
-const bool dbg=false;
-
-#else
-/// Release should be quiet:
-const bool dbg=false;
-#endif
-
 using namespace std;
 using namespace cv;
 
