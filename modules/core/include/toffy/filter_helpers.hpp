@@ -72,7 +72,7 @@ static inline bool pt_optional_get_ipaddr(const boost::property_tree::ptree pt,
         return false;
     }
     if (opt.is_initialized()) {
-        std::string addr = *opt;
+        addr = *opt;
     }
     int success = inet_aton( addr.c_str(), &inaddr);
     if (!success) {
