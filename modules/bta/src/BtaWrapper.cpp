@@ -183,9 +183,9 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
     config.tcpDeviceIpAddr = tcpDeviceIpAddr;
     if (pres) {
         BOOST_LOG_TRIVIAL(debug)
-            << "tcpDeviceIpAddr set to " << tcpDeviceIpAddr[0] << "."
-            << tcpDeviceIpAddr[1] << "." << tcpDeviceIpAddr[2] << "."
-            << tcpDeviceIpAddr[3];
+            << "tcpDeviceIpAddr set to " << (unsigned int)tcpDeviceIpAddr[0] << "."
+            << (unsigned int)tcpDeviceIpAddr[1] << "." << (unsigned int)tcpDeviceIpAddr[2] << "."
+            << (unsigned int)tcpDeviceIpAddr[3];
     } else {
         BOOST_LOG_TRIVIAL(debug) << "tcpDeviceIpAddr not set ";
     }
@@ -202,26 +202,6 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
 
     pt_optional_get_default<uint16_t>(pt, "connection.tcpControlPort",
                                       config.tcpControlPort, 10001);
-
-    // uart stuff:
-    //
-    pres = pt_optional_get<string>(pt, "connection.uartPortName", uartPortName);
-    if (pres) {
-        pt_optional_get<uint32_t>(pt, "connection.uartBaudRate",
-                                  config.uartBaudRate);
-        pt_optional_get<uint8_t>(pt, "connection.uartDataBits",
-                                 config.uartDataBits);
-        pt_optional_get<uint8_t>(pt, "connection.uartStopBits",
-                                 config.uartStopBits);
-        pt_optional_get<uint8_t>(pt, "connection.uartParity",
-                                 config.uartParity);
-        pt_optional_get<uint8_t>(pt, "connection.uartTransmitterAddress",
-                                 config.uartTransmitterAddress);
-        pt_optional_get<uint8_t>(pt, "connection.uartReceiverAddress",
-                                 config.uartReceiverAddress);
-        pt_optional_get<uint32_t>(pt, "connection.serialNumber",
-                                  config.serialNumber);
-    }
 
     // can't auto-convert int32 to FrameMode, so do it manually:
     try {
