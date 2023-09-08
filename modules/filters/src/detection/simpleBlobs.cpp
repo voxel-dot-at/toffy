@@ -15,8 +15,8 @@
    limitations under the License.
 */
 
-#include <iomanip>
 #include <iostream>
+#include <iomanip>
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -25,14 +25,14 @@
 
 #include <toffy/filter_helpers.hpp>
 #include <toffy/btaFrame.hpp>
-#include <toffy/common/pointTransfom.hpp>
+
 #include <toffy/detection/detectedObject.hpp>
 #include <toffy/detection/simpleBlobs.hpp>
 
 #ifdef toffy_DEBUG
-const bool dbgShape = true;
+static const bool dbgShape = true;
 #else
-const bool dbgShape = false;
+static const bool dbgShape = false;
 #endif
 
 using namespace std;
@@ -54,7 +54,8 @@ SimpleBlobs::SimpleBlobs()
       _morphoType(0),
       _morpho(false),
       sharpenEdges(false),
-      _filterInternals(true)
+      _filterInternals(true),
+      cam(0)
 {
     _filter_counter++;
 }
@@ -138,6 +139,15 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
             << id() << " Could not cast input " << in_ampl << ", filter  "
             << id() << " not applied.";
         return true;
+    }
+    if (!cam) {
+        if (in.hasKey(CAM_SLOT)) {
+            cam = boost::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
+        } else {
+            BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " " << id()
+                                       << " NO cameraPtr found in Frame!";
+            return false;
+        }
     }
 
     boost::shared_ptr<std::vector<DetectedObject*> > blobs;
@@ -277,8 +287,7 @@ void SimpleBlobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
 
         if (img.type() == CV_32F) {  // if img == depth image:
             obj->massCenterZ = img.at<float>(obj->massCenter);
-            obj->massCenter3D =
-                commons::pointTo3D(obj->massCenter, obj->massCenterZ);
+            cam->pointTo3D(obj->massCenter, obj->massCenterZ, obj->massCenter3D);
         }
 
         // adding detected object to the output list
