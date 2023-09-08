@@ -29,8 +29,16 @@ namespace cam {
 /// name for the key in the frame
 #define CAM_SLOT "camera"
 
+
 /** helper functions for camera handling; assumes we have standard optics (90deg
  * hfov).
+ */
+
+static float deg2rad(float a) { return a / 180. * M_PI; }
+
+/**
+ * @brief Camera geometry meta-data 
+ * 
  */
 class Camera
 {
@@ -41,6 +49,9 @@ class Camera
 
     double apertureWidth, apertureHeight;  // width/height of the sensor in mm
     double fl_x_reciprocal, fl_y_reciprocal;
+
+    float pixSinAngle = 0.009817319;  // = sin( deg2rad(90/160) );
+    float pixCosAngle = 0.999951809;  // = cos( deg2rad(90/160) );
 
     Camera(const cv::Size& size, double aperWidth, double aperHeight)
         : imgSize(size), apertureWidth(aperWidth), apertureHeight(aperHeight)
@@ -92,6 +103,12 @@ class Camera
                 fl_y_reciprocal;
         out.z = depthValue;
     }
+    double getPixelSize(double distance)
+    {
+        // float maxFinger = 0.01 / (angl*pdis);  //==pixel width
+        return pixSinAngle * distance;
+    }
+
 };
 
 typedef boost::shared_ptr<Camera> CameraPtr;
@@ -117,6 +134,8 @@ Auflösung:
                        7.9460485484676596e+01, 0., 8.8395902341635306e+01,
                        5.7816728185872989e+01, 0., 0., 1.);
         init(mtx);
+        pixSinAngle = 0.004462475;  // = sin( deg2rad(90/352) );
+        pixCosAngle = 0.999990043;  // = cos( deg2rad(90/352) );
     }
 };
 
@@ -132,26 +151,21 @@ class M520 : public Camera  // also M100, P100, ...
              0., 8.8395902341635306e+01, 5.7816728185872989e+01,  ///  0 88 59
              0., 0., 1.);                                         ///  0  0  1
         init(mtx);
+        // TODO: actually compute from camera matrix
+        pixSinAngle = 0.009817319;  // = sin( deg2rad(90/160) );
+        pixCosAngle = 0.999951809;  // = cos( deg2rad(90/160) );
     }
 
     const int hPix = 160;
     const int vPix = 120;
     const float hFov = 90.;
     const float vFov = 65.;
-    const float pixSinAngle = 0.009817319;  // = sin( deg2rad(90/160) );
-    const float pixCosAngle = 0.999951809;  // = cos( deg2rad(90/160) );
-    const double fl_x_reciprocal = 1.0f / 8.8345892962843834e+01;
-    const double fl_y_reciprocal = 1.0f / 8.8395902341635306e+01;
+    // const float pixSinAngle = 0.009817319;  // = sin( deg2rad(90/160) );
+    // const float pixCosAngle = 0.999951809;  // = cos( deg2rad(90/160) );
+    // const double fl_x_reciprocal = 1.0f / 8.8345892962843834e+01;
+    // const double fl_y_reciprocal = 1.0f / 8.8395902341635306e+01;
     const double center_x = 7.9460485484676596e+01;
     const double center_y = 5.7816728185872989e+01;
-
-    inline float deg2rad(float a) { return a / 180. * M_PI; }
-
-    inline double getPixelSize(double distance)
-    {
-        // float maxFinger = 0.01 / (angl*pdis);  //==pixel width
-        return M520::pixSinAngle * distance;
-    }
 
     inline void depth2xyz(const cv::Point2f& p, float d, cv::Point3f& xyz)
     {
@@ -189,47 +203,11 @@ class M520 : public Camera  // also M100, P100, ...
         xyz.z = d * cos (rho);
     }*/
 
-    inline cv::Point3d pointTo3D(cv::Point2d point, float depthValue,
-                                 const cv::Mat& cameraMatrix, cv::Size imgSize)
-    {
-        // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << point;
-
-        double fl_x_reciprocal, fl_y_reciprocal;
-        cv::Point2d center;
-        if (cameraMatrix.data) {
-            // Saving parameter from the camera matrix
-            fl_x_reciprocal = 1.0f / cameraMatrix.at<double>(0, 0);
-            fl_y_reciprocal = 1.0f / cameraMatrix.at<double>(1, 1);
-            // center_x = _cameraMatrix.at<double>(0,2);
-            // center_y = _cameraMatrix.at<double>(1,2);
-
-            double noV, apertureWidth = (45 / 1000) * imgSize.width,
-                        apertureHeight = (45 / 1000) * imgSize.height;
-            cv::calibrationMatrixValues(cameraMatrix, imgSize, apertureWidth,
-                                        apertureHeight, noV, noV, noV, center,
-                                        noV);
-        } else {
-            BOOST_LOG_TRIVIAL(warning) << "No cameraMatrix data.";
-            return cv::Point3d();
-        }
-
-        cv::Point3d out3Dp;
-
-        // Saving parameter from the camera matrix
-        out3Dp.x = (static_cast<float>(point.x) - center.x) * depthValue *
-                   fl_x_reciprocal;  // X
-        out3Dp.y = (static_cast<float>(point.y) - center.y) * depthValue *
-                   fl_y_reciprocal;  // Y
-        out3Dp.z = depthValue;       // Z
-
-        return out3Dp;
-    }
-
-    // inline cv::Point2i pointTo2D(const cv::Point3d& point,
-    //                              const cv::Mat& cameraMatrix,
-    //                              const cv::Size& imgSize)
+    // inline cv::Point3d pointTo3D(cv::Point2d point, float depthValue,
+    //                              const cv::Mat& cameraMatrix, cv::Size imgSize)
     // {
-    //     // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    //     // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << point;
+
     //     double fl_x_reciprocal, fl_y_reciprocal;
     //     cv::Point2d center;
     //     if (cameraMatrix.data) {
@@ -246,32 +224,37 @@ class M520 : public Camera  // also M100, P100, ...
     //                                     noV);
     //     } else {
     //         BOOST_LOG_TRIVIAL(warning) << "No cameraMatrix data.";
-    //         return cv::Point2i();
+    //         return cv::Point3d();
     //     }
 
-    //     cv::Point2i out2Dp;
+    //     cv::Point3d out3Dp;
 
-    //     out2Dp.x = (point.x / (point.z * fl_x_reciprocal)) + center.x;
-    //     out2Dp.y = (point.y / (point.z * fl_y_reciprocal)) + center.y;
-    //     // Saving found pixel
-    //     return out2Dp;
+    //     // Saving parameter from the camera matrix
+    //     out3Dp.x = (static_cast<float>(point.x) - center.x) * depthValue *
+    //                fl_x_reciprocal;  // X
+    //     out3Dp.y = (static_cast<float>(point.y) - center.y) * depthValue *
+    //                fl_y_reciprocal;  // Y
+    //     out3Dp.z = depthValue;       // Z
+
+    //     return out3Dp;
     // }
 
-    inline cv::Point3d pointTo3D(cv::Point point, float depthValue)
-    {
-        // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
 
-        cv::Point3d out3Dp;
+    // inline cv::Point3d pointTo3D(cv::Point point, float depthValue)
+    // {
+    //     // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
 
-        // Saving parameter from the camera matrix
-        out3Dp.x = (static_cast<float>(point.x) - center_x) * depthValue *
-                   fl_x_reciprocal;  // X
-        out3Dp.y = (static_cast<float>(point.y) - center_y) * depthValue *
-                   fl_y_reciprocal;  // Y
-        out3Dp.z = depthValue;       // Z
+    //     cv::Point3d out3Dp;
 
-        return out3Dp;
-    }
+    //     // Saving parameter from the camera matrix
+    //     out3Dp.x = (static_cast<float>(point.x) - center_x) * depthValue *
+    //                fl_x_reciprocal;  // X
+    //     out3Dp.y = (static_cast<float>(point.y) - center_y) * depthValue *
+    //                fl_y_reciprocal;  // Y
+    //     out3Dp.z = depthValue;       // Z
+
+    //     return out3Dp;
+    // }
 };
 
 }  // namespace cam
