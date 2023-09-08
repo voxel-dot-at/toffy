@@ -171,6 +171,15 @@ void Bta::updateConfig(const boost::property_tree::ptree& pt)
     _out_lt = pt.get<string>("outputs.lt", _out_lt);
     _out_gt = pt.get<string>("outputs.gt", _out_gt);
 
+    camType = pt.get<string>("options.camera", "P230");
+    if (camType == "P230") {
+        cam.reset(new cam::P230());
+    } else if (camType == "M520") {
+        cam.reset(new cam::M520());
+    } else {
+        BOOST_LOG_TRIVIAL(info) << "assuming default camera type; please set options.camera to override!";
+        cam.reset(new cam::P230());
+    }
     update = true;
 }
 
@@ -189,6 +198,8 @@ boost::property_tree::ptree Bta::getConfig() const
     pt.put("outputs.mt", _out_mt);
     pt.put("outputs.lt", _out_lt);
     pt.put("outputs.gt", _out_gt);
+
+    pt.put("options.camera", camType);
 
     return pt;
 }
@@ -320,6 +331,10 @@ bool Bta::filter(const Frame& in, Frame& out)
     out.addData(_out_lt, t);
     sensor->getGenericTemp(data, t);
     out.addData(_out_gt, t);
+
+    if (!out.hasKey(CAM_SLOT)) {
+        out.addData(CAM_SLOT, cam);
+    }
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
     BOOST_LOG_TRIVIAL(debug) << "duration data: " << diff.total_microseconds();
