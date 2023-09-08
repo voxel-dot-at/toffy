@@ -304,7 +304,7 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
 
         //obj->massCenter3D = commons::pointTo3D(obj->massCenter, obj->massCenterZ);
         if (cam) {
-            obj->massCenter3D = cam->pointTo3D(obj->massCenter, obj->massCenterZ);
+            cam->pointTo3D(obj->massCenter, obj->massCenterZ, obj->massCenter3D);
         }
         //adding detected object to the output list
         if(obj->idx >= 0 )

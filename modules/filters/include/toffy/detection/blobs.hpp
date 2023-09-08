@@ -67,7 +67,7 @@ private:
 
     static std::size_t _filter_counter; ///< Internal Filter counter
 
-    toffy::cam::cameraPtr cam;
+    toffy::cam::CameraPtr cam;
 
     void findBlobs(cv::Mat& in, cv::Mat& ampl, int fc,
 		   std::vector<toffy::detection::DetectedObject*>& list);
