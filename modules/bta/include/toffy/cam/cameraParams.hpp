@@ -18,8 +18,7 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
-// #include "trkapi.hpp"
-#include <toffy/toffy_config.h>
+
 #include <boost/log/trivial.hpp>
 
 #include <opencv2/calib3d.hpp>
