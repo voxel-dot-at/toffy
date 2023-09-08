@@ -1,0 +1,279 @@
+/*
+   Copyright 2012-2021 Simon Vogl <svogl@voxel.at> VoXel Interaction Design -
+   www.voxel.at
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+#pragma once
+
+#define _USE_MATH_DEFINES
+#include <math.h>
+// #include "trkapi.hpp"
+#include <toffy/toffy_config.h>
+#include <boost/log/trivial.hpp>
+
+#include <opencv2/calib3d.hpp>
+
+namespace toffy {
+namespace cam {
+
+/// name for the key in the frame
+#define CAM_SLOT "camera"
+
+/** helper functions for camera handling; assumes we have standard optics (90deg
+ * hfov).
+ */
+class Camera
+{
+   public:
+    cv::Mat cameraMatrix;
+    cv::Size imgSize;
+    cv::Point2d center;
+
+    double apertureWidth, apertureHeight;  // width/height of the sensor in mm
+    double fl_x_reciprocal, fl_y_reciprocal;
+
+    Camera(const cv::Size& size, double aperWidth, double aperHeight)
+        : imgSize(size), apertureWidth(aperWidth), apertureHeight(aperHeight)
+    {
+    }
+
+    Camera(const cv::Size& size, double aperWidth, double aperHeight,
+           const cv::Mat& matrix)
+        : cameraMatrix(matrix),
+          imgSize(size),
+          apertureWidth(aperWidth),
+          apertureHeight(aperHeight)
+    {
+        init(matrix);
+    }
+    /**
+     * @brief init camera matrix and helper variables
+     *
+     * @param matrix the 3x3 double values camera matrix
+     */
+    void init(const cv::Mat& matrix)
+    {
+        cameraMatrix = matrix;
+        fl_x_reciprocal = 1.0f / cameraMatrix.at<double>(0, 0);
+        fl_y_reciprocal = 1.0f / cameraMatrix.at<double>(1, 1);
+
+        // unused values:
+        double fovX, fovY, focalLength, aspectRatio;
+        cv::calibrationMatrixValues(matrix, imgSize, apertureWidth,
+                                    apertureHeight, fovX, fovY, focalLength,
+                                    center, aspectRatio);
+    }
+
+    inline void pointTo2D(const cv::Point3d& point, cv::Point2i& out)
+    {
+        out.x = (point.x / (point.z * fl_x_reciprocal)) + center.x;
+        out.y = (point.y / (point.z * fl_y_reciprocal)) + center.y;
+    }
+
+    inline void pointTo3D(const cv::Point2d& point, float depthValue,
+                          cv::Point3d& out)
+    {
+        // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << point;
+
+        // Saving parameter from the camera matrix
+        out.x = (static_cast<float>(point.x) - center.x) * depthValue *
+                fl_x_reciprocal;
+        out.y = (static_cast<float>(point.y) - center.y) * depthValue *
+                fl_y_reciprocal;
+        out.z = depthValue;
+    }
+};
+
+typedef boost::shared_ptr<Camera> CameraPtr;
+
+class P230 : public Camera  // it's a cif chip
+{
+    /**
+
+Infos der P230:
+FoV:
+HorizontalFOV [°]=79,75
+VerticalFOV [°]=66,88
+Auflösung:
+352x287 Pixel
+     * 
+     */
+   public:
+    // 90 degrees hvof, 352x287px sensor resolution, 17.5u pixel size
+    P230()
+        : Camera(cv::Size(352, 287), (17.5 / 1000.) * 352, (17.5 / 1000.) * 288)
+    {
+        cv::Mat mtx = (cv::Mat_<double>(3, 3) << 8.8345892962843834e+01, 0.,
+                       7.9460485484676596e+01, 0., 8.8395902341635306e+01,
+                       5.7816728185872989e+01, 0., 0., 1.);
+        init(mtx);
+    }
+};
+
+class M520 : public Camera  // also M100, P100, ...
+{
+   public:
+    // 90 degrees hvof, 160x120px sensor resolution
+    M520() : Camera(cv::Size(160, 120), (45 / 1000.) * 160, (45 / 1000.) * 120)
+    {
+        cv::Mat mtx =
+            (cv::Mat_<double>(3, 3) << 8.8345892962843834e+01, 0.,
+             7.9460485484676596e+01,                              /// 88  0 79
+             0., 8.8395902341635306e+01, 5.7816728185872989e+01,  ///  0 88 59
+             0., 0., 1.);                                         ///  0  0  1
+        init(mtx);
+    }
+
+    const int hPix = 160;
+    const int vPix = 120;
+    const float hFov = 90.;
+    const float vFov = 65.;
+    const float pixSinAngle = 0.009817319;  // = sin( deg2rad(90/160) );
+    const float pixCosAngle = 0.999951809;  // = cos( deg2rad(90/160) );
+    const double fl_x_reciprocal = 1.0f / 8.8345892962843834e+01;
+    const double fl_y_reciprocal = 1.0f / 8.8395902341635306e+01;
+    const double center_x = 7.9460485484676596e+01;
+    const double center_y = 5.7816728185872989e+01;
+
+    inline float deg2rad(float a) { return a / 180. * M_PI; }
+
+    inline double getPixelSize(double distance)
+    {
+        // float maxFinger = 0.01 / (angl*pdis);  //==pixel width
+        return M520::pixSinAngle * distance;
+    }
+
+    inline void depth2xyz(const cv::Point2f& p, float d, cv::Point3f& xyz)
+    {
+        xyz.x =
+            pixSinAngle * (p.x - hPix / 2) * pixSinAngle * (p.y - vPix / 2) * d;
+        xyz.y =
+            pixSinAngle * (p.x - hPix / 2) * pixCosAngle * (p.y - vPix / 2) * d;
+        xyz.z = pixCosAngle * (p.x - hPix / 2) * d;
+
+        float rho = deg2rad((p.x - hPix / 2));
+        float tht = deg2rad((p.y - vPix / 2));
+
+        xyz.x = d * sin(rho) * sin(tht);
+        xyz.y = d * sin(rho) * cos(tht);
+        xyz.z = d * cos(rho);
+    }
+
+    inline void depth2xyz(const cv::Point2f& p, float d, cv::Vec3f& xyz)
+    {
+        xyz[0] =
+            pixSinAngle * (p.x - hPix / 2) * pixSinAngle * (p.y - vPix / 2) * d;
+        xyz[1] =
+            pixSinAngle * (p.x - hPix / 2) * pixCosAngle * (p.y - vPix / 2) * d;
+        xyz[2] = pixCosAngle * (p.x - hPix / 2) * d;
+    }
+
+    /*static inline void depth2xyz(const cv::Point2f& p, float d, track::vec3f&
+    xyz)
+    {
+        float rho = deg2rad( (p.x-hPix/2) );
+        float tht = deg2rad( (p.y-vPix/2) );
+
+        xyz.x = d * sin (rho) * sin(tht) ;
+        xyz.y = d * sin (rho) * cos(tht) ;
+        xyz.z = d * cos (rho);
+    }*/
+
+    inline cv::Point3d pointTo3D(cv::Point2d point, float depthValue,
+                                 const cv::Mat& cameraMatrix, cv::Size imgSize)
+    {
+        // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << point;
+
+        double fl_x_reciprocal, fl_y_reciprocal;
+        cv::Point2d center;
+        if (cameraMatrix.data) {
+            // Saving parameter from the camera matrix
+            fl_x_reciprocal = 1.0f / cameraMatrix.at<double>(0, 0);
+            fl_y_reciprocal = 1.0f / cameraMatrix.at<double>(1, 1);
+            // center_x = _cameraMatrix.at<double>(0,2);
+            // center_y = _cameraMatrix.at<double>(1,2);
+
+            double noV, apertureWidth = (45 / 1000) * imgSize.width,
+                        apertureHeight = (45 / 1000) * imgSize.height;
+            cv::calibrationMatrixValues(cameraMatrix, imgSize, apertureWidth,
+                                        apertureHeight, noV, noV, noV, center,
+                                        noV);
+        } else {
+            BOOST_LOG_TRIVIAL(warning) << "No cameraMatrix data.";
+            return cv::Point3d();
+        }
+
+        cv::Point3d out3Dp;
+
+        // Saving parameter from the camera matrix
+        out3Dp.x = (static_cast<float>(point.x) - center.x) * depthValue *
+                   fl_x_reciprocal;  // X
+        out3Dp.y = (static_cast<float>(point.y) - center.y) * depthValue *
+                   fl_y_reciprocal;  // Y
+        out3Dp.z = depthValue;       // Z
+
+        return out3Dp;
+    }
+
+    // inline cv::Point2i pointTo2D(const cv::Point3d& point,
+    //                              const cv::Mat& cameraMatrix,
+    //                              const cv::Size& imgSize)
+    // {
+    //     // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    //     double fl_x_reciprocal, fl_y_reciprocal;
+    //     cv::Point2d center;
+    //     if (cameraMatrix.data) {
+    //         // Saving parameter from the camera matrix
+    //         fl_x_reciprocal = 1.0f / cameraMatrix.at<double>(0, 0);
+    //         fl_y_reciprocal = 1.0f / cameraMatrix.at<double>(1, 1);
+    //         // center_x = _cameraMatrix.at<double>(0,2);
+    //         // center_y = _cameraMatrix.at<double>(1,2);
+
+    //         double noV, apertureWidth = (45 / 1000) * imgSize.width,
+    //                     apertureHeight = (45 / 1000) * imgSize.height;
+    //         cv::calibrationMatrixValues(cameraMatrix, imgSize, apertureWidth,
+    //                                     apertureHeight, noV, noV, noV, center,
+    //                                     noV);
+    //     } else {
+    //         BOOST_LOG_TRIVIAL(warning) << "No cameraMatrix data.";
+    //         return cv::Point2i();
+    //     }
+
+    //     cv::Point2i out2Dp;
+
+    //     out2Dp.x = (point.x / (point.z * fl_x_reciprocal)) + center.x;
+    //     out2Dp.y = (point.y / (point.z * fl_y_reciprocal)) + center.y;
+    //     // Saving found pixel
+    //     return out2Dp;
+    // }
+
+    inline cv::Point3d pointTo3D(cv::Point point, float depthValue)
+    {
+        // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+
+        cv::Point3d out3Dp;
+
+        // Saving parameter from the camera matrix
+        out3Dp.x = (static_cast<float>(point.x) - center_x) * depthValue *
+                   fl_x_reciprocal;  // X
+        out3Dp.y = (static_cast<float>(point.y) - center_y) * depthValue *
+                   fl_y_reciprocal;  // Y
+        out3Dp.z = depthValue;       // Z
+
+        return out3Dp;
+    }
+};
+
+}  // namespace cam
+};  // namespace toffy

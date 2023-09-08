@@ -468,10 +468,7 @@ bool BtaWrapper::isConnected() const
 {
     // cout << "BTAisConnected(handle): " << (int)BTAisConnected(handle) <<
     // endl;
-    if (state == connecting || state == connected || BTAisConnected(handle))
-        return 1;
-    else
-        return 0;
+    return (state == connecting || state == connected || BTAisConnected(handle));
 }
 
 int BtaWrapper::capture(char *&buffer)
