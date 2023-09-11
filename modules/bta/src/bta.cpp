@@ -195,8 +195,6 @@ boost::property_tree::ptree Bta::getConfig() const
 
 bool Bta::filter(const Frame& in, Frame& out)
 {
-    BOOST_LOG_TRIVIAL(debug)
-        << __FUNCTION__ << " ------------ filter() " << id();
     char* data = NULL;
 
     using namespace boost::posix_time;
@@ -227,10 +225,10 @@ bool Bta::filter(const Frame& in, Frame& out)
         }
     }
 
-    diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug)
-        << "duration pre-capture: " << diff.total_milliseconds()
-        << " playback? " << this->playback() << " bta_stream " << bta_stream;
+    //diff = boost::posix_time::microsec_clock::local_time() - start;
+    //BOOST_LOG_TRIVIAL(debug)
+    //    << "duration pre-capture: " << diff.total_milliseconds()
+    //    << " playback? " << this->playback() << " bta_stream " << bta_stream;
 
     // Checks if there is a data file to load.
     if (this->playback()) {
@@ -267,12 +265,7 @@ bool Bta::filter(const Frame& in, Frame& out)
         }
     } else {  // live connection
         if (sensor->isAsync()) {
-            BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__
-                                     << " cap async... " << sensor->isAsync();
             data = (char*)sensor->waitForNextFrame();
-            BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__
-                                     << " cap async! " << sensor->isAsync();
-
         } else {
             BOOST_LOG_TRIVIAL(debug)
                 << "bta::filter " << __LINE__ << " what should I do? ";
@@ -280,8 +273,8 @@ bool Bta::filter(const Frame& in, Frame& out)
     }
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug)
-        << "duration pre-capture:2 " << diff.total_microseconds();
+    //BOOST_LOG_TRIVIAL(debug)
+    //    << "duration pre-capture:2 " << diff.total_microseconds();
 
     if (!data && !sensor->capture(data)) {
         BOOST_LOG_TRIVIAL(warning) << "Could not capture from sensor.";
@@ -322,7 +315,7 @@ bool Bta::filter(const Frame& in, Frame& out)
     out.addData(_out_gt, t);
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration data: " << diff.total_microseconds();
+    //BOOST_LOG_TRIVIAL(debug) << "duration data: " << diff.total_microseconds();
 
     if (dynOutputs) {
         this->setOutputsDynamic(in, out, start, data);
@@ -331,7 +324,7 @@ bool Bta::filter(const Frame& in, Frame& out)
     }
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration free: " << diff.total_microseconds();
+    //BOOST_LOG_TRIVIAL(debug) << "duration free: " << diff.total_microseconds();
 
     return true;
 }
