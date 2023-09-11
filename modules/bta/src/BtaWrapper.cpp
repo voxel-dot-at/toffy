@@ -322,6 +322,7 @@ int BtaWrapper::connect()
     BOOST_LOG_TRIVIAL(debug)
         << "BtaWrapper::connect() Camera connected sucessfully. status: "
         << status;
+    state = connected;
 
     if (hasChannels) {
         status = setChannels();
@@ -449,7 +450,7 @@ int BtaWrapper::disconnect()
         }
         deviceInfo = NULL;
     }
-    // cout << "isConnected: " << isConnected() << endl;
+    cout << "BtaWrapper::disconnect() isConnected: " << isConnected() << endl;
     if (isConnected()) {
         status = BTAclose(&handle);
         if (status != BTA_StatusOk) {
