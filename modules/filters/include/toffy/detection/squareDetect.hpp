@@ -17,6 +17,7 @@
 #pragma once
 
 #include <toffy/filter.hpp>
+#include <toffy/cam/cameraParams.hpp>
 
 namespace toffy {
 namespace detection {
@@ -50,6 +51,7 @@ private:
     cv::Mat _cameraMatrix;
 
     static std::size_t _filter_counter;
+    toffy::cam::CameraPtr cam;
 };
 
 }}

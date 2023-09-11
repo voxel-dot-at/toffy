@@ -18,6 +18,8 @@
 
 #include <toffy/filter.hpp>
 
+#include <toffy/cam/cameraParams.hpp>
+
 namespace toffy {
 namespace detection {
 class DetectedObject;
@@ -61,7 +63,8 @@ private:
 	bool _morpho, ///< Flag(default:false) activate the morphology operation
 	sharpenEdges, /// Flag @todo
 	_filterInternals; ///< Flag(default:false) remove blobs with holes
-
+    toffy::cam::CameraPtr cam;
+    
     static std::size_t _filter_counter; ///< Internal Filter counter
 
     void findBlobs(cv::Mat& in, cv::Mat& ampl, int fc,

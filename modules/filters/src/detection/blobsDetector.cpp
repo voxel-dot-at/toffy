@@ -14,30 +14,26 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+#include <iomanip>
+#include <iostream>
+
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 #include <toffy/btaFrame.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#else
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#endif
 
-#include <iomanip>
-#include <iostream>
 #include <toffy/detection/detectedObject.hpp>
 
 #include "toffy/detection/blobsDetector.hpp"
 
 #ifdef CM_DEBUG
-const bool dbg = true;
-const bool dbgShape = true;
+static const bool dbg = true;
+static const bool dbgShape = true;
 #else
-const bool dbg = false;
-const bool dbgShape = false;
+static const bool dbg = false;
+static const bool dbgShape = false;
 #endif
 
 using namespace std;

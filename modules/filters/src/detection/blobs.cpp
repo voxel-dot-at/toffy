@@ -26,7 +26,6 @@
 
 #include <toffy/filter_helpers.hpp>
 #include <toffy/btaFrame.hpp>
-#include <toffy/common/pointTransfom.hpp>
 
 #include <toffy/detection/detectedObject.hpp>
 #include <toffy/detection/blobs.hpp>
@@ -52,7 +51,7 @@ Blobs::Blobs(): Filter(Blobs::id_name,_filter_counter),
     in_img("fg"), in_ampl("ampl"), out_blobs("blobs"),
     _minSize(40), _morphoSize(1), _morphoIter(1), _morphoType(0),
     refineBlobs(false), _morpho(false), sharpenEdges(false),
-    _filterInternals(true)
+    _filterInternals(true), cam(0)
 {
     _filter_counter++;
 }
@@ -121,7 +120,7 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
                                       "Could not cast input " << btaFc;
         return false;
     }
-    boost::shared_ptr<cv::Mat> inImg;
+    matPtr inImg;
     try {
         inImg = in.getMatPtr(in_img);
         BOOST_LOG_TRIVIAL(debug) << id() << ": Found input in_img: " << in_img;
@@ -131,8 +130,16 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
                                       ", filter  " << id() <<" not applied.";
         return true;
     }
-
-    boost::shared_ptr<cv::Mat> ampl;
+    if (!cam) {
+        if (in.hasKey(CAM_SLOT)) {
+            cam = boost::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
+        } else {
+            BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " " << id()
+                                       << " NO cameraPtr found in Frame!";
+            return false;
+        }
+    }
+    matPtr ampl;
     try {
         ampl = in.getMatPtr(in_ampl);
         BOOST_LOG_TRIVIAL(debug) << id() << ": Found input in_ampl: " << in_ampl;
@@ -172,7 +179,6 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
     //Filter
     Mat m = img.clone();
     //m.setTo(0, m > 0.01);
-
 
     if (dbg) imshow("m " , m);
     //cvv::showImage(m, CVVISUAL_LOCATION, "m");
@@ -295,8 +301,11 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
         }
 
         obj->massCenterZ = img.at<float>(obj->massCenter);
-        obj->massCenter3D = commons::pointTo3D(obj->massCenter, obj->massCenterZ);
 
+        //obj->massCenter3D = commons::pointTo3D(obj->massCenter, obj->massCenterZ);
+        if (cam) {
+            cam->pointTo3D(obj->massCenter, obj->massCenterZ, obj->massCenter3D);
+        }
         //adding detected object to the output list
         if(obj->idx >= 0 )
             detObj.push_back(obj);

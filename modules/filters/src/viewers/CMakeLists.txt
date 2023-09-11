@@ -22,6 +22,7 @@ add_library(toffy_viewers OBJECT
     colorize.cpp
     exportcloud.cpp
     exportcsv.cpp
+    exportYaml.cpp
     imageview.cpp
     videoout.cpp
     ${VIZ_SRCS}

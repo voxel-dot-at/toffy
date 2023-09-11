@@ -15,11 +15,12 @@
 */
 #pragma once
 
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+// #include <boost/date_time/posix_time/posix_time_types.hpp>
+// #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <toffy/capture/capturerFilter.hpp>
 #include <toffy/bta/BtaWrapper.hpp>
+#include <toffy/cam/cameraParams.hpp>
 
 namespace toffy {
 namespace capturers {
@@ -103,6 +104,8 @@ private:
         _out_fc, _out_ts,
         _out_mt, _out_lt, _out_gt; ///< Input image name
 
+    std::string camType;
+    toffy::cam::CameraPtr cam;
 
     void setOutputsClassic(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
     void setOutputsDynamic(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);

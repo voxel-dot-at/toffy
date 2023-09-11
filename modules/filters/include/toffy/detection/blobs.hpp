@@ -18,6 +18,8 @@
 
 #include <toffy/filter.hpp>
 
+#include <toffy/cam/cameraParams.hpp>
+
 namespace toffy {
 namespace detection {
 class DetectedObject;
@@ -64,6 +66,8 @@ private:
 	_filterInternals; ///< Flag(default:false) remove blobs with holes
 
     static std::size_t _filter_counter; ///< Internal Filter counter
+
+    toffy::cam::CameraPtr cam;
 
     void findBlobs(cv::Mat& in, cv::Mat& ampl, int fc,
 		   std::vector<toffy::detection::DetectedObject*>& list);

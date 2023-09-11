@@ -19,24 +19,30 @@
 #include "toffy/filter.hpp"
 
 namespace toffy {
-namespace import {
 
-class DataImporter : public Filter
-{
-    static std::size_t _filter_counter;
-    std::vector<std::pair<std::string, boost::any> > _data;
-
-   public:
-    DataImporter();
-    virtual ~DataImporter() {}
-
-    // virtual int loadConfig(const boost::property_tree::ptree& pt);
+/**
+ * @brief export fields in frame in to yaml files. filed names are specified in a list of strings in option.fields.field
+ * 
+ */
+class ExportYaml : public Filter	{
+public:
+    ExportYaml(): Filter("exportYaml"),
+	_in_cloud("cloud"), _fileName("cloud"),
+        _pattern(""),_seqName(""),
+	_seq(false), _bin(true), _cnt(1) {}
+    virtual ~ExportYaml() {}
 
     virtual boost::property_tree::ptree getConfig() const;
-    void updateConfig(const boost::property_tree::ptree& pt);
+
+    virtual void updateConfig(const boost::property_tree::ptree &pt);
 
     virtual bool filter(const Frame& in, Frame& out);
-};
 
-}  // namespace import
-}  // namespace toffy
+private:
+    std::vector<std::string> fields; //< the fields of the input frame to save
+    std::string _in_cloud, _path, _fileName, _pattern, _seqName;
+    bool _seq, _bin, _xyz;
+    pcl::PCDWriter _w;
+    int _cnt;
+};
+}
