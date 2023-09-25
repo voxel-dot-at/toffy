@@ -690,6 +690,8 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 // BOOST_LOG_TRIVIAL(debug) << "img yuv data! " << (width *
                 // height)
                 //                          << " " << chan->dataLen;
+                int width = chan->xRes;
+                int height = chan->yRes;
                 if (!d.get()) {
                     d.reset(new cv::Mat(height, width, CV_8UC3));
                 }
@@ -702,6 +704,8 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 // BOOST_LOG_TRIVIAL(debug) << "img yuv444uyv data! " << (width
                 // * height)
                 //                          << " " << chan->dataLen;
+                int width = chan->xRes;
+                int height = chan->yRes;
                 if (!d.get()) {
                     d.reset(new cv::Mat(height, width, CV_8UC3));
                 }
