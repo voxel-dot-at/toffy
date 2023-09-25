@@ -59,6 +59,22 @@ message (STATUS "\t WITHOUT_PCL: " ${WITHOUT_PCL})
 message (STATUS "\t WITH_VISUALIZATION: " ${WITH_VISUALIZATION})
 message (STATUS "\t WITH_CONTROL: " ${WITH_CONTROL})
 
+################################################################################
+# Install options
+################################################################################
+MESSAGE(STATUS "CMAKE_INSTALL_PREFIX: " ${CMAKE_INSTALL_PREFIX})
+
+set(INSTALL_LIB_DIR lib/ CACHE PATH "Installation directory for libraries")
+set(INSTALL_BIN_DIR bin/ CACHE PATH "Installation directory for executables")
+set(INSTALL_INCLUDE_DIR include/${PROJECT_NAME} CACHE PATH "Installation directory for header files")
+if(WIN32 AND NOT CYGWIN)
+  set(DEF_INSTALL_CMAKE_DIR cmake)
+else()
+  set(DEF_INSTALL_CMAKE_DIR lib/cmake/${PROJECT_NAME})
+endif()
+set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH "Installation directory for CMake files")
+
+
 
 #Collect project definitions
 set(DEFINITIONS)
