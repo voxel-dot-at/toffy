@@ -38,15 +38,16 @@ static void BTA_CALLCONV frameArrivedEx2(
     struct BTA_FrameArrivedReturnOptions * /*frameArrivedReturnOptions*/)
 {
     if (!frame) {
-        BOOST_LOG_TRIVIAL(warning) << "   BTACallback: frameArrivedEx2 NO FRAME ";
+        BOOST_LOG_TRIVIAL(warning)
+            << "   BTACallback: frameArrivedEx2 NO FRAME ";
         return;
     }
-/*
+    /*
     BOOST_LOG_TRIVIAL(debug)
         << "   BTACallback: frameArrivedEx2 (" << frame->frameCounter << ") ";
 */
     BtaWrapper *bta = (BtaWrapper *)arg;
- /*
+    /*
     int musec, msec, sec, min, hours;
 
     unsigned long timeArr = frame->timeStamp;
@@ -83,7 +84,8 @@ void BtaWrapper::setBltstream(const std::string &value)
     bltstreamFilename = value;
 }
 
-BtaWrapper::BtaWrapper() : manufacturer(1), device(0), async(false),state(disconnected)
+BtaWrapper::BtaWrapper()
+    : manufacturer(1), device(0), async(false), state(disconnected)
 {
     handle = 0;
     deviceInfo = NULL;
@@ -134,7 +136,8 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
     pres = pt_optional_get_default<uint8_t>(pt, "connection.shmDataEnabled",
                                             config.shmDataEnabled, 0);
     if (pres) {
-        BOOST_LOG_TRIVIAL(debug) << "shmDataEnabled is set! now=" << (int)config.shmDataEnabled;
+        BOOST_LOG_TRIVIAL(debug)
+            << "shmDataEnabled is set! now=" << (int)config.shmDataEnabled;
     }
 
     // n.b. we DON't set the default mcast channel 224.0.0.1 ;
@@ -176,6 +179,10 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
         pt_optional_get<uint16_t>(pt, "connection.udpControlCallbackPort",
                                   config.udpControlCallbackPort);
     }
+    bool autoConf = config.udpDataAutoConfig != 0;
+    pt_optional_get_default<bool>(pt, "connection.udpDataAutoConfig",
+                          autoConf, autoConf);
+    config.udpDataAutoConfig = autoConf;            
 
     pres = pt_optional_get_ipaddr(pt, "connection.tcpDeviceIp",
                                   (struct in_addr &)tcpDeviceIpAddr,
@@ -183,8 +190,9 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
     config.tcpDeviceIpAddr = tcpDeviceIpAddr;
     if (pres) {
         BOOST_LOG_TRIVIAL(debug)
-            << "tcpDeviceIpAddr set to " << (unsigned int)tcpDeviceIpAddr[0] << "."
-            << (unsigned int)tcpDeviceIpAddr[1] << "." << (unsigned int)tcpDeviceIpAddr[2] << "."
+            << "tcpDeviceIpAddr set to " << (unsigned int)tcpDeviceIpAddr[0]
+            << "." << (unsigned int)tcpDeviceIpAddr[1] << "."
+            << (unsigned int)tcpDeviceIpAddr[2] << "."
             << (unsigned int)tcpDeviceIpAddr[3];
     } else {
         BOOST_LOG_TRIVIAL(debug) << "tcpDeviceIpAddr not set ";
@@ -307,7 +315,8 @@ int BtaWrapper::connect()
                                 << (int)config.udpDataIpAddr[2] << "."
                                 << (int)config.udpDataIpAddr[3] << ".";
     }
-    BOOST_LOG_TRIVIAL(info) << "BtaWrapper::connect() shm " << (int)config.shmDataEnabled;
+    BOOST_LOG_TRIVIAL(info)
+        << "BtaWrapper::connect() shm " << (int)config.shmDataEnabled;
     // hack on:
     // config.shmDataEnabled = 1;
 
@@ -328,11 +337,12 @@ int BtaWrapper::connect()
         status = setChannels();
         if (status < 0) {
             BOOST_LOG_TRIVIAL(warning)
-                << "BtaWrapper::connect() setChannels() failed with: " << status;
+                << "BtaWrapper::connect() setChannels() failed with: "
+                << status;
             state = error;
         } else {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::connect() setChannels() status: " << status;
+            BOOST_LOG_TRIVIAL(debug)
+                << "BtaWrapper::connect() setChannels() status: " << status;
         }
     }
 
@@ -461,7 +471,7 @@ int BtaWrapper::disconnect()
         handle = 0;
     }
     state = disconnected;
-    
+
     return 0;
 }
 
@@ -469,7 +479,8 @@ bool BtaWrapper::isConnected() const
 {
     // cout << "BTAisConnected(handle): " << (int)BTAisConnected(handle) <<
     // endl;
-    return (state == connecting || state == connected || BTAisConnected(handle));
+    return (state == connecting || state == connected ||
+            BTAisConnected(handle));
 }
 
 int BtaWrapper::capture(char *&buffer)
