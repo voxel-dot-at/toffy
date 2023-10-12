@@ -41,7 +41,7 @@ using namespace toffy;
 using namespace toffy::detection;
 
 std::size_t SimpleBlobs::_filter_counter = 1;
-const std::string SimpleBlobs::id_name = "SimpleBlobs";
+const std::string SimpleBlobs::id_name = "simpleBlobs";
 
 SimpleBlobs::SimpleBlobs()
     : Filter(SimpleBlobs::id_name, _filter_counter),

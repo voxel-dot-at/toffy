@@ -19,16 +19,12 @@
 #include <fstream>
 #include <limits.h>
 
+// windows wants
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-#if OCV_VERSION_MAJOR >= 3
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
-#else
-#include <opencv2/core/core.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-#endif
 
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>

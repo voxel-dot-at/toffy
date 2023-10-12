@@ -114,7 +114,6 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
     unsigned int fc;
     try {
         fc = in.getUInt(btaFc);
-        BOOST_LOG_TRIVIAL(debug) << id() << ": Found input fc: " << btaFc;
     } catch(const boost::bad_any_cast &) {
         BOOST_LOG_TRIVIAL(warning) <<
                                       "Could not cast input " << btaFc;
@@ -123,7 +122,6 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
     matPtr inImg;
     try {
         inImg = in.getMatPtr(in_img);
-        BOOST_LOG_TRIVIAL(debug) << id() << ": Found input in_img: " << in_img;
     } catch(const boost::bad_any_cast &) {
         BOOST_LOG_TRIVIAL(warning) <<
                                       "Could not cast input " << in_img <<
@@ -133,6 +131,7 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
     if (!cam) {
         if (in.hasKey(CAM_SLOT)) {
             cam = boost::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
+            cout << "CAM found " << cam->name << endl;
         } else {
             BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " " << id()
                                        << " NO cameraPtr found in Frame!";
@@ -142,7 +141,6 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
     matPtr ampl;
     try {
         ampl = in.getMatPtr(in_ampl);
-        BOOST_LOG_TRIVIAL(debug) << id() << ": Found input in_ampl: " << in_ampl;
     } catch(const boost::bad_any_cast &) {
         BOOST_LOG_TRIVIAL(warning) <<
                                       "Could not cast input " << in_ampl <<
@@ -154,9 +152,8 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
     try {
         blobs = boost::any_cast<boost::shared_ptr<std::vector<DetectedObject*> > >(out.getData(out_blobs));
         blobs->clear();
-        BOOST_LOG_TRIVIAL(debug) << id() << ": Found output out_blobs: " << out_blobs;
     } catch(const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not find object vector.";
+        BOOST_LOG_TRIVIAL(warning) << "Could not find object vector. Initializing it";
         blobs.reset(new std::vector<DetectedObject*>);
         //return true;
     }
@@ -174,14 +171,13 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
 void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedObject*>& detObj)
 {
     UNUSED(ampl);
-    BOOST_LOG_TRIVIAL(debug) << __FILE__ << ": " <<__FUNCTION__;
+    // BOOST_LOG_TRIVIAL(debug) << __FILE__ << ": " <<__FUNCTION__;
 
     //Filter
     Mat m = img.clone();
     //m.setTo(0, m > 0.01);
 
     if (dbg) imshow("m " , m);
-    //cvv::showImage(m, CVVISUAL_LOCATION, "m");
 
     // Convert to 8bit
     double max, min;
@@ -189,7 +185,6 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
     m.convertTo(m,CV_8U,255.0/(max-min),-255.0*min/(max-min));
 
     if (dbg) imshow("m2 " , m);
-    //cvv::showImage(m, CVVISUAL_LOCATION, "m2");
 
     //Apply the optional morphology operation
     if (_morpho) {
@@ -212,14 +207,12 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
 
     //cvv::showImage(m, CVVISUAL_LOCATION, "blobs to track");
 
-    if (dbg) imshow("blobs to track " , m);
+    // if (dbg) imshow("blobs to track " , m);
 
     //Find the blobs contours
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
     findContours(m, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_NONE);
-
-    cout << "contours: " << contours.size() << endl;
 
     //Shows all found contours
     if (dbg) {
@@ -231,7 +224,7 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
                 drawContours( imgCopy, contours, i, color, -1, LINE_AA);
             }
         }
-        imshow("detBlobs", imgCopy);
+        imshow("findBlobs raw", imgCopy);
         //cvv::showImage(imgCopy, CVVISUAL_LOCATION, "detBlobs");
     }
 
@@ -305,6 +298,7 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
         //obj->massCenter3D = commons::pointTo3D(obj->massCenter, obj->massCenterZ);
         if (cam) {
             cam->pointTo3D(obj->massCenter, obj->massCenterZ, obj->massCenter3D);
+            cout << "CAM mass " << i << " " << obj->massCenter3D << endl;
         }
         //adding detected object to the output list
         if(obj->idx >= 0 )
@@ -340,7 +334,6 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
     // shows blobs after filtering
     if (dbg) {
         Mat imgCopy(img.size(),CV_8UC3, Scalar(0,0,0));
-        //img.convertTo(imgCopy,CV_GRAY2BGR);
         RNG rng(12345);
         for (size_t i = 0; i < detObj.size(); i++) {
             Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
@@ -348,8 +341,7 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
                           FILLED, LINE_AA, *detObj[i]->hierarchy);
             circle( imgCopy, detObj[i]->massCenter, 2, Scalar( 0, 255, 255 ), FILLED, LINE_AA);
         }
-        imshow("detttttBlobs", imgCopy);
-        //cvv::showImage(imgCopy, CVVISUAL_LOCATION, "detttttBlobs");
+        imshow("blobs detttttBlobs", imgCopy);
     }
 }
 
