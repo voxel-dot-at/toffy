@@ -150,7 +150,8 @@ bool CVTracker::filter(const Frame& in, Frame& out) {
 #endif
         tracker->init(*img,bbox);
     } else {
-        bbox = cv::minAreaRect(detObj->at(0)->contour).boundingRect();
+        Rect bbox = cv::minAreaRect(detObj->at(0)->contour).boundingRect();
+	this->bbox = bbox;
         tracker->update(*img, bbox);
         // Draw bounding box
         cv::rectangle(*img, bbox, cv::Scalar( 255, 0, 0 ), 1 );
