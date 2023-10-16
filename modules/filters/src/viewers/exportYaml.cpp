@@ -28,39 +28,109 @@
 using namespace toffy;
 using namespace cv;
 
-void ExportYaml::updateConfig(const boost::property_tree::ptree &pt) {
-    LOG(debug) << __FUNCTION__ <<  " " << id();
+void ExportYaml::updateConfig(const boost::property_tree::ptree& pt)
+{
+    LOG(debug) << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
     Filter::updateConfig(pt);
 
-    _fileName = pt.get("options.fileName",_fileName);
-    _path = pt.get("options.path",_path);
-    _seq = pt.get<bool>("options.sequence",_seq);
-    _bin = pt.get<bool>("options.binary",_bin);
+    _seq = pt.get<bool>("options.sequence", _seq);
+    _bin = pt.get<bool>("options.binary", _bin);
 
-    pt_optional_get_default( pt, "options.xyz",_xyz, false);
+    path = pt.get("options.path", path);
+    prefix = pt.get("options.prefix", path);
 
-    _in_cloud = pt.get<std::string>("inputs.cloud",_in_cloud);
+    useCounter = pt.get<bool>("options.useCounter", useCounter);
+    useFc = pt.get<bool>("options.useFc", useFc);
+
+    pt_optional_get_default(pt, "options.xyz", _xyz, false);
+
+    _in_cloud = pt.get<std::string>("inputs.cloud", _in_cloud);
 }
 
-boost::property_tree::ptree ExportYaml::getConfig() const {
+boost::property_tree::ptree ExportYaml::getConfig() const
+{
     boost::property_tree::ptree pt;
 
     pt = Filter::getConfig();
 
-    pt.put("options.fileName", _fileName);
-    pt.put("options.path", _path);
-    pt.put("options.sequence", _seq);
-    pt.put("options.binary", _bin);
+    pt.put("options.path", path);
+    pt.put("options.prefix", prefix);
+
+    pt.put("options.useCounter", useCounter);
+    pt.put("options.useFc", useFc);
+    // pt.put("options.binary", _bin);
 
     pt.put("inputs.cloud", _in_cloud);
 
     return pt;
 }
 
-bool ExportYaml::filter(const Frame &in, Frame& out) {
-	LOG(debug) << " exporting " << _in_cloud;
+bool ExportYaml::filter(const Frame& in, Frame& out)
+{
+    LOG(debug) << " exporting " << _in_cloud;
+    char buf[80] = "";
+    unsigned int fc = in.optUInt("fc", 1000);
+
+    if (useCounter) {
+        snprintf(buf,sizeof(buf),"%04d", counter);
+    }
+    if (useFc) { // TODO fc()
+        snprintf(buf,sizeof(buf),"%04d", fc);
+    }
+
+    dumpToYaml(in, std::string(buf));
+
+    counter++;
     return true;
+}
+
+void ExportYaml::dumpToYaml(const Frame& frame, const std::string& id)
+{
+    // also dump amplitudes..
+    char buf[128];
+    snprintf(buf, sizeof(buf), "%s/%s_%s.yaml", path.c_str(),
+             prefix.c_str(), id.c_str());
+
+    // Declare what you need
+    cv::FileStorage file(buf, cv::FileStorage::WRITE);
+    // Write to file!
+    if (frame.hasKey("x")) {
+        file << "x" << * frame.getMatPtr("x");
+    }
+    if (frame.hasKey("y")) {
+        file << "y" << * frame.getMatPtr("y");
+    }
+    if (frame.hasKey("z")) {
+        file << "z" << * frame.getMatPtr("z");
+    }
+    if (frame.hasKey("depth")) {
+        file << "depth" << * frame.getMatPtr("depth");
+    }
+    if (frame.hasKey("ampl")) {
+        file << "ampl" << * frame.getMatPtr("ampl");
+    }
+    if (frame.hasKey("confidence")) {
+        file << "confidence" << * frame.getMatPtr("confidence");
+    }
+
+    // frame info:
+    unsigned int fc = frame.optUInt("fc", 1000);
+    file << "fc" << (int)fc;
+
+    file << "counter" << counter;
+
+    // if (in.hasKey("color0")) {
+    //     char buf[128];
+    //     snprintf(buf, sizeof(buf), "%s/mats_%s.rgb.jpg",
+    //              systemGeometry.path.c_str(), id.c_str());
+    //     vector<int> p(2);
+    //     p[0] = IMWRITE_JPEG_QUALITY;
+    //     p[1] = 95;  // compression factor
+
+    //     imwrite(buf, *in.getMatPtr("color0"), p);
+    // }
+    // BOOST_LOG_TRIVIAL(info) << "FULL FIN ORGA DUMPED " << buf;
 }
