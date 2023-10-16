@@ -19,10 +19,12 @@
 #include <fstream>
 #include <limits.h>
 
+#include <boost/foreach.hpp>
+#include <boost/log/trivial.hpp>
+
 #include <pcl/range_image/range_image_planar.h>
 #include <pcl/common/transforms.h>
 
-#include <boost/log/trivial.hpp>
 
 #include "toffy/3d/merge.hpp"
 

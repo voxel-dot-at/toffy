@@ -19,6 +19,8 @@
 #include <fstream>
 #include <limits.h>
 
+
+#include <boost/foreach.hpp>
 #include <boost/log/trivial.hpp>
 
 #include <pcl/PCLPointCloud2.h>
