@@ -107,8 +107,13 @@ private:
     std::string camType;
     toffy::cam::CameraPtr cam;
 
-    void setOutputsClassic(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
     void setOutputsDynamic(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
+
+    void setOutputsClassic(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
+    void setOutputsClassicDistAmpl(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
+    void setOutputsClassicXYZ(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
+    void setOutputsClassicXYZAmpl(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
+    void setOutputsClassicZAmpl(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
 };
 
 }}

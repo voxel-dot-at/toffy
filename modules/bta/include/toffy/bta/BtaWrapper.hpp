@@ -132,6 +132,7 @@ public:
     typedef enum  { disconnected, connecting, connected, error } ConnState;
     ConnState getState() const { return state; }
     
+    int32_t frameMode;
 private:
     BTA_Config config;
     BTA_Handle handle;

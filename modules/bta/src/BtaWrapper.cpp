@@ -213,7 +213,7 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
 
     // can't auto-convert int32 to FrameMode, so do it manually:
     try {
-        int32_t frameMode =
+        frameMode =
             pt.get<int32_t>("connection.frameMode", BTA_FrameModeDistAmp);
         config.frameMode = (BTA_FrameMode)frameMode;
         BOOST_LOG_TRIVIAL(debug)
