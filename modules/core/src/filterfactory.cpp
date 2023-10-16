@@ -63,6 +63,7 @@
 #include "toffy/3d/xyz2pcl.hpp"
 #include "toffy/3d/groundprojection.hpp"
 #include "toffy/viewers/exportcloud.hpp"
+#include "toffy/viewers/exportYaml.hpp"
 #include "toffy/detection/squareDetect.hpp"
 
 using namespace toffy::filters::f3d;
@@ -223,6 +224,8 @@ Filter* FilterFactory::createFilter(const std::string& type,
         f = new SampleConsensus();
     else if (type == "exportcloud")
         f = new ExportCloud();
+    else if (type == "exportYaml")
+        f = new ExportYaml();
     else if (type == "groundprojection")
         f = new GroundProjection();
     else if (type == "squareDetect")
