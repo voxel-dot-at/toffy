@@ -26,6 +26,7 @@
 
 #include <toffy/filter_helpers.hpp>
 #include <toffy/btaFrame.hpp>
+#include <toffy/cam/cameraParams.hpp>
 
 #include <toffy/detection/detectedObject.hpp>
 #include <toffy/detection/blobs.hpp>
@@ -38,11 +39,15 @@ static const bool dbgShape=true;
 static const bool dbgShape=false;
 #endif
 
-
 using namespace std;
 using namespace cv;
 using namespace toffy;
 using namespace toffy::detection;
+
+
+// helpers for depth (meters) vs. xyz planes
+#define meters2Plane(meters) (xyzMode ? ((meters)*1000) : (meters))
+
 
 std::size_t Blobs::_filter_counter = 1;
 const std::string Blobs::id_name = "blobs";
@@ -68,6 +73,10 @@ void Blobs::updateConfig(const boost::property_tree::ptree &pt) {
 
     in_img = pt.get<string>("inputs.img",in_img);
     out_blobs = pt.get<string>("outputs.blobs",out_blobs);
+
+    xyzMode = in_img == "z";
+    BOOST_LOG_TRIVIAL(debug)
+        << __FUNCTION__ << " " << id() << " xyzMode " << xyzMode;
 
     _minSize = pt.get<int>("options.minSize", _minSize);
 
@@ -159,7 +168,7 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
     }
     blobs->clear();
 
-    findBlobs(*inImg, *ampl, fc, *blobs);
+    findBlobs(in, *inImg, *ampl, fc, *blobs);
 
     out.addData(out_blobs, blobs);
 
@@ -168,24 +177,29 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
 }
 
 
-void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedObject*>& detObj)
+void Blobs::findBlobs(const Frame& frame, cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedObject*>& detObj)
 {
     UNUSED(ampl);
     // BOOST_LOG_TRIVIAL(debug) << __FILE__ << ": " <<__FUNCTION__;
+    matPtr mx,my,mz;
+    if (xyzMode) {
+        mx = frame.getMatPtr("x");
+        my = frame.getMatPtr("y");
+        mz = frame.getMatPtr("z");
+    }
 
     //Filter
     Mat m = img.clone();
-    //m.setTo(0, m > 0.01);
-
-    if (dbg) imshow("m " , m);
 
     // Convert to 8bit
     double max, min;
     cv::minMaxLoc(m, &min, &max);
     m.convertTo(m,CV_8U,255.0/(max-min),-255.0*min/(max-min));
 
-    if (dbg) imshow("m2 " , m);
-
+    if (dbg) { 
+        cout << "minmax " << min << ", " << max << endl;
+        imshow("m2 " , m);
+    }
     //Apply the optional morphology operation
     if (_morpho) {
         Mat element = getStructuringElement( MORPH_RECT, Size( 2*_morphoSize + 1, 2*_morphoSize+1 ), Point( _morphoSize, _morphoSize ) );
@@ -203,11 +217,6 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
     if (dbg) imshow("edges " , edges);
     //cvv::showImage(edges, CVVISUAL_LOCATION, "edges");*/
     }
-
-
-    //cvv::showImage(m, CVVISUAL_LOCATION, "blobs to track");
-
-    // if (dbg) imshow("blobs to track " , m);
 
     //Find the blobs contours
     vector<vector<Point> > contours;
@@ -296,10 +305,18 @@ void Blobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedO
         obj->massCenterZ = img.at<float>(obj->massCenter);
 
         //obj->massCenter3D = commons::pointTo3D(obj->massCenter, obj->massCenterZ);
-        if (cam) {
+        if (xyzMode) {
+            cv::Point3d out;
+	    cam::pointTo3d(*mx, *my, *mz, obj->massCenter,out);
+            obj->massCenter3D = out;
+        if (dbg) cout << "XYZ mass " << i << " " << obj->massCenter3D << endl;
+        } else if (cam) {
             cam->pointTo3D(obj->massCenter, obj->massCenterZ, obj->massCenter3D);
-            cout << "CAM mass " << i << " " << obj->massCenter3D << endl;
+        if (dbg) cout << "CAM mass " << i << " " << obj->massCenter3D << endl;
+        } else {
+
         }
+
         //adding detected object to the output list
         if(obj->idx >= 0 )
             detObj.push_back(obj);

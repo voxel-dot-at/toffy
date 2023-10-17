@@ -29,7 +29,7 @@ public:
     ExportYaml(): Filter("exportYaml"),
 	_in_cloud("cloud"),_seqName(""), path("./"), prefix("tofData"),
         useCounter(true), useFc(false),
-	_seq(false), _bin(true), counter(1) {}
+	counter(1) {}
     virtual ~ExportYaml() {}
 
     virtual boost::property_tree::ptree getConfig() const;
@@ -39,11 +39,9 @@ public:
     virtual bool filter(const Frame& in, Frame& out);
 
 private:
-    std::vector<std::string> fields; //< the fields of the input frame to save
     std::string _in_cloud, _fileName, _seqName;
     std::string path, prefix;
     bool useCounter, useFc;
-    bool _seq, _bin, _xyz;
     pcl::PCDWriter _w;
     int counter;
 

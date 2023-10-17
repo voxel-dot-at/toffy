@@ -37,6 +37,19 @@ namespace cam {
 
 static float deg2rad(float a) { return a / 180. * M_PI; }
 
+/** pick the 3d coordinates from the x,y,z image planes */
+static inline void pointTo3d(const cv::Mat& x, const cv::Mat& y, const cv::Mat& z,
+                             cv::Point2i inPlane, cv::Point3d& out)
+{
+    int px = x.at<short>(inPlane);
+    int py = y.at<short>(inPlane);
+    int pz = z.at<short>(inPlane);
+    out.x = px;
+    out.y = py;
+    out.z = pz;
+}
+
+
 /**
  * @brief Camera geometry meta-data 
  * 

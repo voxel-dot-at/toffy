@@ -36,16 +36,11 @@ void ExportYaml::updateConfig(const boost::property_tree::ptree& pt)
 
     Filter::updateConfig(pt);
 
-    _seq = pt.get<bool>("options.sequence", _seq);
-    _bin = pt.get<bool>("options.binary", _bin);
-
     path = pt.get("options.path", path);
     prefix = pt.get("options.prefix", path);
 
     useCounter = pt.get<bool>("options.useCounter", useCounter);
     useFc = pt.get<bool>("options.useFc", useFc);
-
-    pt_optional_get_default(pt, "options.xyz", _xyz, false);
 
     _in_cloud = pt.get<std::string>("inputs.cloud", _in_cloud);
 }
@@ -61,7 +56,6 @@ boost::property_tree::ptree ExportYaml::getConfig() const
 
     pt.put("options.useCounter", useCounter);
     pt.put("options.useFc", useFc);
-    // pt.put("options.binary", _bin);
 
     pt.put("inputs.cloud", _in_cloud);
 
@@ -70,6 +64,8 @@ boost::property_tree::ptree ExportYaml::getConfig() const
 
 bool ExportYaml::filter(const Frame& in, Frame& out)
 {
+    UNUSED(out);
+    
     LOG(debug) << " exporting " << _in_cloud;
     char buf[80] = "";
     unsigned int fc = in.optUInt("fc", 1000);
