@@ -49,7 +49,7 @@ message (STATUS ${PROJECT_NAME}" version: " ${PROJECT_VERSION_FULL} )
 ################################################################################
 option (BUILD_STATIC "Build static version of the library" OFF)
 option (WITHOUT_PCL "Exclude pointclouds-based classes" OFF)
-option (WITH_VISUALIZATION "Add viewer. Requires GUI" ON)
+option (WITH_VISUALIZATION "Add viewer objects. Requires GUI" ON)
 option (WITH_CONTROL "Add Web Control." ON)
 option (BUILD_TESTS "Build test code." ON)
 
@@ -102,6 +102,22 @@ endif()
 MESSAGE(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_DEBUG_POSTFIX -d)
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(PLAT_WINDOWS "yes")
+    add_definitions(-DPLAT_WINDOWS)
+endif()
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    set(PLAT_LINUX "yes")
+    add_definitions(-DPLAT_LINUX)
+endif()
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(PLAT_APPLE "yes")
+    add_definitions(-DPLAT_APPLE)
+
+    # for macports:
+    include_directories ("/opt/local/include")
+    link_directories("/opt/local/lib")
+endif()
 
 ################################################################################
 # Install options
@@ -250,6 +266,7 @@ if(NOT WITHOUT_PCL)
     message (STATUS "PCL_INCLUDE_DIRS: " ${PCL_INCLUDE_DIRS})
     message (STATUS "PCL_LIBRARIES: " ${PCL_LIBRARIES})
     message (STATUS "PCL_VIZ: " ${PCL_VISUALIZATION_FOUND})
+
     add_definitions(-DPCL_FOUND=1)
     message (STATUS "PCL_FOUND: " ${PCL_FOUND})
     if (NOT PCL_FOUND)
@@ -291,6 +308,11 @@ if (${bta_FOUND})
     list(APPEND LIBS ${bta_LIBRARIES} )
     set(HAS_BTA 1)
     add_definitions(-DHAS_BTA=1)
+
+    if (PLAT_LINUX)
+        # for shm_*
+        list(APPEND LIBS -lrt)
+    endif()
 else()
     message(WARNING "no bta library!")
 endif()
