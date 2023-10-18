@@ -44,6 +44,7 @@
 #include <toffy/detection/mask.hpp>
 
 #include "toffy/import/dataimporter.hpp"
+#include "toffy/import/importYaml.hpp"
 #include "toffy/io/csv_source.hpp"
 
 #include "toffy/reproject/reprojectopencv.hpp"
@@ -200,6 +201,8 @@ Filter* FilterFactory::createFilter(const std::string& type,
         f = new detection::Mask();
     else if (type == "dataImporter")
         f = new import::DataImporter();
+    else if (type == "importYaml")
+        f = new import::ImportYaml();
     else if (type == "roi")
         f = new Roi();
     else if (type == BackgroundSubs::id_name)

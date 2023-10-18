@@ -14,8 +14,8 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <pcl/range_image/range_image_planar.h>
-#include <pcl/io/pcd_io.h>
+// #include <pcl/range_image/range_image_planar.h>
+// #include <pcl/io/pcd_io.h>
 #include <opencv2/core.hpp>
 
 #include <boost/log/trivial.hpp>
@@ -116,8 +116,12 @@ void ExportYaml::dumpToYaml(const Frame& frame, const std::string& id)
     unsigned int fc = frame.optUInt("fc", 1000);
     file << "fc" << (int)fc;
 
+    unsigned int ts = frame.optUInt("ts", 1000);
+    file << "ts" << (int)ts;
+
     file << "counter" << counter;
 
+    // maybe export images:
     // if (in.hasKey("color0")) {
     //     char buf[128];
     //     snprintf(buf, sizeof(buf), "%s/mats_%s.rgb.jpg",

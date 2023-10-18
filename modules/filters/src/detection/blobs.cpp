@@ -137,7 +137,7 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
                                       ", filter  " << id() <<" not applied.";
         return true;
     }
-    if (!cam) {
+    if (!cam && !xyzMode) {
         if (in.hasKey(CAM_SLOT)) {
             cam = boost::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
             cout << "CAM found " << cam->name << endl;
