@@ -43,7 +43,6 @@ class ImportYaml : public Filter
     std::vector<std::string> fields;  //< the fields of the input frame to save
     std::string _in_cloud, _fileName, _seqName;
     std::string path, prefix;
-    bool useFc;
     bool _seq;
     int start, counter;
 

@@ -74,7 +74,7 @@ void Blobs::updateConfig(const boost::property_tree::ptree &pt) {
     in_img = pt.get<string>("inputs.img",in_img);
     out_blobs = pt.get<string>("outputs.blobs",out_blobs);
 
-    xyzMode = in_img == "z";
+    xyzMode = in_img != "depth";
     BOOST_LOG_TRIVIAL(debug)
         << __FUNCTION__ << " " << id() << " xyzMode " << xyzMode;
 

@@ -64,6 +64,7 @@ void ImportYaml::updateConfig(const boost::property_tree::ptree& pt)
     path = pt.get("options.path", path);
     prefix = pt.get("options.prefix", path);
     start = pt.get("options.start", start);
+    counter = start;
 }
 
 bool ImportYaml::filter(const Frame& in, Frame& out)
@@ -74,7 +75,17 @@ bool ImportYaml::filter(const Frame& in, Frame& out)
 
     snprintf(buf, sizeof(buf), "%04d", counter);
 
-    return loadFromYaml(out, std::string(buf));
+    bool success = loadFromYaml(out, std::string(buf));
+    if (!success) {
+        if (counter == start) {
+            return false;  // none ever worked.. complain!
+        }
+        // recursive retry.. lisp danger ahead :)
+        BOOST_LOG_TRIVIAL(info) << id() << "RESTARTING AT " << counter;
+        counter = start;
+        return filter(in, out);
+    }
+    return success;
 }
 
 static inline void putMat(Frame& f, cv::FileStorage& file,
@@ -89,7 +100,7 @@ static inline void putMat(Frame& f, cv::FileStorage& file,
         }
         file[slot] >> *m;
         f.addData(slot, m);
-        BOOST_LOG_TRIVIAL(debug) << " putMat " << slot;
+        // BOOST_LOG_TRIVIAL(debug) << " putMat " << slot;
     } else {
         BOOST_LOG_TRIVIAL(warning) << " putMat COULD NOT FIND " << slot;
     }
@@ -102,7 +113,7 @@ static inline void putInt(Frame& f, cv::FileStorage& file,
         int i;
         file[slot] >> i;
         f.addData(slot, i);
-        BOOST_LOG_TRIVIAL(debug) << " putInt " << slot;
+        // BOOST_LOG_TRIVIAL(debug) << " putInt " << slot;
     } else {
         BOOST_LOG_TRIVIAL(warning) << " putInt COULD NOT FIND " << slot;
     }
@@ -115,10 +126,10 @@ static inline void putUInt(Frame& f, cv::FileStorage& file,
         int i;
         file[slot] >> i;
         f.addData(slot, (unsigned int)i);
-        BOOST_LOG_TRIVIAL(debug) << " putInt " << slot;
+        // BOOST_LOG_TRIVIAL(debug) << " putUInt " << slot;
     } else {
         BOOST_LOG_TRIVIAL(info)
-            << " putInt COULD NOT FIND " << slot << " using default " << def;
+            << " putUInt COULD NOT FIND " << slot << " using default " << def;
         f.addData(slot, def);
     }
 }
@@ -135,13 +146,9 @@ bool ImportYaml::loadFromYaml(Frame& f, const std::string& idx)
 
     if (!file.isOpened()) {
         BOOST_LOG_TRIVIAL(warning) << id() << "failed to open " << buf;
-        if (!counter) {
-            return false;  // none ever worked.. complain!
-        }
-        BOOST_LOG_TRIVIAL(info) << id() << "RESTARTING AT " << counter;
-        counter = start;
-        return loadFromYaml(f, idx);
+        return false;
     }
+
     putMat(f, file, "x");
     putMat(f, file, "y");
     putMat(f, file, "z");
