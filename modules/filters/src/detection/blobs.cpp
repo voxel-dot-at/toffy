@@ -35,8 +35,10 @@
 
 #ifdef toffy_DEBUG
 static const bool dbgShape=true;
+static const bool dbg=false;
 #else
 static const bool dbgShape=false;
+static const bool dbg=false;
 #endif
 
 using namespace std;
@@ -180,6 +182,7 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
 void Blobs::findBlobs(const Frame& frame, cv::Mat& img, cv::Mat& ampl, int fc, std::vector<DetectedObject*>& detObj)
 {
     UNUSED(ampl);
+    bool dbg = false;
     // BOOST_LOG_TRIVIAL(debug) << __FILE__ << ": " <<__FUNCTION__;
     matPtr mx,my,mz;
     if (xyzMode) {
