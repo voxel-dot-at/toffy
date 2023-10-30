@@ -259,7 +259,7 @@ endif()
 
 # PCL
 if(NOT WITHOUT_PCL)
-    find_package(PCL COMPONENTS common filters sample_consensus segmentation features visualization)
+    find_package(PCL COMPONENTS common filters io sample_consensus segmentation features visualization)
     include_directories(${PCL_INCLUDE_DIRS})
     add_definitions(${PCL_DEFINITIONS})
     list(APPEND LIBS ${PCL_LIBRARIES})
