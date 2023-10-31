@@ -28,6 +28,8 @@ add_library(toffy_web SHARED
     )
 
 target_link_libraries(toffy_web toffy ${LIBS})
+set_property(TARGET toffy_web PROPERTY VERSION ${PROJECT_VERSION})
+set_property(TARGET toffy_web PROPERTY SOVERSION ${PROJECT_VERSION})
 install (TARGETS toffy_web
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
