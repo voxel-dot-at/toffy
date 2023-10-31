@@ -114,6 +114,7 @@ private:
     void setOutputsClassicXYZ(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
     void setOutputsClassicXYZAmpl(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
     void setOutputsClassicZAmpl(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
+    void setOutputsClassicRawPhases(const Frame &in, Frame& out, const boost::posix_time::ptime& start, char* data);
 };
 
 }}
