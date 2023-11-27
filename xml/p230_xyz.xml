@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<toffy>
+  <plugins>
+    <gestures>libtoffy_gestures.so</gestures>
+  </plugins>
+  <globals>   	
+    <options>
+      <!-- borrowed from Infineon -->
+      <cameraMatrix type_id="opencv-matrix"><rows>3</rows><cols>3</cols><dt>d</dt><data>2.2355554268657897e+02 0. 1.8565702696980887e+02 0. 2.2380282131331120e+02 1.4053322162372240e+02 0. 0. 1.</data></cameraMatrix>
+      <distCoeffs type_id="opencv-matrix"><rows>5</rows><cols>1</cols><dt>d</dt><data>-7.3545728464987706e-02 -2.9933009223724088e-02 -1.4023062920178249e-03 4.3141046460665335e-04 9.4095227235916241e-03</data></distCoeffs>
+
+      <loglvl>0</loglvl>
+    </options>
+    <control>true</control>
+  </globals>
+  
+  <bta>
+    <name>bta1</name>
+    <options>
+      <!--
+          <loadPath>/media/angel/usb_disk1/Projects/blt_kapsch_gesten/20160614/20160614_Erste_2_High_Position_P331.bltstream</loadPath>
+          
+          <loadPath>/home/angel/projects/builds/toffy_web/Debug/test/1467026767.bltstream</loadPath>-->
+      <center_position>0. 0. 0.</center_position>
+      <rotations>0. 0. 0.</rotations>
+      <flip>false</flip>
+      <timeStamped>false</timeStamped>
+      <verbosity>9</verbosity>
+
+      <!-- TODO: move to connection -->
+      <modulationFrequency>15000000</modulationFrequency> 
+
+      <dynamicOutputs>false</dynamicOutputs>
+    </options>
+    <autoconnect>true</autoconnect>
+    <connection>
+      <verbosity>9</verbosity>
+      <!--    
+           // Generic
+           BTA_DeviceTypeGenericEth = 0x0001,
+           BTA_DeviceTypeGenericBltstream = 0x000f, 15
+      -->
+      <deviceType>1</deviceType>
+      <frameQueueLength>0</frameQueueLength>
+      <frameQueueMode>0</frameQueueMode> <!-- 0.. no queuing, 1==drop oldest frame -->
+      <frameMode>5</frameMode>  <!-- 1 dist/ampl 5 XYZ,Amp -->
+      // N.B. channels have a fixed sequence in the frame delivered - check warnings!
+      <channels>amplitude,x,y,z</channels>
+<!--
+      <udpDataIp>224.0.0.1</udpDataIp>
+      <udpDataPort>10002</udpDataPort>
+-->
+      <udpDataAutoConfig>true</udpDataAutoConfig>
+
+      <tcpDeviceIp>192.168.0.10</tcpDeviceIp>
+      <tcpControlPort>10001</tcpControlPort>
+    </connection>
+  </bta>
+  
+  <imageview>
+      <options>
+        <scale>2</scale>
+      </options>
+      <inputs>
+        <img>ampl</img>
+      </inputs>
+  </imageview>	
+
+  <imageview>
+      <options>
+        <scale>2</scale>
+      </options>
+      <inputs>
+        <img>x</img>
+      </inputs>
+    </imageview>	
+
+    <imageview>
+      <options>
+        <scale>2</scale>
+      </options>
+      <inputs>
+        <img>y</img>
+      </inputs>
+    </imageview>	
+
+    <imageview>
+      <options>
+        <scale>2</scale>
+      </options>
+      <inputs>
+        <img>z</img>
+      </inputs>
+    </imageview>	
+
+</toffy>
