@@ -150,7 +150,7 @@ bool CVTracker::filter(const Frame& in, Frame& out) {
 #endif
         tracker->init(*img,bbox);
     } else {
-#if OCV_VERSION_MAJOR <= 4 and OCV_VERSION_MINOR <= 5 and OCV_VERSION_PATCH < 5
+#if OCV_VERSION_MAJOR <= 4 and OCV_VERSION_MINOR <= 5 and OCV_VERSION_PATCH < 4
         Rect bbox = cv::minAreaRect(detObj->at(0)->contour).boundingRect();
     	this->bbox = bbox;
         Rect2d bboxd(bbox);
