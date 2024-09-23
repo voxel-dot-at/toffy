@@ -65,6 +65,7 @@ enum filterState
 class FilterListener
 {
    public:
+    virtual ~FilterListener() {}
     /**
      * @brief stateChanged
      * @param source
