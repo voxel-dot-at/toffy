@@ -17,8 +17,10 @@
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+
 #include <toffy/bta/bta.hpp>
 #include <toffy/filter_helpers.hpp>
+#include <toffy/bta/BtaWrapper.hpp>
 
 #define RECONNECT 10
 static int retries = 0;

@@ -15,12 +15,13 @@
 */
 #pragma once
 
-// #include <boost/date_time/posix_time/posix_time_types.hpp>
-// #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <toffy/capture/capturerFilter.hpp>
-#include <toffy/bta/BtaWrapper.hpp>
 #include <toffy/cam/cameraParams.hpp>
+
+class BtaWrapper; // forward declaration of the lower-layer sensor wrapper class
 
 namespace toffy {
 namespace capturers {
@@ -79,16 +80,13 @@ public:
 
     static Filter* creator() { return new Bta();}
 
-    //TODO MOVE TO OPENCV
-    //virtual void setCamera2Wcs(toffy::Frame& out, std::string name);
-
 private:
     // frame size data
-    int distsSize;
-    int width, height;
-    bool dynOutputs; // dynamically map output depending on channels present
+    int distsSize = 0;
+    int width = 0, height = 0;
+    bool dynOutputs = true; // dynamically map output depending on channels present
 
-    float globalOfs;
+    float globalOfs = 0.f;
 
     uint32_t eth0Config;
     bool hasEth0Config;

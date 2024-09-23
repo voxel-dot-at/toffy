@@ -17,7 +17,7 @@
 #define __M100WRAPPER_H__
 
 #if defined(MSVC)
-#define DLLExport __declspec( dllexport )
+#define DLLExport __declspec(dllexport)
 #define WIN true
 #define UNIX false
 #define RAWFILE ".rw"
@@ -34,26 +34,25 @@
 #include <bta.h>
 #include <toffy/io/imagesensor.hpp>
 
-struct network {
-    std::string tcp_ip,udp_ip;
-    short tcp_port,udp_port;
+struct network
+{
+    std::string tcp_ip, udp_ip;
+    short tcp_port, udp_port;
 };
 
-const int MAX_CHANNEL_SELECTIONS=8;
-
+const int MAX_CHANNEL_SELECTIONS = 8;
 
 class DLLExport BtaWrapper : public ImageSensor
 {
-public:
-
+   public:
     BtaWrapper();
 
     virtual ~BtaWrapper();
 
-    virtual int start() {return connect();}
-    virtual int stop() {return disconnect();}
+    virtual int start() { return connect(); }
+    virtual int stop() { return disconnect(); }
 
-    virtual int getFrame(cv::Mat & ){return -1;}
+    virtual int getFrame(cv::Mat &) { return -1; }
 
     virtual int parseConfig(std::string fileConfig);
     int parseConfig(const boost::property_tree::ptree pt);
@@ -61,7 +60,7 @@ public:
     int reConnect();
     virtual int disconnect();
     virtual bool isConnected() const;
-    virtual int capture(char * &buffer);
+    virtual int capture(char *&buffer);
 
     int startGrabbing(std::string filename);
     int stopGrabbing();
@@ -71,8 +70,9 @@ public:
 
     //virtual unsigned short getImgType();
     //virtual int getData(unsigned char* data, int size);
-    virtual int getDistances(float * &depth, int &size, char *data);
-    virtual int getAmplitudes(unsigned short * &amplitudes, int &size, char *data);
+    virtual int getDistances(float *&depth, int &size, char *data);
+    virtual int getAmplitudes(unsigned short *&amplitudes, int &size,
+                              char *data);
 
     virtual int getDisSize(char *data, int &x, int &y);
     virtual int getAmpSize(char *data, int &x, int &y);
@@ -81,8 +81,8 @@ public:
     virtual int getFrameCounter(char *data, unsigned int &counter);
     virtual int getFrameRef(char *data, unsigned int &mf, unsigned int &it);
 
-    virtual char * loadFrame(char *data, std::string ext);
-    virtual char * serializeFrame(char *data, size_t &size);
+    virtual char *loadFrame(char *data, std::string ext);
+    virtual char *serializeFrame(char *data, size_t &size);
     virtual int freeFrame(char *data);
 
     virtual unsigned int getIntegrationTime();
@@ -107,7 +107,7 @@ public:
 
     //void deserializeFrame(char *data, size_t &size);
     int saveRaw(std::string fileName, char *data);
-    char * loadRaw(std::string rawFile);
+    char *loadRaw(std::string rawFile);
 
     std::string getBltstream() const;
     void setBltstream(const std::string &value);
@@ -116,38 +116,48 @@ public:
     void setDeviceType(const BTA_DeviceType &value);
 
     bool isAsync() { return async; }
-    BTA_Frame* waitForNextFrame(); // wait for next frame to arrive....
+    BTA_Frame *waitForNextFrame();  // wait for next frame to arrive....
 
     // queue handling:
-    void updateFrame(BTA_Frame* frame); // update the 
+    void updateFrame(BTA_Frame *frame);  // update the
 
-    bool hasChannels; // set to true if channels have been selected this way
-    std::string channelSelectionName(int i) { 
-        return (i>=0 && i<MAX_CHANNEL_SELECTIONS) ? chanSelectionName[i] : "invalid";
-        }
+    bool hasChannels =
+        false;  ///< set to true if channels have been selected this way
+
+    std::string channelSelectionName(int i)
+    {
+        return (i >= 0 && i < MAX_CHANNEL_SELECTIONS) ? chanSelectionName[i]
+                                                      : "invalid";
+    }
 
     /** call BTA_SetChannelSelection with the current set of channels */
     BTA_Status setChannels();
 
-    typedef enum  { disconnected, connecting, connected, error } ConnState;
+    typedef enum
+    {
+        disconnected,
+        connecting,
+        connected,
+        error
+    } ConnState;
     ConnState getState() const { return state; }
-    
-    int32_t frameMode;
-private:
-    BTA_Config config;
-    BTA_Handle handle;
-    BTA_Status status;
-    BTA_DeviceInfo *deviceInfo;
 
+    int32_t frameMode = 0;
+
+   private:
+    BTA_Config config;
+    BTA_Handle handle = 0;
+    BTA_Status status = BTA_StatusUnknown;
+    BTA_DeviceInfo *deviceInfo = 0;
 
     //variables needed to fill pointer in BTA_Config
     uint8_t udpDataIpAddr[6];
     uint8_t tcpDeviceIpAddr[6];
     uint8_t udpControlOutIpAddr[6];
     uint8_t udpControlInIpAddr[6];
-    std::string calibFileName,
-    uartPortName,
-    bltstreamFilename;
+    std::string calibFileName = "";
+    // std::string uartPortName = "";
+    std::string bltstreamFilename = "";
 
 #if defined(BTA_P100)
     static const int retries = 2;
@@ -156,27 +166,29 @@ private:
 #endif
     unsigned int manufacturer, device;
 
-    bool async; //< set to true if frameArrived* callbacks are used.
+    bool async;  //< set to true if frameArrived* callbacks are used.
 
     boost::mutex frameMutex, fillFrameMutex;
     boost::condition_variable newFrameCond;
 
-    BTA_Frame* frames[3]; //< array of frames, one is filled by bta lib, the other in use
-    BTA_Frame* frameInUse; // pointer to the current frame
-    BTA_Frame* frameToFill; // pointer to the current frame
-    int toFillIndex; // index of the current frame
-    bool hasBeenUpdated; // do we have new data yet?
+    BTA_Frame *frames
+        [3];  //< array of frames, one is filled by bta lib, the other in use
+    BTA_Frame *frameInUse;   // pointer to the current frame
+    BTA_Frame *frameToFill;  // pointer to the current frame
+    int toFillIndex;         // index of the current frame
+    bool hasBeenUpdated;     // do we have new data yet?
 
-    int numChannels; // number of active channels
+    int numChannels = 0;  // number of active channels
     BTA_ChannelSelection channels[MAX_CHANNEL_SELECTIONS];
     std::string chanSelectionName[MAX_CHANNEL_SELECTIONS];
-    std::string theChannels;  //< comma-separated list of channels as read by xml
-    bool parseChannelSelection(const std::string& chans);
+    std::string
+        theChannels;  //< comma-separated list of channels as read by xml
+    bool parseChannelSelection(const std::string &chans);
 
     /** change frames, resets hasBeenUpdated
      * @return the new frame to use for processing (frameInUse)
     */
-    BTA_Frame* flipFrame();
+    BTA_Frame *flipFrame();
 
     ConnState state;
 };
