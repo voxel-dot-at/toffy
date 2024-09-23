@@ -14,6 +14,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
 #include "toffy/frame.hpp"
 
 #include <boost/log/trivial.hpp>
@@ -54,19 +55,19 @@ boost::any Frame::getData(const std::string& key) const
     return out;
 }
 
-void toffy::Frame::addData(std::string key, boost::any v, SlotDataType dt)
+void Frame::addData(std::string key, boost::any v, SlotDataType dt)
 {
     data[key] = v;
     meta[key] = dt;
 }
 
-void toffy::Frame::addData(std::string key, boost::any v, SlotDataType dt, const std::string& description)
+void Frame::addData(std::string key, boost::any v, SlotDataType dt,
+                    const std::string& description)
 {
     data[key] = v;
     meta[key] = dt;
     desc[key] = description;
 }
-
 
 bool toffy::Frame::removeData(std::string key)
 {
@@ -79,13 +80,16 @@ bool toffy::Frame::removeData(std::string key)
 
 void Frame::clearData() { return data.clear(); }
 
-/*
-std::vector<std::string> Frame::keys() const
+
+void Frame::info(std::vector<SlotInfo>& fields) const
 {
-    std::vector<std::string> k(data.size());
-    boost::container::flat_map< std::string, boost::any >::const_iterator it =
-data.begin(); while (it!= data.end()) { k.push_back(it->first); it++;
+    auto it = data.begin();
+    while (it != data.end()) {
+        Frame::SlotInfo si;
+        si.key = it->first;
+        si.dt = getDataType(si.key);
+        si.description = getDescription(si.key);
+        fields.push_back(si);
+        it++;
     }
-    return k;
 }
-*/

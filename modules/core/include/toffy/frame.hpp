@@ -27,7 +27,7 @@
 #include <toffy/toffy_export.h>
 
 #ifdef MSVC
-#define DLLExport __declspec( dllexport )
+#define DLLExport __declspec(dllexport)
 #else
 #define DLLExport /**/
 #endif
@@ -36,8 +36,7 @@ namespace cv {
 class Mat;
 }
 
-namespace toffy
-{
+namespace toffy {
 /**
  * @brief Share pointer to cv::Mat
  */
@@ -56,9 +55,9 @@ typedef boost::shared_ptr<cv::Mat> matPtr;
  *  will manage the data.
  *
  */
-class TOFFY_EXPORT Frame {
-public:
-
+class TOFFY_EXPORT Frame
+{
+   public:
     Frame();
     /**
      * @brief Copy constructor
@@ -73,9 +72,31 @@ public:
      * @param x
      * @return
      */
-    Frame& operator= (const Frame& x) {data = x.data; return *this;}
+    Frame& operator=(const Frame& x)
+    {
+        data = x.data;
+        return *this;
+    }
 
-    typedef enum { NotFound, Any, Bool, Int, Uint, Double, Float, Mat, String } SlotDataType;
+    typedef enum
+    {
+        NotFound,
+        Any,
+        Bool,
+        Int,
+        Uint,
+        Double,
+        Float,
+        Mat,
+        String
+    } SlotDataType;
+
+    typedef struct
+    {
+        std::string key;
+        SlotDataType dt;
+        std::string description;
+    } SlotInfo;
 
     /**
      * @brief Check if a data key is in the frame
@@ -83,6 +104,8 @@ public:
      * @return True if found, false if not
      */
     bool hasKey(std::string key) const;
+
+    void info(std::vector<SlotInfo>& fields) const;
 
     /**
      * @brief Insert data in the Frame with the given key. If the key does
@@ -92,7 +115,8 @@ public:
      * @param dt dataType
      * @param description an (optional) description, esp. for Any data types
      */
-    void addData(std::string key, boost::any v, SlotDataType dt, const std::string& description);
+    void addData(std::string key, boost::any v, SlotDataType dt,
+                 const std::string& description);
 
     void addData(std::string key, boost::any v, SlotDataType dt);
 
@@ -114,7 +138,6 @@ public:
 
     void addData(std::string key, double v) { addData(key, v, Double); }
 
-
     /**
      * @brief Delete data from the Frame with key. If not found does not do
      *  anything
@@ -128,9 +151,15 @@ public:
      */
     void clearData();
 
-    SlotDataType getType(std::string key) const { return meta.find(key) != meta.end()? meta.find(key)->second : NotFound; }
+    SlotDataType getDataType(const std::string& key) const
+    {
+        return meta.find(key) != meta.end() ? meta.find(key)->second : NotFound;
+    }
 
-    std::string getDescription(std::string key) const { return desc.find(key) != desc.end()? desc.find(key)->second : ""; }
+    std::string getDescription(const std::string& key) const
+    {
+        return desc.find(key) != desc.end() ? desc.find(key)->second : "";
+    }
 
     /**
      * @brief Get data from Frame with key
@@ -190,12 +219,14 @@ public:
 
     // optional variant - returns dfault value if key not present:
     inline bool optBool(const std::string& key, bool dfault) const;
-    inline unsigned int optUInt(const std::string& key, unsigned int dfault) const;
+    inline unsigned int optUInt(const std::string& key,
+                                unsigned int dfault) const;
     inline int optInt(const std::string& key, int dfault) const;
     inline double optDouble(const std::string& key, double dfault) const;
     inline float optFloat(const std::string& key, float dfault) const;
     inline matPtr optMatPtr(const std::string& key, matPtr dfault) const;
-    inline std::string optString(const std::string& key, std::string& dfault) const;
+    inline std::string optString(const std::string& key,
+                                 std::string& dfault) const;
 
     // insGet: get a value, if key key does not exist insert it
     // inline bool optBool(const std::string& key, bool dfault) const;
@@ -206,7 +237,7 @@ public:
     // inline matPtr optMatPtr(const std::string& key, matPtr dfault) const;
     // inline std::string optString(const std::string& key, std::string& dfault) const;
 
-/*
+    /*
     // set :
     inline bool setGetBool(const std::string& key, bool dfault);
     inline unsigned int setGetUInt(const std::string& key, unsigned int dfault);
@@ -215,11 +246,12 @@ public:
     inline float setGetFloat(const std::string& key, float dfault);
     inline matPtr setGetMatPtr(const std::string& key, Size size, int type);
     inline std::string setGetString(const std::string& key, std::string& dfault);
-*/  
+*/
     /** get matPtr, if not set, create and insert a new one: */
-    inline matPtr getSertMatPtr(const std::string& key, cv::Size size, int type);
+    inline matPtr getSertMatPtr(const std::string& key, cv::Size size,
+                                int type);
 
-private:
+   private:
     /**
      * Data container in frame.
      *
@@ -227,80 +259,95 @@ private:
      * of data.
      * Use boost::shared_ptr to avoid any memory leak.
      */
-    boost::container::flat_map< std::string, boost::any > data;
+    boost::container::flat_map<std::string, boost::any> data;
 
     /** data type of the slot */
-    boost::container::flat_map< std::string, SlotDataType > meta;
+    boost::container::flat_map<std::string, SlotDataType> meta;
 
     /** optional description for a data slot */
-    boost::container::flat_map< std::string, std::string > desc;
+    boost::container::flat_map<std::string, std::string> desc;
 };
 
-inline unsigned int Frame::getUInt(const std::string& key) const {
-    unsigned int u = boost::any_cast<unsigned int>( getData(key) );
+inline unsigned int Frame::getUInt(const std::string& key) const
+{
+    unsigned int u = boost::any_cast<unsigned int>(getData(key));
     return u;
 }
 
-inline bool Frame::getBool(const std::string& key) const {
-    bool b = boost::any_cast<bool>( getData(key) );
+inline bool Frame::getBool(const std::string& key) const
+{
+    bool b = boost::any_cast<bool>(getData(key));
     return b;
 }
 
-inline int Frame::getInt(const std::string& key) const {
-    int u = boost::any_cast<int>( getData(key) );
+inline int Frame::getInt(const std::string& key) const
+{
+    int u = boost::any_cast<int>(getData(key));
     return u;
 }
 
-inline double Frame::getDouble(const std::string& key) const {
-    double d = boost::any_cast<double>( getData(key) );
+inline double Frame::getDouble(const std::string& key) const
+{
+    double d = boost::any_cast<double>(getData(key));
     return d;
 }
 
-inline float Frame::getFloat(const std::string& key) const {
-    float f = boost::any_cast<float>( getData(key) );
+inline float Frame::getFloat(const std::string& key) const
+{
+    float f = boost::any_cast<float>(getData(key));
     return f;
 }
 
-inline matPtr Frame::getMatPtr(const std::string& key) const {
-    matPtr m = boost::any_cast<matPtr>( getData(key) );
+inline matPtr Frame::getMatPtr(const std::string& key) const
+{
+    matPtr m = boost::any_cast<matPtr>(getData(key));
     return m;
 }
 
-inline std::string Frame::getString(const std::string& key) const {
-    std::string s = boost::any_cast<std::string>( getData(key) );
+inline std::string Frame::getString(const std::string& key) const
+{
+    std::string s = boost::any_cast<std::string>(getData(key));
     return s;
 }
 
 // optional variant - returns dfault value if key not present:
-inline bool Frame::optBool(const std::string& key, bool dfault) const {
-  return hasKey(key) ? getBool(key) : dfault;
+inline bool Frame::optBool(const std::string& key, bool dfault) const
+{
+    return hasKey(key) ? getBool(key) : dfault;
 };
 inline unsigned int Frame::optUInt(const std::string& key,
-                                   unsigned int dfault) const {
-  return hasKey(key) ? getUInt(key) : dfault;
+                                   unsigned int dfault) const
+{
+    return hasKey(key) ? getUInt(key) : dfault;
 };
-inline int Frame::optInt(const std::string& key, int dfault) const {
-  return hasKey(key) ? getInt(key) : dfault;
+inline int Frame::optInt(const std::string& key, int dfault) const
+{
+    return hasKey(key) ? getInt(key) : dfault;
 };
-inline double Frame::optDouble(const std::string& key, double dfault) const {
-  return hasKey(key) ? getDouble(key) : dfault;
+inline double Frame::optDouble(const std::string& key, double dfault) const
+{
+    return hasKey(key) ? getDouble(key) : dfault;
 };
-inline float Frame::optFloat(const std::string& key, float dfault) const {
-  return hasKey(key) ? getFloat(key) : dfault;
+inline float Frame::optFloat(const std::string& key, float dfault) const
+{
+    return hasKey(key) ? getFloat(key) : dfault;
 };
 
-inline matPtr Frame::optMatPtr(const std::string& key, matPtr dfault) const {
-  return hasKey(key) ? getMatPtr(key) : dfault;
+inline matPtr Frame::optMatPtr(const std::string& key, matPtr dfault) const
+{
+    return hasKey(key) ? getMatPtr(key) : dfault;
 };
 
 inline std::string Frame::optString(const std::string& key,
-                                    std::string& dfault) const {
-  return hasKey(key) ? getString(key) : dfault;
+                                    std::string& dfault) const
+{
+    return hasKey(key) ? getString(key) : dfault;
 };
 
-
-inline matPtr Frame::getSertMatPtr(const std::string& key, cv::Size size, int type) {
-    if (! hasKey(key)) {
+inline matPtr Frame::getSertMatPtr(const std::string& key, cv::Size size,
+                                   int type)
+{
+    if (!hasKey(key)) {
         matPtr mp(new cv::Mat(size, type));
         addData(key, mp, Mat);
     }
