@@ -19,10 +19,12 @@
 #include <fstream>
 #include <limits.h>
 
+#include <boost/foreach.hpp>
+#include <boost/log/trivial.hpp>
+
 #include <pcl/range_image/range_image_planar.h>
 #include <pcl/common/transforms.h>
 
-#include <boost/log/trivial.hpp>
 
 #include "toffy/3d/merge.hpp"
 
@@ -32,9 +34,9 @@ using namespace cv;
 using namespace std;
 
 #ifdef CM_DEBUG
-const bool dbg=true;
+static const bool dbg=true;
 #else
-const bool dbg=false;
+static const bool dbg=false;
 #endif
 
 std::size_t Merge::_filter_counter = 1;

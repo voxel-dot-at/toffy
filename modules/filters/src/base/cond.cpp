@@ -67,22 +67,13 @@ void Cond::updateConfig(const boost::property_tree::ptree& pt)
     Filter::updateConfig(pt);
 
     enabled = pt.get<bool>("options.enabled", enabled);
-    boost::optional<std::string> f = pt.get_optional<std::string>("options.file");
-    if (f) {
-        opt_file = *f;
 
-        try {
-            BOOST_LOG_TRIVIAL(debug) << "LOADING CONF FROM " << opt_file;
-//            loadFileConfig(opt_file);
-        } catch (std::exception& e) {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << " " << id()
-                                     << " FAILED TO LOAD " << opt_file;
-        }
-    }
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id() << " enabled? " << enabled;
 }
 
 int Cond::loadConfig(const boost::property_tree::ptree& pt, const std::string& confFile)
 {
+
     BOOST_LOG_TRIVIAL(debug) << "Cond::loadConfig " << id() << " " << confFile << " " << pt.begin()->first;
     if (pt.begin()->first != type()) {
         // on sub-filterbanks that are loaded by Cond, the overloaded loadConfig is called ... pass the call up to where it belongs: 
@@ -92,6 +83,8 @@ int Cond::loadConfig(const boost::property_tree::ptree& pt, const std::string& c
 
     const boost::property_tree::ptree& self = pt.get_child( "cond" );
 
+    enabled = self.get<bool>("options.enabled", enabled);
+    BOOST_LOG_TRIVIAL(debug) << "Cond::loadConfig " << id() << " enabled? " << enabled;
     boost::optional<const boost::property_tree::ptree& > pfilters = self.get_child_optional( "filterBank" );
 
     if( pfilters ) {

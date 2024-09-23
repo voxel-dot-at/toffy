@@ -38,15 +38,16 @@ static void BTA_CALLCONV frameArrivedEx2(
     struct BTA_FrameArrivedReturnOptions * /*frameArrivedReturnOptions*/)
 {
     if (!frame) {
-        BOOST_LOG_TRIVIAL(warning) << "   BTACallback: frameArrivedEx2 NO FRAME ";
+        BOOST_LOG_TRIVIAL(warning)
+            << "   BTACallback: frameArrivedEx2 NO FRAME ";
         return;
     }
-/*
+    /*
     BOOST_LOG_TRIVIAL(debug)
         << "   BTACallback: frameArrivedEx2 (" << frame->frameCounter << ") ";
 */
     BtaWrapper *bta = (BtaWrapper *)arg;
- /*
+    /*
     int musec, msec, sec, min, hours;
 
     unsigned long timeArr = frame->timeStamp;
@@ -83,7 +84,8 @@ void BtaWrapper::setBltstream(const std::string &value)
     bltstreamFilename = value;
 }
 
-BtaWrapper::BtaWrapper() : manufacturer(1), device(0), async(false),state(disconnected)
+BtaWrapper::BtaWrapper()
+    : manufacturer(1), device(0), async(false), state(disconnected)
 {
     handle = 0;
     deviceInfo = NULL;
@@ -134,7 +136,8 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
     pres = pt_optional_get_default<uint8_t>(pt, "connection.shmDataEnabled",
                                             config.shmDataEnabled, 0);
     if (pres) {
-        BOOST_LOG_TRIVIAL(debug) << "shmDataEnabled is set! now=" << (int)config.shmDataEnabled;
+        BOOST_LOG_TRIVIAL(debug)
+            << "shmDataEnabled is set! now=" << (int)config.shmDataEnabled;
     }
 
     // n.b. we DON't set the default mcast channel 224.0.0.1 ;
@@ -176,6 +179,10 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
         pt_optional_get<uint16_t>(pt, "connection.udpControlCallbackPort",
                                   config.udpControlCallbackPort);
     }
+    bool autoConf = config.udpDataAutoConfig != 0;
+    pt_optional_get_default<bool>(pt, "connection.udpDataAutoConfig",
+                          autoConf, autoConf);
+    config.udpDataAutoConfig = autoConf;            
 
     pres = pt_optional_get_ipaddr(pt, "connection.tcpDeviceIp",
                                   (struct in_addr &)tcpDeviceIpAddr,
@@ -183,8 +190,9 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
     config.tcpDeviceIpAddr = tcpDeviceIpAddr;
     if (pres) {
         BOOST_LOG_TRIVIAL(debug)
-            << "tcpDeviceIpAddr set to " << (unsigned int)tcpDeviceIpAddr[0] << "."
-            << (unsigned int)tcpDeviceIpAddr[1] << "." << (unsigned int)tcpDeviceIpAddr[2] << "."
+            << "tcpDeviceIpAddr set to " << (unsigned int)tcpDeviceIpAddr[0]
+            << "." << (unsigned int)tcpDeviceIpAddr[1] << "."
+            << (unsigned int)tcpDeviceIpAddr[2] << "."
             << (unsigned int)tcpDeviceIpAddr[3];
     } else {
         BOOST_LOG_TRIVIAL(debug) << "tcpDeviceIpAddr not set ";
@@ -205,7 +213,7 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
 
     // can't auto-convert int32 to FrameMode, so do it manually:
     try {
-        int32_t frameMode =
+        frameMode =
             pt.get<int32_t>("connection.frameMode", BTA_FrameModeDistAmp);
         config.frameMode = (BTA_FrameMode)frameMode;
         BOOST_LOG_TRIVIAL(debug)
@@ -307,7 +315,8 @@ int BtaWrapper::connect()
                                 << (int)config.udpDataIpAddr[2] << "."
                                 << (int)config.udpDataIpAddr[3] << ".";
     }
-    BOOST_LOG_TRIVIAL(info) << "BtaWrapper::connect() shm " << (int)config.shmDataEnabled;
+    BOOST_LOG_TRIVIAL(info)
+        << "BtaWrapper::connect() shm " << (int)config.shmDataEnabled;
     // hack on:
     // config.shmDataEnabled = 1;
 
@@ -328,11 +337,12 @@ int BtaWrapper::connect()
         status = setChannels();
         if (status < 0) {
             BOOST_LOG_TRIVIAL(warning)
-                << "BtaWrapper::connect() setChannels() failed with: " << status;
+                << "BtaWrapper::connect() setChannels() failed with: "
+                << status;
             state = error;
         } else {
-        BOOST_LOG_TRIVIAL(debug)
-            << "BtaWrapper::connect() setChannels() status: " << status;
+            BOOST_LOG_TRIVIAL(debug)
+                << "BtaWrapper::connect() setChannels() status: " << status;
         }
     }
 
@@ -461,7 +471,7 @@ int BtaWrapper::disconnect()
         handle = 0;
     }
     state = disconnected;
-    
+
     return 0;
 }
 
@@ -469,7 +479,8 @@ bool BtaWrapper::isConnected() const
 {
     // cout << "BTAisConnected(handle): " << (int)BTAisConnected(handle) <<
     // endl;
-    return (state == connecting || state == connected || BTAisConnected(handle));
+    return (state == connecting || state == connected ||
+            BTAisConnected(handle));
 }
 
 int BtaWrapper::capture(char *&buffer)
@@ -1059,117 +1070,6 @@ int BtaWrapper::stopGrabbing()
     status = BTAstartGrabbing(handle, 0);
     errorHandling(status);
     return 1;
-}
-
-void BtaWrapper::saveAmplCSV(const std::string &fileName)
-{
-    boost::unique_lock<boost::mutex> lock(frameMutex);
-    uint32_t i;
-    for (i = 0; i < frameInUse->channelsLen; i++) {
-        if (frameInUse->channels[i]->id == BTA_ChannelIdAmplitude) break;
-    }
-    if (i >= frameInUse->channelsLen) {
-        BOOST_LOG_TRIVIAL(warning)
-            << __FUNCTION__ << " could not find channel!";
-        return;
-    }
-    BTA_Channel *chan = frameInUse->channels[i];
-
-    std::cout << "BtaWrapper::saveAmplCSV saving " << chan->xRes << "x"
-              << chan->yRes << " dataformat " << chan->dataFormat << std::endl;
-    ofstream of(fileName, std::ofstream::out);
-
-    uint32_t j = 0;
-
-    if (chan->dataFormat == BTA_DataFormatUInt16) {
-        // BOOST_LOG_TRIVIAL(debug) << "unit: " << unit;
-        unsigned short *ampl = (unsigned short *)chan->data;
-
-        for (uint16_t y = 0; y < chan->yRes; y++) {
-            for (uint16_t x = 0; x < chan->xRes; x++) {
-                of << ampl[j] << ";";
-                j++;
-            }
-            of << '\n';
-        }
-    } else if (chan->dataFormat == BTA_DataFormatFloat32) {
-        float *ampls = (float *)chan->data;
-
-        for (uint16_t y = 0; y < chan->yRes; y++) {
-            for (uint16_t x = 0; x < chan->xRes; x++) {
-                of << (ampls[j]) << ";";
-                j++;
-            }
-            of << '\n';
-        }
-    } else {
-        BOOST_LOG_TRIVIAL(warning)
-            << "Unknown data format! " << chan->dataFormat;
-    }
-}
-
-void BtaWrapper::saveDistCSV(const std::string &fileName)
-{
-    boost::unique_lock<boost::mutex> lock(frameMutex);
-    uint32_t i;
-    for (i = 0; i < frameInUse->channelsLen; i++) {
-        if (frameInUse->channels[i]->id == BTA_ChannelIdDistance) break;
-    }
-    if (i >= frameInUse->channelsLen) {
-        BOOST_LOG_TRIVIAL(warning)
-            << __FUNCTION__ << " could not find channel!";
-        return;
-    }
-    BTA_Channel *chan = frameInUse->channels[i];
-    std::cout << "BtaWrapper::saveDistCSV saving " << chan->xRes << "x"
-              << chan->yRes << " dataformat " << chan->dataFormat << std::endl;
-    ofstream of(fileName, std::ofstream::out);
-
-    if (chan->dataFormat == BTA_DataFormatUInt16) {
-        // BOOST_LOG_TRIVIAL(debug) << "unit: " << unit;
-        if (chan->unit == BTA_UnitMillimeter) {
-            unsigned short *distances = (unsigned short *)chan->data;
-            uint32_t j = 0;
-
-            for (uint16_t y = 0; y < chan->yRes; y++) {
-                for (uint16_t x = 0; x < chan->xRes; x++) {
-                    if (distances[j] <= 0x0001 || distances[j] > 0xFA00) {
-                        of << (-1.0f) << ";";
-                    } else {
-                        of << (distances[j] / 1000.f) << ";";
-                    }
-                    j++;
-                }
-                of << '\n';
-            }
-        } else {
-            BOOST_LOG_TRIVIAL(warning) << "Unknown unit! " << chan->unit;
-        }
-
-    } else if (chan->dataFormat == BTA_DataFormatFloat32) {
-        if (chan->unit == BTA_UnitMeter) {
-            float *distances = (float *)chan->data;
-            uint32_t j = 0;
-
-            for (uint16_t y = 0; y < chan->yRes; y++) {
-                for (uint16_t x = 0; x < chan->xRes; x++) {
-                    if (distances[j] <= 0.001 || distances[j] > 20.0f) {
-                        of << (-1.0f) << ";";
-                    } else {
-                        of << (distances[j]) << ";";
-                    }
-                    j++;
-                }
-                of << '\n';
-            }
-        } else {
-            BOOST_LOG_TRIVIAL(warning) << "Unknown unit! " << chan->unit;
-        }
-    } else {
-        BOOST_LOG_TRIVIAL(warning)
-            << "Unknown data format! " << chan->dataFormat;
-    }
-    of.close();
 }
 
 int BtaWrapper::saveRaw(string fileName, char *data)

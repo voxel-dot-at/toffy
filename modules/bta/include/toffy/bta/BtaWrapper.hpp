@@ -115,10 +115,6 @@ public:
     BTA_DeviceType getDeviceType() const;
     void setDeviceType(const BTA_DeviceType &value);
 
-    void saveAmplCSV(const std::string& fileName);
-    void saveDistCSV(const std::string& fileName);
-
-
     bool isAsync() { return async; }
     BTA_Frame* waitForNextFrame(); // wait for next frame to arrive....
 
@@ -136,6 +132,7 @@ public:
     typedef enum  { disconnected, connecting, connected, error } ConnState;
     ConnState getState() const { return state; }
     
+    int32_t frameMode;
 private:
     BTA_Config config;
     BTA_Handle handle;

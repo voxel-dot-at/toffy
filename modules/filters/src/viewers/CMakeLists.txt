@@ -1,4 +1,4 @@
-if ( ${PCL_VISUALIZATION_FOUND} )
+if ( ${PCL_VISUALIZATION_FOUND} AND ${WITH_VISUALIZATION})
     set(PCL_SRCS 
         cloudviewpcl.cpp
     )
@@ -8,12 +8,12 @@ else()
     set(PCL_SRCS "" )
 endif()
 
-if ( ${OPENCV_VIZ_FOUND} )
+if ( ${OPENCV_VIZ_FOUND} AND ${WITH_VISUALIZATION} )
     set(VIZ_SRCS 
         cloudviewopencv.cpp
     )
     add_definitions(-DOPENCV_VIZ=1)
-else() 
+else()
     message("opencv viz module not found - will NOT build cloudviewopencv")
     set(VIZ_SRCS "" )
 endif()

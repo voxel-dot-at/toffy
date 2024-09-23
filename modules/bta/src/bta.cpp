@@ -177,7 +177,8 @@ void Bta::updateConfig(const boost::property_tree::ptree& pt)
     } else if (camType == "M520") {
         cam.reset(new cam::M520());
     } else {
-        BOOST_LOG_TRIVIAL(info) << "assuming default camera type; please set options.camera to override!";
+        BOOST_LOG_TRIVIAL(info) << "assuming default camera type; please set "
+                                   "options.camera to override!";
         cam.reset(new cam::P230());
     }
     update = true;
@@ -224,13 +225,14 @@ bool Bta::filter(const Frame& in, Frame& out)
                 BOOST_LOG_TRIVIAL(error)
                     << "Camera not reachable after " << RECONNECT
                     << "tries. Stopping toffy.";
-                exit(EXIT_FAILURE); // @TODO report failure to filterBank?
+                exit(EXIT_FAILURE);  // @TODO report failure to filterBank?
             } else {
                 BOOST_LOG_TRIVIAL(warning)
                     << "Could not reconnect to device. Retry: " << retries;
                 return false;
             }
-            sleep(1); // BAD SYNC CALL, but without camera connection, there's nothing to do...
+            sleep(
+                1);  // BAD SYNC CALL, but without camera connection, there's nothing to do...
         } else {
             retries = 0;
         }
@@ -276,6 +278,7 @@ bool Bta::filter(const Frame& in, Frame& out)
         }
     } else {  // live connection
         if (sensor->isAsync()) {
+            // returns a BTA_Frame *
             data = (char*)sensor->waitForNextFrame();
         } else {
             BOOST_LOG_TRIVIAL(debug)
@@ -375,7 +378,7 @@ int Bta::connect()
             if (hasIfConfig) {
                 sensor->writeRegister(0x00fa, interfaceConfig);
             }
-            
+
             int freq = sensor->getModulationFrequency();
             int it = sensor->getIntegrationTime();
             float ofs = sensor->getGlobalOffset();
@@ -536,6 +539,223 @@ void Bta::save(const bool& save)
 void Bta::setOutputsClassic(const Frame& in, Frame& out,
                             const boost::posix_time::ptime& start, char* data)
 {
+    if (sensor->frameMode == BTA_FrameModeDistAmp) {  // 0
+        this->setOutputsClassicDistAmpl(in, out, start, data);
+    } else if (sensor->frameMode == BTA_FrameModeXYZ) {  // 4
+        this->setOutputsClassicXYZ(in, out, start, data);
+    } else if (sensor->frameMode == BTA_FrameModeRawPhases) {  // 4
+        this->setOutputsClassicRawPhases(in, out, start, data);
+    } else if (sensor->frameMode == BTA_FrameModeXYZAmp) {  // 4
+        this->setOutputsClassicXYZAmpl(in, out, start, data);
+    // } else if (sensor->frameMode == BTA_FrameModeZAmp) {  // 4
+    //     this->setOutputsClassicZAmpl(in, out, start, data);
+    } else {
+        BOOST_LOG_TRIVIAL(error)
+            << "ERROR UNIMPLEMENTED FRAME MODE " << sensor->frameMode;
+    }
+}
+
+void Bta::setOutputsClassicXYZ(const Frame& in, Frame& out,
+                                   const boost::posix_time::ptime& start,
+                                   char* data)
+{
+    boost::posix_time::time_duration diff;
+    int size = distsSize, x = 0, y = 0;
+    BTA_Frame* frame = (BTA_Frame*)data;
+
+    matPtr mx, my, mz, ma;
+
+    if (!out.hasKey(_out_depth) || size != distsSize) {
+        // first iteration - initialize depth matrix
+        x = frame->channels[0]->xRes;
+        y = frame->channels[0]->yRes;
+
+        width = x;
+        height = y;
+        size = distsSize = width * height;
+
+        // initialize depth matrix ...:
+        mx.reset(new cv::Mat(height, width, CV_16U));
+        my.reset(new cv::Mat(height, width, CV_16U));
+        mz.reset(new cv::Mat(height, width, CV_16U));
+        out.addData("x", mx);
+        out.addData("y", my);
+        out.addData("z", mz);
+    } else {
+        mx = in.getMatPtr("x");
+        my = in.getMatPtr("y");
+        mz = in.getMatPtr("z");
+        x = width;
+        y = height;
+    }
+
+    unsigned short* px = mx->ptr<unsigned short>();
+    unsigned short* py = my->ptr<unsigned short>();
+    unsigned short* pz = mz->ptr<unsigned short>();
+
+    memcpy(px, frame->channels[0]->data, frame->channels[0]->dataLen);
+    memcpy(py, frame->channels[1]->data, frame->channels[1]->dataLen);
+    memcpy(pz, frame->channels[2]->data, frame->channels[2]->dataLen);
+
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration set: " << diff.total_microseconds();
+
+    if (flip()) {
+        cv::flip(*mx, *mx, -1);
+        cv::flip(*my, *my, -1);
+        cv::flip(*mz, *mz, -1);
+    } else {
+        if (flip_x()) {
+            cv::flip(*mx, *mx, 1);
+            cv::flip(*my, *my, 1);
+            cv::flip(*mz, *mz, 1);
+        }
+        if (flip_y()) {
+            cv::flip(*mx, *mx, 0);
+            cv::flip(*my, *my, 0);
+            cv::flip(*mz, *mz, 0);
+        }
+    }
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
+}
+
+void Bta::setOutputsClassicXYZAmpl(const Frame& in, Frame& out,
+                                   const boost::posix_time::ptime& start,
+                                   char* data)
+{
+    boost::posix_time::time_duration diff;
+    int size = distsSize, x = 0, y = 0;
+    BTA_Frame* frame = (BTA_Frame*)data;
+
+    matPtr mx, my, mz, ma;
+
+    if (!out.hasKey(_out_depth) || size != distsSize) {
+        // first iteration - initialize depth matrix
+        x = frame->channels[0]->xRes;
+        y = frame->channels[0]->yRes;
+
+        width = x;
+        height = y;
+        size = distsSize = width * height;
+
+        // initialize depth matrix ...:
+        mx.reset(new cv::Mat(height, width, CV_16U));
+        my.reset(new cv::Mat(height, width, CV_16U));
+        mz.reset(new cv::Mat(height, width, CV_16U));
+        ma.reset(new cv::Mat(height, width, CV_16U));
+        out.addData("x", mx);
+        out.addData("y", my);
+        out.addData("z", mz);
+        out.addData("ampl", ma);
+
+    } else {
+        mx = in.getMatPtr("x");
+        my = in.getMatPtr("y");
+        mz = in.getMatPtr("z");
+        ma = in.getMatPtr("ampl");
+        x = width;
+        y = height;
+    }
+
+    unsigned short* px = mx->ptr<unsigned short>();
+    unsigned short* py = my->ptr<unsigned short>();
+    unsigned short* pz = mz->ptr<unsigned short>();
+    unsigned short* pa = ma->ptr<unsigned short>();
+
+    memcpy(px, frame->channels[0]->data, frame->channels[0]->dataLen);
+    memcpy(py, frame->channels[1]->data, frame->channels[1]->dataLen);
+    memcpy(pz, frame->channels[2]->data, frame->channels[2]->dataLen);
+    memcpy(pa, frame->channels[3]->data, frame->channels[3]->dataLen);
+
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration set: " << diff.total_microseconds();
+
+    if (flip()) {
+        cv::flip(*mx, *mx, -1);
+        cv::flip(*my, *my, -1);
+        cv::flip(*mz, *mz, -1);
+        cv::flip(*ma, *ma, -1);
+    } else {
+        if (flip_x()) {
+            cv::flip(*mx, *mx, 1);
+            cv::flip(*my, *my, 1);
+            cv::flip(*mz, *mz, 1);
+            cv::flip(*ma, *ma, 1);
+        }
+        if (flip_y()) {
+            cv::flip(*mx, *mx, 0);
+            cv::flip(*my, *my, 0);
+            cv::flip(*mz, *mz, 0);
+            cv::flip(*ma, *ma, 0);
+        }
+    }
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
+}
+
+
+void Bta::setOutputsClassicZAmpl(const Frame& in, Frame& out,
+                                   const boost::posix_time::ptime& start,
+                                   char* data)
+{
+    boost::posix_time::time_duration diff;
+    int size = distsSize, x = 0, y = 0;
+    BTA_Frame* frame = (BTA_Frame*)data;
+
+    matPtr mz, ma;
+
+    if (!out.hasKey(_out_depth) || size != distsSize) {
+        // first iteration - initialize depth matrix
+        x = frame->channels[0]->xRes;
+        y = frame->channels[0]->yRes;
+        width = x;
+        height = y;
+        size = distsSize = width * height;
+
+        // initialize depth matrix ...:
+        mz.reset(new cv::Mat(height, width, CV_16U));
+        ma.reset(new cv::Mat(height, width, CV_16U));
+        out.addData("z", mz);
+        out.addData("ampl", ma);
+
+    } else {
+        mz = in.getMatPtr("z");
+        ma = in.getMatPtr("ampl");
+        x = width;
+        y = height;
+    }
+
+    unsigned short* pz = mz->ptr<unsigned short>();
+    unsigned short* pa = ma->ptr<unsigned short>();
+
+    memcpy(pz, frame->channels[2]->data, frame->channels[2]->dataLen);
+    memcpy(pa, frame->channels[3]->data, frame->channels[3]->dataLen);
+
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration set: " << diff.total_microseconds();
+
+    if (flip()) {
+        cv::flip(*mz, *mz, -1);
+        cv::flip(*ma, *ma, -1);
+    } else {
+        if (flip_x()) {
+            cv::flip(*mz, *mz, 1);
+            cv::flip(*ma, *ma, 1);
+        }
+        if (flip_y()) {
+            cv::flip(*mz, *mz, 0);
+            cv::flip(*ma, *ma, 0);
+        }
+    }
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
+}
+
+void Bta::setOutputsClassicDistAmpl(const Frame& in, Frame& out,
+                                    const boost::posix_time::ptime& start,
+                                    char* data)
+{
     boost::posix_time::time_duration diff;
     int size = distsSize, x = 0, y = 0;
 
@@ -598,15 +818,83 @@ void Bta::setOutputsClassic(const Frame& in, Frame& out,
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
     BOOST_LOG_TRIVIAL(debug) << "duration add: " << diff.total_microseconds();
-
-    if (sensor->isAsync()) {
-        // nothing to do
-    } else {
-        cout << "FREEFRAME!!!" << endl;
-        // sensor->freeFrame(data);
-        data = NULL;
-    }
 }
+
+
+void Bta::setOutputsClassicRawPhases(const Frame& in, Frame& out,
+                                   const boost::posix_time::ptime& start,
+                                   char* data)
+{
+    boost::posix_time::time_duration diff;
+    int size = distsSize, x = 0, y = 0;
+    BTA_Frame* frame = (BTA_Frame*)data;
+
+    matPtr m0, m1, m2, m3;
+
+    if (!out.hasKey("p0") ) {
+        // first iteration - initialize depth matrix
+        x = frame->channels[0]->xRes;
+        y = frame->channels[0]->yRes;
+
+        width = x;
+        height = y;
+        size = distsSize = width * height;
+
+        // initialize depth matrix ...:
+        m0.reset(new cv::Mat(height, width, CV_16U));
+        m1.reset(new cv::Mat(height, width, CV_16U));
+        m2.reset(new cv::Mat(height, width, CV_16U));
+        m3.reset(new cv::Mat(height, width, CV_16U));
+        out.addData("p0", m0);
+        out.addData("p1", m1);
+        out.addData("p2", m2);
+        out.addData("p3", m3);
+
+    } else {
+        m0 = in.getMatPtr("p0");
+        m1 = in.getMatPtr("p1");
+        m2 = in.getMatPtr("p2");
+        m3 = in.getMatPtr("p3");
+        x = width;
+        y = height;
+    }
+
+    unsigned short* p0 = m0->ptr<unsigned short>();
+    unsigned short* p1 = m1->ptr<unsigned short>();
+    unsigned short* p2 = m2->ptr<unsigned short>();
+    unsigned short* p3 = m3->ptr<unsigned short>();
+
+    memcpy(p0, frame->channels[0]->data, frame->channels[0]->dataLen);
+    memcpy(p1, frame->channels[1]->data, frame->channels[1]->dataLen);
+    memcpy(p2, frame->channels[2]->data, frame->channels[2]->dataLen);
+    memcpy(p3, frame->channels[3]->data, frame->channels[3]->dataLen);
+
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration set: " << diff.total_microseconds();
+
+    if (flip()) {
+        cv::flip(*m0, *m0, -1);
+        cv::flip(*m1, *m1, -1);
+        cv::flip(*m2, *m2, -1);
+        cv::flip(*m3, *m3, -1);
+    } else {
+        if (flip_x()) {
+            cv::flip(*m0, *m0, 1);
+            cv::flip(*m1, *m1, 1);
+            cv::flip(*m2, *m2, 1);
+            cv::flip(*m3, *m3, 1);
+        }
+        if (flip_y()) {
+            cv::flip(*m0, *m0, 0);
+            cv::flip(*m1, *m1, 0);
+            cv::flip(*m2, *m2, 0);
+            cv::flip(*m3, *m3, 0);
+        }
+    }
+    diff = boost::posix_time::microsec_clock::local_time() - start;
+    BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
+}
+
 
 void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                             const boost::posix_time::ptime& /*start*/,
@@ -690,6 +978,8 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 // BOOST_LOG_TRIVIAL(debug) << "img yuv data! " << (width *
                 // height)
                 //                          << " " << chan->dataLen;
+                int width = chan->xRes;
+                int height = chan->yRes;
                 if (!d.get()) {
                     d.reset(new cv::Mat(height, width, CV_8UC3));
                 }
@@ -702,6 +992,8 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 // BOOST_LOG_TRIVIAL(debug) << "img yuv444uyv data! " << (width
                 // * height)
                 //                          << " " << chan->dataLen;
+                int width = chan->xRes;
+                int height = chan->yRes;
                 if (!d.get()) {
                     d.reset(new cv::Mat(height, width, CV_8UC3));
                 }

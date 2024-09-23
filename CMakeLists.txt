@@ -49,7 +49,7 @@ message (STATUS ${PROJECT_NAME}" version: " ${PROJECT_VERSION_FULL} )
 ################################################################################
 option (BUILD_STATIC "Build static version of the library" OFF)
 option (WITHOUT_PCL "Exclude pointclouds-based classes" OFF)
-option (WITH_VISUALIZATION "Add viewer. Requires GUI" ON)
+option (WITH_VISUALIZATION "Add viewer objects. Requires GUI" ON)
 option (WITH_CONTROL "Add Web Control." ON)
 option (BUILD_TESTS "Build test code." ON)
 
@@ -58,6 +58,22 @@ message (STATUS "\t BUILD_STATIC: " ${BUILD_STATIC})
 message (STATUS "\t WITHOUT_PCL: " ${WITHOUT_PCL})
 message (STATUS "\t WITH_VISUALIZATION: " ${WITH_VISUALIZATION})
 message (STATUS "\t WITH_CONTROL: " ${WITH_CONTROL})
+
+################################################################################
+# Install options
+################################################################################
+MESSAGE(STATUS "CMAKE_INSTALL_PREFIX: " ${CMAKE_INSTALL_PREFIX})
+
+set(INSTALL_LIB_DIR lib/ CACHE PATH "Installation directory for libraries")
+set(INSTALL_BIN_DIR bin/ CACHE PATH "Installation directory for executables")
+set(INSTALL_INCLUDE_DIR include/${PROJECT_NAME} CACHE PATH "Installation directory for header files")
+if(WIN32 AND NOT CYGWIN)
+  set(DEF_INSTALL_CMAKE_DIR cmake)
+else()
+  set(DEF_INSTALL_CMAKE_DIR lib/cmake/${PROJECT_NAME})
+endif()
+set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH "Installation directory for CMake files")
+
 
 
 #Collect project definitions
@@ -86,6 +102,22 @@ endif()
 MESSAGE(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 set(CMAKE_DEBUG_POSTFIX -d)
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(PLAT_WINDOWS "yes")
+    add_definitions(-DPLAT_WINDOWS)
+endif()
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    set(PLAT_LINUX "yes")
+    add_definitions(-DPLAT_LINUX)
+endif()
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(PLAT_APPLE "yes")
+    add_definitions(-DPLAT_APPLE)
+
+    # for macports:
+    include_directories ("/opt/local/include")
+    link_directories("/opt/local/lib")
+endif()
 
 ################################################################################
 # Install options
@@ -227,13 +259,14 @@ endif()
 
 # PCL
 if(NOT WITHOUT_PCL)
-    find_package(PCL COMPONENTS common filters sample_consensus segmentation features visualization)
+    find_package(PCL COMPONENTS common filters io sample_consensus segmentation features visualization)
     include_directories(${PCL_INCLUDE_DIRS})
     add_definitions(${PCL_DEFINITIONS})
     list(APPEND LIBS ${PCL_LIBRARIES})
     message (STATUS "PCL_INCLUDE_DIRS: " ${PCL_INCLUDE_DIRS})
     message (STATUS "PCL_LIBRARIES: " ${PCL_LIBRARIES})
     message (STATUS "PCL_VIZ: " ${PCL_VISUALIZATION_FOUND})
+
     add_definitions(-DPCL_FOUND=1)
     message (STATUS "PCL_FOUND: " ${PCL_FOUND})
     if (NOT PCL_FOUND)
@@ -275,6 +308,11 @@ if (${bta_FOUND})
     list(APPEND LIBS ${bta_LIBRARIES} )
     set(HAS_BTA 1)
     add_definitions(-DHAS_BTA=1)
+
+    if (PLAT_LINUX)
+        # for shm_*
+        list(APPEND LIBS -lrt)
+    endif()
 else()
     message(WARNING "no bta library!")
 endif()

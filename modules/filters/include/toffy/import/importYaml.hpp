@@ -16,34 +16,38 @@
 */
 #pragma once
 
+#include <string>
+
 #include "toffy/filter.hpp"
 
 namespace toffy {
+namespace import {
 
-/**
- * @brief export fields in frame in to yaml files. filed names are specified in a list of strings in option.fields.field
- * 
- */
-class ExportYaml : public Filter	{
-public:
-    ExportYaml(): Filter("exportYaml"),
-	_in_cloud("cloud"),_seqName(""), path("./"), prefix("tofData"),
-        useCounter(true), useFc(false),
-	counter(1) {}
-    virtual ~ExportYaml() {}
+class ImportYaml : public Filter
+{
+    static std::size_t _filter_counter;
+    std::vector<std::pair<std::string, boost::any> > _data;
+
+   public:
+    ImportYaml();
+    virtual ~ImportYaml() {}
+
+    // virtual int loadConfig(const boost::property_tree::ptree& pt);
 
     virtual boost::property_tree::ptree getConfig() const;
-
-    virtual void updateConfig(const boost::property_tree::ptree &pt);
+    void updateConfig(const boost::property_tree::ptree& pt);
 
     virtual bool filter(const Frame& in, Frame& out);
 
-private:
+   private:
+    std::vector<std::string> fields;  //< the fields of the input frame to save
     std::string _in_cloud, _fileName, _seqName;
     std::string path, prefix;
-    bool useCounter, useFc;
-    int counter;
+    bool _seq;
+    int start, counter;
 
-    void dumpToYaml(const Frame& frame, const std::string& id);
+    bool loadFromYaml(Frame& f, const std::string& idx);
 };
-}
+
+}  // namespace import
+}  // namespace toffy

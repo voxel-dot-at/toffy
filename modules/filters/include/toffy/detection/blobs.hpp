@@ -68,8 +68,9 @@ private:
     static std::size_t _filter_counter; ///< Internal Filter counter
 
     toffy::cam::CameraPtr cam;
+    bool xyzMode; ///< set if depth image == "z"
 
-    void findBlobs(cv::Mat& in, cv::Mat& ampl, int fc,
+    void findBlobs(const toffy::Frame& f, cv::Mat& in, cv::Mat& ampl, int fc,
 		   std::vector<toffy::detection::DetectedObject*>& list);
 
     void refineBlob(cv::Mat& dist, int fc,

@@ -31,11 +31,11 @@ using namespace toffy::tracking;
 using namespace cv;
 using namespace std;
 
-#ifdef CM_DEBUG
-const bool dbg=true;
-#else
-const bool dbg=false;
-#endif
+// #ifdef CM_DEBUG
+// static const bool dbg=true;
+// #else
+// static const bool dbg=false;
+// #endif
 
 std::size_t CVTracker::_filter_counter = 1;
 const std::string CVTracker::id_name = "cvTracker";
@@ -150,8 +150,16 @@ bool CVTracker::filter(const Frame& in, Frame& out) {
 #endif
         tracker->init(*img,bbox);
     } else {
-        bbox = cv::minAreaRect(detObj->at(0)->contour).boundingRect();
+#if OCV_VERSION_MAJOR <= 4 and OCV_VERSION_MINOR <= 5 and OCV_VERSION_PATCH < 4
+        Rect bbox = cv::minAreaRect(detObj->at(0)->contour).boundingRect();
+    	this->bbox = bbox;
+        Rect2d bboxd(bbox);
+        tracker->update(*img, bboxd);
+#else 
+        Rect bbox = cv::minAreaRect(detObj->at(0)->contour).boundingRect();
+    	this->bbox = bbox;
         tracker->update(*img, bbox);
+#endif
         // Draw bounding box
         cv::rectangle(*img, bbox, cv::Scalar( 255, 0, 0 ), 1 );
 
@@ -177,7 +185,7 @@ void CVTracker::showObjects(cv::Mat& depth) {
             continue;
         }
         try {
-            if (blobs[i]->fc == _fc) {
+            if (blobs[i]->fc == (int)_fc) {
                 vector<vector<Point> > contours;
                 contours.push_back(blobs[i]->contour);
                 drawContours( depth, contours, 0, blobs[i]->color, 1, LINE_AA, noArray(), 0, Point() );

@@ -30,9 +30,9 @@ using namespace cv;
 using namespace std;
 
 #ifdef CM_DEBUG
-const bool dbg = true;
+static const bool dbg = true;
 #else
-const bool dbg = false;
+static const bool dbg = false;
 #endif
 
 std::size_t Tracker::_filter_counter = 1;

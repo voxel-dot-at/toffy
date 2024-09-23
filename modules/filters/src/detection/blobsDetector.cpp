@@ -28,13 +28,8 @@
 
 #include "toffy/detection/blobsDetector.hpp"
 
-#ifdef CM_DEBUG
-static const bool dbg = true;
-static const bool dbgShape = true;
-#else
 static const bool dbg = false;
 static const bool dbgShape = false;
-#endif
 
 using namespace std;
 using namespace cv;

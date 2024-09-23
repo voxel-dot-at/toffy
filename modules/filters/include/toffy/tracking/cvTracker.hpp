@@ -17,12 +17,7 @@
 #pragma once
 
 #include <opencv2/opencv.hpp>
-
-#if CV_VERSION_MAJOR >= 3
-#  include <opencv2/tracking.hpp>
-#else
-#  include <opencv2/video/tracking.hpp>
-#endif
+#include <opencv2/tracking.hpp>
 
 #include <toffy/filter.hpp>
 #include <toffy/detection/detectedObject.hpp>
@@ -54,14 +49,14 @@ namespace tracking {
  */
 class CVTracker : public Filter
 {
-public:
-    static const std::string id_name; ///< Filter identifier
+   public:
+    static const std::string id_name;  ///< Filter identifier
 
     CVTracker();
-    virtual ~CVTracker(){}
+    virtual ~CVTracker() {}
 
     virtual boost::property_tree::ptree getConfig() const;
-    virtual void updateConfig(const boost::property_tree::ptree &pt);
+    virtual void updateConfig(const boost::property_tree::ptree& pt);
 
     virtual bool filter(const Frame& in, Frame& out);
 
@@ -71,25 +66,29 @@ public:
      *
      * @todo Where is this been called
      */
-    const std::vector<toffy::detection::DetectedObject* >& getBlobs() const { return blobs; }
+    const std::vector<toffy::detection::DetectedObject*>& getBlobs() const
+    {
+        return blobs;
+    }
 
     cv::Ptr<cv::Tracker> tracker;
     cv::Rect2d bbox;
-private:
-    std::string _in_vec, ///< Name of the next list of detected blobs
-    _in_fc, ///< Camera frame counter
-    _in_img; ///< Image from where the new blobs where detected
-    std::string _out_img, ///< Name of the modified image
-    _out_objects, ///< List of tracked objects
-    _out_count; ///< # of detected objects
+
+   private:
+    std::string _in_vec,   ///< Name of the next list of detected blobs
+        _in_fc,            ///< Camera frame counter
+        _in_img;           ///< Image from where the new blobs where detected
+    std::string _out_img,  ///< Name of the modified image
+        _out_objects,      ///< List of tracked objects
+        _out_count;        ///< # of detected objects
     double maxMergeDistance;
 
-    static std::size_t _filter_counter; ///< Internal filter counter
+    static std::size_t _filter_counter;  ///< Internal filter counter
 
-    unsigned int _fc, _ts;
+    unsigned int _fc;
     bool _render_image;
 
-    std::vector<toffy::detection::DetectedObject* > blobs;
+    std::vector<toffy::detection::DetectedObject*> blobs;
 
     /**
      * @brief Debug views
@@ -99,5 +98,5 @@ private:
     void showObjects(cv::Mat& depth);
 };
 
-}
-}
+}  // namespace tracking
+}  // namespace toffy
