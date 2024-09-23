@@ -317,6 +317,9 @@ else()
     message(WARNING "no bta library!")
 endif()
 
+add_definitions(-Wall  )
+# add_definitions(-Weffc++ )
+
 add_subdirectory(libraries)
 
 add_subdirectory(modules)

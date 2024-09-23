@@ -267,7 +267,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
 
   *tracked = newState;
 
-  out.addData(_out_objects, tracked);
+  out.addData(_out_objects, tracked, Frame::SlotDataType::Any, "detObjs");
 
   // Debug, shows image with tracked objects
   if (_render_image) {
