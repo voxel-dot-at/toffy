@@ -70,8 +70,8 @@ static void BTA_CALLCONV frameArrivedEx2(
 static void errorHandling(BTA_Status status)
 {
     if (status != BTA_StatusOk) {
-        char statusString[100];
-        BTAstatusToString(status, statusString, strlen(statusString));
+        char statusString[100] = { 0,};
+        BTAstatusToString(status, statusString, sizeof(statusString));
         BOOST_LOG_TRIVIAL(warning)
             << "bta: " << statusString << ". error id: " << status;
     }
