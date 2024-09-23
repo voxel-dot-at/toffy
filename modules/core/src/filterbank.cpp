@@ -47,15 +47,11 @@ FilterBank::~FilterBank()
 
 bool FilterBank::filter(const Frame &in, Frame& out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << id();
     using namespace boost::posix_time;
 
     setLoggingLvl(); // set our own log level..
     for (size_t i=0;i<_pipe.size();i++) {
         bool success = false;
-
-        BOOST_LOG_TRIVIAL(debug) << id() << "::filter" << i << "\t"
-                                 << _pipe[i]->name() << "\t start.";
 
         _pipe[i]->setLoggingLvl();
         ptime start = microsec_clock::local_time();
@@ -76,11 +72,6 @@ bool FilterBank::filter(const Frame &in, Frame& out)
                                     << _pipe[i]->name() << "\t failed!" << endl;
             return false;
         }
-
-        BOOST_LOG_TRIVIAL(debug) << id() << "::filter" << i << "\t"
-                                 << _pipe[i]->name() << "\t done"
-                                 << "\t duration: " << diff.total_microseconds() << " us";
-
     }
     ready.post();
     return true;
@@ -237,7 +228,6 @@ Filter * FilterBank::getFilter(int i)
 int FilterBank::getFiltersByType(const std::string& type,
                                  std::vector<Filter *> &vec)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     for (std::vector<Filter *>::iterator it=_pipe.begin();
          it < _pipe.end(); it++)
     {

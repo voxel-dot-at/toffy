@@ -106,9 +106,7 @@ void Player::removeData(const std::string& key) {
 }
 
 void Player::runOnce() {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     _controller.stepForward();
-
 }
 
 void Player::run() {
