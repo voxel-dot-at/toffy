@@ -348,7 +348,7 @@ class TOFFY_EXPORT FilterBank : public Filter
     int loadPlugins(const boost::property_tree::ptree& pt);
 
    private:
-    FilterFactory* ff;           ///< Pointer to the FilterFactory
+    FilterFactory* ff = nullptr; ///< Pointer to the FilterFactory
     std::vector<Filter*> _pipe;  ///< Filter container
 
     boost::property_tree::ptree

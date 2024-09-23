@@ -20,43 +20,61 @@
 
 using namespace toffy;
 
-Frame::Frame() {}
-Frame::Frame(const Frame& f) : data(f.data) {}
+Frame::Frame() : data(), meta() {}
 
-Frame::~Frame() { data.clear(); }
+Frame::Frame(const Frame& f) : data(f.data), meta(f.meta) {}
 
-bool Frame::hasKey(std::string key) const {
-  if (data.find(key) != data.end()) return true;
-  return false;
+Frame::~Frame()
+{
+    data.clear();
+    meta.clear();
 }
 
-boost::any Frame::getData(const std::string& key) const {
-  // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ", key: " << key;
-  boost::any out;
-  if (data.find(key) != data.end()) {
-    try {
-      out = data.at(key);
-    } catch (std::out_of_range& e) {
-      BOOST_LOG_TRIVIAL(warning)
-          << "Frame::getData(): Could not find key " << key;
-    }
-  } else {
-    BOOST_LOG_TRIVIAL(info) << "Frame::getData(): Could not find key " << key;
-  }
-  return out;
-}
-
-void toffy::Frame::addData(std::string key, boost::any in) {
-  data[key] = in;
-  return;
-}
-
-bool toffy::Frame::removeData(std::string key) {
-  if (data.find(key) != data.end()) {
-    data.erase(data.find(key));
-    return true;
-  } else
+bool Frame::hasKey(std::string key) const
+{
+    if (data.find(key) != data.end()) return true;
     return false;
+}
+
+boost::any Frame::getData(const std::string& key) const
+{
+    // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ", key: " << key;
+    boost::any out;
+    if (data.find(key) != data.end()) {
+        try {
+            out = data.at(key);
+        } catch (std::out_of_range& e) {
+            BOOST_LOG_TRIVIAL(warning)
+                << "Frame::getData(): Could not find key " << key;
+        }
+    } else {
+        BOOST_LOG_TRIVIAL(info)
+            << "Frame::getData(): Could not find key " << key;
+    }
+    return out;
+}
+
+void toffy::Frame::addData(std::string key, boost::any v, SlotDataType dt)
+{
+    data[key] = v;
+    meta[key] = dt;
+}
+
+void toffy::Frame::addData(std::string key, boost::any v, SlotDataType dt, const std::string& description)
+{
+    data[key] = v;
+    meta[key] = dt;
+    desc[key] = description;
+}
+
+
+bool toffy::Frame::removeData(std::string key)
+{
+    if (data.find(key) != data.end()) {
+        data.erase(data.find(key));
+        return true;
+    } else
+        return false;
 }
 
 void Frame::clearData() { return data.clear(); }

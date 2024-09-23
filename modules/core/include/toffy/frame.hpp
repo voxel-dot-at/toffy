@@ -65,6 +65,7 @@ public:
      * @param f
      */
     Frame(const Frame& f);
+
     virtual ~Frame();
 
     /**
@@ -73,6 +74,8 @@ public:
      * @return
      */
     Frame& operator= (const Frame& x) {data = x.data; return *this;}
+
+    typedef enum { NotFound, Any, Bool, Int, Uint, Double, Float, Mat, String } SlotDataType;
 
     /**
      * @brief Check if a data key is in the frame
@@ -84,10 +87,33 @@ public:
     /**
      * @brief Insert data in the Frame with the given key. If the key does
      *	already exist, overwrite the data
-     * @param key
-     * @param in
+     * @param key string representation of the data
+     * @param v the value
+     * @param dt dataType
+     * @param description an (optional) description, esp. for Any data types
      */
-    void addData(std::string key, boost::any in);
+    void addData(std::string key, boost::any v, SlotDataType dt, const std::string& description);
+
+    void addData(std::string key, boost::any v, SlotDataType dt);
+
+    void addData(std::string key, boost::any v) { addData(key, v, Any); };
+
+    void addData(std::string key, matPtr m) { addData(key, m, Mat); }
+
+    void addData(std::string key, bool v) { addData(key, v, Bool); }
+
+    void addData(std::string key, int v) { addData(key, v, Int); }
+
+    void addData(std::string key, long v) { addData(key, v, Int); }
+
+    void addData(std::string key, unsigned int v) { addData(key, v, Uint); }
+
+    void addData(std::string key, unsigned long v) { addData(key, v, Uint); }
+
+    void addData(std::string key, float v) { addData(key, v, Float); }
+
+    void addData(std::string key, double v) { addData(key, v, Double); }
+
 
     /**
      * @brief Delete data from the Frame with key. If not found does not do
@@ -102,9 +128,9 @@ public:
      */
     void clearData();
 
-    //std::vector<std::string> keys() const;
+    SlotDataType getType(std::string key) const { return meta.find(key) != meta.end()? meta.find(key)->second : NotFound; }
 
-    //boost::any getData(std::string key) const;
+    std::string getDescription(std::string key) const { return desc.find(key) != desc.end()? desc.find(key)->second : ""; }
 
     /**
      * @brief Get data from Frame with key
@@ -202,6 +228,12 @@ private:
      * Use boost::shared_ptr to avoid any memory leak.
      */
     boost::container::flat_map< std::string, boost::any > data;
+
+    /** data type of the slot */
+    boost::container::flat_map< std::string, SlotDataType > meta;
+
+    /** optional description for a data slot */
+    boost::container::flat_map< std::string, std::string > desc;
 };
 
 inline unsigned int Frame::getUInt(const std::string& key) const {
@@ -270,7 +302,7 @@ inline std::string Frame::optString(const std::string& key,
 inline matPtr Frame::getSertMatPtr(const std::string& key, cv::Size size, int type) {
     if (! hasKey(key)) {
         matPtr mp(new cv::Mat(size, type));
-        addData(key, mp);
+        addData(key, mp, Mat);
     }
     return getMatPtr(key);
 }
