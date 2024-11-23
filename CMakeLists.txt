@@ -49,15 +49,14 @@ message (STATUS ${PROJECT_NAME}" version: " ${PROJECT_VERSION_FULL} )
 ################################################################################
 option (BUILD_STATIC "Build static version of the library" OFF)
 option (WITHOUT_PCL "Exclude pointclouds-based classes" OFF)
+option (WITH_PCL_CLOUDVIEW "Build pcl-based viewer" OFF)
 option (WITH_VISUALIZATION "Add viewer objects. Requires GUI" ON)
-option (WITH_CONTROL "Add Web Control." ON)
 option (BUILD_TESTS "Build test code." ON)
 
 message (STATUS "${CMAKE_PROJECT_NAME} options: ")
 message (STATUS "\t BUILD_STATIC: " ${BUILD_STATIC})
 message (STATUS "\t WITHOUT_PCL: " ${WITHOUT_PCL})
 message (STATUS "\t WITH_VISUALIZATION: " ${WITH_VISUALIZATION})
-message (STATUS "\t WITH_CONTROL: " ${WITH_CONTROL})
 
 ################################################################################
 # Install options
@@ -141,7 +140,6 @@ set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH "Installation director
 include_directories(
         "${CMAKE_CURRENT_SOURCE_DIR}/libraries/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/core/include/"
-        "${CMAKE_CURRENT_SOURCE_DIR}/modules/control/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/filters/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/uri-grammar/src"
@@ -353,10 +351,6 @@ add_library( ${PROJECT_NAME} SHARED
     $<TARGET_OBJECTS:toffy_smoothing> 
     $<TARGET_OBJECTS:toffy_tracking> 
     $<TARGET_OBJECTS:toffy_viewers> 
-
-    # web
-    $<TARGET_OBJECTS:toffy_web_server> 
-    $<TARGET_OBJECTS:toffy_web_objs> 
     )
 
 target_link_libraries( ${PROJECT_NAME} PUBLIC    ${LIBS}  )

@@ -51,6 +51,13 @@ void RasterSegment::points(std::vector<cv::Point*>& points) const
     points.push_back(end);
 }
 
+void RasterSegment::points(std::vector<cv::Point>& points) const
+{
+    points.push_back(*start);
+    for (size_t i = 0; i < pts.size(); i++) points.push_back(*pts[i]);
+    points.push_back(*end);
+}
+
 void RasterSegment::points(std::vector<RasterPoint*>& points) const
 {
     points.push_back(start);

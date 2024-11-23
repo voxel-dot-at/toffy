@@ -252,6 +252,8 @@ public:
     virtual void points(std::vector<RasterPoint*>& points) const;
     virtual void points(std::vector<RasterPoint*>& points, bool unVisitedOnly=false, bool addInlinePoints=false) ;
 
+    virtual void points(std::vector<cv::Point>& points) const;
+
     cv::Rect bb() const {
         cv::Rect r;
         r.width = abs(start->x-end->x);

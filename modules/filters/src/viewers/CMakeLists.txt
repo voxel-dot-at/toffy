@@ -1,4 +1,4 @@
-if ( ${PCL_VISUALIZATION_FOUND} AND ${WITH_VISUALIZATION})
+if ( ${PCL_VISUALIZATION_FOUND} AND ${WITH_PCL_CLOUDVIEW})
     set(PCL_SRCS 
         cloudviewpcl.cpp
     )
