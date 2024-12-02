@@ -30,6 +30,7 @@ install_manifest.txt
 # Build dir
 
 b/
+b2/
 build/
 build_32/
 library/docs/public
