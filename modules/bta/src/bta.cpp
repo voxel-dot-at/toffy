@@ -549,8 +549,8 @@ void Bta::setOutputsClassic(const Frame& in, Frame& out,
         this->setOutputsClassicRawPhases(in, out, start, data);
     } else if (sensor->frameMode == BTA_FrameModeXYZAmp) {  // 4
         this->setOutputsClassicXYZAmpl(in, out, start, data);
-    // } else if (sensor->frameMode == BTA_FrameModeZAmp) {  // 4
-    //     this->setOutputsClassicZAmpl(in, out, start, data);
+        // } else if (sensor->frameMode == BTA_FrameModeZAmp) {  // 4
+        //     this->setOutputsClassicZAmpl(in, out, start, data);
     } else {
         BOOST_LOG_TRIVIAL(error)
             << "ERROR UNIMPLEMENTED FRAME MODE " << sensor->frameMode;
@@ -558,8 +558,8 @@ void Bta::setOutputsClassic(const Frame& in, Frame& out,
 }
 
 void Bta::setOutputsClassicXYZ(const Frame& in, Frame& out,
-                                   const boost::posix_time::ptime& start,
-                                   char* data)
+                               const boost::posix_time::ptime& start,
+                               char* data)
 {
     boost::posix_time::time_duration diff;
     int size = distsSize, x = 0, y = 0;
@@ -696,10 +696,9 @@ void Bta::setOutputsClassicXYZAmpl(const Frame& in, Frame& out,
     BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
 }
 
-
 void Bta::setOutputsClassicZAmpl(const Frame& in, Frame& out,
-                                   const boost::posix_time::ptime& start,
-                                   char* data)
+                                 const boost::posix_time::ptime& start,
+                                 char* data)
 {
     boost::posix_time::time_duration diff;
     int size = distsSize, x = 0, y = 0;
@@ -822,10 +821,9 @@ void Bta::setOutputsClassicDistAmpl(const Frame& in, Frame& out,
     BOOST_LOG_TRIVIAL(debug) << "duration add: " << diff.total_microseconds();
 }
 
-
 void Bta::setOutputsClassicRawPhases(const Frame& in, Frame& out,
-                                   const boost::posix_time::ptime& start,
-                                   char* data)
+                                     const boost::posix_time::ptime& start,
+                                     char* data)
 {
     boost::posix_time::time_duration diff;
     int size = distsSize, x = 0, y = 0;
@@ -833,7 +831,7 @@ void Bta::setOutputsClassicRawPhases(const Frame& in, Frame& out,
 
     matPtr m0, m1, m2, m3;
 
-    if (!out.hasKey("p0") ) {
+    if (!out.hasKey("p0")) {
         // first iteration - initialize depth matrix
         x = frame->channels[0]->xRes;
         y = frame->channels[0]->yRes;
@@ -897,7 +895,6 @@ void Bta::setOutputsClassicRawPhases(const Frame& in, Frame& out,
     BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
 }
 
-
 void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                             const boost::posix_time::ptime& /*start*/,
                             char* data)
@@ -945,7 +942,7 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
         }
         switch (chan->dataFormat) {
             case BTA_DataFormatUInt8: {
-                if (!d.get()) {
+                if (!d.get() || (height * width * 1 < (int)chan->dataLen)) {
                     d.reset(new cv::Mat(height, width, CV_8UC1));
                 }
                 short* f = d->ptr<short>();
@@ -953,7 +950,7 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 break;
             }
             case BTA_DataFormatUInt16: {
-                if (!d.get()) {
+                if (!d.get() || (height * width * 2 < (int)chan->dataLen)) {
                     d.reset(new cv::Mat(height, width, CV_16UC1));
                 }
                 short* f = d->ptr<short>();
@@ -961,7 +958,7 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 break;
             }
             case BTA_DataFormatFloat32: {
-                if (!d.get()) {
+                if (!d.get() || (height * width * 4 < (int)chan->dataLen)) {
                     d.reset(new cv::Mat(height, width, CV_32F));
                 }
                 float* f = d->ptr<float>();
@@ -969,7 +966,7 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 break;
             }
             case BTA_DataFormatSInt16: {
-                if (!d.get()) {
+                if (!d.get() || (height * width * 2 < (int)chan->dataLen)) {
                     d.reset(new cv::Mat(height, width, CV_16SC1));
                 }
                 short* f = d->ptr<short>();
@@ -982,7 +979,7 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 //                          << " " << chan->dataLen;
                 int width = chan->xRes;
                 int height = chan->yRes;
-                if (!d.get()) {
+                if (!d.get() || (height * width * 3 < (int)chan->dataLen)) {
                     d.reset(new cv::Mat(height, width, CV_8UC3));
                 }
                 Mat input(height, width, CV_8UC2, chan->data);
