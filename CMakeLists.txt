@@ -142,7 +142,6 @@ include_directories(
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/core/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/filters/include/"
-        "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/uri-grammar/src"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/"        
         )
 
