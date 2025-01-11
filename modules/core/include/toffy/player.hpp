@@ -67,6 +67,11 @@ public:
      */
     void loadData(std::string key, boost::any data);
 
+    /** get the frame object of the underlying controller
+     * @return the active frame
+     */
+    Frame& getFrame() { return _controller.getFrame(); }
+
     /**
      * @brief Query the frame if data is available under "key"
      * @param key

@@ -141,6 +141,8 @@ public:
 
     const std::vector<void *>& getLoadedFilters() const {return _loads;}
 
+    Frame& getFrame() { return f; }
+
 private:
     boost::thread _thread; ///< thread to run the toffy filtering
     state _state; ///< running state of toffy.
