@@ -37,11 +37,11 @@ public:
 
     /** retrieve a skeletonizer algorithm.
      * @param name Valid options are:
-     * "erodeskeletonizer","thickskeletonizer","k3mskeletonizer", "k3mppskeletonizer"
+     * "erodeskeletonizer","thickskeletonizer","k3mskeletonizer", "k3mppskeletonizer", "k3mupdown"
      * the last one is preferred.
      * @return a Skeletonizer instance is returned. On error, null is returned. You might need to configure it before it is usable.
      */
-    Skeletonizer* getSkeletonizer(const std::string &name = "k3mppskeletonizer");
+    Skeletonizer* getSkeletonizer(const std::string &name = "k3mupdown");
 };
 
 #endif // SKELETONIZEFACTORY_H

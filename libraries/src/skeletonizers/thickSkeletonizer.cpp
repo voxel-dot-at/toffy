@@ -189,7 +189,7 @@ void ThickSkeletonizer::findLocalMaxima(const Mat& in, Mat& max) {
 	}
 }
 
-static std::string prt(unsigned char code);
+// static std::string prt(unsigned char code);
 
 /** merge neighbouring maxima that are still in a region (thickness>0)
  * this bridges saddle points.
@@ -242,7 +242,7 @@ void ThickSkeletonizer::mergeMax(const Mat& thick, Mat& in) {
 
 			int idx = 	(x1<<0) | (x2<<1)| (x3<<2)| (x4<<3) |
 						(x5<<4) | (x6<<5)| (x7<<6)| (x8<<7);
-			int c = x1+x2+x3+x4+x5+x6+x7+x8;
+			// int c = x1+x2+x3+x4+x5+x6+x7+x8;
 
 			struct action& a = actions[idx];
 			if (a.isKnown){
@@ -299,18 +299,18 @@ void ThickSkeletonizer::set90DegRotatedActions(action actions[], unsigned char c
 #define X7 (1<<6)
 #define X8 (1<<7)
 
-static std::string prt(unsigned char code) {
-	std::string c="";
-	if (code&X1) c += "|x1";
-	if (code&X2) c += "|x2";
-	if (code&X3) c += "|x3";
-	if (code&X4) c += "|x4";
-	if (code&X5) c += "|x5";
-	if (code&X6) c += "|x6";
-	if (code&X7) c += "|x7";
-	if (code&X8) c += "|x8";
-	return c;
-}
+// static std::string prt(unsigned char code) {
+// 	std::string c="";
+// 	if (code&X1) c += "|x1";
+// 	if (code&X2) c += "|x2";
+// 	if (code&X3) c += "|x3";
+// 	if (code&X4) c += "|x4";
+// 	if (code&X5) c += "|x5";
+// 	if (code&X6) c += "|x6";
+// 	if (code&X7) c += "|x7";
+// 	if (code&X8) c += "|x8";
+// 	return c;
+// }
 
 void ThickSkeletonizer::initActions() {
 	/****************************************************/
@@ -569,9 +569,10 @@ int ThickSkeletonizer::skel_once(const Mat& in, Mat& skel) {
         for (x=1;x<in.cols-1;x++) {
         	char px = cur[x];
 
-        	if (0 == px)
+        	if (0 == px) {
         		continue;
-
+            }
+            
 			char x1,x2,x3,x4,x5,x6,x7,x8;
 			// numbering as in Lam, Lee 1992: x1 is east, counter-clockwise
 			x1 = cur[x+1] >0;
