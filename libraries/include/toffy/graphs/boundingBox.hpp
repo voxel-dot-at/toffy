@@ -16,17 +16,13 @@
 #ifndef BOUNDINGBOX_H
 #define BOUNDINGBOX_H
 
-#if OCV_VERSION_MAJOR >= 3
 #include <opencv2/core.hpp>
-#else
-#include <opencv2/core/core.hpp>
-#endif
 
 class BoundingBox
 {
-public:
+   public:
     BoundingBox();
-    BoundingBox(int u,int d,int l, int r);
+    BoundingBox(int u, int d, int l, int r);
     int up;
     int down;
     int left;
@@ -37,4 +33,4 @@ public:
     int DistanceWith(BoundingBox other);
 };
 
-#endif // BOUNDINGBOX_H
+#endif  // BOUNDINGBOX_H
