@@ -52,7 +52,7 @@ void K3MUpDownSkeletonizer::init(){
 			     135, 143, 159, 191, 192, 193, 195, 199, 207, 223,
 			     224, 225, 227, 231, 239, 240, 241, 243, 247, 248,
 			     249, 251, 252, 253, 254};
-    int i =0;
+    unsigned int i =0;
 
     for (i=0;i<sizeof(cA0);i++) {
         A0[cA0[i]] = true;
@@ -402,14 +402,14 @@ void K3MUpDownSkeletonizer::readyToTrace(cv::Mat &mat)
 {
     //Go through the picture
     const unsigned char* cur;
-    const unsigned char* prev;
-    const unsigned char* next;
+    // const unsigned char* prev;
+    // const unsigned char* next;
     //Rows
     for(int i = 1; i < mat.rows-1;i++){
         //get line ptr
-        prev = mat.ptr<unsigned char>(i-1);
+        // prev = mat.ptr<unsigned char>(i-1);
         cur = mat.ptr<unsigned char>(i);
-        next = mat.ptr<unsigned char>(i+1);
+        // next = mat.ptr<unsigned char>(i+1);
         //Columns
         for(int j = 0; j < mat.cols;j++){
             //is a object pix?

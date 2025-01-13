@@ -19,15 +19,12 @@
 #define SEGMENTTRACER_H_
 
 #include<vector>
-#if OCV_VERSION_MAJOR >= 3
+
 #include <opencv2/core.hpp>
-#else
-#include <opencv2/core/core.hpp>
-#endif
+
 #include "toffy/tracers/segments.hpp"
 #include "toffy/graphs/graph.hpp"
 #include "toffy/skeletonizers/skeletonizerFactory.hpp"
-//#include "rapidjson/document.h"
 
 
 /** Abstract class for all pixel to line tracers. First skeletonizes the image.
