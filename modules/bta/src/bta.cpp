@@ -562,12 +562,12 @@ void Bta::setOutputsClassicXYZ(const Frame& in, Frame& out,
                                char* data)
 {
     boost::posix_time::time_duration diff;
-    int size = distsSize, x = 0, y = 0;
+    unsigned int size = distsSize, x = 0, y = 0;
     BTA_Frame* frame = (BTA_Frame*)data;
 
     matPtr mx, my, mz, ma;
 
-    if (!out.hasKey(_out_depth) || size != distsSize) {
+    if (!out.hasKey(_out_depth) || size != frame->channels[0]->dataLen) {
         // first iteration - initialize depth matrix
         x = frame->channels[0]->xRes;
         y = frame->channels[0]->yRes;
@@ -627,12 +627,12 @@ void Bta::setOutputsClassicXYZAmpl(const Frame& in, Frame& out,
                                    char* data)
 {
     boost::posix_time::time_duration diff;
-    int size = distsSize, x = 0, y = 0;
+    unsigned int size = distsSize, x = 0, y = 0;
     BTA_Frame* frame = (BTA_Frame*)data;
 
     matPtr mx, my, mz, ma;
 
-    if (!out.hasKey(_out_depth) || size != distsSize) {
+    if (!out.hasKey(_out_depth) || size != frame->channels[0]->dataLen) {
         // first iteration - initialize depth matrix
         x = frame->channels[0]->xRes;
         y = frame->channels[0]->yRes;
@@ -701,12 +701,12 @@ void Bta::setOutputsClassicZAmpl(const Frame& in, Frame& out,
                                  char* data)
 {
     boost::posix_time::time_duration diff;
-    int size = distsSize, x = 0, y = 0;
+    unsigned int size = distsSize, x = 0, y = 0;
     BTA_Frame* frame = (BTA_Frame*)data;
 
     matPtr mz, ma;
 
-    if (!out.hasKey(_out_depth) || size != distsSize) {
+    if (!out.hasKey(_out_depth) || size != frame->channels[0]->dataLen) {
         // first iteration - initialize depth matrix
         x = frame->channels[0]->xRes;
         y = frame->channels[0]->yRes;
@@ -758,12 +758,13 @@ void Bta::setOutputsClassicDistAmpl(const Frame& in, Frame& out,
                                     char* data)
 {
     boost::posix_time::time_duration diff;
-    int size = distsSize, x = 0, y = 0;
+    unsigned int size = distsSize, x = 0, y = 0;
+    BTA_Frame* frame = (BTA_Frame*)data;
 
     matPtr a, d;
-    if (!out.hasKey(_out_depth) || size != distsSize) {
+    if (!out.hasKey(_out_depth) || size != frame->channels[0]->dataLen) {
         // first iteration - initialize depth matrix
-        sensor->getDisSize(data, x, y);
+        sensor->getDisSize(data, (int&)x, (int&)y);
 
         width = x;
         height = y;
@@ -793,7 +794,7 @@ void Bta::setOutputsClassicDistAmpl(const Frame& in, Frame& out,
     // unsigned short *amplitude= NULL;
 
     unsigned short* da = a->ptr<unsigned short>();
-    sensor->getAmplitudes(da, size, data);
+    sensor->getAmplitudes(da, (int&)size, data);
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
     BOOST_LOG_TRIVIAL(debug) << "duration ampl: " << diff.total_microseconds();
@@ -826,12 +827,12 @@ void Bta::setOutputsClassicRawPhases(const Frame& in, Frame& out,
                                      char* data)
 {
     boost::posix_time::time_duration diff;
-    int size = distsSize, x = 0, y = 0;
+    unsigned int size = distsSize, x = 0, y = 0;
     BTA_Frame* frame = (BTA_Frame*)data;
 
     matPtr m0, m1, m2, m3;
 
-    if (!out.hasKey("p0")) {
+    if (!out.hasKey("p0") || size != frame->channels[0]->dataLen) {
         // first iteration - initialize depth matrix
         x = frame->channels[0]->xRes;
         y = frame->channels[0]->yRes;
