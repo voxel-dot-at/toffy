@@ -46,8 +46,8 @@ namespace toffy {
  * @brief Share pointer to cv::Mat
  */
 typedef boost::shared_ptr<cv::Mat> matPtr;
-typedef boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> > pclCloudXyzPtr;
-typedef boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > pclCloudXyzRgbPtr;
+typedef pcl::PointCloud<pcl::PointXYZ>::Ptr pclCloudXyzPtr;
+typedef pcl::PointCloud<pcl::PointXYZRGB>::Ptr pclCloudXyzRgbPtr;
 
 /**
  * @brief Frame is a container where any filter could add, retrieve, modify and
