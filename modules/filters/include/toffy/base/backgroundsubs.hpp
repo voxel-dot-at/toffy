@@ -53,7 +53,7 @@ private:
     int _neighbours, ///< minimum number of neighbours for noise @todo manually set, move to config
 	_ite; ///< #frames to capture @todo manually set, move to config
     double _offset; ///< offset: added to the mask to guard against distance noise.
-    boost::shared_ptr<toffy::Filter> _avg; /**< Filter in filter we use averaging
+    FilterPtr _avg; /**< Filter in filter we use averaging
 	in the input data*/
     matPtr avgdImg;
     static std::size_t _filter_counter;

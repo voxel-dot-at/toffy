@@ -47,6 +47,8 @@ namespace toffy {
 class Event;
 class Filter;
 
+typedef boost::shared_ptr<toffy::Filter> FilterPtr;
+
 /**
  * @brief Filter running state definitions
  */

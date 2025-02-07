@@ -30,7 +30,7 @@ namespace smoothing {
 	float measurementNoiseCov; //< measurement noise covar value  (1e-1)
 	bool skipZeros;            //< skip zero distance values from averaging
 
-	boost::shared_ptr<toffy::Filter> _avg;
+	FilterPtr _avg;
 	matPtr avgdImg;
 	boost::shared_ptr<std::vector<cv::KalmanFilter > > vKF;
 	static std::size_t _filter_counter;
