@@ -151,9 +151,9 @@ boost::property_tree::ptree BlobsDetector::getConfig() const {
 }
 
 bool BlobsDetector::filter(const toffy::Frame& in, toffy::Frame& out) {
-  boost::shared_ptr<cv::Mat> inImg;
-  boost::shared_ptr<cv::Mat> ampl;
-  boost::shared_ptr<std::vector<DetectedObject*> > blobs;
+  matPtr inImg;
+  matPtr ampl;
+  DetObjectsPtr blobs;
   // unsigned int fc;
 
   try {
@@ -181,7 +181,7 @@ bool BlobsDetector::filter(const toffy::Frame& in, toffy::Frame& out) {
   }
 
   try {
-    blobs = boost::any_cast<boost::shared_ptr<std::vector<DetectedObject*> > >(
+    blobs = boost::any_cast<DetObjectsPtr >(
         out.getData(out_blobs));
   } catch (const boost::bad_any_cast&) {
     BOOST_LOG_TRIVIAL(warning) << "Could not find object vector. Creating one";

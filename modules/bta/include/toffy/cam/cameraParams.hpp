@@ -126,7 +126,7 @@ class Camera
 
 };
 
-typedef boost::shared_ptr<Camera> CameraPtr;
+typedef std::shared_ptr<Camera> CameraPtr;
 
 class P230 : public Camera  // it's a cif chip
 {

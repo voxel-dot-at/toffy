@@ -90,10 +90,10 @@ bool ObjectTrack::filter(const Frame& in, Frame& out) {
 
   // List of detected objects
   BOOST_LOG_TRIVIAL(debug) << "Getting _in_vec: " << _in_vec;
-  boost::shared_ptr<std::vector<detection::DetectedObject*> > detObjs;
+  std::shared_ptr<DetectedObjects > detObjs;
   try {
     detObjs = boost::any_cast<
-        boost::shared_ptr<std::vector<detection::DetectedObject*> > >(
+        std::shared_ptr<DetectedObjects > >(
         in.getData(_in_vec));
   } catch (const boost::bad_any_cast&) {
     BOOST_LOG_TRIVIAL(warning)
@@ -106,7 +106,7 @@ bool ObjectTrack::filter(const Frame& in, Frame& out) {
 
   // TODO Where come img from?, why we mask it with the objects.
   BOOST_LOG_TRIVIAL(debug) << "Getting got _in_img: " << _in_img;
-  boost::shared_ptr<cv::Mat> img;
+  matPtr img;
   try {
     img = in.getMatPtr(_in_img);
   } catch (const boost::bad_any_cast&) {

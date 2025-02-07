@@ -95,10 +95,10 @@ boost::property_tree::ptree SquareDetect::getConfig() const
 
 bool SquareDetect::filter(const Frame& in, Frame& out)
 {
-    boost::shared_ptr<std::vector<DetectedObject*> > blobs;
+    DetObjectsPtr blobs;
     try {
         blobs =
-            boost::any_cast<boost::shared_ptr<std::vector<DetectedObject*> > >(
+            boost::any_cast<DetObjectsPtr >(
                 in.getData(in_blobs));
     } catch (const boost::bad_any_cast&) {
         BOOST_LOG_TRIVIAL(warning)
@@ -106,10 +106,10 @@ bool SquareDetect::filter(const Frame& in, Frame& out)
         return false;
     }
 
-    boost::shared_ptr<cv::Mat> outDet;
+    matPtr outDet;
     try {
         if (out.hasKey(out_detect))
-            outDet = boost::any_cast<boost::shared_ptr<cv::Mat> >(
+            outDet = boost::any_cast<matPtr >(
                 out.getData(out_detect));
         else {
             outDet.reset(new Mat());
@@ -129,9 +129,9 @@ bool SquareDetect::filter(const Frame& in, Frame& out)
         }
     }
 
-    boost::shared_ptr<cv::Mat> depth = in.getMatPtr("depth");
-    boost::shared_ptr<cv::Mat> depthf = in.getMatPtr("depthf");
-    boost::shared_ptr<cv::Mat> floor = in.getMatPtr("floor");
+    matPtr depth = in.getMatPtr("depth");
+    matPtr depthf = in.getMatPtr("depthf");
+    matPtr floor = in.getMatPtr("floor");
 
     imshow("depthf square", *depthf);
 

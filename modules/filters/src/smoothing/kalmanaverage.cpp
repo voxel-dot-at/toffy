@@ -98,10 +98,10 @@ boost::property_tree::ptree KalmanAverage::getConfig() const
 bool KalmanAverage::filter(const toffy::Frame& in, toffy::Frame& /*out*/)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
-    boost::shared_ptr<cv::Mat> img;
+    matPtr img;
 
     try {
-        img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_img));
+        img = boost::any_cast<matPtr >(in.getData(_in_img));
     } catch (const boost::bad_any_cast&) {
         BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << _in_img
                                    << ", filter  " << id() << " not applied.";

@@ -56,7 +56,7 @@ public:
     virtual bool filter(const Frame& in, Frame& out);
 
 
-    boost::shared_ptr<cv::Mat> depth, ampl, proj2d, fground, new_mask, img3d, _cameraMatrix;
+    matPtr depth, ampl, proj2d, fground, new_mask, img3d, _cameraMatrix;
     double maxSizeX , maxSizeY, fovx, fovy;
     double _dis, _apertureWidth, _apertureHeight;
     int _scale;

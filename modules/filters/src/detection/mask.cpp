@@ -200,7 +200,7 @@ bool Mask::filter(const Frame& in, Frame& out) {
         add_depth = fdepth > 0;
         bitwise_xor(*new_mask,add_depth,*new_mask);
 
-        boost::shared_ptr<cv::Mat> old_mask;
+        matPtr old_mask;
         try {
             old_mask = in.getMatPtr(_out_mask);
         } catch(const boost::bad_any_cast &) {
@@ -215,7 +215,7 @@ bool Mask::filter(const Frame& in, Frame& out) {
             imshow(id_name + "[5] mask", *old_mask);
         }
 
-        boost::shared_ptr<cv::Mat> depth_mask;
+        matPtr depth_mask;
         if(!depth_mask) {
             depth_mask.reset(new cv::Mat());
             depth->copyTo(*depth_mask,~*old_mask);
@@ -304,7 +304,7 @@ bool Mask::filter(const Frame& in, Frame& out) {
 
         } else if (_uangle == new_ang) {
             //Same mask, do and op
-            boost::shared_ptr<cv::Mat> old_mask;
+            matPtr old_mask;
             try {
                 old_mask = in.getMatPtr(_out_mask);
             } catch(const boost::bad_any_cast &) {
@@ -327,7 +327,7 @@ bool Mask::filter(const Frame& in, Frame& out) {
 
         //Load depth and ampl angle by side
         BOOST_LOG_TRIVIAL(debug) << "Loading mask.";
-        boost::shared_ptr<cv::Mat> mask;
+        matPtr mask;
         try {
             mask = in.getMatPtr(_out_mask);
         } catch(const boost::bad_any_cast &) {

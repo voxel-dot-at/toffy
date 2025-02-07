@@ -67,9 +67,9 @@ boost::property_tree::ptree Focus::getConfig() const {
 bool Focus::filter(const Frame &in, Frame& out) {
 	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
 
-	boost::shared_ptr<cv::Mat> img;
+	matPtr img;
 	try {
-		img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(in_img));
+		img = boost::any_cast<matPtr >(in.getData(in_img));
 
 	} catch(const boost::bad_any_cast &) {
 		BOOST_LOG_TRIVIAL(warning) <<

@@ -19,23 +19,15 @@
 #include <vector>
 
 #include <boost/any.hpp>
-#include <boost/shared_ptr.hpp>
+
 #include <boost/container/flat_map.hpp>
 
-#include <toffy/frame.hpp>
+#include <opencv2/core.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/core.hpp>
-#else
-#  include <opencv2/core/core.hpp>
-#endif
-
-
+#include "toffy/frame.hpp"
 
 namespace toffy
 {
-    typedef boost::shared_ptr<cv::Mat> matPtr;
-
     const std::string btaMf = "mf"; ///< constant for modulation frequency
     const std::string btaIt = "it"; ///< constant for integration time
     const std::string btaFc = "fc"; ///< constant for frame counter

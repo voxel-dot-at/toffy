@@ -94,8 +94,8 @@ boost::property_tree::ptree BackgroundSubs::getConfig() const {
 bool BackgroundSubs::filter(const toffy::Frame& in, toffy::Frame& out)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
-    boost::shared_ptr<cv::Mat> inImg;
-    //boost::shared_ptr<cv::Mat> outFg, outBg;
+    matPtr inImg;
+    //matPtr outFg, outBg;
     //int fc = in.getInt(btaFc);
 
     try {
@@ -200,7 +200,7 @@ bool BackgroundSubs::filter(const toffy::Frame& in, toffy::Frame& out)
     return true;
 }
 
-bool BackgroundSubs::loadAvgData(boost::shared_ptr<cv::Mat> inImg)
+bool BackgroundSubs::loadAvgData(matPtr inImg)
 {
     cout << id() << " Loading image " << endl;
     BOOST_LOG_TRIVIAL(debug) << "Loading image ";

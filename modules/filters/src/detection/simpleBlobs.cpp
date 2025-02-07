@@ -119,7 +119,7 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
         BOOST_LOG_TRIVIAL(warning) << id() << " Could not cast input " << btaFc;
         return false;
     }
-    boost::shared_ptr<cv::Mat> inImg;
+    matPtr inImg;
     try {
         inImg = in.getMatPtr(in_img);
         BOOST_LOG_TRIVIAL(debug) << id() << ": Found input in_img: " << in_img;
@@ -129,7 +129,7 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
         return true;
     }
 
-    boost::shared_ptr<cv::Mat> ampl;
+    matPtr ampl;
     try {
         ampl = in.getMatPtr(in_ampl);
         BOOST_LOG_TRIVIAL(debug)
@@ -150,10 +150,10 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
         }
     }
 
-    boost::shared_ptr<std::vector<DetectedObject*> > blobs;
+    DetObjectsPtr blobs;
     try {
         blobs =
-            boost::any_cast<boost::shared_ptr<std::vector<DetectedObject*> > >(
+            boost::any_cast<DetObjectsPtr >(
                 out.getData(out_blobs));
         blobs->clear();
         BOOST_LOG_TRIVIAL(debug)
