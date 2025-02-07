@@ -24,6 +24,11 @@
 
 #include <opencv2/core.hpp>
 
+#if PCL_FOUND
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#endif
+
 #include <toffy/toffy_export.h>
 
 #ifdef MSVC
@@ -41,6 +46,8 @@ namespace toffy {
  * @brief Share pointer to cv::Mat
  */
 typedef boost::shared_ptr<cv::Mat> matPtr;
+typedef boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> > pclCloudXyzPtr;
+typedef boost::shared_ptr<pcl::PointCloud<pcl::PointXYZRGB> > pclCloudXyzRgbPtr;
 
 /**
  * @brief Frame is a container where any filter could add, retrieve, modify and
@@ -88,7 +95,9 @@ class TOFFY_EXPORT Frame
         Double,
         Float,
         Mat,
-        String
+        String,
+        CloudXyz,
+        CloudXyzRgb
     } SlotDataType;
 
     typedef struct
@@ -137,6 +146,12 @@ class TOFFY_EXPORT Frame
     void addData(std::string key, float v) { addData(key, v, Float); }
 
     void addData(std::string key, double v) { addData(key, v, Double); }
+
+#if PCL_FOUND
+    void addData(std::string key, pclCloudXyzPtr v) { addData(key, v, CloudXyz); }
+
+    void addData(std::string key, pclCloudXyzRgbPtr v) { addData(key, v, CloudXyzRgb); }
+#endif
 
     /**
      * @brief Delete data from the Frame with key. If not found does not do
@@ -209,6 +224,22 @@ class TOFFY_EXPORT Frame
      * @return
      */
     inline matPtr getMatPtr(const std::string& key) const;
+
+#if PCL_FOUND
+    /**
+     * @brief Getter for xyz cloudPtr in frame
+     * @param key the slot name
+     * @return the cloud ptr
+     */
+    inline pclCloudXyzPtr getpclCloudXyzPtr(const std::string& key) const;
+
+    /**
+     * @brief Getter for xyz,rgb cloudPtr in frame
+     * @param key the slot name
+     * @return the cloud ptr
+     */
+    inline pclCloudXyzRgbPtr getpclCloudXyzRgbPtr(const std::string& key) const;
+#endif
 
     /**
      * @brief Shorted getter for std::string values in frame
@@ -303,6 +334,20 @@ inline matPtr Frame::getMatPtr(const std::string& key) const
     matPtr m = boost::any_cast<matPtr>(getData(key));
     return m;
 }
+
+#if PCL_FOUND
+inline pclCloudXyzPtr Frame::getpclCloudXyzPtr(const std::string& key) const
+{
+    pclCloudXyzPtr m = boost::any_cast<pclCloudXyzPtr>(getData(key));
+    return m;
+}
+
+inline pclCloudXyzRgbPtr Frame::getpclCloudXyzRgbPtr(const std::string& key) const
+{
+    pclCloudXyzRgbPtr m = boost::any_cast<pclCloudXyzRgbPtr>(getData(key));
+    return m;
+}
+#endif
 
 inline std::string Frame::getString(const std::string& key) const
 {
