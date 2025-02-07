@@ -14,10 +14,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <boost/log/trivial.hpp>
+#include <memory>
+
+// #include <boost/log/trivial.hpp>
+
 #include "toffy/event.hpp"
 #include "toffy/filter.hpp"
-#include <boost/make_shared.hpp>
 
 using namespace toffy;
 namespace logging = boost::log;
@@ -30,5 +32,5 @@ Event::Event(Filter *sender, ReceiverType type, std::string receiver,
 	_re_type(type) {}
 
 void Event::data(boost::any new_data) {
-    _data = boost::make_shared<boost::any>(new_data);
+    _data = std::make_shared<boost::any>(new_data);
 }

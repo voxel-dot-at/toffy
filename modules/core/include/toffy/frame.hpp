@@ -19,7 +19,7 @@
 #include <vector>
 
 #include <boost/any.hpp>
-#include <boost/shared_ptr.hpp>
+
 #include <boost/container/flat_map.hpp>
 
 #include <opencv2/core.hpp>
@@ -45,7 +45,7 @@ namespace toffy {
 /**
  * @brief Share pointer to cv::Mat
  */
-typedef boost::shared_ptr<cv::Mat> matPtr;
+typedef std::shared_ptr<cv::Mat> matPtr;
 typedef pcl::PointCloud<pcl::PointXYZ>::Ptr pclCloudXyzPtr;
 typedef pcl::PointCloud<pcl::PointXYZRGB>::Ptr pclCloudXyzRgbPtr;
 

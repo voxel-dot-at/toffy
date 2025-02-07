@@ -32,7 +32,7 @@ namespace smoothing {
 
 	FilterPtr _avg;
 	matPtr avgdImg;
-	boost::shared_ptr<std::vector<cv::KalmanFilter > > vKF;
+	std::shared_ptr<std::vector<cv::KalmanFilter > > vKF;
 	static std::size_t _filter_counter;
     public:
 	KalmanAverage();

@@ -129,10 +129,10 @@ bool ReprojectPCL::filter(const Frame &in, Frame &out) {
 
     if (_world) {
       LOG(debug) << __LINE__ << " has world";
-      boost::shared_ptr<Eigen::Affine3f> world2camera;
+      std::shared_ptr<Eigen::Affine3f> world2camera;
       try {
         // TODO transformation key by parameter
-        world2camera = boost::any_cast<boost::shared_ptr<Eigen::Affine3f> >(
+        world2camera = boost::any_cast<std::shared_ptr<Eigen::Affine3f> >(
             in.getData(_in_transf));  //"bta12world"));
         pcl::transformPointCloud(*planar, *planar, world2camera->matrix());
 	} catch(const boost::bad_any_cast &) {

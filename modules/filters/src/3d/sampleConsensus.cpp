@@ -104,7 +104,7 @@ bool SampleConsensus::filter(const Frame& in, Frame& out)
         case plane:
             success = segmentPlane(cloud, pi, po, coeffs);
             if (success) {
-                boost::shared_ptr<Eigen::VectorXf> vec(new Eigen::VectorXf(coeffs));
+                std::shared_ptr<Eigen::VectorXf> vec(new Eigen::VectorXf(coeffs));
                 out.addData("coeffs", vec);
                 out.addData("sampleConsensus_q", pi->size() / (float)po->size());
             }

@@ -18,7 +18,7 @@
 
 #include <opencv2/imgproc.hpp>
 
-#include <boost/shared_ptr.hpp>
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/circular_buffer.hpp>
 
@@ -55,15 +55,15 @@ public:
 
     int id; ///< object id, set by blob detection or tracking algorithms
 
-    boost::shared_ptr<boost::circular_buffer<DetectedObject* > > record;
+    std::shared_ptr<boost::circular_buffer<DetectedObject* > > record;
 
     // object data changing per frame follows:
 
     std::vector<cv::Point> contour; ///< OpenCV contour of the object
     int idx; ///< Position in the list of contours
-    boost::shared_ptr<std::vector<std::vector<cv::Point> > > contours; /**<
+    std::shared_ptr<std::vector<std::vector<cv::Point> > > contours; /**<
     List of all neighbor contours, usefull for look keep track of holes in object */
-    boost::shared_ptr<std::vector<cv::Vec4i > > hierarchy; /**< List of connected objects */
+    std::shared_ptr<std::vector<cv::Vec4i > > hierarchy; /**< List of connected objects */
 
     cv::Moments mo; ///< OpenCV moments
     cv::Point2f massCenter; ///< Mass center of the object calculated from the moments
@@ -117,10 +117,10 @@ public:
     float massCenterZ;
 };
 
-typedef boost::shared_ptr<DetectedObject> DetObjPtr;
+typedef std::shared_ptr<DetectedObject> DetObjPtr;
 typedef std::vector<DetectedObject*> DetectedObjects;
 
-typedef boost::shared_ptr<DetectedObjects> DetObjectsPtr;
+typedef std::shared_ptr<DetectedObjects> DetObjectsPtr;
 
 }
 }

@@ -362,7 +362,7 @@ template <typename Scalar> void getTransformation (Scalar x, Scalar y, Scalar z,
 
 void CapturerFilter::setCamera2Wcs(toffy::Frame& out, std::string name) 
 {
-    boost::shared_ptr<Eigen::Affine3f> f2t(new Eigen::Affine3f());
+    std::shared_ptr<Eigen::Affine3f> f2t(new Eigen::Affine3f());
     //Eigen::Affine3f t;
 
     Eigen::Matrix3f m;
