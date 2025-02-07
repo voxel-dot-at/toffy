@@ -16,18 +16,14 @@
 */
 #pragma once
 
-#include <toffy/toffy_export.h>
-
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#endif
-
+#include <opencv2/imgproc.hpp>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/circular_buffer.hpp>
+
+#include "toffy/toffy_export.h"
+
 
 #ifdef MSVC
   #define DLLExport __declspec( dllexport )

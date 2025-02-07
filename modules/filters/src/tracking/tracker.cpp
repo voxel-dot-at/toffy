@@ -95,10 +95,10 @@ bool Tracker::filter(const Frame &in, Frame &out) {
   toffy::Filter::setLoggingLvl();
 
   // Get list of detected blobs
-  boost::shared_ptr<std::vector<detection::DetectedObject *> > blobs;
+  boost::shared_ptr<detection::DetectedObjects > blobs;
   try {
     blobs = boost::any_cast<
-        boost::shared_ptr<std::vector<detection::DetectedObject *> > >(
+        boost::shared_ptr<detection::DetectedObjects > >(
         in.getData(_in_vec));
   } catch (const boost::bad_any_cast &) {
     BOOST_LOG_TRIVIAL(warning)
@@ -128,15 +128,15 @@ bool Tracker::filter(const Frame &in, Frame &out) {
   BOOST_LOG_TRIVIAL(debug) << id() << " filter() fc " << _fc << " ts " << _ts ;
 
   // List of tracked objects
-  boost::shared_ptr<std::vector<detection::DetectedObject *> > tracked;
+  boost::shared_ptr<detection::DetectedObjects > tracked;
   try {
     tracked = boost::any_cast<
-        boost::shared_ptr<std::vector<detection::DetectedObject *> > >(
+        boost::shared_ptr<detection::DetectedObjects > >(
         out.getData(_out_objects));
   } catch (const boost::bad_any_cast &) {
     BOOST_LOG_TRIVIAL(warning)
         << id() << " Could not find object vector. Creating a new one";
-    tracked.reset(new std::vector<detection::DetectedObject *>);
+    tracked.reset(new detection::DetectedObjects);
   }
 
   vector<detection::DetectedObject *> newState;  // the new state..

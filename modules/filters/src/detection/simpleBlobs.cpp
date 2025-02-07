@@ -150,10 +150,10 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
         }
     }
 
-    boost::shared_ptr<std::vector<DetectedObject*> > blobs;
+    DetObjectsPtr blobs;
     try {
         blobs =
-            boost::any_cast<boost::shared_ptr<std::vector<DetectedObject*> > >(
+            boost::any_cast<DetObjectsPtr >(
                 out.getData(out_blobs));
         blobs->clear();
         BOOST_LOG_TRIVIAL(debug)

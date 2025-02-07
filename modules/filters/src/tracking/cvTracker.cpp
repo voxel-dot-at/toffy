@@ -28,6 +28,7 @@
 
 using namespace toffy;
 using namespace toffy::tracking;
+using namespace toffy::detection;
 using namespace cv;
 using namespace std;
 
@@ -96,9 +97,9 @@ bool CVTracker::filter(const Frame& in, Frame& out) {
 
     //List of detected objects
     BOOST_LOG_TRIVIAL(debug) << "Getting _in_vec: " << _in_vec;
-    boost::shared_ptr<std::vector<detection::DetectedObject*> > detObj;
+    boost::shared_ptr<DetectedObjects > detObj;
     try {
-        detObj = boost::any_cast<boost::shared_ptr<std::vector<detection::DetectedObject*> > >(in.getData(_in_vec));
+        detObj = boost::any_cast<boost::shared_ptr<DetectedObjects > >(in.getData(_in_vec));
     } catch(const boost::bad_any_cast &) {
         BOOST_LOG_TRIVIAL(warning) << "Could not find object vector: " <<
                                       _in_vec << ". " << id();

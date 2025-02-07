@@ -95,10 +95,10 @@ boost::property_tree::ptree SquareDetect::getConfig() const
 
 bool SquareDetect::filter(const Frame& in, Frame& out)
 {
-    boost::shared_ptr<std::vector<DetectedObject*> > blobs;
+    DetObjectsPtr blobs;
     try {
         blobs =
-            boost::any_cast<boost::shared_ptr<std::vector<DetectedObject*> > >(
+            boost::any_cast<DetObjectsPtr >(
                 in.getData(in_blobs));
     } catch (const boost::bad_any_cast&) {
         BOOST_LOG_TRIVIAL(warning)
