@@ -45,7 +45,7 @@ namespace smoothing {
 class DLLExport Average : public Filter {
     std::string _in_img, _out_img;
     static std::size_t _filter_counter;
-    std::deque<boost::shared_ptr<cv::Mat> > _queue;
+    std::deque<matPtr > _queue;
     size_t _size;
     cv::Mat _dst, _cnt;
 public:

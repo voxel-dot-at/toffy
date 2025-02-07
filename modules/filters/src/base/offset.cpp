@@ -113,7 +113,7 @@ bool OffSet::filter(const Frame &in, Frame &out) const {
 
   } else {
     for (size_t i = 0; i < _rois.size(); i++) {
-      boost::shared_ptr<cv::Mat> d = in.getMatPtr(_in_img);
+      matPtr d = in.getMatPtr(_in_img);
       Mat roi((*d)(_rois[i]));
       roi += _sumValue;
       roi *= _mulValue;

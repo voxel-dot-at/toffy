@@ -117,12 +117,12 @@ boost::property_tree::ptree Rectify::getConfig() const {
 bool Rectify::filter(const Frame &in, Frame& out) {
 	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
 
-	boost::shared_ptr<cv::Mat> img, n2;
+	matPtr img, n2;
 	try {
-		img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_img));
+		img = boost::any_cast<matPtr >(in.getData(_in_img));
 
 		if ( out.hasKey(_out_img)) {
-		    n2 = boost::any_cast<boost::shared_ptr<cv::Mat> >(out.getData(_out_img));
+		    n2 = boost::any_cast<matPtr >(out.getData(_out_img));
 		} else {
 		    n2.reset(new cv::Mat());
 		}

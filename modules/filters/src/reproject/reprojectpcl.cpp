@@ -95,9 +95,9 @@ bool ReprojectPCL::filter(const Frame &in, Frame &out) {
 
   toffy::Filter::setLoggingLvl();
 
-  boost::shared_ptr<cv::Mat> img;
+  matPtr img;
   try {
-    img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_img));
+    img = boost::any_cast<matPtr >(in.getData(_in_img));
   } catch (const boost::bad_any_cast &) {
     LOG(warning) << "ReprojectPCL::filter() Could not cast input " << _in_img
                  << ", filter  " << id() << " not applied.";

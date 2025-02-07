@@ -151,8 +151,8 @@ boost::property_tree::ptree BlobsDetector::getConfig() const {
 }
 
 bool BlobsDetector::filter(const toffy::Frame& in, toffy::Frame& out) {
-  boost::shared_ptr<cv::Mat> inImg;
-  boost::shared_ptr<cv::Mat> ampl;
+  matPtr inImg;
+  matPtr ampl;
   boost::shared_ptr<std::vector<DetectedObject*> > blobs;
   // unsigned int fc;
 

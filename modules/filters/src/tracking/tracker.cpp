@@ -271,7 +271,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
 
   // Debug, shows image with tracked objects
   if (_render_image) {
-    boost::shared_ptr<cv::Mat> img;
+    matPtr img;
     try {
       img = in.getMatPtr(_in_img);
     } catch (const boost::bad_any_cast &) {
@@ -282,7 +282,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
     }
 
     BOOST_LOG_TRIVIAL(debug) << id() << " Getting got _out_img: " << _out_img;
-    boost::shared_ptr<cv::Mat> img_out;
+    matPtr img_out;
     try {
       img_out = in.getMatPtr(_out_img);
     } catch (const boost::bad_any_cast &) {

@@ -55,7 +55,7 @@ private:
     double _offset; ///< offset: added to the mask to guard against distance noise.
     boost::shared_ptr<toffy::Filter> _avg; /**< Filter in filter we use averaging
 	in the input data*/
-    boost::shared_ptr<cv::Mat> avgdImg;
+    matPtr avgdImg;
     static std::size_t _filter_counter;
 
     /**
@@ -67,7 +67,7 @@ private:
      * if not empty.
      *
      */
-    bool loadAvgData(boost::shared_ptr<cv::Mat> inImg);
+    bool loadAvgData(matPtr inImg);
 };
 
 }}

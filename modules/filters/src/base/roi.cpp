@@ -80,16 +80,16 @@ bool toffy::filters::Roi::filter(const Frame &in, Frame &out)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
 
-    boost::shared_ptr<cv::Mat> img;
+    matPtr img;
     try {
-        img = boost::any_cast<boost::shared_ptr<cv::Mat> >(in.getData(_in_img));
+        img = boost::any_cast<matPtr >(in.getData(_in_img));
     } catch (const boost::bad_any_cast &) {
         BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << _in_img
                                    << ", filter  " << id() << " not applied.";
         return false;
     }
 
-    boost::shared_ptr<cv::Mat> img_out;
+    matPtr img_out;
     if (_in_img != _out_img) {
         try {
             img_out = in.getMatPtr(_out_img);
@@ -155,7 +155,7 @@ bool toffy::filters::Roi::filter(const Frame &in, Frame &out)
             << "Roi is null. Skipping... .Filter  " << id() << " not applied.";
 
     /*if (_in_img != _out_img) {
-	    boost::shared_ptr<cv::Mat> img_out;
+	    matPtr img_out;
 	    try {
 		    img_out = in.getMatPtr(_out_img);
 	    } catch(const boost::bad_any_cast &) {

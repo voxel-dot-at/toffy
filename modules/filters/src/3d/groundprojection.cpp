@@ -179,7 +179,7 @@ bool GroundProjection::filter(const Frame &in, Frame &out)
              << endl;
 
         // Getting the output if exist and resizing if needed.
-        boost::shared_ptr<cv::Mat> proj2d;
+        matPtr proj2d;
         try {
             proj2d = in.getMatPtr(_out_img);
             cout << "proj2d found. " << proj2d->size() << endl;
@@ -265,7 +265,7 @@ bool GroundProjection::filter(const Frame &in, Frame &out)
         // Projecting back to 2d from ground
         cout << "Projecting back to 2d from ground." << endl;
 
-        boost::shared_ptr<cv::Mat> fground;
+        matPtr fground;
         try {
             fground = in.getMatPtr(_in_img);
         } catch (const boost::bad_any_cast &) {
@@ -274,7 +274,7 @@ bool GroundProjection::filter(const Frame &in, Frame &out)
             return false;
         }
 
-        boost::shared_ptr<cv::Mat> pback;
+        matPtr pback;
         try {
             pback = in.getMatPtr(_out_img);
         } catch (const boost::bad_any_cast &) {

@@ -31,7 +31,7 @@ namespace smoothing {
 	bool skipZeros;            //< skip zero distance values from averaging
 
 	boost::shared_ptr<toffy::Filter> _avg;
-	boost::shared_ptr<cv::Mat> avgdImg;
+	matPtr avgdImg;
 	boost::shared_ptr<std::vector<cv::KalmanFilter > > vKF;
 	static std::size_t _filter_counter;
     public:
