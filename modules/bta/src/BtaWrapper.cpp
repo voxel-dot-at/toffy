@@ -70,7 +70,9 @@ static void BTA_CALLCONV frameArrivedEx2(
 static void errorHandling(BTA_Status status)
 {
     if (status != BTA_StatusOk) {
-        char statusString[100] = { 0,};
+        char statusString[100] = {
+            0,
+        };
         BTAstatusToString(status, statusString, sizeof(statusString));
         BOOST_LOG_TRIVIAL(warning)
             << "bta: " << statusString << ". error id: " << status;
@@ -180,9 +182,9 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
                                   config.udpControlCallbackPort);
     }
     bool autoConf = config.udpDataAutoConfig != 0;
-    pt_optional_get_default<bool>(pt, "connection.udpDataAutoConfig",
-                          autoConf, autoConf);
-    config.udpDataAutoConfig = autoConf;            
+    pt_optional_get_default<bool>(pt, "connection.udpDataAutoConfig", autoConf,
+                                  autoConf);
+    config.udpDataAutoConfig = autoConf;
 
     pres = pt_optional_get_ipaddr(pt, "connection.tcpDeviceIp",
                                   (struct in_addr &)tcpDeviceIpAddr,
@@ -1327,7 +1329,7 @@ static void cpyChannel(BTA_Channel *dst, const BTA_Channel *src)
 
     // copy data
     if (src->dataLen != dst->dataLen) {
-        free(dst->data);
+        delete[] dst->data;
         dst->data = new uint8_t[src->dataLen];
         dst->dataLen = src->dataLen;
     }
