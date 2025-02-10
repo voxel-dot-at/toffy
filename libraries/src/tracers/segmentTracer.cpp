@@ -6,11 +6,8 @@
  */
 
 #include <opencv2/imgproc/types_c.h>
-#if OCV_VERSION_MAJOR >= 3
 #include <opencv2/highgui.hpp>
-#else
 #include <opencv2/highgui/highgui.hpp>
-#endif
 
 #include "toffy/tracers/segmentTracer.hpp"
 

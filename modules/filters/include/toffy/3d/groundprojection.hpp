@@ -18,35 +18,30 @@
 
 #include "toffy/filter.hpp"
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#endif
-
-
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 /**
  * @brief
  *
  */
-namespace toffy	    {
- namespace filters   {
-  namespace f3d	      {
+namespace toffy {
+namespace filters {
+namespace f3d {
 
-class GroundProjection : public Filter {
-public:
-
+class GroundProjection : public Filter
+{
+   public:
     static const std::string id_name;
     GroundProjection();
     virtual ~GroundProjection() {}
 
     virtual boost::property_tree::ptree getConfig() const;
-    void updateConfig(const boost::property_tree::ptree &pt);
+    void updateConfig(const boost::property_tree::ptree& pt);
 
     virtual bool filter(const Frame& in, Frame& out);
 
-private:
+   private:
     std::string _in_cloud, _in_img, _out_img;
     float _max_y, _max_x;
     int _scale;
@@ -56,4 +51,6 @@ private:
     static std::size_t _filter_counter;
 };
 
-}}}
+}  // namespace f3d
+}  // namespace filters
+}  // namespace toffy

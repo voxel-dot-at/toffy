@@ -16,13 +16,10 @@
 */
 #include <iostream>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#  include <opencv2/highgui.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#  include <opencv2/highgui/highgui.hpp>
-#endif
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 //#include <sencam/BtaWrapper.hpp>
 #include <toffy/filter.hpp>
@@ -34,45 +31,44 @@ using namespace toffy::filters;
 using namespace cv;
 using namespace std;
 
-DistAmpl::DistAmpl(std::string name): Filter(name), _in_ampl("ampl"), _in_depth("depth")
+DistAmpl::DistAmpl(std::string name)
+    : Filter(name), _in_ampl("ampl"), _in_depth("depth")
 {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "DA";
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "DA";
 }
-
 
 bool DistAmpl::f1(const toffy::Frame& in, toffy::Frame& /*out*/)
 {
-	matPtr ampl = in.getMatPtr(_in_ampl);
-	matPtr d = in.getMatPtr(_in_depth);
+    matPtr ampl = in.getMatPtr(_in_ampl);
+    matPtr d = in.getMatPtr(_in_depth);
 
-	for (int y=0;y<ampl->rows; y++) {
-	    float* rowD = d->ptr<float>(y);
-	    short* rowA = ampl->ptr<short>(y);
+    for (int y = 0; y < ampl->rows; y++) {
+        float* rowD = d->ptr<float>(y);
+        short* rowA = ampl->ptr<short>(y);
 
-	    for (int x=0;x<ampl->cols;x++) {
-		short a = *rowA;
+        for (int x = 0; x < ampl->cols; x++) {
+            short a = *rowA;
 
-		if (a > 500 && a < 12000 ) { // todo:limit to valid distances?
+            if (a > 500 && a < 12000) {  // todo:limit to valid distances?
 
-		    float corr = linearInterp(a);
+                float corr = linearInterp(a);
 
-		    *rowD *= corr; // apply ampl. correction
-		}
+                *rowD *= corr;  // apply ampl. correction
+            }
 
-		rowA++; rowD++;
-	    }
-	}
+            rowA++;
+            rowD++;
+        }
+    }
 
-	return true;
+    return true;
 }
-
 
 bool DistAmpl::filter(const toffy::Frame& in, toffy::Frame& out)
 {
+    f1(in, out);
 
-	f1(in, out);
-
-	return true;
+    return true;
 }
 
 int DistAmpl::loadConfig(const boost::property_tree::ptree& pt)
@@ -82,9 +78,9 @@ int DistAmpl::loadConfig(const boost::property_tree::ptree& pt)
     return 1;
 }
 
-void DistAmpl::updateConfig(const boost::property_tree::ptree &pt)
+void DistAmpl::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -93,18 +89,24 @@ void DistAmpl::updateConfig(const boost::property_tree::ptree &pt)
     //_minAmpl = pt.get<double>("options.minAmpl",_minAmpl);
     //_maxAmpl = pt.get<double>("options.maxAmpl",_maxAmpl);
 
-    _in_depth = pt.get<string>("inputs.depth",_in_depth);
-    _in_ampl = pt.get<string>("inputs.ampl",_in_ampl);
+    _in_depth = pt.get<string>("inputs.depth", _in_depth);
+    _in_ampl = pt.get<string>("inputs.ampl", _in_ampl);
 
-    blen=clen=6;
+    blen = clen = 6;
     coeffs = new float[blen];
     breaks = new float[blen];
-    breaks[0]=  300;    coeffs[0]=1. / 0.9842; //Added manually
-    breaks[1]=  500;    coeffs[0]=1. / 0.9982;
-    breaks[2]= 1000;    coeffs[1]=1. / 1.0083;
-    breaks[3]= 2000;    coeffs[2]=1. / 1.0407;
-    breaks[4]= 5500;    coeffs[3]=1. / 1.0656;
-    breaks[5]=15000;    coeffs[4]=1. / 1.0800;
+    breaks[0] = 300;
+    coeffs[0] = 1. / 0.9842;  //Added manually
+    breaks[1] = 500;
+    coeffs[0] = 1. / 0.9982;
+    breaks[2] = 1000;
+    coeffs[1] = 1. / 1.0083;
+    breaks[3] = 2000;
+    coeffs[2] = 1. / 1.0407;
+    breaks[4] = 5500;
+    coeffs[3] = 1. / 1.0656;
+    breaks[5] = 15000;
+    coeffs[4] = 1. / 1.0800;
 
     cout << "DA CONF!!" << _in_ampl << endl;
 

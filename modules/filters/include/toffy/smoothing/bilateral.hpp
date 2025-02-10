@@ -18,11 +18,8 @@
 
 #include <toffy/filter.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#endif
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 /**
  * @brief
@@ -33,9 +30,11 @@ namespace filters {
 namespace smoothing {
 /** perform bilateral filtering of the (depth) channel.
 	 */
-class Bilateral : public Filter {
+class Bilateral : public Filter
+{
     static std::size_t _filter_counter;
-public:
+
+   public:
     Bilateral();
 
     virtual ~Bilateral() {}
@@ -45,15 +44,13 @@ public:
     virtual bool filter(const Frame& in, Frame& out);
 
     virtual boost::property_tree::ptree getConfig() const;
-    void updateConfig(const boost::property_tree::ptree &pt);
+    void updateConfig(const boost::property_tree::ptree& pt);
 
-private:
+   private:
     std::string _in_img, _out_img;
-    double d, sigmaColor, sigmaSpace ;
+    double d, sigmaColor, sigmaSpace;
     cv::Mat _dst;
 };
-}
-}
-}
-
-
+}  // namespace smoothing
+}  // namespace filters
+}  // namespace toffy

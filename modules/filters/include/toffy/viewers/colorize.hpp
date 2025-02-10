@@ -48,31 +48,29 @@ namespace toffy {
  * </ul>
  *
  */
-class Colorize : public Filter	{
-public:
+class Colorize : public Filter
+{
+   public:
     Colorize();
     virtual ~Colorize();
 
     virtual boost::property_tree::ptree getConfig() const;
-    virtual void updateConfig(const boost::property_tree::ptree &pt);
+    virtual void updateConfig(const boost::property_tree::ptree& pt);
 
     virtual bool filter(const Frame& in, Frame& out);
 
-    static const std::string id_name; ///< Filter identifier
-private:
-    double scale, ///< Scale the image keeping the proportions
-	max, ///< Max value for converting to grayscaled
-	min; ///< Min value for converting to grayscaled
+    static const std::string id_name;  ///< Filter identifier
+   private:
+    double scale,  ///< Scale the image keeping the proportions
+        max,       ///< Max value for converting to grayscaled
+        min;       ///< Min value for converting to grayscaled
     std::string in_img, out_img, colormap;
-#if OCV_VERSION_MAJOR >= 3
     cv::ColormapTypes colormap_value;
-#else
     int colormap_value;
-#endif
-    bool _gray; ///< Flag for converting the image to grayscaled.
+    bool _gray;  ///< Flag for converting the image to grayscaled.
 
-    static std::size_t filter_counter; 
+    static std::size_t filter_counter;
 
-    cv::Mat gray, col, scaled, bounds; 
+    cv::Mat gray, col, scaled, bounds;
 };
-}
+}  // namespace toffy

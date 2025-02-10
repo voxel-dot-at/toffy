@@ -1,9 +1,6 @@
 
-#if OCV_VERSION_MAJOR >= 3
 #include <opencv2/imgproc.hpp>
-#else
 #include <opencv2/imgproc/imgproc.hpp>
-#endif
 #include "toffy/graphs/raster.hpp"
 
 using namespace cv;
@@ -21,12 +18,7 @@ int RasterPoint::counter = 0;
 int RasterSegment::RID = 0;
 
 RasterSegment::RasterSegment(RasterPoint& start, RasterPoint& end)
-    : id(RID++),
-      start(&start),
-      end(&end),
-      len(0),
-      myGraph(0),
-      pruned(false){
+    : id(RID++), start(&start), end(&end), len(0), myGraph(0), pruned(false) {
 
           // cout << "NEW SEG " << id << " " << start << " " << end << endl;
       };
