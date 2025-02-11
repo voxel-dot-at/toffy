@@ -18,12 +18,7 @@
 
 #include <boost/log/trivial.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/imgproc.hpp>
-#else
-#  include <opencv2/imgproc/imgproc.hpp>
-#endif
-
+#include <opencv2/imgproc.hpp>
 
 #include <toffy/base/ofsCorr.hpp>
 
@@ -32,31 +27,32 @@ using namespace toffy::filters;
 using namespace cv;
 using namespace std;
 
-OffsetCorr::OffsetCorr(): Filter("offsetCorr"), in_ampl("ampl"), in_depth("depth")
+OffsetCorr::OffsetCorr()
+    : Filter("offsetCorr"), in_ampl("ampl"), in_depth("depth")
 {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "OFS";
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "OFS";
 }
-
 
 bool OffsetCorr::filter(const toffy::Frame& in, toffy::Frame& /*out*/)
 {
-	matPtr ampl = in.getMatPtr(in_ampl);
-	matPtr d = in.getMatPtr(in_depth);
+    matPtr ampl = in.getMatPtr(in_ampl);
+    matPtr d = in.getMatPtr(in_depth);
 
-	int mf = in.getUInt("mf");
+    int mf = in.getUInt("mf");
 
-	float fi = mf/5000000.f;
-	int idx = mf/5000000;
-	if (fi == 1.5) { // 7.5mhz
-	    idx=1;
-	} else if ( fi != idx || idx>6 ) {
-	   BOOST_LOG_TRIVIAL(error)  << "ERROR CONVERTING TO IDX! " << (mf/5000000.) ;
-	}
+    float fi = mf / 5000000.f;
+    int idx = mf / 5000000;
+    if (fi == 1.5) {  // 7.5mhz
+        idx = 1;
+    } else if (fi != idx || idx > 6) {
+        BOOST_LOG_TRIVIAL(error)
+            << "ERROR CONVERTING TO IDX! " << (mf / 5000000.);
+    }
 
-	//cout << "OFSCOR idx " << idx << " " << offsets[idx] <<  endl;
-	*d += offsets[idx] ;
+    //cout << "OFSCOR idx " << idx << " " << offsets[idx] <<  endl;
+    *d += offsets[idx];
 
-	return true;
+    return true;
 }
 
 /*
@@ -72,8 +68,9 @@ int OffsetCorr::loadConfig(const boost::property_tree::ptree& pt) {
 }
 */
 
-void OffsetCorr::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+void OffsetCorr::updateConfig(const boost::property_tree::ptree& pt)
+{
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -82,8 +79,7 @@ void OffsetCorr::updateConfig(const boost::property_tree::ptree &pt) {
     in_ampl = pt.get<string>("inputs.ampl", in_ampl);
     in_depth = pt.get<string>("inputs.depth", in_depth);
 
-    if (!offsets.size())
-	offsets.resize(7, 0.0);
+    if (!offsets.size()) offsets.resize(7, 0.0);
 
     offsets[0] = pt.get<float>("options.ofs_0", offsets[0]);
     offsets[1] = pt.get<float>("options.ofs_1", offsets[1]);
@@ -94,7 +90,8 @@ void OffsetCorr::updateConfig(const boost::property_tree::ptree &pt) {
     offsets[6] = pt.get<float>("options.ofs_6", offsets[6]);
 }
 
-boost::property_tree::ptree OffsetCorr::getConfig() const {
+boost::property_tree::ptree OffsetCorr::getConfig() const
+{
     boost::property_tree::ptree pt;
 
     pt = Filter::getConfig();

@@ -23,13 +23,8 @@
 #include <iostream>
 #include <string>
 
-#if OCV_VERSION_MAJOR >= 3
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
-#else
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/core/core.hpp>
-#endif
 
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>  // for toPCLPointCloud2
@@ -69,7 +64,6 @@ using namespace std;
 
 // typedef pcl::PointXYZ PointT;
 
-
 bool SampleConsensus::filter(const Frame& in, Frame& out)
 {
     using namespace boost::posix_time;
@@ -104,9 +98,11 @@ bool SampleConsensus::filter(const Frame& in, Frame& out)
         case plane:
             success = segmentPlane(cloud, pi, po, coeffs);
             if (success) {
-                std::shared_ptr<Eigen::VectorXf> vec(new Eigen::VectorXf(coeffs));
+                std::shared_ptr<Eigen::VectorXf> vec(
+                    new Eigen::VectorXf(coeffs));
                 out.addData("coeffs", vec);
-                out.addData("sampleConsensus_q", pi->size() / (float)po->size());
+                out.addData("sampleConsensus_q",
+                            pi->size() / (float)po->size());
             }
             break;
         case cylinder:
@@ -192,7 +188,7 @@ bool SampleConsensus::segmentPlane(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
     }
 
     ransac.getModelCoefficients(coeffs);
-    
+
     if (coeffs[3] < 0.) {
         // ensure distance is always positive & invert normal vector
         coeffs *= -1.;
@@ -705,9 +701,9 @@ void SampleConsensus::updateConfig(const boost::property_tree::ptree& pt)
 
     in = pt.get("inputs.cloud", in);
 
-    pt_optional_get_default<bool>(pt,"options.inPcl2", inPcl2, false);
-    pt_optional_get_default<bool>(pt,"options.inCloudPtr", inCloudPtr, true);
-    pt_optional_get_default<bool>(pt,"options.inMat3d", inMat3d, false);
+    pt_optional_get_default<bool>(pt, "options.inPcl2", inPcl2, false);
+    pt_optional_get_default<bool>(pt, "options.inCloudPtr", inCloudPtr, true);
+    pt_optional_get_default<bool>(pt, "options.inMat3d", inMat3d, false);
 
     inliers = pt.get("outputs.inliers", inliers);
     outliers = pt.get("outputs.outliers", outliers);

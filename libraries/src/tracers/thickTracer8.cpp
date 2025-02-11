@@ -6,13 +6,8 @@
  */
 
 #include <opencv2/imgproc/types_c.h>
-#if OCV_VERSION_MAJOR >= 3
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#else
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#endif
 
 #include <iostream>
 

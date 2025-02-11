@@ -18,11 +18,7 @@
 
 #include <toffy/filter.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/core.hpp>
-#else
-#  include <opencv2/core/core.hpp>
-#endif
+#include <opencv2/core.hpp>
 
 namespace toffy {
 namespace filters {
@@ -35,25 +31,23 @@ namespace filters {
  * @include polar2cart.xml
  *
  */
-class Polar2Cart : public Filter {
-public:
-
-    static const std::string id_name; ///< Filter identifier
+class Polar2Cart : public Filter
+{
+   public:
+    static const std::string id_name;  ///< Filter identifier
     Polar2Cart();
     virtual ~Polar2Cart() {}
 
     virtual boost::property_tree::ptree getConfig() const;
-    void updateConfig(const boost::property_tree::ptree &pt);
+    void updateConfig(const boost::property_tree::ptree& pt);
 
     virtual bool filter(const Frame& in, Frame& out);
 
-private:
+   private:
     double _fovx, _fovy;
-    std::string _in_img,
-	_out_img,
-	_in_fovx,
-	_in_fovy;
+    std::string _in_img, _out_img, _in_fovx, _in_fovy;
     cv::Mat _cameraMatrix;
     static std::size_t _filter_counter;
 };
-}}
+}  // namespace filters
+}  // namespace toffy

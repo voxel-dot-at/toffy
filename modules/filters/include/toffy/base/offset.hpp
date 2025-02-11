@@ -18,11 +18,7 @@
 
 #include <toffy/filter.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
 #include <opencv2/core.hpp>
-#else
-#include <opencv2/core/core.hpp>
-#endif
 
 /**
  * @brief offset performs multiplicative compensation

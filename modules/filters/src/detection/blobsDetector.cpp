@@ -49,227 +49,229 @@ BlobsDetector::BlobsDetector()
       minAmpl(220),
       refineBlobs(false),
       morpho(false),
-      sharpenEdges(false) {
-  _filter_counter++;
+      sharpenEdges(false)
+{
+    _filter_counter++;
 }
 
 BlobsDetector::~BlobsDetector() {}
 
-void BlobsDetector::updateConfig(const boost::property_tree::ptree& pt) {
-  BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+void BlobsDetector::updateConfig(const boost::property_tree::ptree& pt)
+{
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
 
-  using namespace boost::property_tree;
+    using namespace boost::property_tree;
 
-  Filter::updateConfig(pt);
+    Filter::updateConfig(pt);
 
-  in_img = pt.get<string>("inputs.img", in_img);
-  out_blobs = pt.get<string>("outputs.blobs", out_blobs);
+    in_img = pt.get<string>("inputs.img", in_img);
+    out_blobs = pt.get<string>("outputs.blobs", out_blobs);
 
-  _minSize = pt.get<int>("options.minSize", _minSize);
+    _minSize = pt.get<int>("options.minSize", _minSize);
 
-  amplFilter = pt.get<bool>("options.amplFilter", amplFilter);
-  minAmpl = pt.get<int>("options.minAmpl", minAmpl);
+    amplFilter = pt.get<bool>("options.amplFilter", amplFilter);
+    minAmpl = pt.get<int>("options.minAmpl", minAmpl);
 
-  refineBlobs = pt.get<bool>("options.refineBlobs", refineBlobs);
-  morpho = pt.get<bool>("options.morpho", morpho);
+    refineBlobs = pt.get<bool>("options.refineBlobs", refineBlobs);
+    morpho = pt.get<bool>("options.morpho", morpho);
 
-  sharpenEdges = pt.get<bool>("options.sharpenEdges", sharpenEdges);
+    sharpenEdges = pt.get<bool>("options.sharpenEdges", sharpenEdges);
 
-  _params.thresholdStep = pt.get<float>("options.thresholdStep", 10);
-  _params.minThreshold = pt.get<float>("options.minThreshold", 10);
-  _params.maxThreshold = pt.get<float>("options.maxThreshold", 220);
-  _params.minRepeatability = pt.get<int>("options.minRepeatability", 2);
-  _params.minDistBetweenBlobs =
-      pt.get<float>("options.minDistBetweenBlobs", 10);
+    _params.thresholdStep = pt.get<float>("options.thresholdStep", 10);
+    _params.minThreshold = pt.get<float>("options.minThreshold", 10);
+    _params.maxThreshold = pt.get<float>("options.maxThreshold", 220);
+    _params.minRepeatability = pt.get<int>("options.minRepeatability", 2);
+    _params.minDistBetweenBlobs =
+        pt.get<float>("options.minDistBetweenBlobs", 10);
 
-  _params.filterByColor = pt.get<bool>("options.filterByColor", false);
-  _params.blobColor = pt.get<float>("options.blobColor", 0);
+    _params.filterByColor = pt.get<bool>("options.filterByColor", false);
+    _params.blobColor = pt.get<float>("options.blobColor", 0);
 
-  _params.filterByArea = pt.get<bool>("options.filterByArea", false);
-  _params.minArea = pt.get<float>("options.minArea", 25);
-  _params.maxArea = pt.get<float>("options.maxArea", 5000);
+    _params.filterByArea = pt.get<bool>("options.filterByArea", false);
+    _params.minArea = pt.get<float>("options.minArea", 25);
+    _params.maxArea = pt.get<float>("options.maxArea", 5000);
 
-  _params.filterByCircularity =
-      pt.get<bool>("options.filterByCircularity", false);
-  _params.minCircularity = pt.get<float>("options.minCircularity", 0.9f);
-  _params.maxCircularity = pt.get<float>("options.maxCircularity", (float)1e37);
+    _params.filterByCircularity =
+        pt.get<bool>("options.filterByCircularity", false);
+    _params.minCircularity = pt.get<float>("options.minCircularity", 0.9f);
+    _params.maxCircularity =
+        pt.get<float>("options.maxCircularity", (float)1e37);
 
-  _params.filterByInertia = pt.get<bool>("options.filterByInertia", false);
-  _params.minInertiaRatio = pt.get<float>("options.minInertiaRatio", 0.1f);
-  _params.maxInertiaRatio =
-      pt.get<float>("options.maxInertiaRatio", (float)1e37);
+    _params.filterByInertia = pt.get<bool>("options.filterByInertia", false);
+    _params.minInertiaRatio = pt.get<float>("options.minInertiaRatio", 0.1f);
+    _params.maxInertiaRatio =
+        pt.get<float>("options.maxInertiaRatio", (float)1e37);
 
-  _params.filterByConvexity = pt.get<bool>("options.filterByConvexity", false);
-  _params.minConvexity = pt.get<float>("options.minConvexity", 0.95f);
-  _params.maxConvexity = pt.get<float>("options.maxConvexity", (float)1e37);
+    _params.filterByConvexity =
+        pt.get<bool>("options.filterByConvexity", false);
+    _params.minConvexity = pt.get<float>("options.minConvexity", 0.95f);
+    _params.maxConvexity = pt.get<float>("options.maxConvexity", (float)1e37);
 }
 
-boost::property_tree::ptree BlobsDetector::getConfig() const {
-  boost::property_tree::ptree pt;
+boost::property_tree::ptree BlobsDetector::getConfig() const
+{
+    boost::property_tree::ptree pt;
 
-  pt = Filter::getConfig();
+    pt = Filter::getConfig();
 
-  pt.put("inputs.img", in_img);
-  pt.put("outputs.blobs", out_blobs);
+    pt.put("inputs.img", in_img);
+    pt.put("outputs.blobs", out_blobs);
 
-  pt.put("options.minSize", _minSize);
+    pt.put("options.minSize", _minSize);
 
-  pt.put("options.amplFilter", amplFilter);
-  pt.put("options.minAmpl", minAmpl);
+    pt.put("options.amplFilter", amplFilter);
+    pt.put("options.minAmpl", minAmpl);
 
-  pt.put("options.refineBlobs", refineBlobs);
-  pt.put("options.morpho", morpho);
+    pt.put("options.refineBlobs", refineBlobs);
+    pt.put("options.morpho", morpho);
 
-  pt.put("options.sharpenEdges", sharpenEdges);
+    pt.put("options.sharpenEdges", sharpenEdges);
 
-  pt.put("options.thresholdStep", _params.thresholdStep);
-  pt.put("options.minThreshold", _params.minThreshold);
-  pt.put("options.maxThreshold", _params.maxThreshold);
-  pt.put("options.minRepeatability", _params.minRepeatability);
-  pt.put("options.minDistBetweenBlobs", _params.minDistBetweenBlobs);
+    pt.put("options.thresholdStep", _params.thresholdStep);
+    pt.put("options.minThreshold", _params.minThreshold);
+    pt.put("options.maxThreshold", _params.maxThreshold);
+    pt.put("options.minRepeatability", _params.minRepeatability);
+    pt.put("options.minDistBetweenBlobs", _params.minDistBetweenBlobs);
 
-  pt.put("options.filterByColor", _params.filterByColor);
-  pt.put("options.blobColor", _params.blobColor);
+    pt.put("options.filterByColor", _params.filterByColor);
+    pt.put("options.blobColor", _params.blobColor);
 
-  pt.put("options.filterByArea", _params.filterByArea);
-  pt.put("options.minArea", _params.minArea);
-  pt.put("options.maxArea", _params.maxArea);
+    pt.put("options.filterByArea", _params.filterByArea);
+    pt.put("options.minArea", _params.minArea);
+    pt.put("options.maxArea", _params.maxArea);
 
-  pt.put("options.filterByCircularity", _params.filterByCircularity);
-  pt.put("options.minCircularity", _params.minCircularity);
-  pt.put("options.maxCircularity", _params.maxCircularity);
+    pt.put("options.filterByCircularity", _params.filterByCircularity);
+    pt.put("options.minCircularity", _params.minCircularity);
+    pt.put("options.maxCircularity", _params.maxCircularity);
 
-  pt.put("options.filterByInertia", _params.filterByInertia);
-  pt.put("options.minInertiaRatio", _params.minInertiaRatio);
-  pt.put("options.maxInertiaRatio", _params.maxInertiaRatio);
+    pt.put("options.filterByInertia", _params.filterByInertia);
+    pt.put("options.minInertiaRatio", _params.minInertiaRatio);
+    pt.put("options.maxInertiaRatio", _params.maxInertiaRatio);
 
-  pt.put("options.filterByConvexity", _params.filterByConvexity);
-  pt.put("options.minConvexity", _params.minConvexity);
-  pt.put("options.maxConvexity", _params.maxConvexity);
+    pt.put("options.filterByConvexity", _params.filterByConvexity);
+    pt.put("options.minConvexity", _params.minConvexity);
+    pt.put("options.maxConvexity", _params.maxConvexity);
 
-  return pt;
+    return pt;
 }
 
-bool BlobsDetector::filter(const toffy::Frame& in, toffy::Frame& out) {
-  matPtr inImg;
-  matPtr ampl;
-  DetObjectsPtr blobs;
-  // unsigned int fc;
+bool BlobsDetector::filter(const toffy::Frame& in, toffy::Frame& out)
+{
+    matPtr inImg;
+    matPtr ampl;
+    DetObjectsPtr blobs;
+    // unsigned int fc;
 
-  try {
-    fc = in.getUInt(btaFc);
-  } catch (const boost::bad_any_cast&) {
-    BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << btaFc;
-    return false;
-  }
+    try {
+        fc = in.getUInt(btaFc);
+    } catch (const boost::bad_any_cast&) {
+        BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << btaFc;
+        return false;
+    }
 
-  try {
-    ts = in.getUInt("ts");
-  } catch (const boost::bad_any_cast&) {
-    BOOST_LOG_TRIVIAL(warning) << "Could not cast input "
-                               << "ts";
-    return false;
-  }
+    try {
+        ts = in.getUInt("ts");
+    } catch (const boost::bad_any_cast&) {
+        BOOST_LOG_TRIVIAL(warning) << "Could not cast input "
+                                   << "ts";
+        return false;
+    }
 
-  try {
-    inImg = in.getMatPtr(in_img);
-    ampl = in.getMatPtr(in_ampl);
-  } catch (const boost::bad_any_cast&) {
-    BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << in_img
-                               << ", filter  " << id() << " not applied.";
-    return false;
-  }
+    try {
+        inImg = in.getMatPtr(in_img);
+        ampl = in.getMatPtr(in_ampl);
+    } catch (const boost::bad_any_cast&) {
+        BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << in_img
+                                   << ", filter  " << id() << " not applied.";
+        return false;
+    }
 
-  try {
-    blobs = boost::any_cast<DetObjectsPtr >(
-        out.getData(out_blobs));
-  } catch (const boost::bad_any_cast&) {
-    BOOST_LOG_TRIVIAL(warning) << "Could not find object vector. Creating one";
-    blobs.reset(new std::vector<DetectedObject*>);
-  }
+    try {
+        blobs = boost::any_cast<DetObjectsPtr>(out.getData(out_blobs));
+    } catch (const boost::bad_any_cast&) {
+        BOOST_LOG_TRIVIAL(warning)
+            << "Could not find object vector. Creating one";
+        blobs.reset(new std::vector<DetectedObject*>);
+    }
 
-  findBlobs(*inImg, *ampl, fc, *blobs);
+    findBlobs(*inImg, *ampl, fc, *blobs);
 
-  // out.addData(out_blobs, blobs);
+    // out.addData(out_blobs, blobs);
 
-  // cout << id() << ": blobs saved into " << out_blobs << " size  =" <<
-  // blobs->size() << endl;
-  return true;
+    // cout << id() << ": blobs saved into " << out_blobs << " size  =" <<
+    // blobs->size() << endl;
+    return true;
 }
 
 void BlobsDetector::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
-                              std::vector<DetectedObject*>& detObj) {
-  BOOST_LOG_TRIVIAL(debug) << __FILE__ << ": " << __FUNCTION__;
-  vector<vector<Point> > contours;
-  vector<Vec4i> hierarchy;
+                              std::vector<DetectedObject*>& detObj)
+{
+    BOOST_LOG_TRIVIAL(debug) << __FILE__ << ": " << __FUNCTION__;
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
 
-  detObj.clear();
-  // Rect rect(0,0,img.cols,img.rows);
-  // Mat roi2(img,rect);
+    detObj.clear();
+    // Rect rect(0,0,img.cols,img.rows);
+    // Mat roi2(img,rect);
 
-  Mat m = img > 0.01;
+    Mat m = img > 0.01;
 
-  if (amplFilter) {
-    m &= (ampl > minAmpl);
-  }
+    if (amplFilter) {
+        m &= (ampl > minAmpl);
+    }
 
-  img.copyTo(m, m);
+    img.copyTo(m, m);
 
-  // medianBlur(m, m, 3);
-  // int morph_size = 1;
-  // Mat element = getStructuringElement( MORPH_RECT, Size( 2*morph_size + 1,
-  // 2*morph_size+1 ), Point( morph_size, morph_size ) );
-  // morphologyEx( m, m, MORPH_OPEN, element );
+    // medianBlur(m, m, 3);
+    // int morph_size = 1;
+    // Mat element = getStructuringElement( MORPH_RECT, Size( 2*morph_size + 1,
+    // 2*morph_size+1 ), Point( morph_size, morph_size ) );
+    // morphologyEx( m, m, MORPH_OPEN, element );
 
-  if (dbg) imshow("m ", m);
+    if (dbg) imshow("m ", m);
 
-  // Convert to 8bit
-  double max, min;
-  cv::minMaxLoc(m, &min, &max);
-  m.convertTo(m, CV_8U, 255.0 / (max - min), -255.0 * min / (max - min));
+    // Convert to 8bit
+    double max, min;
+    cv::minMaxLoc(m, &min, &max);
+    m.convertTo(m, CV_8U, 255.0 / (max - min), -255.0 * min / (max - min));
 
-  // medianBlur(m, m, 3);
-  // morphologyEx( m, m, operation, element );
-  if (dbg) imshow("m2 ", m);
+    // medianBlur(m, m, 3);
+    // morphologyEx( m, m, operation, element );
+    if (dbg) imshow("m2 ", m);
 
-  if (morpho) {
-    Mat edges;
-    Canny(m, edges, 50, 50 * 2, 3);
-    int morph_size = 0;
-    Mat element = getStructuringElement(
-        MORPH_RECT, Size(2 * morph_size + 1, 2 * morph_size + 1),
-        Point(morph_size, morph_size));
-    morphologyEx(edges, edges, MORPH_CLOSE, element, Point(-1, -1), 3);
-    // dilate(edges,edges);
-    // cv::copyMakeBorder(edges, edges, 1, 1, 1, 1,
-    // cv::BORDER_CONSTANT,Scalar(1)); if (dbg) imshow("edges " , edges);
-    m.setTo(0, edges);
-    if (dbg) imshow("edges ", edges);
-  }
+    if (morpho) {
+        Mat edges;
+        Canny(m, edges, 50, 50 * 2, 3);
+        int morph_size = 0;
+        Mat element = getStructuringElement(
+            MORPH_RECT, Size(2 * morph_size + 1, 2 * morph_size + 1),
+            Point(morph_size, morph_size));
+        morphologyEx(edges, edges, MORPH_CLOSE, element, Point(-1, -1), 3);
+        // dilate(edges,edges);
+        // cv::copyMakeBorder(edges, edges, 1, 1, 1, 1,
+        // cv::BORDER_CONSTANT,Scalar(1)); if (dbg) imshow("edges " , edges);
+        m.setTo(0, edges);
+        if (dbg) imshow("edges ", edges);
+    }
 
-  if (dbg) imshow("blobs to track ", m);
-  vector<KeyPoint> keyImg;
-#if OCV_VERSION_MAJOR >= 3
-  Ptr<cv::Feature2D> b;
+    if (dbg) imshow("blobs to track ", m);
+    vector<KeyPoint> keyImg;
+    Ptr<cv::Feature2D> b;
 
-  b = SimpleBlobDetector::create(_params);
+    b = SimpleBlobDetector::create(_params);
 
-  Ptr<SimpleBlobDetector> sbd = b.dynamicCast<SimpleBlobDetector>();
+    Ptr<SimpleBlobDetector> sbd = b.dynamicCast<SimpleBlobDetector>();
 
-  sbd->detect(m, keyImg, Mat());
-#else
-  SimpleBlobDetector sbd;
-  sbd.detect(m, keyImg, Mat());
-#endif
-  cout << "keyPoints found: " << keyImg.size() << endl;
-  Mat result(m.size(), CV_8UC3);
-  drawKeypoints(
-      m, keyImg, result, Scalar::all(-1),
-      DrawMatchesFlags::DEFAULT & DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-  imshow("rest", result);
-  // waitKey();
+    sbd->detect(m, keyImg, Mat());
+    cout << "keyPoints found: " << keyImg.size() << endl;
+    Mat result(m.size(), CV_8UC3);
+    drawKeypoints(
+        m, keyImg, result, Scalar::all(-1),
+        DrawMatchesFlags::DEFAULT & DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    imshow("rest", result);
+    // waitKey();
 
-  /*
+    /*
   findContours(m, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_NONE);
 
   if (dbg) {
@@ -383,52 +385,53 @@ void BlobsDetector::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
 }
 
 void BlobsDetector::refineBlob(cv::Mat& dist, int fc,
-                               toffy::detection::DetectedObject* o) {
-  Mat mask(dist.size(), CV_8UC1);
+                               toffy::detection::DetectedObject* o)
+{
+    Mat mask(dist.size(), CV_8UC1);
 
-  float dlt = 0.025;  // 2.5cm max depth change between pixels
+    float dlt = 0.025;  // 2.5cm max depth change between pixels
 
-  if (dbg) imshow("dist", dist);
+    if (dbg) imshow("dist", dist);
 
-  mask.setTo(0);
+    mask.setTo(0);
 
-  cv::copyMakeBorder(mask, mask, 1, 1, 1, 1, cv::BORDER_REPLICATE);
+    cv::copyMakeBorder(mask, mask, 1, 1, 1, 1, cv::BORDER_REPLICATE);
 
-  Mat copyMask = mask.clone();
+    Mat copyMask = mask.clone();
 
-  floodFill(dist, mask, o->massCenter + Point2f(1.1), Scalar(255), 0,
-            Scalar(dlt), Scalar(dlt), 4 | FLOODFILL_MASK_ONLY | (255 << 8));
+    floodFill(dist, mask, o->massCenter + Point2f(1.1), Scalar(255), 0,
+              Scalar(dlt), Scalar(dlt), 4 | FLOODFILL_MASK_ONLY | (255 << 8));
 
-  if (dbg) imshow("FLOOD", mask);
+    if (dbg) imshow("FLOOD", mask);
 
-  mask.setTo(0, copyMask);
-  Mat m(mask, Rect(1, 1, mask.cols - 2, mask.rows - 2));
+    mask.setTo(0, copyMask);
+    Mat m(mask, Rect(1, 1, mask.cols - 2, mask.rows - 2));
 
-  if (dbg) imshow("fmask2", mask);
-  if (dbg) imshow("FLOOD2", m);
+    if (dbg) imshow("fmask2", mask);
+    if (dbg) imshow("FLOOD2", m);
 
-  vector<vector<Point> > contours;
-  vector<Vec4i> hierarchy;
-  findContours(m, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_NONE);
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+    findContours(m, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_NONE);
 
-  if (contours.size() > 0) {
-    o->idx = 0;
-    // Get the right id when small objects are detected in redefine.
-    // Looking for the biggest object.
-    unsigned int max_size = (int)contours[0].size();
-    for (size_t i = 1; i < contours.size(); i++) {
-      if (max_size < contours[i].size()) {
-        max_size = contours[i].size();
-        o->idx = i;
-      }
-    }
+    if (contours.size() > 0) {
+        o->idx = 0;
+        // Get the right id when small objects are detected in redefine.
+        // Looking for the biggest object.
+        unsigned int max_size = (int)contours[0].size();
+        for (size_t i = 1; i < contours.size(); i++) {
+            if (max_size < contours[i].size()) {
+                max_size = contours[i].size();
+                o->idx = i;
+            }
+        }
 
-    o->contours.reset(new vector<vector<Point> >(contours));
-    o->hierarchy.reset(new vector<Vec4i>(hierarchy));
+        o->contours.reset(new vector<vector<Point> >(contours));
+        o->hierarchy.reset(new vector<Vec4i>(hierarchy));
 
-    o->contour = contours[o->idx];
+        o->contour = contours[o->idx];
 
-    /*if (dbg) {
+        /*if (dbg) {
         Mat imgCopy(dist.size(),CV_8UC3, Scalar(0,0,0));
         //img.convertTo(imgCopy,CV_GRAY2BGR);
         RNG rng(12345);
@@ -441,14 +444,14 @@ void BlobsDetector::refineBlob(cv::Mat& dist, int fc,
         imshow("<<<<<", imgCopy);
     }*/
 
-    o->mo = moments(contours[o->idx]);
-    o->massCenter = Point2f(o->mo.m10 / o->mo.m00, o->mo.m01 / o->mo.m00);
+        o->mo = moments(contours[o->idx]);
+        o->massCenter = Point2f(o->mo.m10 / o->mo.m00, o->mo.m01 / o->mo.m00);
 
-    o->fc = fc;
-    o->cts = ts;
-    o->ts = boost::posix_time::microsec_clock::local_time();
+        o->fc = fc;
+        o->cts = ts;
+        o->ts = boost::posix_time::microsec_clock::local_time();
 
-    /*if (dbg) {
+        /*if (dbg) {
         Mat imgCopy(dist.size(),CV_8UC3, Scalar(0,0,0));
         //img.convertTo(imgCopy,CV_GRAY2BGR);
         RNG rng(12345);
@@ -460,7 +463,7 @@ void BlobsDetector::refineBlob(cv::Mat& dist, int fc,
         }
         imshow("qqqqq", imgCopy);
     }*/
-  } else {
-    o->idx = -1;
-  }
+    } else {
+        o->idx = -1;
+    }
 }

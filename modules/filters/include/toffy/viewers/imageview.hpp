@@ -18,11 +18,7 @@
 
 #include <toffy/filter.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/core.hpp>
-#else
-#  include <opencv2/core/core.hpp>
-#endif
+#include <opencv2/core.hpp>
 
 namespace toffy {
 /**
@@ -39,27 +35,27 @@ namespace toffy {
  * @include imageview.xml
  *
  */
-class ImageView : public Filter	{
-public:
-
-    static const std::string id_name; ///< Filter identifier
+class ImageView : public Filter
+{
+   public:
+    static const std::string id_name;  ///< Filter identifier
     ImageView();
     virtual ~ImageView();
 
     virtual boost::property_tree::ptree getConfig() const;
-    virtual void updateConfig(const boost::property_tree::ptree &pt);
+    virtual void updateConfig(const boost::property_tree::ptree& pt);
 
     virtual bool filter(const Frame& in, Frame& out);
 
-private:
-    double _scale, ///< Scaled the image keeping the proportions
-	_max, ///< Max value for converting to grayscaled
-	_min; ///< Min value for converting to grayscaled
+   private:
+    double _scale,  ///< Scaled the image keeping the proportions
+        _max,       ///< Max value for converting to grayscaled
+        _min;       ///< Min value for converting to grayscaled
     std::string _in_img;
-    bool _gray; ///< Flag for converting the image to grayscaled.
-    bool _enabled; ///< if enabled, show the image, otherwise skip it
-    int _waitKey; ///< timeout for waitKey, set via options. -1 if disabled
-    static std::size_t _filter_counter; ///< Internal filter counter
+    bool _gray;     ///< Flag for converting the image to grayscaled.
+    bool _enabled;  ///< if enabled, show the image, otherwise skip it
+    int _waitKey;   ///< timeout for waitKey, set via options. -1 if disabled
+    static std::size_t _filter_counter;  ///< Internal filter counter
     cv::Mat show;
 };
-}
+}  // namespace toffy

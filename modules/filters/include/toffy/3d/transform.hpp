@@ -18,12 +18,7 @@
 
 #include <toffy/filter.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/core.hpp>
-#else
-#  include <opencv2/core/core.hpp>
-#endif
-
+#include <opencv2/core.hpp>
 
 /**
  * @brief
@@ -39,14 +34,14 @@ namespace f3d {
     int op;
 };*/
 
-
-class Transform : public Filter {
-
+class Transform : public Filter
+{
     std::vector<cv::Vec3d> _actions;
     std::vector<int> _operations;
     std::string _in_cloud, _out_cloud;
     static std::size_t _filter_counter;
-public:
+
+   public:
     Transform();
     virtual ~Transform() {}
     static const std::string id_name;
@@ -54,12 +49,16 @@ public:
     virtual bool filter(const Frame& in, Frame& out) const;
 
     virtual boost::property_tree::ptree getConfig() const;
-    void updateConfig(const boost::property_tree::ptree &pt);
+    void updateConfig(const boost::property_tree::ptree& pt);
 
-    enum Operation {
-	rotation, translation, scaling
+    enum Operation
+    {
+        rotation,
+        translation,
+        scaling
     };
-
 };
 
-}}}
+}  // namespace f3d
+}  // namespace filters
+}  // namespace toffy

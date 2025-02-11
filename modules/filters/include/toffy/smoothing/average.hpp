@@ -18,20 +18,14 @@
 
 #include <toffy/filter.hpp>
 
-#if OCV_VERSION_MAJOR >= 3
-#  include <opencv2/core.hpp>
-#else
-#  include <opencv2/core/core.hpp>
-#endif
-
+#include <opencv2/core.hpp>
 #include <deque>
 
 #ifdef MSVC
-#define DLLExport __declspec( dllexport )
+#define DLLExport __declspec(dllexport)
 #else
 #define DLLExport /**/
 #endif
-
 
 /**
  * @brief
@@ -42,13 +36,15 @@ namespace filters {
 namespace smoothing {
 /** perform averaging of the (depth) channel over multiple frames.
      */
-class DLLExport Average : public Filter {
+class DLLExport Average : public Filter
+{
     std::string _in_img, _out_img;
     static std::size_t _filter_counter;
-    std::deque<matPtr > _queue;
+    std::deque<matPtr> _queue;
     size_t _size;
     cv::Mat _dst, _cnt;
-public:
+
+   public:
     Average();
 
     virtual ~Average() {}
@@ -61,10 +57,10 @@ public:
 
     virtual boost::property_tree::ptree getConfig() const;
 
-    void updateConfig(const boost::property_tree::ptree &pt);
+    void updateConfig(const boost::property_tree::ptree& pt);
 
-    size_t size() const {return _queue.size();}
+    size_t size() const { return _queue.size(); }
 };
-}
-}
-}
+}  // namespace smoothing
+}  // namespace filters
+}  // namespace toffy
