@@ -544,9 +544,6 @@ void Mask::morfExMask(cv::Mat &mask)
 #define LINE_AA cv::LINE_AA
 #define FILLED cv::FILLED
 #define LINE_8 8
-#define LINE_AA CV_AA
-#define FILLED -1
-#define LINE_8 8
 
 void Mask::fillMaskGaps()
 {

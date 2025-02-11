@@ -18,7 +18,6 @@
 #include <vector>
 //#include "rapidjson/document.h"
 #include <opencv2/core.hpp>
-#include <opencv2/core/core.hpp>
 #include "toffy/tracers/segmentTracer.hpp"
 
 class ThickTracer8 : public SegmentTracer

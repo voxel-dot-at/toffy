@@ -263,8 +263,6 @@ void BlobsDetector::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
     Ptr<SimpleBlobDetector> sbd = b.dynamicCast<SimpleBlobDetector>();
 
     sbd->detect(m, keyImg, Mat());
-    SimpleBlobDetector sbd;
-    sbd.detect(m, keyImg, Mat());
     cout << "keyPoints found: " << keyImg.size() << endl;
     Mat result(m.size(), CV_8UC3);
     drawKeypoints(

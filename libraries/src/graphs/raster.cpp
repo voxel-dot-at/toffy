@@ -1,6 +1,5 @@
 
 #include <opencv2/imgproc.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include "toffy/graphs/raster.hpp"
 
 using namespace cv;

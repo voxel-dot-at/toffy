@@ -20,7 +20,6 @@
 #include <toffy/io/imagesensor.hpp>
 
 #include <opencv2/core.hpp>
-#include <opencv2/core/core.hpp>
 
 #ifdef MSVC
 #define DLLExport __declspec(dllexport)

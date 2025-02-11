@@ -19,7 +19,6 @@
 #include <toffy/filter.hpp>
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/opencv.hpp>
 
 namespace toffy {
 namespace detection {

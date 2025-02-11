@@ -66,7 +66,7 @@ class Colorize : public Filter
         min;       ///< Min value for converting to grayscaled
     std::string in_img, out_img, colormap;
     cv::ColormapTypes colormap_value;
-    int colormap_value;
+
     bool _gray;  ///< Flag for converting the image to grayscaled.
 
     static std::size_t filter_counter;

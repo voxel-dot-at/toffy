@@ -19,7 +19,6 @@
 #include <boost/log/trivial.hpp>
 
 #include <opencv2/imgproc.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 
 #include <toffy/base/ofsCorr.hpp>
 

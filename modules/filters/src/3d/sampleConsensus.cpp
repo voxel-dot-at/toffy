@@ -25,8 +25,6 @@
 
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/core/core.hpp>
 
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>  // for toPCLPointCloud2

@@ -20,7 +20,6 @@
 #include <sstream>
 
 #include <opencv2/highgui.hpp>
-#include <opencv2/highgui/highgui.hpp>
 
 #include <toffy/detection/detectedObject.hpp>
 #include <toffy/detection/objectTrack.hpp>

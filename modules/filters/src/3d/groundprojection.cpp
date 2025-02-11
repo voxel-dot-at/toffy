@@ -20,9 +20,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/calib3d.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
-#include <opencv2/highgui/highgui.hpp>
 
 #include <pcl/filters/radius_outlier_removal.h>
 #include <pcl/common/angles.h>
