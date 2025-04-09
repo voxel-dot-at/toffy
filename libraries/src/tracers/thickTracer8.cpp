@@ -610,7 +610,10 @@ void ThickTracer8::followLine(cv::Mat& in, RasterPoint& start,
                 break;
             }
         }
-
+        if (i==8) {
+            // not found - next point;
+            throw std::runtime_error("could not find next point!");
+        }
         last = Point(x, y);
 
         // Move to the next point
