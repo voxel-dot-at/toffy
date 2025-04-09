@@ -21,7 +21,7 @@
 #include <pcl/range_image/range_image_planar.h>
 #include <pcl/common/transforms.h>
 
-#include <boost/any.hpp>
+#include <any>
 
 #include "toffy/filter_helpers.hpp"
 #include "toffy/common/filenodehelper.hpp"
@@ -97,7 +97,7 @@ bool ReprojectPCL::filter(const Frame &in, Frame &out) {
 
   matPtr img;
   try {
-    img = boost::any_cast<matPtr >(in.getData(_in_img));
+    img = std::any_cast<matPtr >(in.getData(_in_img));
   } catch (const boost::bad_any_cast &) {
     LOG(warning) << "ReprojectPCL::filter() Could not cast input " << _in_img
                  << ", filter  " << id() << " not applied.";
@@ -105,7 +105,7 @@ bool ReprojectPCL::filter(const Frame &in, Frame &out) {
   }
   if (!_in_cameraMatrix.empty()) {
     try {
-      _cameraMatrix = boost::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
+      _cameraMatrix = std::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
     } catch (const boost::bad_any_cast &) {
       LOG(warning) << "ReprojectPCL::filter() Could not read input "
                    << _in_cameraMatrix;
@@ -132,7 +132,7 @@ bool ReprojectPCL::filter(const Frame &in, Frame &out) {
       std::shared_ptr<Eigen::Affine3f> world2camera;
       try {
         // TODO transformation key by parameter
-        world2camera = boost::any_cast<std::shared_ptr<Eigen::Affine3f> >(
+        world2camera = std::any_cast<std::shared_ptr<Eigen::Affine3f> >(
             in.getData(_in_transf));  //"bta12world"));
         pcl::transformPointCloud(*planar, *planar, world2camera->matrix());
 	} catch(const boost::bad_any_cast &) {

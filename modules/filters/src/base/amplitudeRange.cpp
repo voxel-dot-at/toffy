@@ -82,7 +82,7 @@ bool AmplitudeRange::filter(const Frame &in, Frame& out) {
 	matPtr ampl, depth;
 
 	try {
-		ampl = boost::any_cast<matPtr>(in.getData(_in_ampl));
+		ampl = std::any_cast<matPtr>(in.getData(_in_ampl));
 	} catch(const boost::bad_any_cast &) {
 		BOOST_LOG_TRIVIAL(warning) <<
 			"Could not cast input " << _in_ampl <<
@@ -91,7 +91,7 @@ bool AmplitudeRange::filter(const Frame &in, Frame& out) {
 	}
 	
 	try {
-		depth = boost::any_cast<matPtr>(in.getData(_in_depth));
+		depth = std::any_cast<matPtr>(in.getData(_in_depth));
 	} catch(const boost::bad_any_cast &) {
 		BOOST_LOG_TRIVIAL(warning) <<
 			"Could not cast input " << _in_depth <<

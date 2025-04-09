@@ -20,7 +20,7 @@
 
 #include <boost/log/trivial.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/any.hpp>
+#include <any>
 
 #include "toffy/filter_helpers.hpp"
 #include "toffy/viewers/exportYaml.hpp"

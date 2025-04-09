@@ -24,7 +24,7 @@
 #endif
 
 #include <boost/log/trivial.hpp>
-#include <boost/any.hpp>
+#include <any>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/trim.hpp>

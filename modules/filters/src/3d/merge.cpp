@@ -162,7 +162,7 @@ bool Merge::filter(const Frame &in, Frame& out) const {
 
 	pcl::RangeImagePlanar::Ptr planar;
 	try {
-	    planar = boost::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_clouds.front()));
+	    planar = std::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_clouds.front()));
 	} catch(const boost::bad_any_cast &) {
 	    BOOST_LOG_TRIVIAL(warning) <<
 		    "Could not cast input " << _clouds.front() <<
@@ -173,7 +173,7 @@ bool Merge::filter(const Frame &in, Frame& out) const {
 	for (size_t i = 1; i < _clouds.size(); i++) {
 		pcl::RangeImagePlanar::Ptr planar2;
 		try {
-		    planar2 = boost::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_clouds[i]));
+		    planar2 = std::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_clouds[i]));
 		} catch(const boost::bad_any_cast &) {
 		    BOOST_LOG_TRIVIAL(warning) <<
 			    "Could not cast input " << _clouds[i] <<

@@ -18,7 +18,7 @@
 
 #include <vector>
 
-#include <boost/any.hpp>
+#include <any>
 
 #include <boost/container/flat_map.hpp>
 

@@ -88,8 +88,8 @@ boost::property_tree::ptree VideoOut::getConfig() const {
 bool VideoOut::filter(const Frame& in, Frame& /*out*/) 
 {
 	if (writer && writer->isOpened()) {	
-		matPtr depthP = boost::any_cast< matPtr >(in.getData("depth"));
-		matPtr amplP = boost::any_cast< matPtr >(in.getData("amplitudes"));
+		matPtr depthP = std::any_cast< matPtr >(in.getData("depth"));
+		matPtr amplP = std::any_cast< matPtr >(in.getData("amplitudes"));
 
 		Mat amp, dis; // todo: keep 
 
@@ -135,8 +135,8 @@ void VideoOut::startSaving(const std::string& file, Frame& in)
   writer = new VideoWriter();
 
   // init image:
-  matPtr dis = boost::any_cast< matPtr >(in.getData("depth"));
-  matPtr amp = boost::any_cast< matPtr >(in.getData("amplitudes"));
+  matPtr dis = std::any_cast< matPtr >(in.getData("depth"));
+  matPtr amp = std::any_cast< matPtr >(in.getData("amplitudes"));
 
 
   image = Mat(amp->rows*scale + ofs, (amp->cols+dis->cols)*scale, CV_8UC3);

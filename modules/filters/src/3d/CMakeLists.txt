@@ -14,7 +14,7 @@ if ( ${PCL_FOUND} )
         xyz2pcl.cpp
     )
 else() 
-    set(PCL_SRCS "" )
+    set(PCL_SRCS "init.cpp" )
 endif()
 
 add_library(toffy_3d OBJECT ${PCL_SRCS}

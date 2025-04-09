@@ -18,7 +18,9 @@
 
 #include <vector>
 
-#include <boost/any.hpp>
+// cf https://www.cppstories.com/2018/06/any/#migration-from-boostany
+#include <any>
+// #include <any>
 
 #include <boost/container/flat_map.hpp>
 
@@ -124,12 +126,12 @@ class TOFFY_EXPORT Frame
      * @param dt dataType
      * @param description an (optional) description, esp. for Any data types
      */
-    void addData(std::string key, boost::any v, SlotDataType dt,
+    void addData(std::string key, std::any v, SlotDataType dt,
                  const std::string& description);
 
-    void addData(std::string key, boost::any v, SlotDataType dt);
+    void addData(std::string key, std::any v, SlotDataType dt);
 
-    void addData(std::string key, boost::any v) { addData(key, v, Any); };
+    void addData(std::string key, std::any v) { addData(key, v, Any); };
 
     void addData(std::string key, matPtr m) { addData(key, m, Mat); }
 
@@ -181,7 +183,7 @@ class TOFFY_EXPORT Frame
      * @param key
      * @return Data if key found, empty in not.
      */
-    boost::any getData(const std::string& key) const;
+    std::any getData(const std::string& key) const;
 
     /**
      * @brief Shorted getter for booleans in frame
@@ -286,11 +288,11 @@ class TOFFY_EXPORT Frame
     /**
      * Data container in frame.
      *
-     * Its has a unique string key and uses boost::any to save any kind
+     * Its has a unique string key and uses std::any to save any kind
      * of data.
      * Use boost::shared_ptr to avoid any memory leak.
      */
-    boost::container::flat_map<std::string, boost::any> data;
+    boost::container::flat_map<std::string, std::any> data;
 
     /** data type of the slot */
     boost::container::flat_map<std::string, SlotDataType> meta;
@@ -301,57 +303,57 @@ class TOFFY_EXPORT Frame
 
 inline unsigned int Frame::getUInt(const std::string& key) const
 {
-    unsigned int u = boost::any_cast<unsigned int>(getData(key));
+    unsigned int u = std::any_cast<unsigned int>(getData(key));
     return u;
 }
 
 inline bool Frame::getBool(const std::string& key) const
 {
-    bool b = boost::any_cast<bool>(getData(key));
+    bool b = std::any_cast<bool>(getData(key));
     return b;
 }
 
 inline int Frame::getInt(const std::string& key) const
 {
-    int u = boost::any_cast<int>(getData(key));
+    int u = std::any_cast<int>(getData(key));
     return u;
 }
 
 inline double Frame::getDouble(const std::string& key) const
 {
-    double d = boost::any_cast<double>(getData(key));
+    double d = std::any_cast<double>(getData(key));
     return d;
 }
 
 inline float Frame::getFloat(const std::string& key) const
 {
-    float f = boost::any_cast<float>(getData(key));
+    float f = std::any_cast<float>(getData(key));
     return f;
 }
 
 inline matPtr Frame::getMatPtr(const std::string& key) const
 {
-    matPtr m = boost::any_cast<matPtr>(getData(key));
+    matPtr m = std::any_cast<matPtr>(getData(key));
     return m;
 }
 
 #if PCL_FOUND
 inline pclCloudXyzPtr Frame::getpclCloudXyzPtr(const std::string& key) const
 {
-    pclCloudXyzPtr m = boost::any_cast<pclCloudXyzPtr>(getData(key));
+    pclCloudXyzPtr m = std::any_cast<pclCloudXyzPtr>(getData(key));
     return m;
 }
 
 inline pclCloudXyzRgbPtr Frame::getpclCloudXyzRgbPtr(const std::string& key) const
 {
-    pclCloudXyzRgbPtr m = boost::any_cast<pclCloudXyzRgbPtr>(getData(key));
+    pclCloudXyzRgbPtr m = std::any_cast<pclCloudXyzRgbPtr>(getData(key));
     return m;
 }
 #endif
 
 inline std::string Frame::getString(const std::string& key) const
 {
-    std::string s = boost::any_cast<std::string>(getData(key));
+    std::string s = std::any_cast<std::string>(getData(key));
     return s;
 }
 

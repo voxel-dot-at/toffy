@@ -607,14 +607,14 @@ bool SampleConsensus::getInputPoints(const Frame& in,
     if (inCloudPtr) {
         typedef pcl::PointXYZ P;
         pcl::PointCloud<P>::Ptr c;
-        c = boost::any_cast<pcl::PointCloud<P>::Ptr>(in.getData(this->in));
+        c = std::any_cast<pcl::PointCloud<P>::Ptr>(in.getData(this->in));
         cloud = c;
         return true;
     }
 
     try {
         pcl::PCLPointCloud2Ptr planar;
-        planar = boost::any_cast<pcl::PCLPointCloud2Ptr>(in.getData(this->in));
+        planar = std::any_cast<pcl::PCLPointCloud2Ptr>(in.getData(this->in));
         //     if (*planar != nullptr) {
         pcl::fromPCLPointCloud2(*planar, *cloud);
         //     } else {
@@ -629,7 +629,7 @@ bool SampleConsensus::getInputPoints(const Frame& in,
         // 3d mat
         try {
             LOG(info) << "copy from matPtr{____}" << __LINE__;
-            matPtr img3d = boost::any_cast<matPtr>(in.getData(this->in));
+            matPtr img3d = std::any_cast<matPtr>(in.getData(this->in));
             LOG(info) << "copy from matPtr{____}" << __LINE__;
             cloud.reset(
                 new pcl::PointCloud<pcl::PointXYZ>(/*width=*/img3d->cols,
@@ -654,7 +654,7 @@ bool SampleConsensus::getInputPoints(const Frame& in,
 
             // try pointcloud:
             try {
-                cloud = boost::any_cast<pcl::PointCloud<pcl::PointXYZ>::Ptr>(
+                cloud = std::any_cast<pcl::PointCloud<pcl::PointXYZ>::Ptr>(
                     in.getData(this->in));
                 LOG(info) << "got cloud size " << cloud->size();
                 LOG(info) << __LINE__;

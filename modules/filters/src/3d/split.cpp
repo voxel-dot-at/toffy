@@ -65,7 +65,7 @@ bool Split::filter(const Frame &in, Frame& out)
 {
     pcl::RangeImagePlanar::Ptr planar;
     try {
-	planar = boost::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_in_cloud));
+	planar = std::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_in_cloud));
     } catch(const boost::bad_any_cast &) {
 	BOOST_LOG_TRIVIAL(warning) <<
 	    "Could not cast input " << _in_cloud <<

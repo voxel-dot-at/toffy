@@ -20,7 +20,7 @@
 
 #include <boost/log/trivial.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/any.hpp>
+#include <any>
 
 #include "toffy/filter_helpers.hpp"
 #include "toffy/viewers/exportcloud.hpp"
@@ -65,7 +65,7 @@ bool ExportCloud::filter(const Frame &in, Frame& out) {
 #if 0
 	pcl::RangeImagePlanar::Ptr planar;
 	try {
-		planar = boost::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_in_cloud));
+		planar = std::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_in_cloud));
 	} catch(const boost::bad_any_cast &) {
 		LOG(warning) <<
 			"Could not cast input " << _in_cloud <<
@@ -87,7 +87,7 @@ bool ExportCloud::exportXyz(const Frame &in, Frame& /*out*/) {
 bool ExportCloud::exportPcl2(const Frame &in, Frame& /*out*/) {
 	pcl::PCLPointCloud2::Ptr planar;
 	try {
-		planar = boost::any_cast<pcl::PCLPointCloud2::Ptr>(in.getData(_in_cloud));
+		planar = std::any_cast<pcl::PCLPointCloud2::Ptr>(in.getData(_in_cloud));
 	} catch(const boost::bad_any_cast &) {
 		LOG(warning) <<
 			"Could not cast input " << _in_cloud <<
@@ -124,7 +124,7 @@ bool ExportCloud::getInputPoints(const Frame& in, pcl::PointCloud<pcl::PointXYZ>
 
     try {
 	pcl::PCLPointCloud2Ptr planar;
-	planar = boost::any_cast<pcl::PCLPointCloud2Ptr>(in.getData(_in_cloud));
+	planar = std::any_cast<pcl::PCLPointCloud2Ptr>(in.getData(_in_cloud));
 	//     if (*planar != nullptr) {
         pcl::fromPCLPointCloud2(*planar, *cloud);
 	//     } else {
@@ -137,7 +137,7 @@ bool ExportCloud::getInputPoints(const Frame& in, pcl::PointCloud<pcl::PointXYZ>
 
 	// 3d mat
 	try {
-	    matPtr img3d = boost::any_cast<matPtr>(in.getData(_in_cloud));
+	    matPtr img3d = std::any_cast<matPtr>(in.getData(_in_cloud));
 	    cloud.reset(new pcl::PointCloud<pcl::PointXYZ>(/*width=*/img3d->cols, /*height=*/img3d->rows));
 	    float *dptr;
 
@@ -155,7 +155,7 @@ bool ExportCloud::getInputPoints(const Frame& in, pcl::PointCloud<pcl::PointXYZ>
 
 	    // try pointcloud:
 	    try {
-                cloud = boost::any_cast<pcl::PointCloud<pcl::PointXYZ>::Ptr>(in.getData(_in_cloud));
+                cloud = std::any_cast<pcl::PointCloud<pcl::PointXYZ>::Ptr>(in.getData(_in_cloud));
                 LOG(info) << "got cloud size " << cloud->size();
                 LOG(info) << __LINE__;
 	    } catch (const boost::bad_any_cast &) {

@@ -97,7 +97,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
   // Get list of detected blobs
   std::shared_ptr<detection::DetectedObjects > blobs;
   try {
-    blobs = boost::any_cast<
+    blobs = std::any_cast<
         std::shared_ptr<detection::DetectedObjects > >(
         in.getData(_in_vec));
   } catch (const boost::bad_any_cast &) {
@@ -130,7 +130,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
   // List of tracked objects
   std::shared_ptr<detection::DetectedObjects > tracked;
   try {
-    tracked = boost::any_cast<
+    tracked = std::any_cast<
         std::shared_ptr<detection::DetectedObjects > >(
         out.getData(_out_objects));
   } catch (const boost::bad_any_cast &) {

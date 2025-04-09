@@ -144,7 +144,7 @@ bool GroundProjection::filter(const Frame &in, Frame &out)
         pcl::PCLPointCloud2Ptr cloud;
         try {
             cloud =
-                boost::any_cast<pcl::PCLPointCloud2Ptr>(in.getData(_in_cloud));
+                std::any_cast<pcl::PCLPointCloud2Ptr>(in.getData(_in_cloud));
         } catch (const boost::bad_any_cast &) {
             BOOST_LOG_TRIVIAL(warning)
                 << "Could not cast input " << _in_cloud << ", filter  " << id()

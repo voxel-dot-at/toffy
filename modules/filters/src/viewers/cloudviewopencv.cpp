@@ -15,7 +15,7 @@
    limitations under the License.
 */
 #include <boost/log/trivial.hpp>
-#include <boost/any.hpp>
+#include <any>
 
 #include <opencv2/viz.hpp>
 
@@ -70,7 +70,7 @@ bool CloudViewOpenCv::filter(const Frame &in, Frame& out) const {
 
 	matPtr img3d;
 	try {
-		img3d = boost::any_cast<matPtr>(in.getData(_in_cloud));
+		img3d = std::any_cast<matPtr>(in.getData(_in_cloud));
 	} catch(const boost::bad_any_cast &) {
 		BOOST_LOG_TRIVIAL(warning) <<
 			"Could not cast input " << _in_cloud <<
