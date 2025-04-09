@@ -26,7 +26,7 @@ namespace import {
 class ImportYaml : public Filter
 {
     static std::size_t _filter_counter;
-    std::vector<std::pair<std::string, boost::any> > _data;
+    std::vector<std::pair<std::string, std::any> > _data;
 
    public:
     ImportYaml();

@@ -110,7 +110,7 @@ bool Polar2Cart::filter(const Frame &in, Frame & /*out*/)
 
     matPtr img;
     try {
-        img = boost::any_cast<matPtr >(in.getData(_in_img));
+        img = std::any_cast<matPtr >(in.getData(_in_img));
     } catch (const boost::bad_any_cast &) {
         BOOST_LOG_TRIVIAL(error) << "Could not cast input " << _in_img
                                  << ", filter  " << id() << " not applied.";
@@ -127,14 +127,14 @@ bool Polar2Cart::filter(const Frame &in, Frame & /*out*/)
 
     if (!_in_fovx.empty()) {
         try {
-            _fovx = boost::any_cast<double>(in.getData(_in_fovx));
+            _fovx = std::any_cast<double>(in.getData(_in_fovx));
         } catch (const boost::bad_any_cast &) {
             BOOST_LOG_TRIVIAL(warning) << "Could not read input " << _in_fovx;
         }
     }
     if (!_in_fovy.empty()) {
         try {
-            _fovy = boost::any_cast<double>(in.getData(_in_fovy));
+            _fovy = std::any_cast<double>(in.getData(_in_fovy));
         } catch (const boost::bad_any_cast &) {
             BOOST_LOG_TRIVIAL(warning) << "Could not read input " << _in_fovy;
         }

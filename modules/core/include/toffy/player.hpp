@@ -65,7 +65,7 @@ public:
      * @param key Data identifier
      * @param data
      */
-    void loadData(std::string key, boost::any data);
+    void loadData(std::string key, std::any data);
 
     /** get the frame object of the underlying controller
      * @return the active frame
@@ -84,7 +84,7 @@ public:
      * @param key
      * @return Data on success, empty if failed
      */
-    boost::any getData(const std::string& key);
+    std::any getData(const std::string& key);
 
     /**
      * @brief Removes data from the Frame

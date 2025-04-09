@@ -98,7 +98,7 @@ bool SquareDetect::filter(const Frame& in, Frame& out)
     DetObjectsPtr blobs;
     try {
         blobs =
-            boost::any_cast<DetObjectsPtr >(
+            std::any_cast<DetObjectsPtr >(
                 in.getData(in_blobs));
     } catch (const boost::bad_any_cast&) {
         BOOST_LOG_TRIVIAL(warning)
@@ -109,7 +109,7 @@ bool SquareDetect::filter(const Frame& in, Frame& out)
     matPtr outDet;
     try {
         if (out.hasKey(out_detect))
-            outDet = boost::any_cast<matPtr >(
+            outDet = std::any_cast<matPtr >(
                 out.getData(out_detect));
         else {
             outDet.reset(new Mat());
@@ -121,7 +121,7 @@ bool SquareDetect::filter(const Frame& in, Frame& out)
     }
     if (!cam) {
         if (in.hasKey(CAM_SLOT)) {
-            cam = boost::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
+            cam = std::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
         } else {
             BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " " << id()
                                        << " NO cameraPtr found in Frame!";

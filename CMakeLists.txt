@@ -7,7 +7,7 @@ project( toffy )
 SET(CMAKE_COLOR_MAKEFILE ON)
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ################################################################################
@@ -270,6 +270,9 @@ if(NOT WITHOUT_PCL)
         set(WITHOUT_PCL 1)
     endif()
 endif()
+
+add_definitions( -DEIGEN_MAX_ALIGN_BYTES=32 )
+
 
 # OpenCV
 

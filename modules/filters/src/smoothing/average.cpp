@@ -47,7 +47,7 @@ bool Average::filter(const Frame &in, Frame& out)
     matPtr new_img;
 
     try {
-    	img = boost::any_cast<matPtr >(in.getData(_in_img));
+    	img = std::any_cast<matPtr >(in.getData(_in_img));
 
     } catch(const boost::bad_any_cast &) {
         LOG(warning) <<
@@ -57,7 +57,7 @@ bool Average::filter(const Frame &in, Frame& out)
     }
     try {
         if (out.hasKey(_out_img)) {
-            new_img = boost::any_cast<matPtr >(out.getData(_out_img));
+            new_img = std::any_cast<matPtr >(out.getData(_out_img));
         } else {
             LOG(info) << "init new_img!";
             new_img.reset(new Mat());

@@ -16,8 +16,8 @@
 */
 #pragma once
 
-#include <boost/any.hpp>
-
+#include <any>
+#include <string>
 
 
 namespace toffy {
@@ -97,20 +97,20 @@ public:
      * @brief Setter data
      * @param new_data
      */
-    void data(boost::any new_data);
+    void data(std::any new_data);
 
     /**
      * @brief Getter data
      * @return
      */
-    boost::any data() const {return *_data;}
+    std::any data() const {return *_data;}
 
 private:
     std::string _sender_id, ///< Id of the Filter that emits the event
 	_receiver_id, ///< Id or type of the filters to execute the events
 	_event_id; ///< Event to be execute in the receiver/s
     Filter * _sender; ///< Pointer to the sender
-    std::shared_ptr<boost::any> _data; /**< Data to be past to the receiver/s.
+    std::shared_ptr<std::any> _data; /**< Data to be past to the receiver/s.
 	Together with the event_it, they should known to interpret the data
 	content */
 

@@ -18,7 +18,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <boost/any.hpp>
+#include <any>
 
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -95,7 +95,7 @@ bool ImageView::filter(const Frame &in, Frame &)
 
     matPtr img;
     try {
-        img = boost::any_cast<matPtr>(in.getData(_in_img));
+        img = std::any_cast<matPtr>(in.getData(_in_img));
     } catch (const boost::bad_any_cast &) {
         BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << _in_img
                                    << ", filter  " << id() << " not applied.";

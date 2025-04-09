@@ -18,7 +18,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 
-#include <boost/any.hpp>
+#include <any>
 
 #include "toffy/filter_helpers.hpp"
 #include "toffy/common/filenodehelper.hpp"
@@ -104,7 +104,7 @@ bool ReprojectOpenCv::filter(const Frame &in, Frame& out) {
 
     if (!_in_cameraMatrix.empty() && in.hasKey(_in_cameraMatrix) ) {
 	try {
-	    _cameraMatrix= boost::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
+	    _cameraMatrix= std::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
 	} catch(const boost::bad_any_cast &) {
           LOG(warning) << "Could not read input " << _in_cameraMatrix;
         }

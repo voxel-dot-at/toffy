@@ -53,7 +53,7 @@ bool Bilateral::filter(const Frame &in, Frame& out)
     matPtr bi;
 
     try {
-	depth = boost::any_cast<matPtr >(in.getData(_in_img));
+	depth = std::any_cast<matPtr >(in.getData(_in_img));
 
     } catch(const boost::bad_any_cast &) {
 	BOOST_LOG_TRIVIAL(warning) <<
@@ -63,7 +63,7 @@ bool Bilateral::filter(const Frame &in, Frame& out)
     }
     try {
 	if (in.hasKey(_out_img))
-	    bi = boost::any_cast<matPtr >(in.getData(_out_img));
+	    bi = std::any_cast<matPtr >(in.getData(_out_img));
 	else
 	    bi.reset(new Mat(depth->size(),depth->type()));
     } catch(const boost::bad_any_cast &) {

@@ -82,7 +82,7 @@ bool toffy::filters::Roi::filter(const Frame &in, Frame &out)
 
     matPtr img;
     try {
-        img = boost::any_cast<matPtr >(in.getData(_in_img));
+        img = std::any_cast<matPtr >(in.getData(_in_img));
     } catch (const boost::bad_any_cast &) {
         BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << _in_img
                                    << ", filter  " << id() << " not applied.";

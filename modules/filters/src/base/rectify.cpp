@@ -119,10 +119,10 @@ bool Rectify::filter(const Frame &in, Frame& out) {
 
 	matPtr img, n2;
 	try {
-		img = boost::any_cast<matPtr >(in.getData(_in_img));
+		img = std::any_cast<matPtr >(in.getData(_in_img));
 
 		if ( out.hasKey(_out_img)) {
-		    n2 = boost::any_cast<matPtr >(out.getData(_out_img));
+		    n2 = std::any_cast<matPtr >(out.getData(_out_img));
 		} else {
 		    n2.reset(new cv::Mat());
 		}
@@ -137,7 +137,7 @@ bool Rectify::filter(const Frame &in, Frame& out) {
 	  BOOST_LOG_TRIVIAL(debug) << "rectify: Initializing remap data";
 	    if (!_in_cameraMatrix.empty()) {
 		try {
-		    _cameraMatrix= boost::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
+		    _cameraMatrix= std::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
 		} catch(const boost::bad_any_cast &) {
 		    BOOST_LOG_TRIVIAL(warning) <<
 			"Could not read input " << _in_cameraMatrix;
@@ -145,7 +145,7 @@ bool Rectify::filter(const Frame &in, Frame& out) {
 	    }
 	    if (!_in_distCoeffs.empty()) {
 		try {
-		    _distCoeffs= boost::any_cast<cv::Mat>(in.getData(_in_distCoeffs));
+		    _distCoeffs= std::any_cast<cv::Mat>(in.getData(_in_distCoeffs));
 		} catch(const boost::bad_any_cast &) {
 		    BOOST_LOG_TRIVIAL(warning) <<
 			"Could not read input " << _in_distCoeffs;

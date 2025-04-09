@@ -142,7 +142,7 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
     }
     if (!cam) {
         if (in.hasKey(CAM_SLOT)) {
-            cam = boost::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
+            cam = std::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
         } else {
             BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " " << id()
                                        << " NO cameraPtr found in Frame!";
@@ -153,7 +153,7 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
     DetObjectsPtr blobs;
     try {
         blobs =
-            boost::any_cast<DetObjectsPtr >(
+            std::any_cast<DetObjectsPtr >(
                 out.getData(out_blobs));
         blobs->clear();
         BOOST_LOG_TRIVIAL(debug)

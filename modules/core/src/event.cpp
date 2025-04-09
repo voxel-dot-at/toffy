@@ -31,6 +31,6 @@ Event::Event(Filter *sender, ReceiverType type, std::string receiver,
 	_sender(sender),
 	_re_type(type) {}
 
-void Event::data(boost::any new_data) {
-    _data = std::make_shared<boost::any>(new_data);
+void Event::data(std::any new_data) {
+    _data = std::make_shared<std::any>(new_data);
 }

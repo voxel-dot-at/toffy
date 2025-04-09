@@ -17,7 +17,7 @@
 #include <fstream>
 #include <iostream>
 
-#include <boost/any.hpp>
+#include <any>
 
 #include <opencv2/core.hpp>
 
@@ -80,7 +80,7 @@ bool ExportCSV::filter(const Frame &in, Frame &) {
   LOG(debug) << __FUNCTION__ << " " << id();
   matPtr input;
   try {
-    input = boost::any_cast<matPtr>(in.getData(_in));
+    input = std::any_cast<matPtr>(in.getData(_in));
   } catch (const boost::bad_any_cast &) {
     LOG(warning) << "Could not cast input " << _in << ", filter  "
                                << id() << " not applied.";

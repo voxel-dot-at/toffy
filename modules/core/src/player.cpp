@@ -93,11 +93,11 @@ bool Player::hasKey(const std::string& key) const
     return _controller.f.hasKey(key);
 }
 
-boost::any Player::getData(const std::string& key) {
+std::any Player::getData(const std::string& key) {
     return _controller.f.getData(key);
 }
 
-void Player::loadData(std::string key, boost::any data) {
+void Player::loadData(std::string key, std::any data) {
     _controller.f.addData(key,data);
 }
 

@@ -102,7 +102,7 @@ bool OffSet::filter(const Frame &in, Frame &out) const {
     matPtr o;
 
     if (out.hasKey(_out_img))
-      o = boost::any_cast<matPtr>(in.getData(_out_img));
+      o = std::any_cast<matPtr>(in.getData(_out_img));
     else {
       o.reset(new Mat());
       out.addData(_out_img, o);

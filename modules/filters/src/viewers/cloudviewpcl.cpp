@@ -16,7 +16,7 @@
 */
 #include <opencv2/core.hpp>
 
-#include <boost/any.hpp>
+#include <any>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/log/trivial.hpp>
 
@@ -197,7 +197,7 @@ bool CloudViewPCL::filter(const Frame &in, Frame& out)
     for (size_t i=0;i<_cloudNames.size();i++) {
 	if ( in.hasKey(_cloudNames[i])) {
 	    //cout << "_cloudNames[i]: " << _cloudNames[i] << endl;
-	    planar = boost::any_cast<pcl::PCLPointCloud2Ptr>(in.getData(_cloudNames[i]));
+	    planar = std::any_cast<pcl::PCLPointCloud2Ptr>(in.getData(_cloudNames[i]));
 	    //cout << "planar: " << planar->header << endl;
 	    //cout << "planar: " << planar->height << endl;
 	    *_clouds[i] = *planar;
@@ -208,17 +208,17 @@ bool CloudViewPCL::filter(const Frame &in, Frame& out)
 
     /* Boomerang
     if ( in.hasKey("cube")) {
-	_cube = boost::any_cast<std::vector<float> >(in.getData("cube"));
+	_cube = std::any_cast<std::vector<float> >(in.getData("cube"));
 	update=true;
     }
 
     if ( in.hasKey("poly1")) {
-    _poly1 = boost::any_cast<pcl::PointCloud<pcl::PointXYZ> >(in.getData("poly1"));
+    _poly1 = std::any_cast<pcl::PointCloud<pcl::PointXYZ> >(in.getData("poly1"));
 	update=true;
     }
 
     if ( in.hasKey("poly2")) {
-    _poly2 = boost::any_cast<pcl::PointCloud<pcl::PointXYZ> >(in.getData("poly2"));
+    _poly2 = std::any_cast<pcl::PointCloud<pcl::PointXYZ> >(in.getData("poly2"));
     update=true;
     }
     */

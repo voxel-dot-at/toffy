@@ -37,10 +37,10 @@ bool Frame::hasKey(std::string key) const
     return false;
 }
 
-boost::any Frame::getData(const std::string& key) const
+std::any Frame::getData(const std::string& key) const
 {
     // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ", key: " << key;
-    boost::any out;
+    std::any out;
     if (data.find(key) != data.end()) {
         try {
             out = data.at(key);
@@ -55,13 +55,13 @@ boost::any Frame::getData(const std::string& key) const
     return out;
 }
 
-void Frame::addData(std::string key, boost::any v, SlotDataType dt)
+void Frame::addData(std::string key, std::any v, SlotDataType dt)
 {
     data[key] = v;
     meta[key] = dt;
 }
 
-void Frame::addData(std::string key, boost::any v, SlotDataType dt,
+void Frame::addData(std::string key, std::any v, SlotDataType dt,
                     const std::string& description)
 {
     data[key] = v;

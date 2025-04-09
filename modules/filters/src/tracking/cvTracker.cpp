@@ -105,7 +105,7 @@ bool CVTracker::filter(const Frame &in, Frame &out)
     BOOST_LOG_TRIVIAL(debug) << "Getting _in_vec: " << _in_vec;
     std::shared_ptr<DetectedObjects> detObj;
     try {
-        detObj = boost::any_cast<std::shared_ptr<DetectedObjects> >(
+        detObj = std::any_cast<std::shared_ptr<DetectedObjects> >(
             in.getData(_in_vec));
     } catch (const boost::bad_any_cast &) {
         BOOST_LOG_TRIVIAL(warning)

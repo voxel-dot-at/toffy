@@ -19,7 +19,7 @@
 #include <opencv2/highgui.hpp>
 
 #include <boost/log/trivial.hpp>
-#include <boost/any.hpp>
+#include <any>
 
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
