@@ -11,6 +11,7 @@
 #include <opencv2/highgui.hpp>
 
 #include <toffy/player.hpp>
+#include <toffy/logging.hpp>
 
 #ifdef MSVC
 #define WIN32_LEAN_AND_MEAN
@@ -115,7 +116,7 @@ int main(int argc, char* argv[])
     try {
         // Initialise the server.
         cout << "INIT PLAYER" << endl;
-        toffy::Player p(boost::log::trivial::info,
+        toffy::Player p(toffy::log::info,
                         vm["output2File"].as<bool>());
 
         p.loadConfig(vm["config"].as<std::string>());

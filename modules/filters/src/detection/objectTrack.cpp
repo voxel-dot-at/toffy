@@ -16,7 +16,7 @@
 */
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/log/trivial.hpp>
+
 #include <sstream>
 
 #include <opencv2/highgui.hpp>
@@ -52,7 +52,7 @@ ObjectTrack::ObjectTrack()
 
 boost::property_tree::ptree ObjectTrack::getConfig() const
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
     boost::property_tree::ptree pt;
 
     pt = Filter::getConfig();
@@ -67,7 +67,7 @@ boost::property_tree::ptree ObjectTrack::getConfig() const
 
 void ObjectTrack::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -84,32 +84,32 @@ void ObjectTrack::updateConfig(const boost::property_tree::ptree& pt)
 
 bool ObjectTrack::filter(const Frame& in, Frame& out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     toffy::Filter::setLoggingLvl();
 
     // List of detected objects
-    BOOST_LOG_TRIVIAL(debug) << "Getting _in_vec: " << _in_vec;
+    LOGD << "Getting _in_vec: " << _in_vec;
     std::shared_ptr<DetectedObjects> detObjs;
     try {
         detObjs = std::any_cast<std::shared_ptr<DetectedObjects> >(
             in.getData(_in_vec));
-    } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning)
+    } catch (const std::bad_any_cast&) {
+        LOGW
             << "Could not find object vector: " << _in_vec << ". " << id();
         return true;
     }
 
-    BOOST_LOG_TRIVIAL(debug)
+    LOGD
         << "Got _in_vec(" << _in_vec << "): " << detObjs->size();
 
     // TODO Where come img from?, why we mask it with the objects.
-    BOOST_LOG_TRIVIAL(debug) << "Getting got _in_img: " << _in_img;
+    LOGD << "Getting got _in_img: " << _in_img;
     matPtr img;
     try {
         img = in.getMatPtr(_in_img);
-    } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning)
+    } catch (const std::bad_any_cast&) {
+        LOGW
             << "Could not cast input " << _in_img << ", filter  " << id()
             << " does not show objects.";
     }
@@ -137,35 +137,35 @@ bool ObjectTrack::filter(const Frame& in, Frame& out)
 
         if (z1.contains(obj->firstCenter)) {
             if (z1.contains(obj->massCenter))
-                BOOST_LOG_TRIVIAL(debug) << "IN ZONE 1";
+                LOGD << "IN ZONE 1";
             else {
                 obj->firstCenter = obj->massCenter;
-                BOOST_LOG_TRIVIAL(debug) << "Change to zone 2";
+                LOGD << "Change to zone 2";
                 cnt++;
                 publishCount();
             }
         } else {
             if (!z1.contains(obj->massCenter))
-                BOOST_LOG_TRIVIAL(debug) << "IN ZONE 2";
+                LOGD << "IN ZONE 2";
             else {
                 obj->firstCenter = obj->massCenter;
-                BOOST_LOG_TRIVIAL(debug) << "Change to zone 1";
+                LOGD << "Change to zone 1";
                 cnt--;
                 publishCount();
             }
         }
 
-        BOOST_LOG_TRIVIAL(debug)
+        LOGD
             << "Old: " << obj->record->back()->massCenter3D;
-        BOOST_LOG_TRIVIAL(debug) << "New: " << obj->massCenter3D;
+        LOGD << "New: " << obj->massCenter3D;
         double dis =
             cv::norm(obj->massCenter3D - obj->record->front()->massCenter3D);
-        BOOST_LOG_TRIVIAL(debug) << "dis: " << dis;
+        LOGD << "dis: " << dis;
         boost::posix_time::time_duration time =
             obj->record->front()->ts - obj->ts;
-        BOOST_LOG_TRIVIAL(debug) << "time: " << time.seconds();
+        LOGD << "time: " << time.seconds();
         double speed = dis / time.seconds();
-        BOOST_LOG_TRIVIAL(debug) << "speed: " << speed;
+        LOGD << "speed: " << speed;
 
         cv::arrowedLine(color, obj->record->back()->massCenter, obj->massCenter,
                         CV_RGB(255, 255, 0));
@@ -198,7 +198,7 @@ void ObjectTrack::publishCount()
     std::stringstream sb;
     sb << updateScript << " " << cnt << " " << numObjects << "&";
 
-    BOOST_LOG_TRIVIAL(debug) << "publ: " << sb.str();
+    LOGD << "publ: " << sb.str();
 
     system(sb.str().c_str());
 }

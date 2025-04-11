@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include <boost/log/trivial.hpp>
+
 #include <boost/foreach.hpp>
 
 #include <opencv2/imgproc.hpp>
@@ -34,11 +34,10 @@ using namespace std;
 
 using namespace toffy;
 using namespace toffy::filters::f3d;
-using namespace boost::log::trivial;
 
 boost::property_tree::ptree Xyz2Mat::getConfig() const
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
     boost::property_tree::ptree pt;
 
     pt = Filter::getConfig();
@@ -66,7 +65,7 @@ void Xyz2Mat::updateConfig(const boost::property_tree::ptree& pt)
 
 bool Xyz2Mat::filter(const Frame& in, Frame& out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
     // try {
     {
         matPtr x = in.getMatPtr("x");

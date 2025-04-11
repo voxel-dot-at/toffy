@@ -18,7 +18,7 @@
 #include <sstream>
 
 #include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
+
 #include <boost/log/expressions.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -32,7 +32,6 @@
 
 using namespace toffy;
 using namespace cv;
-namespace logging = boost::log;
 
 std::size_t _filter_counter = 0;
 
@@ -41,13 +40,10 @@ unsigned int Filter::getCounter() const { return _filter_counter; }
 Filter::Filter() : _type("Filter.thisShouldNotHappen!") {}
 
 Filter::Filter(std::string type, std::size_t counter /*= -1*/)
-    : _type(type),
-      _bank(NULL),
-      _log_lvl(logging::trivial::info),
-      dbg(false),
-      update(false)
+    : _type(type), _bank(NULL), dbg(false), update(false)
 {
     _filter_counter++;
+    logger.setLevel(toffy::log::info);
     if (counter > 0)
         this->_id = _type + "_" + boost::lexical_cast<std::string>(counter);
     else
@@ -62,8 +58,7 @@ Filter::Filter(std::string type, std::size_t counter /*= -1*/)
 
 void Filter::setLoggingLvl()
 {
-    logging::core::get()->set_filter(logging::trivial::severity >= _log_lvl);
-    if (_log_lvl <= 1)
+    if (logger.getLevel() <= toffy::log::debug)
         dbg = true;
     else
         dbg = false;
@@ -71,39 +66,40 @@ void Filter::setLoggingLvl()
 
 void Filter::setLogLevel(const std::string& level)
 {
+    toffy::log::logLevel _log_lvl;
     if (level == "debug") {
-        _log_lvl = logging::trivial::debug;
+        _log_lvl = toffy::log::debug;
     } else if (level == "info") {
-        _log_lvl = logging::trivial::info;
+        _log_lvl = toffy::log::info;
     } else if (level == "warn") {
-        _log_lvl = logging::trivial::warning;
+        _log_lvl = toffy::log::warning;
     } else if (level == "warning") {
-        _log_lvl = logging::trivial::warning;
+        _log_lvl = toffy::log::warning;
     } else {
-        _log_lvl = logging::trivial::info;
+        _log_lvl = toffy::log::info;
     }
-    setLoggingLvl();
+    this->logger.setLevel(_log_lvl);
+    // setLoggingLvl();
 }
 
 Filter::~Filter() {}
 
 int Filter::loadConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << _type;
+    LOGD << __FUNCTION__ << " " << _type;
 
     boost::property_tree::ptree::const_assoc_iterator it = pt.find(_type);
     if (it == pt.not_found()) {
-        BOOST_LOG_TRIVIAL(error)
-            << __FUNCTION__ << " type mismatch instantiating node! "
-            << "looked for an XML subtree called " << _type
-            << " please check your code, the Filter object seems "
-            << "to be have the wrong name!";
+        LOGE << __FUNCTION__ << " type mismatch instantiating node! "
+             << "looked for an XML subtree called " << _type
+             << " please check your code, the Filter object seems "
+             << "to be have the wrong name!";
     }
 
     const boost::property_tree::ptree& node = pt.get_child(_type);
 
     _name = node.get("name", _name);
-    BOOST_LOG_TRIVIAL(debug) << id() << "::loadConfig NAME SET TO " << _name;
+    LOGD << id() << "::loadConfig NAME SET TO " << _name;
 
     loadGlobals(node);
 
@@ -114,15 +110,14 @@ int Filter::loadConfig(const boost::property_tree::ptree& pt)
 
 int Filter::loadFileConfig(const std::string& configFile)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << _id;
+    LOGD << __FUNCTION__ << _id;
     using boost::property_tree::ptree;
     ptree pt;
 
     try {
         read_xml(configFile, pt);
     } catch (const boost::property_tree::xml_parser::xml_parser_error& ex) {
-        BOOST_LOG_TRIVIAL(error)
-            << "error in file " << ex.filename() << " line " << ex.line();
+        LOGE << "error in file " << ex.filename() << " line " << ex.line();
         return -1;
     }
     return loadConfig(pt);
@@ -134,16 +129,29 @@ boost::property_tree::ptree Filter::getConfig() const
     pt.put("name", name());
     pt.put("type", type());
     pt.put("id", id());
-    pt.put("options.loglvl", _log_lvl);
+    pt.put("options.loglevel", logger.getLevel());
     return pt;
 }
 
 void Filter::updateConfig(const boost::property_tree::ptree& pt)
 {
-    _log_lvl = static_cast<boost::log::trivial::severity_level>(
-        pt.get<int>("loglvl", _log_lvl));
-    _log_lvl = static_cast<boost::log::trivial::severity_level>(
+    using namespace std;
+
+    toffy::log::logLevel _log_lvl = static_cast<toffy::log::logLevel>(
+        pt.get<int>("loglvl", logger.getLevel()));  // @deprecated!
+    if (pt.find("loglvl") != pt.not_found()) {
+        cout << "DEPRECATED! FIX loglvl to options.logLevel for " << name()
+             << endl;
+    }
+    _log_lvl = static_cast<toffy::log::logLevel>(
         pt.get<int>("options.loglvl", _log_lvl));
+    if (pt.find("options.loglvl") != pt.not_found()) {
+        cout << "DEPRECATED! FIX options.loglvl to options.logLevel for "
+             << name() << endl;
+    }
+    _log_lvl = static_cast<toffy::log::logLevel>(
+        pt.get<int>("options.logLevel", _log_lvl));
+
     pt_optional_get_default(pt, "name", _name, _name);
     std::cout << id() << "::updateConfig NAME SET TO " << _name << std::endl;
 }
@@ -172,14 +180,14 @@ void Filter::removeListener(const FilterListener* l)
 
 void Filter::processEvent(Event& /*e*/)
 {
-    BOOST_LOG_TRIVIAL(debug) << id() << " " << __FUNCTION__;
-    BOOST_LOG_TRIVIAL(info) << "Filter does not have events declared.";
+    LOGD << id() << " " << __FUNCTION__;
+    LOGI << "Filter does not have events declared.";
     return;
 }
 
 void Filter::loadGlobals(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     boost::optional<std::string> global =
         pt.get_optional<std::string>("global");
     // std::cout << "global.is_initialized()" << global.is_initialized() <<
@@ -191,6 +199,6 @@ void Filter::loadGlobals(const boost::property_tree::ptree& pt)
 
         updateConfig(gOptions);
     } else {
-        BOOST_LOG_TRIVIAL(debug) << "No global config.";
+        LOGD << "No global config.";
     }
 }

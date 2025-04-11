@@ -15,7 +15,7 @@
    limitations under the License.
 */
 #include <boost/foreach.hpp>
-#include <boost/log/trivial.hpp>
+
 
 #include <opencv2/core.hpp>
 
@@ -69,7 +69,7 @@ void ImportYaml::updateConfig(const boost::property_tree::ptree& pt)
 
 bool ImportYaml::filter(const Frame& in, Frame& out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
     UNUSED(in);
     char buf[80] = "";
 
@@ -81,7 +81,7 @@ bool ImportYaml::filter(const Frame& in, Frame& out)
             return false;  // none ever worked.. complain!
         }
         // recursive retry.. lisp danger ahead :)
-        BOOST_LOG_TRIVIAL(info) << id() << "RESTARTING AT " << counter;
+        LOGI << id() << "RESTARTING AT " << counter;
         counter = start;
         return filter(in, out);
     }
@@ -100,9 +100,9 @@ static inline void putMat(Frame& f, cv::FileStorage& file,
         }
         file[slot] >> *m;
         f.addData(slot, m);
-        // BOOST_LOG_TRIVIAL(debug) << " putMat " << slot;
+        // LOGD << " putMat " << slot;
     } else {
-        BOOST_LOG_TRIVIAL(warning) << " putMat COULD NOT FIND " << slot;
+        LOGW << " putMat COULD NOT FIND " << slot;
     }
 }
 
@@ -113,9 +113,9 @@ static inline void putInt(Frame& f, cv::FileStorage& file,
         int i;
         file[slot] >> i;
         f.addData(slot, i);
-        // BOOST_LOG_TRIVIAL(debug) << " putInt " << slot;
+        // LOGD << " putInt " << slot;
     } else {
-        BOOST_LOG_TRIVIAL(warning) << " putInt COULD NOT FIND " << slot;
+        LOGW << " putInt COULD NOT FIND " << slot;
     }
 }
 
@@ -126,9 +126,9 @@ static inline void putUInt(Frame& f, cv::FileStorage& file,
         int i;
         file[slot] >> i;
         f.addData(slot, (unsigned int)i);
-        // BOOST_LOG_TRIVIAL(debug) << " putUInt " << slot;
+        // LOGD << " putUInt " << slot;
     } else {
-        BOOST_LOG_TRIVIAL(info)
+        LOGI
             << " putUInt COULD NOT FIND " << slot << " using default " << def;
         f.addData(slot, def);
     }
@@ -139,13 +139,13 @@ bool ImportYaml::loadFromYaml(Frame& f, const std::string& idx)
     char buf[128];
     snprintf(buf, sizeof(buf), "%s/%s_%s.yaml", path.c_str(), prefix.c_str(),
              idx.c_str());
-    BOOST_LOG_TRIVIAL(debug) << id() << "... to open " << buf;
+    LOGD << id() << "... to open " << buf;
 
     // Declare what you need
     cv::FileStorage file(buf, cv::FileStorage::READ);
 
     if (!file.isOpened()) {
-        BOOST_LOG_TRIVIAL(warning) << id() << "failed to open " << buf;
+        LOGW << id() << "failed to open " << buf;
         return false;
     }
 

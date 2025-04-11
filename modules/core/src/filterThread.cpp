@@ -16,7 +16,7 @@
 */
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
+
 
 #include "toffy/filterThread.hpp"
 

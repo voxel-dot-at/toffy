@@ -16,7 +16,7 @@
 */
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <opencv2/imgproc.hpp>
@@ -57,7 +57,7 @@ CVTracker::CVTracker()
 
 void CVTracker::updateConfig(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -97,32 +97,32 @@ boost::property_tree::ptree CVTracker::getConfig() const
 
 bool CVTracker::filter(const Frame &in, Frame &out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     toffy::Filter::setLoggingLvl();
 
     //List of detected objects
-    BOOST_LOG_TRIVIAL(debug) << "Getting _in_vec: " << _in_vec;
+    LOGD << "Getting _in_vec: " << _in_vec;
     std::shared_ptr<DetectedObjects> detObj;
     try {
         detObj = std::any_cast<std::shared_ptr<DetectedObjects> >(
             in.getData(_in_vec));
-    } catch (const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning)
+    } catch (const std::bad_any_cast &) {
+        LOGW
             << "Could not find object vector: " << _in_vec << ". " << id();
         return true;
     }
 
-    BOOST_LOG_TRIVIAL(debug)
+    LOGD
         << "Got _in_vec(" << _in_vec << "): " << detObj->size();
 
     // TODO Where come img from?, why we mask it with the objects.
-    BOOST_LOG_TRIVIAL(debug) << "Getting got _in_img: " << _in_img;
+    LOGD << "Getting got _in_img: " << _in_img;
     matPtr img;
     try {
         img = in.getMatPtr(_in_img);
-    } catch (const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning)
+    } catch (const std::bad_any_cast &) {
+        LOGW
             << "Could not cast input " << _in_img << ", filter  " << id()
             << " does not show objects.";
         img.reset(new cv::Mat(cv::Size(160, 120), CV_8UC3, Scalar(0, 0, 0)));
@@ -190,7 +190,7 @@ void CVTracker::showObjects(cv::Mat &depth)
                     -255.0 * min / (max - min));
     cvtColor(depth, depth, COLOR_GRAY2RGB);
 
-    //BOOST_LOG_TRIVIAL(debug) << "showObjects " << blobs.size();
+    //LOGD << "showObjects " << blobs.size();
     for (size_t i = 0; i < blobs.size(); i++) {
         if (blobs[i]->first_fc == _fc) {
             circle(depth, blobs[i]->massCenter, 4, blobs[i]->color);

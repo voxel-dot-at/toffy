@@ -85,7 +85,7 @@ bool ReprojectOpenCv::filter(const Frame &in, Frame& out) {
 
     try {
 	img = in.getMatPtr(_in_img);
-    } catch(const boost::bad_any_cast &) {
+    } catch(const std::bad_any_cast &) {
 	LOG(error) << "Could not cast input " << _in_img <<
 				      ", filter  " << id() <<" not applied.";
 	return false;
@@ -93,7 +93,7 @@ bool ReprojectOpenCv::filter(const Frame &in, Frame& out) {
 
     try {
       img3d = out.getMatPtr(_out_cloud);
-    } catch (const boost::bad_any_cast &) {
+    } catch (const std::bad_any_cast &) {
       LOG(info) << "Initializing output " << _out_cloud;
       img3d.reset(new Mat(img->size(), CV_32FC3));
     }
@@ -105,7 +105,7 @@ bool ReprojectOpenCv::filter(const Frame &in, Frame& out) {
     if (!_in_cameraMatrix.empty() && in.hasKey(_in_cameraMatrix) ) {
 	try {
 	    _cameraMatrix= std::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
-	} catch(const boost::bad_any_cast &) {
+	} catch(const std::bad_any_cast &) {
           LOG(warning) << "Could not read input " << _in_cameraMatrix;
         }
     }

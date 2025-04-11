@@ -20,9 +20,10 @@
 #include <vector>
 
 #include <boost/property_tree/ptree.hpp>
-#include <boost/log/trivial.hpp>
+// 
 
 #include <toffy/frame.hpp>
+#include <toffy/logging.hpp>
 
 /** @defgroup Core Core
  *
@@ -110,27 +111,20 @@ class TOFFY_EXPORT Filter
 
     Filter* _bank;  ///< reference to the filter bank whre the filter resides
     // static std::size_t _filter_counter;
+   protected:
+    toffy::log::Log logger;
 
-    /*
-     * From boost trivial log
-     * //! Trivial severity levels
-    enum severity_level
-    {
-        trace,
-        debug,
-        info,
-        warning,
-        error,
-        fatal
-    };
-     * @todo Find a better way to individually set log level.
-     * changing severity filter affects everithing.
-     */
-    boost::log::trivial::severity_level _log_lvl;
+/* for objects that have an id() method, enable nice(r) logging by providing a short-hand version
+ */
+#define LOG(lvl)                             \
+    (this->logger.getLogger(toffy::log::lvl) \
+     << id() << "::" << __FUNCTION__ << "() : ")
 
    public:
-    bool dbg,    ///< flag for activating debug options (images view, log, etc)
-        update;  ///< Flag for indicating config updated
+    /// flag for activating debug options (images view, log, etc)
+    bool dbg = false;
+    ///< Flag for indicating config updated
+    bool update = false;
 
     /**
      * @brief Filter
@@ -142,7 +136,7 @@ class TOFFY_EXPORT Filter
      */
     virtual ~Filter();
 
-    boost::log::trivial::severity_level logLvl() const { return _log_lvl; }
+    toffy::log::logLevel logLvl() const { return logger.getLevel(); }
 
     /**
      * @brief getCounter
@@ -377,7 +371,7 @@ class TOFFY_EXPORT Filter
     void setLoggingLvl();
 
     /**
-     * @brief set boost log level to one of debug, info,... defaults to info if
+     * @brief set log level to one of debug, info,... defaults to info if
      * not parseable
      *
      * @param level

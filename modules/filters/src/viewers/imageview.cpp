@@ -50,7 +50,7 @@ ImageView::~ImageView() { cv::destroyWindow(name() + " " + _in_img); }
 
 void ImageView::updateConfig(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -89,31 +89,31 @@ bool ImageView::filter(const Frame &in, Frame &)
     ptime start = microsec_clock::local_time();
     boost::posix_time::time_duration diff;
 
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     if (!_enabled) return true;  // skip it - performance tests.
 
     matPtr img;
     try {
         img = std::any_cast<matPtr>(in.getData(_in_img));
-    } catch (const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << _in_img
+    } catch (const std::bad_any_cast &) {
+        LOGW << "Could not cast input " << _in_img
                                    << ", filter  " << id() << " not applied.";
         return false;
     }
 
     // diff = boost::posix_time::microsec_clock::local_time() - start;
-    // BOOST_LOG_TRIVIAL(debug) << "ImageView get: " << diff.total_microseconds();
+    // LOGD << "ImageView get: " << diff.total_microseconds();
 
     show = *img;
     if (!show.data) {
-        BOOST_LOG_TRIVIAL(warning) << "missing image " << _in_img
+        LOGW << "missing image " << _in_img
                                    << ", filter  " << id() << " not applied.";
         return false;
     }
 
     // diff = boost::posix_time::microsec_clock::local_time() - start;
-    // BOOST_LOG_TRIVIAL(debug) << "ImageView got: " << diff.total_microseconds();
+    // LOGD << "ImageView got: " << diff.total_microseconds();
 
     //show.convertTo(show,CV_8U,255.0/(1000-0),-255.0*0/(1000-0));
     if (_gray) {
@@ -124,7 +124,7 @@ bool ImageView::filter(const Frame &in, Frame &)
                        -255.0 * _min / (_max - _min));
 
         diff = boost::posix_time::microsec_clock::local_time() - start;
-        BOOST_LOG_TRIVIAL(debug)
+        LOGD
             << "ImageView gray2rgb: " << diff.total_microseconds();
     }
 
@@ -133,7 +133,7 @@ bool ImageView::filter(const Frame &in, Frame &)
         resize(show, show, Size(), _scale, _scale, method);
 
         diff = boost::posix_time::microsec_clock::local_time() - start;
-        BOOST_LOG_TRIVIAL(debug)
+        LOGD
             << "ImageView resize: " << diff.total_microseconds();
     }
 
@@ -141,10 +141,10 @@ bool ImageView::filter(const Frame &in, Frame &)
     imshow(name() + " " + _in_img, show);
 
     // diff = boost::posix_time::microsec_clock::local_time() - start;
-    // BOOST_LOG_TRIVIAL(debug) << "ImageView fin: " << diff.total_microseconds();
+    // LOGD << "ImageView fin: " << diff.total_microseconds();
 
     if (_waitKey >= 0) {
-        BOOST_LOG_TRIVIAL(debug) << "ImageView waiting: " << _waitKey;
+        LOGD << "ImageView waiting: " << _waitKey;
         waitKey(_waitKey);
     }
 

@@ -30,8 +30,8 @@ using namespace toffy;
 using namespace toffy::filters::smoothing;
 using namespace cv;
 using namespace std;
-namespace logging = boost::log;
-namespace fs = boost::filesystem;
+
+// namespace fs = boost::filesystem;
 
 
 std::size_t Bilateral::_filter_counter = 1;
@@ -47,7 +47,7 @@ Bilateral::Bilateral() :Filter(Bilateral::id_name),
 
 bool Bilateral::filter(const Frame &in, Frame& out) 
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
 
     matPtr depth, ampl;
     matPtr bi;
@@ -55,8 +55,8 @@ bool Bilateral::filter(const Frame &in, Frame& out)
     try {
 	depth = std::any_cast<matPtr >(in.getData(_in_img));
 
-    } catch(const boost::bad_any_cast &) {
-	BOOST_LOG_TRIVIAL(warning) <<
+    } catch(const std::bad_any_cast &) {
+	LOGW <<
 	    "Could not cast input " << _in_img <<
 	    ", filter  " << id() <<" not applied.";
 	return false;
@@ -66,18 +66,18 @@ bool Bilateral::filter(const Frame &in, Frame& out)
 	    bi = std::any_cast<matPtr >(in.getData(_out_img));
 	else
 	    bi.reset(new Mat(depth->size(),depth->type()));
-    } catch(const boost::bad_any_cast &) {
-	BOOST_LOG_TRIVIAL(warning) <<
+    } catch(const std::bad_any_cast &) {
+	LOGW <<
 	    "Could not cast output " << _in_img <<
 	    ", filter  " << id() <<" not applied.";
 	return false;
     }
 
-    BOOST_LOG_TRIVIAL(debug) << depth->type();
-    BOOST_LOG_TRIVIAL(debug) << CV_32FC1;
-    BOOST_LOG_TRIVIAL(debug) << (depth->type() == CV_32FC1);
-    BOOST_LOG_TRIVIAL(debug) << (depth->data != depth->data);
-    //BOOST_LOG_TRIVIAL(debug) << depth->size();
+    LOGD << depth->type();
+    LOGD << CV_32FC1;
+    LOGD << (depth->type() == CV_32FC1);
+    LOGD << (depth->data != depth->data);
+    //LOGD << depth->size();
     Mat mask = *depth <= 0;
     Mat imgmask;
     depth->copyTo(imgmask,mask);
@@ -102,7 +102,7 @@ bool Bilateral::filter(const Frame &in, Frame& out)
 /*
 int Bilateral::loadConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
     cout << "HAHA!!!" << id() << " " << pt.begin()->first << endl;
     updateConfig(pt.begin()->second );
     return 1;
@@ -125,7 +125,7 @@ boost::property_tree::ptree Bilateral::getConfig() const
 }
 
 void Bilateral::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
 
     Filter::updateConfig(pt);
     d          = pt.get("options.d", d);

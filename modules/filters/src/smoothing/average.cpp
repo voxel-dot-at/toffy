@@ -25,7 +25,6 @@ using namespace toffy;
 using namespace toffy::filters::smoothing;
 using namespace cv;
 using namespace std;
-namespace logging = boost::log;
 
 std::size_t Average::_filter_counter = 1;
 const std::string Average::id_name = "average";
@@ -49,7 +48,7 @@ bool Average::filter(const Frame &in, Frame& out)
     try {
     	img = std::any_cast<matPtr >(in.getData(_in_img));
 
-    } catch(const boost::bad_any_cast &) {
+    } catch(const std::bad_any_cast &) {
         LOG(warning) <<
             "Could not cast input " << _in_img <<
             ", filter  " << id() <<" not applied.";
@@ -62,7 +61,7 @@ bool Average::filter(const Frame &in, Frame& out)
             LOG(info) << "init new_img!";
             new_img.reset(new Mat());
         }
-    } catch(const boost::bad_any_cast &) {
+    } catch(const std::bad_any_cast &) {
         LOG(warning) <<
             "Could not cast output " << _in_img <<
             ", filter  " << id() <<" not applied.";
@@ -135,7 +134,7 @@ bool Average::filter(const Frame &in, Frame& out)
     for (size_t i=1; i < _queue.size(); i++)
 	*new_img += *_queue[i];
 
-    BOOST_LOG_TRIVIAL(debug) << "averaging over: " <<_queue.size();
+    LOGD << "averaging over: " <<_queue.size();
     *new_img /= _queue.size();*/
 
     
@@ -148,7 +147,7 @@ bool Average::filter(const Frame &in, Frame& out)
 /*
 int Average::loadConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
     //const boost::property_tree::ptree& average = pt.get_child(type());
 
     updateConfig(pt.begin()->second );
@@ -170,7 +169,7 @@ boost::property_tree::ptree Average::getConfig() const
 }
 
 void Average::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
 
     Filter::updateConfig(pt);
     _size = pt.get("options.size", _size);

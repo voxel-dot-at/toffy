@@ -21,7 +21,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include <boost/log/trivial.hpp>
+
 
 #include <toffy/filter_helpers.hpp>
 #include <toffy/btaFrame.hpp>
@@ -64,7 +64,7 @@ SimpleBlobs::~SimpleBlobs() {}
 
 void SimpleBlobs::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -114,17 +114,17 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
     unsigned int fc;
     try {
         fc = in.getUInt(btaFc);
-        BOOST_LOG_TRIVIAL(debug) << id() << ": Found input fc: " << btaFc;
-    } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning) << id() << " Could not cast input " << btaFc;
+        LOGD << id() << ": Found input fc: " << btaFc;
+    } catch (const std::bad_any_cast&) {
+        LOGW << id() << " Could not cast input " << btaFc;
         return false;
     }
     matPtr inImg;
     try {
         inImg = in.getMatPtr(in_img);
-        BOOST_LOG_TRIVIAL(debug) << id() << ": Found input in_img: " << in_img;
-    } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning) << id() << " Could not cast input " << in_img
+        LOGD << id() << ": Found input in_img: " << in_img;
+    } catch (const std::bad_any_cast&) {
+        LOGW << id() << " Could not cast input " << in_img
                                    << ", filter  " << id() << " not applied.";
         return true;
     }
@@ -132,10 +132,10 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
     matPtr ampl;
     try {
         ampl = in.getMatPtr(in_ampl);
-        BOOST_LOG_TRIVIAL(debug)
+        LOGD
             << id() << ": Found input in_ampl: " << in_ampl;
-    } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning)
+    } catch (const std::bad_any_cast&) {
+        LOGW
             << id() << " Could not cast input " << in_ampl << ", filter  "
             << id() << " not applied.";
         return true;
@@ -144,7 +144,7 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
         if (in.hasKey(CAM_SLOT)) {
             cam = std::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
         } else {
-            BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " " << id()
+            LOGW << __FUNCTION__ << " " << id()
                                        << " NO cameraPtr found in Frame!";
             return false;
         }
@@ -156,10 +156,10 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
             std::any_cast<DetObjectsPtr >(
                 out.getData(out_blobs));
         blobs->clear();
-        BOOST_LOG_TRIVIAL(debug)
+        LOGD
             << id() << ": Found output out_blobs: " << out_blobs;
-    } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning) << id() << " Could not find object vector.";
+    } catch (const std::bad_any_cast&) {
+        LOGW << id() << " Could not find object vector.";
         blobs.reset(new std::vector<DetectedObject*>);
         // return true;
     }
@@ -178,7 +178,7 @@ void SimpleBlobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
                             std::vector<DetectedObject*>& detObj)
 {
     UNUSED(ampl);
-    // BOOST_LOG_TRIVIAL(debug) << __FILE__ << ": " << __FUNCTION__;
+    // LOGD << __FILE__ << ": " << __FUNCTION__;
 
     // Filter
     Mat m;

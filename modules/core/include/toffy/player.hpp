@@ -16,7 +16,11 @@
 */
 #pragma once
 
-#include <boost/log/trivial.hpp>
+#include <any>
+
+
+
+#include <toffy/logging.hpp>
 
 #include <toffy/toffy_export.h>
 #include <toffy/controller.hpp>
@@ -46,7 +50,7 @@ public:
      * log to a file. By default the info level is set.
      *
      */
-    Player(boost::log::trivial::severity_level severity,bool file);
+    Player(toffy::log::logLevel level,bool file);
 
     // defaults to debug, false
     Player();

@@ -42,7 +42,7 @@ ReprojectPCL::ReprojectPCL(): Filter(ReprojectPCL::id_name,_filter_counter),
 }
 
 void ReprojectPCL::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -59,10 +59,10 @@ void ReprojectPCL::updateConfig(const boost::property_tree::ptree &pt) {
 	    cout << fs.getFirstTopLevelNode().name() << endl;
 	    fs.release();
 	} else {
-	    BOOST_LOG_TRIVIAL(debug) << "Node cameraMatrix is not opencv.";
+	    LOGD << "Node cameraMatrix is not opencv.";
     }
     } else {
-	BOOST_LOG_TRIVIAL(debug) << "Node options.cameraMatrix not found.";
+	LOGD << "Node options.cameraMatrix not found.";
     }
     _in_img = pt.get<string>("inputs.img",_in_img);
     _in_cameraMatrix = pt.get<string>("inputs.cameraMatrix",_in_cameraMatrix);
@@ -98,7 +98,7 @@ bool ReprojectPCL::filter(const Frame &in, Frame &out) {
   matPtr img;
   try {
     img = std::any_cast<matPtr >(in.getData(_in_img));
-  } catch (const boost::bad_any_cast &) {
+  } catch (const std::bad_any_cast &) {
     LOG(warning) << "ReprojectPCL::filter() Could not cast input " << _in_img
                  << ", filter  " << id() << " not applied.";
     return false;
@@ -106,7 +106,7 @@ bool ReprojectPCL::filter(const Frame &in, Frame &out) {
   if (!_in_cameraMatrix.empty()) {
     try {
       _cameraMatrix = std::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
-    } catch (const boost::bad_any_cast &) {
+    } catch (const std::bad_any_cast &) {
       LOG(warning) << "ReprojectPCL::filter() Could not read input "
                    << _in_cameraMatrix;
       return false;
@@ -135,8 +135,8 @@ bool ReprojectPCL::filter(const Frame &in, Frame &out) {
         world2camera = std::any_cast<std::shared_ptr<Eigen::Affine3f> >(
             in.getData(_in_transf));  //"bta12world"));
         pcl::transformPointCloud(*planar, *planar, world2camera->matrix());
-	} catch(const boost::bad_any_cast &) {
-	    BOOST_LOG_TRIVIAL(warning) << "No " <<  _in_transf << " transform found";
+	} catch(const std::bad_any_cast &) {
+	    LOGW << "No " <<  _in_transf << " transform found";
 	}
     }
 // LOG(debug) << __LINE__;

@@ -16,6 +16,7 @@
 #include <iostream>
 
 #include <toffy/player.hpp>
+#include <toffy/logging.hpp>
 #include <toffy/base/cond.hpp>
 
 
@@ -27,7 +28,7 @@ int main(int argc, char** argv)
 {
     std::string file = "tests/xml/cond_empty.xml";
     toffy::Player* player;
-    player = new toffy::Player(boost::log::trivial::debug, false);
+    player = new toffy::Player(toffy::log::debug, false);
     FilterBank fb;
 
     if (argc >= 2) {

@@ -16,13 +16,10 @@
 */
 #include <memory>
 
-// #include <boost/log/trivial.hpp>
-
 #include "toffy/event.hpp"
 #include "toffy/filter.hpp"
 
 using namespace toffy;
-namespace logging = boost::log;
 
 Event::Event(Filter *sender, ReceiverType type, std::string receiver,
       std::string event): _sender_id(sender->name()),

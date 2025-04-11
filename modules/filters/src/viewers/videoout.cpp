@@ -23,7 +23,7 @@
 #include <opencv2/imgproc/types_c.h>
 #include <opencv2/videoio.hpp>
 
-#include <boost/log/trivial.hpp>
+
 
 #include "toffy/viewers/videoout.hpp"
 
@@ -44,7 +44,7 @@ VideoOut::~VideoOut()
 }
 
 int VideoOut::loadConfig(const boost::property_tree::ptree& pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "(const boost::property_tree::ptree& pt)";
+    LOGD << __FUNCTION__ << "(const boost::property_tree::ptree& pt)";
     const boost::property_tree::ptree& rectify = pt.get_child(this->type());
 
     loadGlobals(rectify);
@@ -55,7 +55,7 @@ int VideoOut::loadConfig(const boost::property_tree::ptree& pt) {
 }
 
 void VideoOut::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 

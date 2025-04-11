@@ -19,7 +19,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <boost/log/trivial.hpp>
+
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -29,8 +29,6 @@ using namespace toffy;
 using namespace toffy::filters;
 using namespace cv;
 using namespace std;
-namespace logging = boost::log;
-namespace fs = boost::filesystem;
 
 std::size_t AmplitudeRange::_filter_counter = 1;
 const std::string AmplitudeRange::id_name = "amplitudeRange";
@@ -43,7 +41,7 @@ AmplitudeRange::AmplitudeRange(): Filter(AmplitudeRange::id_name, _filter_counte
 }
 
 void AmplitudeRange::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -77,14 +75,14 @@ boost::property_tree::ptree AmplitudeRange::getConfig() const {
 }
 
 bool AmplitudeRange::filter(const Frame &in, Frame& out) {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+	LOGD << __FUNCTION__ <<  " " << id();
 
 	matPtr ampl, depth;
 
 	try {
 		ampl = std::any_cast<matPtr>(in.getData(_in_ampl));
-	} catch(const boost::bad_any_cast &) {
-		BOOST_LOG_TRIVIAL(warning) <<
+	} catch(const std::bad_any_cast &) {
+		LOGW <<
 			"Could not cast input " << _in_ampl <<
 			", filter  " << id() <<" not applied.";
 		return false;
@@ -92,8 +90,8 @@ bool AmplitudeRange::filter(const Frame &in, Frame& out) {
 	
 	try {
 		depth = std::any_cast<matPtr>(in.getData(_in_depth));
-	} catch(const boost::bad_any_cast &) {
-		BOOST_LOG_TRIVIAL(warning) <<
+	} catch(const std::bad_any_cast &) {
+		LOGW <<
 			"Could not cast input " << _in_depth <<
 			", filter  " << id() <<" not applied.";
 		return false;

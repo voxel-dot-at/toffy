@@ -72,17 +72,18 @@ using namespace toffy::filters::f3d;
 
 /****** forward declarations for init functions of the single sub-libs: */
 namespace toffy {
-    namespace viewers {
-        extern void initFilters(FilterFactory& factory);
-    }
-    namespace tracking {
-        extern void initFilters(FilterFactory& factory);
-    }
+namespace viewers {
+extern void initFilters(FilterFactory& factory);
 }
-
+namespace tracking {
+extern void initFilters(FilterFactory& factory);
+}
+}  // namespace toffy
 
 // TODO Create a header with a list of filters
-#include <boost/log/trivial.hpp>
+#include <toffy/logging.hpp>
+
+//
 
 using namespace toffy;
 using namespace toffy::filters;
@@ -135,7 +136,7 @@ Filter* FilterFactory::getFilter(const std::string& name) const
     try {
         return _filters.at(name);
     } catch (std::out_of_range& e) {
-        BOOST_LOG_TRIVIAL(warning) << name << " not found.";
+        LOGW << name << " not found.";
         return NULL;
     }
 }
@@ -148,7 +149,7 @@ bool FilterFactory::findFilter(std::string name) const
 Filter* FilterFactory::createFilter(const std::string& type,
                                     std::string /* name */)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     Filter* f;
     cout << "FF new " << type << endl;
     if (type == "filterBank")
@@ -250,14 +251,13 @@ Filter* FilterFactory::createFilter(const std::string& type,
         cout << "external has " << fn << endl;
         cout << "external end" << endl;
         if (!fn) {
-            BOOST_LOG_TRIVIAL(error) << "Unknown filter: " << type;
+            LOGE << "Unknown filter: " << type;
             return NULL;
         }
         f = fn();
     }
-    BOOST_LOG_TRIVIAL(debug)
-        << "created f->name(): " << f->name() << " id(): " << f->id()
-        << "  type(): " << f->type();
+    LOGD << "created f->name(): " << f->name() << " id(): " << f->id()
+         << "  type(): " << f->type();
 
     _filters.insert(std::pair<std::string, Filter*>(f->id(), f));
 
@@ -276,7 +276,7 @@ int FilterFactory::renameFilter(Filter* f, const std::string& oldName,
         // filter with target name exists already!
 
         // if name == id (no name set explicitly), we fall into this case.
-        // BOOST_LOG_TRIVIAL(info) << "FF we already have a filter named "
+        // LOGI << "FF we already have a filter named "
         //			   << newName << "! Abort!" <<endl;
         return 0;
     }
@@ -287,19 +287,19 @@ int FilterFactory::renameFilter(Filter* f, const std::string& oldName,
     }
     _filters.insert(std::pair<std::string, Filter*>(newName, f));
 
-    BOOST_LOG_TRIVIAL(debug) << "FF stored " << newName << endl;
+    LOGD << "FF stored " << newName;
     return 1;
 }
 
 int FilterFactory::getFiltersByType(const std::string& type,
                                     std::vector<Filter*>& vec)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     for (boost::container::flat_map<std::string, Filter*>::iterator it =
              _filters.begin();
          it < _filters.end(); it++) {
-        // BOOST_LOG_TRIVIAL(debug) << type;
-        // BOOST_LOG_TRIVIAL(debug) << (*it)->id();
+        // LOGD << type;
+        // LOGD << (*it)->id();
         // if ((*it)->type() == "filterBank" ||
         //	(*it)->type() == "parallelFilter")
         //{

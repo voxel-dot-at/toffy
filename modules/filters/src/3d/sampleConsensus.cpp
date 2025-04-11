@@ -17,7 +17,7 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/foreach.hpp>
-#include <boost/log/trivial.hpp>
+
 #include <boost/property_tree/json_parser.hpp>
 #include <fstream>
 #include <iostream>
@@ -144,7 +144,7 @@ bool SampleConsensus::filter(const Frame& in, Frame& out)
 
     tick = boost::posix_time::microsec_clock::local_time();
     diff = tick - start;
-    LOG(info) << "td\t" << diff.total_milliseconds() << "\tfin" << endl;
+    LOG(info) << "td\t" << diff.total_milliseconds() << "\tfin";
 
     return true;
 }
@@ -193,7 +193,7 @@ bool SampleConsensus::segmentPlane(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
         // ensure distance is always positive & invert normal vector
         coeffs *= -1.;
     }
-    LOG(info) << "PLAN " << coeffs.transpose() << endl;
+    LOG(info) << "PLAN " << coeffs.transpose();
     return true;
 }
 
@@ -241,7 +241,7 @@ bool SampleConsensus::segmentCylinder(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
     pass.filter(*cloud_filtered2);
 
     LOG(debug) << "PointCloud after filtering has: " << cloud_filtered->size()
-               << " data points." << std::endl;
+               << " data points.";
 
     if (inFrame) {
         inFrame->addData("fil2", cloud_filtered2);
@@ -287,7 +287,7 @@ bool SampleConsensus::segmentCylinder(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
     extract.filter(*pi);
 
     if (pi->points.empty()) {
-        LOG(info) << "Can't find the cylindrical component." << std::endl;
+        LOG(info) << "Can't find the cylindrical component.";
     } else {
         LOG(debug) << " cylinder " << pi->size();
     }
@@ -339,7 +339,7 @@ bool SampleConsensus::runRegionGrowing(
     // ("y"); pass.setFilterLimits (-1.5, +1.5); pass.filter (*cloud_filtered2);
 
     LOG(debug) << "PointCloud after filtering has: " << cloud_filtered->size()
-               << " data points." << std::endl;
+               << " data points.";
 
     normal_estimator.setSearchMethod(tree);
     normal_estimator.setInputCloud(cloud_filtered);
@@ -621,7 +621,7 @@ bool SampleConsensus::getInputPoints(const Frame& in,
         //         LOG(error) << "input cloud is null!";
         //         return false;
         //     }
-    } catch (const boost::bad_any_cast&) {
+    } catch (const std::bad_any_cast&) {
         LOG(warning)
             << "Could not cast input - trying to convert from OCV cloud.";
         LOG(info) << "copy from matPtr{____}" << __LINE__;
@@ -649,7 +649,7 @@ bool SampleConsensus::getInputPoints(const Frame& in,
             }
             LOG(info) << "copy from matPtr{____} >>" << __LINE__ << " "
                       << cloud->size();
-        } catch (const boost::bad_any_cast&) {
+        } catch (const std::bad_any_cast&) {
             LOG(warning) << "Could not cast input to matPtr ";
 
             // try pointcloud:
@@ -658,7 +658,7 @@ bool SampleConsensus::getInputPoints(const Frame& in,
                     in.getData(this->in));
                 LOG(info) << "got cloud size " << cloud->size();
                 LOG(info) << __LINE__;
-            } catch (const boost::bad_any_cast&) {
+            } catch (const std::bad_any_cast&) {
                 LOG(warning) << "Could not cast input " << this->in
                              << " to PointCloud<pcl::PointXYZ> " << this->in
                              << ", filter  " << id() << " not applied.";

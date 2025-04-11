@@ -18,7 +18,7 @@
 // #include <pcl/io/pcd_io.h>
 #include <opencv2/core.hpp>
 
-#include <boost/log/trivial.hpp>
+
 #include <boost/lexical_cast.hpp>
 #include <any>
 
@@ -132,5 +132,5 @@ void ExportYaml::dumpToYaml(const Frame& frame, const std::string& id)
 
     //     imwrite(buf, *in.getMatPtr("color0"), p);
     // }
-    // BOOST_LOG_TRIVIAL(info) << "FULL FIN ORGA DUMPED " << buf;
+    // LOGI << "FULL FIN ORGA DUMPED " << buf;
 }
