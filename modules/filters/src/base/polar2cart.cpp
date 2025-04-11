@@ -38,7 +38,7 @@ using namespace toffy::filters;
 using namespace cv;
 using namespace std;
 
-// namespace fs = boost::filesystem;
+
 
 std::size_t Polar2Cart::_filter_counter = 1;
 const std::string Polar2Cart::id_name = "polar2cart";

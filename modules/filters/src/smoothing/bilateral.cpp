@@ -31,8 +31,6 @@ using namespace toffy::filters::smoothing;
 using namespace cv;
 using namespace std;
 
-// namespace fs = boost::filesystem;
-
 
 std::size_t Bilateral::_filter_counter = 1;
 

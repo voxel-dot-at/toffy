@@ -17,8 +17,9 @@
  * set of utility functions - used by handDetect
  */
 #pragma once
+#include <math>
 #include <vector>
-#include <boost/math/special_functions/fpclassify.hpp>
+
 /**
  * boundary handling utilities
  *
@@ -163,7 +164,7 @@ static void printCurv(cv::Mat& m, cv::Scalar color,
     for (size_t i = 1; i < contour.size(); i++) {
         computeTripleAngle(contour, i, distance, cos);
         int y = 100 - cos * 100;
-        if (!boost::math::isnan(y) && !boost::math::isnan(lastY)) {
+        if (!std::isnan(y) && !std::isnan(lastY)) {
             line(m, cv::Point(i - 1, lastY), cv::Point(i, y), color);
             lastY = y;
         }

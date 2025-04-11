@@ -32,7 +32,7 @@ using namespace toffy::filters;
 using namespace cv;
 using namespace std;
 
-// namespace fs = boost::filesystem;
+
 
 
 std::size_t Rectify::_filter_counter = 1;

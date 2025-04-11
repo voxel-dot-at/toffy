@@ -5,7 +5,6 @@
 // #include <boost/version.hpp>
 // #include <boost/foreach.hpp>
 
-
 #include <toffy/common/filenodehelper.hpp>
 
 #include <toffy/logging.hpp>

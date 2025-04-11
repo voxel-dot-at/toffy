@@ -81,7 +81,7 @@ bool Controller::forward()
             ((ParallelFilter *)vec[i])->start();
         }
         _state = Controller::FORWARD;
-        _thread = boost::thread(boost::bind(&Controller::loopFilters, this));
+        _thread = std::thread(boost::bind(&Controller::loopFilters, this));
         if (!_thread.joinable()) {
             _state = Controller::IDLE;
             //check thread or the state changed inside
@@ -106,7 +106,7 @@ bool Controller::backward()
             ((ParallelFilter *)vec[i])->start();
         }
         _state = Controller::BACKWARD;
-        _thread = boost::thread(boost::bind(&Controller::loopFilters, this));
+        _thread = std::thread(boost::bind(&Controller::loopFilters, this));
         if (!_thread.joinable()) {
             _state = Controller::IDLE;
             //check thread or the state changed inside
@@ -131,7 +131,7 @@ bool Controller::stepForward()
             ((ParallelFilter *)vec[i])->start();
         }
         /*_state = Controller::FORWARD;
-	_thread = boost::thread( boost::bind(&Controller::loopFiltersOnce, this));
+	_thread = std::thread( boost::bind(&Controller::loopFiltersOnce, this));
 	if (!_thread.joinable()) {
 	    _state = Controller::IDLE;
 	    //check thread or the state changed inside
@@ -161,7 +161,7 @@ bool Controller::stedBackward()
             ((ParallelFilter *)vec[i])->start();
         }
         /*_state = Controller::BACKWARD;
-	_thread = boost::thread( boost::bind(&Controller::loopFiltersOnce, this));
+	_thread = std::thread( boost::bind(&Controller::loopFiltersOnce, this));
 	if (!_thread.joinable()) {
 	    _state = Controller::IDLE;
 	    //check thread or the state changed inside

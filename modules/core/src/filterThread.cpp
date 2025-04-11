@@ -16,9 +16,7 @@
 */
 #include <iostream>
 
-
-
-#include "toffy/filterThread.hpp"
+#include <toffy/filterThread.hpp>
 
 using namespace toffy;
 using namespace std;
@@ -28,28 +26,25 @@ FilterThread::~FilterThread()
     // stop thread, kill all.
     theThread.join();
     inQ.clear();
-    outQ.clear(); //TODO: check frames..
+    outQ.clear();  //TODO: check frames..
 
     delete f;
 }
 
-
 // init the FT with a number of pre-allocated frames
 void FilterThread::init(int numFrames)
 {
-    for (int i=0;i<numFrames;i++) {
-	Frame* f = new Frame();
-	inQ.push_back(f);
+    for (int i = 0; i < numFrames; i++) {
+        Frame* f = new Frame();
+        inQ.push_back(f);
     }
 }
-
 
 void FilterThread::start()
 {
     keepRunning = true;
     //todo: launch thread
-    theThread = boost::thread( boost::bind(&FilterThread::loop, this) );
-
+    theThread = std::thread(std::bind(&FilterThread::loop, this));
 }
 
 void FilterThread::stop()
@@ -64,12 +59,11 @@ Frame* FilterThread::dequeue()
 
     //cout << "FT deq " << outQ.size() << endl;
 
-    if ( outQ.empty() ) {
-	boost::mutex mtx;
-	boost::unique_lock<boost::mutex> lock(mtx);
+    if (outQ.empty()) {
+        std::unique_lock<std::mutex> lock(inMtx);
 
-	//cout << "FT deq wait " << endl;
-	outCond.wait(lock);
+        //cout << "FT deq wait " << endl;
+        outCond.wait(lock);
     }
     outMtx.lock();
     fr = outQ.front();
@@ -89,37 +83,37 @@ void FilterThread::enqueue(Frame* fr)
 
 void FilterThread::loop()
 {
-    boost::mutex mtx;
-    boost::unique_lock<boost::mutex> lock(mtx);
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lock(mtx);
     Frame* in;
 
-    cout << "FT thread started " << boost::this_thread::get_id() << endl;
+    cout << "FT thread started " << std::this_thread::get_id() << endl;
     while (keepRunning) {
-	while (inQ.empty()) {
-	    cout << "FT wait for data" << endl;
-	    inCond.wait(lock);
-	    if (!keepRunning) {
-		cout << "FT loop exit" << endl;
-		return;
-	    }
-	}
-	cout << "FT get data" << endl;
-	// get one frame
-	inMtx.lock();
-	in = inQ.front();
-	inQ.pop_front();
-	inMtx.unlock();
+        while (inQ.empty()) {
+            cout << "FT wait for data" << endl;
+            inCond.wait(lock);
+            if (!keepRunning) {
+                cout << "FT loop exit" << endl;
+                return;
+            }
+        }
+        cout << "FT get data" << endl;
+        // get one frame
+        inMtx.lock();
+        in = inQ.front();
+        inQ.pop_front();
+        inMtx.unlock();
 
-	cout << "FT run filter on " << in << endl;
-	// run the filter
-	f->filter(*in, *in);
+        cout << "FT run filter on " << in << endl;
+        // run the filter
+        f->filter(*in, *in);
 
-	cout << "FT push result" << endl;
-	// post the result
-	outMtx.lock();
-	outQ.push_back(in);
-	outMtx.unlock();
-	outCond.notify_all();
+        cout << "FT push result" << endl;
+        // post the result
+        outMtx.lock();
+        outQ.push_back(in);
+        outMtx.unlock();
+        outCond.notify_all();
     }
-    cout << "FT thread loop exit " << boost::this_thread::get_id() << endl;
+    cout << "FT thread loop exit " << std::this_thread::get_id() << endl;
 }

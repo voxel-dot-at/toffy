@@ -28,7 +28,10 @@
 #define RAWFILE ".r"
 #endif
 
-#include <boost/thread.hpp>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
+
 #include <boost/property_tree/ptree.hpp>
 
 #include <bta.h>
@@ -168,8 +171,8 @@ class DLLExport BtaWrapper : public ImageSensor
 
     bool async;  //< set to true if frameArrived* callbacks are used.
 
-    boost::mutex frameMutex, fillFrameMutex;
-    boost::condition_variable newFrameCond;
+    std::mutex frameMutex, fillFrameMutex;
+    std::condition_variable newFrameCond;
 
     BTA_Frame *frames
         [3];  //< array of frames, one is filled by bta lib, the other in use

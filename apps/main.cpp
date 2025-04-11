@@ -116,8 +116,7 @@ int main(int argc, char* argv[])
     try {
         // Initialise the server.
         cout << "INIT PLAYER" << endl;
-        toffy::Player p(toffy::log::info,
-                        vm["output2File"].as<bool>());
+        toffy::Player p(toffy::log::info, vm["output2File"].as<bool>());
 
         p.loadConfig(vm["config"].as<std::string>());
         std::cout << "Player done" << std::endl;
@@ -142,8 +141,6 @@ int main(int argc, char* argv[])
             p.runOnce();
 
             c = cv::waitKey(delay);
-            //boost::this_thread::sleep( boost::posix_time::milliseconds(30) );
-            //cout << "KEY " << c << "\t" << (char)c << endl;
             keepRunning = c != 'q';
         } while (keepRunning);
         std::cout << "Stopped..." << std::endl;

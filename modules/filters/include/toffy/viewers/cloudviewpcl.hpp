@@ -17,8 +17,7 @@
 #pragma once
 
 #include <vector>
-
-#include <boost/thread.hpp>
+#include <thread>
 
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
 
@@ -64,7 +63,7 @@ public:
 private:
 
     std::string _in_cloud;
-    boost::thread _thread;
+    std::thread _thread;
     volatile int _signal; ///< Interthread flag. Used for check the thread status
     double _coordSize;
 

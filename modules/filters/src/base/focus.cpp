@@ -30,7 +30,7 @@ using namespace cv;
 using namespace std;
 
 
-// namespace fs = boost::filesystem;
+
 
 
 const std::string Focus::id_name = "focus";

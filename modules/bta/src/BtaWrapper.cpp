@@ -11,7 +11,7 @@
 #include <boost/log/expressions.hpp>
 
 #include <boost/property_tree/xml_parser.hpp>
-#include <boost/thread.hpp>
+#include <thread>
 
 #include <toffy/bta/BtaWrapper.hpp>
 #include <toffy/bta/FrameHeader.hpp>
@@ -1372,7 +1372,7 @@ uint8_t ctr = 0;
 void BtaWrapper::updateFrame(BTA_Frame *frame)
 {
     {
-        boost::lock_guard<boost::mutex> lock{fillFrameMutex};
+        std::lock_guard<std::mutex> lock{fillFrameMutex};
 
         // cout << "updateFrame inLock " << frameToFill->frameCounter << endl;
 
@@ -1387,7 +1387,7 @@ void BtaWrapper::updateFrame(BTA_Frame *frame)
 
 BTA_Frame *BtaWrapper::flipFrame()
 {
-    boost::lock_guard<boost::mutex> lock{fillFrameMutex};
+    std::lock_guard<std::mutex> lock{fillFrameMutex};
     hasBeenUpdated = false;
 
     BTA_Frame *tmp = frameInUse;
@@ -1402,8 +1402,8 @@ BTA_Frame *BtaWrapper::flipFrame()
 
 BTA_Frame *BtaWrapper::waitForNextFrame()
 {  // wait for next frame to arrive....
-    // boost::lock_guard<boost::mutex> lock{frameMutex};
-    boost::unique_lock<boost::mutex> lock(frameMutex);
+    // std::lock_guard<std::mutex> lock{frameMutex};
+    std::unique_lock<std::mutex> lock(frameMutex);
     // cout << "waitForNextFrame " << hasBeenUpdated << endl;
     while (!hasBeenUpdated) {
         // cout << "waitForNextFrame ..." << hasBeenUpdated << endl;
