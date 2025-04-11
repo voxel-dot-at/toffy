@@ -323,7 +323,7 @@ bool Mask::filter(const Frame &in, Frame &out)
             vector<int> compression_params;
             compression_params.push_back(IMWRITE_PNG_COMPRESSION);
             compression_params.push_back(0);
-            cv::imwrite( "test"+boost::lexical_cast<std::string>(_uangle)+".png", *old_mask,compression_params );
+            cv::imwrite( "test"+std::to_string(_uangle)+".png", *old_mask,compression_params );
         }
         _uangle = new_ang;*/
 

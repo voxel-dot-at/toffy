@@ -239,11 +239,11 @@ void CapturerFilter::save(const bool &save) {
 	#endif
 	fs::path newPath(_savePath);
 	//newPath /= name();
-	//string _strPath = savePath + string("/") + id() + string("/") + boost::lexical_cast<std::string>(_saveTimeStamp);
+	//string _strPath = savePath + string("/") + id() + string("/") + std::to_string(_saveTimeStamp);
 	if (!_saveFolder.empty())
 	    newPath /= _saveFolder;
 	if (_tsd)
-	    newPath /= boost::lexical_cast<std::string>(_saveTimeStamp);
+	    newPath /= std::to_string(_saveTimeStamp);
 	newPath /= name();
 	LOGD << newPath.string();
 	try {

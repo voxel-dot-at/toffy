@@ -45,10 +45,10 @@ Filter::Filter(std::string type, std::size_t counter /*= -1*/)
     _filter_counter++;
     logger.setLevel(toffy::log::info);
     if (counter > 0)
-        this->_id = _type + "_" + boost::lexical_cast<std::string>(counter);
+        this->_id = _type + "_" + std::to_string(counter);
     else
         this->_id =
-            _type + "_" + boost::lexical_cast<std::string>(_filter_counter);
+            _type + "_" + std::to_string(_filter_counter);
     this->name(this->_id);
 #ifdef CM_DEBUG
     _log_lvl = logging::trivial::debug;

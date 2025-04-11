@@ -93,24 +93,23 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
     bool present;
     present = pt_optional_get(bta, "options.dynamicOutputs", dynOutputs);
     if (present) {
-        LOGD
-            << __FUNCTION__ << " " << __LINE__ << " dynOutputs? " << dynOutputs;
+        LOGD << __FUNCTION__ << " " << __LINE__ << " dynOutputs? "
+             << dynOutputs;
     }
 
     present =
         pt_optional_get(bta, "options.modulationFrequency", modulationFreq);
     if (present) {
-        LOGD
-            << __FUNCTION__ << " " << __LINE__ << " modulationFreq set to  "
-            << modulationFreq;
+        LOGD << __FUNCTION__ << " " << __LINE__ << " modulationFreq set to  "
+             << modulationFreq;
     } else {
         modulationFreq = -1;
     }
     present = pt_optional_get(bta, "options.globalOffset", globalOfs);
     hasGlobalOfs = present;
     if (present) {
-        LOGD << __FUNCTION__ << " " << __LINE__
-                                 << " globalOffset set to  " << globalOfs;
+        LOGD << __FUNCTION__ << " " << __LINE__ << " globalOffset set to  "
+             << globalOfs;
     }
 
     present = pt_optional_get(bta, "options.eth0Config", eth0Config);
@@ -122,8 +121,7 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
     boost::optional<bool> playbk = bta.get_optional<bool>("playback");
     if (playbk.is_initialized()) {
         playback(*playbk);
-        LOGD
-            << __FUNCTION__ << " " << __LINE__ << " playback?" << *playbk;
+        LOGD << __FUNCTION__ << " " << __LINE__ << " playback?" << *playbk;
     }
 
     boost::optional<bool> autoconnect = bta.get_optional<bool>("autoconnect");
@@ -147,7 +145,7 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
         }
     }
     LOGD << __FUNCTION__ << " " << __LINE__ << " blts? "
-                             << sensor->getBltstream();
+         << sensor->getBltstream();
     if (sensor->getBltstream().length() > 0) {
         loadPath(sensor->getBltstream());
         playback(true);
@@ -181,7 +179,7 @@ void Bta::updateConfig(const boost::property_tree::ptree& pt)
         cam.reset(new cam::M520());
     } else {
         LOGI << "assuming default camera type; please set "
-                                   "options.camera to override!";
+                "options.camera to override!";
         cam.reset(new cam::P230());
     }
     update = true;
@@ -225,13 +223,11 @@ bool Bta::filter(const Frame& in, Frame& out)
         retries++;
         if (connect() < 0) {
             if (retries > RECONNECT) {
-                LOGE
-                    << "Camera not reachable after " << RECONNECT
-                    << "tries. Stopping toffy.";
+                LOGE << "Camera not reachable after " << RECONNECT
+                     << "tries. Stopping toffy.";
                 exit(EXIT_FAILURE);  // @TODO report failure to filterBank?
             } else {
-                LOGW
-                    << "Could not reconnect to device. Retry: " << retries;
+                LOGW << "Could not reconnect to device. Retry: " << retries;
                 return false;
             }
             sleep(
@@ -257,26 +253,22 @@ bool Bta::filter(const Frame& in, Frame& out)
                 cnt(cnt() + 1);
                 if (cnt() > endFile()) cnt(beginFile());
             }
-            LOGD
-                << ((CapturerFilter*)this)->loadPath() + "/" +
-                       boost::lexical_cast<std::string>(cnt()) + fileExt();
+            LOGD << ((CapturerFilter*)this)->loadPath() + "/" +
+                        std::to_string(cnt()) + fileExt();
             data = sensor->loadRaw(((CapturerFilter*)this)->loadPath() + "/" +
-                                   boost::lexical_cast<std::string>(cnt()) +
-                                   fileExt());
+                                   std::to_string(cnt()) + fileExt());
         } else {
-            LOGD << "bta::filter " << __LINE__
-                                     << " cap async? " << sensor->isAsync();
+            LOGD << "bta::filter " << __LINE__ << " cap async? "
+                 << sensor->isAsync();
             if (sensor->isAsync()) {
-                LOGD
-                    << "bta::filter " << __LINE__ << " cap async... "
-                    << sensor->isAsync();
+                LOGD << "bta::filter " << __LINE__ << " cap async... "
+                     << sensor->isAsync();
                 data = (char*)sensor->waitForNextFrame();
-                LOGD << "bta::filter " << __LINE__
-                                         << " cap async! " << sensor->isAsync();
+                LOGD << "bta::filter " << __LINE__ << " cap async! "
+                     << sensor->isAsync();
 
             } else {
-                LOGD
-                    << "bta::filter " << __LINE__ << " what should I do? ";
+                LOGD << "bta::filter " << __LINE__ << " what should I do? ";
             }
         }
     } else {  // live connection
@@ -284,8 +276,7 @@ bool Bta::filter(const Frame& in, Frame& out)
             // returns a BTA_Frame *
             data = (char*)sensor->waitForNextFrame();
         } else {
-            LOGD
-                << "bta::filter " << __LINE__ << " what should I do? ";
+            LOGD << "bta::filter " << __LINE__ << " what should I do? ";
         }
     }
 
@@ -452,8 +443,8 @@ int Bta::loadPath(const std::string& newPath)
     LOGD << "fsPath.extension(): " << fsPath.extension();
     if (fs::is_regular_file(fsPath) && fsPath.extension() == ".bltstream") {
         if (!fs::exists(fsPath)) {
-            LOGW << "bta::loadPath(): Given path ["
-                                       << newPath << "] does not exist.";
+            LOGW << "bta::loadPath(): Given path [" << newPath
+                 << "] does not exist.";
             return -1;
         }
         setLoadPath(newPath);
@@ -504,19 +495,18 @@ void Bta::save(const bool& save)
         // ".bltstream") { cout << "PATH::: " << saveFolder() << endl;
         fs::path newPath(getSavePath());
         // string _strPath = savePath + string("/") + id() + string("/") +
-        // boost::lexical_cast<std::string>(_saveTimeStamp);
+        // std::to_string(_saveTimeStamp);
         LOGD << newPath.string();
         if (tsd()) {
-            newPath /= boost::lexical_cast<std::string>(_saveTimeStamp);
+            newPath /= std::to_string(_saveTimeStamp);
         }
         newPath /= name();
         LOGD << newPath.string();
         try {
             fs::create_directories(fs::absolute(newPath));
         } catch (const fs::filesystem_error& e) {
-            LOGW
-                << "Could not create folder: " << strPath()
-                << "; Reason: " << e.code().message();
+            LOGW << "Could not create folder: " << strPath()
+                 << "; Reason: " << e.code().message();
             setSave(false);
             return;
         }
@@ -524,8 +514,7 @@ void Bta::save(const bool& save)
         // newPath /= getSavePath();
 
         if (fs::path(getSavePath()).extension() != ".bltstream") {
-            newPath /=
-                boost::lexical_cast<std::string>(_saveTimeStamp) + ".bltstream";
+            newPath /= std::to_string(_saveTimeStamp) + ".bltstream";
         }
 
         strPath(newPath.string());
@@ -553,8 +542,7 @@ void Bta::setOutputsClassic(const Frame& in, Frame& out,
         // } else if (sensor->frameMode == BTA_FrameModeZAmp) {  // 4
         //     this->setOutputsClassicZAmpl(in, out, start, data);
     } else {
-        LOGE
-            << "ERROR UNIMPLEMENTED FRAME MODE " << sensor->frameMode;
+        LOGE << "ERROR UNIMPLEMENTED FRAME MODE " << sensor->frameMode;
     }
 }
 
@@ -931,9 +919,8 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 name = sel;
             } else {
                 if (name != sel) {
-                    LOGW
-                        << " channel name mismatch - check your config! name "
-                        << name << " sel " << sel;
+                    LOGW << " channel name mismatch - check your config! name "
+                         << name << " sel " << sel;
                 }
             }
         }
@@ -1018,8 +1005,8 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 break;
             }
             default:
-                LOGW << "unkown data format! IMPLEMENT 0x"
-                                           << hex << chan->dataFormat << dec;
+                LOGW << "unkown data format! IMPLEMENT 0x" << hex
+                     << chan->dataFormat << dec;
                 continue;
         }
 

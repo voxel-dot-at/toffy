@@ -109,7 +109,7 @@ bool ExportCloud::exportPcl2(const Frame &in, Frame & /*out*/)
     std::string fileName = _path + _fileName;
     if (_seq) {
         _cnt++;
-        fileName += boost::lexical_cast<std::string>(_cnt);
+        fileName += std::to_string(_cnt);
     }
     fileName += ".pcd";
     _w.write(fileName, *planar);

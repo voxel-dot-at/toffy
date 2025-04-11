@@ -177,7 +177,7 @@ bool ObjectTrack::filter(const Frame& in, Frame& out)
                     cv::Point(10, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5,
                     CV_RGB(255, 255, 0));
 
-        cv::putText(color, boost::lexical_cast<std::string>(cnt),
+        cv::putText(color, std::to_string(cnt),
                     cv::Point(10, 50), cv::FONT_HERSHEY_SIMPLEX, 0.5,
                     CV_RGB(255, 255, 0));
 
