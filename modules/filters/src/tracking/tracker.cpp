@@ -15,7 +15,7 @@
    limitations under the License.
 */
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/log/trivial.hpp>
+
 #include <iostream>
 
 #include <opencv2/highgui.hpp>
@@ -52,7 +52,7 @@ Tracker::Tracker()
 }
 
 void Tracker::updateConfig(const boost::property_tree::ptree &pt) {
-  BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+  LOGD << __FUNCTION__ << " " << id();
 
   using namespace boost::property_tree;
 
@@ -100,32 +100,32 @@ bool Tracker::filter(const Frame &in, Frame &out) {
     blobs = std::any_cast<
         std::shared_ptr<detection::DetectedObjects > >(
         in.getData(_in_vec));
-  } catch (const boost::bad_any_cast &) {
-    BOOST_LOG_TRIVIAL(warning)
+  } catch (const std::bad_any_cast &) {
+    LOGW
         << id() << " Could not find object vector: " << _in_vec
         << ". Nothing to do!";
     return true;
   }
 
-  BOOST_LOG_TRIVIAL(debug) << id() << " Got _in_vec size: " << blobs->size();
+  LOGD << id() << " Got _in_vec size: " << blobs->size();
 
   // Current frame counter
   try {
     _fc = in.getUInt(_in_fc);
-  } catch (const boost::bad_any_cast &) {
-    BOOST_LOG_TRIVIAL(warning) << id() << " Could not find framecounter. ";
+  } catch (const std::bad_any_cast &) {
+    LOGW << id() << " Could not find framecounter. ";
     _fc = -1;
   }
 
   // Current Timestamp
   try {
     _ts = in.getUInt("ts");
-  } catch (const boost::bad_any_cast &) {
-    BOOST_LOG_TRIVIAL(warning) << id() << " Could not find Timestamp. ";
+  } catch (const std::bad_any_cast &) {
+    LOGW << id() << " Could not find Timestamp. ";
     _ts = -1;
   }
 
-  BOOST_LOG_TRIVIAL(debug) << id() << " filter() fc " << _fc << " ts " << _ts ;
+  LOGD << id() << " filter() fc " << _fc << " ts " << _ts ;
 
   // List of tracked objects
   std::shared_ptr<detection::DetectedObjects > tracked;
@@ -133,8 +133,8 @@ bool Tracker::filter(const Frame &in, Frame &out) {
     tracked = std::any_cast<
         std::shared_ptr<detection::DetectedObjects > >(
         out.getData(_out_objects));
-  } catch (const boost::bad_any_cast &) {
-    BOOST_LOG_TRIVIAL(warning)
+  } catch (const std::bad_any_cast &) {
+    LOGW
         << id() << " Could not find object vector. Creating a new one";
     tracked.reset(new detection::DetectedObjects);
   }
@@ -148,8 +148,8 @@ bool Tracker::filter(const Frame &in, Frame &out) {
 
   ///// 1.: compare all old objects against the candidates, extract best matches
 
-  BOOST_LOG_TRIVIAL(debug) << id() << " detObjs: " << detObjs.size();
-  BOOST_LOG_TRIVIAL(debug) << id() << " blobs: " << blobs->size();
+  LOGD << id() << " detObjs: " << detObjs.size();
+  LOGD << id() << " blobs: " << blobs->size();
 
   // compare the list of already tracked objects against incoming blobs.
   // finds the nearest candidate; if it is near enough, consider it as the new position
@@ -168,7 +168,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
 
       double ndis = norm(trackedObj->massCenter - blob->massCenter);
 
-      // BOOST_LOG_TRIVIAL(debug) << id() << "  (1): " << trackedObj->id << " " << blob->id << " dist " << ndis;
+      // LOGD << id() << "  (1): " << trackedObj->id << " " << blob->id << " dist " << ndis;
 
       if (ndis < minDis) {
         minDis = ndis;
@@ -185,7 +185,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
       blob = (*blobs)[candidate];
       blob->size = contourArea(blob->contour);
 
-      // BOOST_LOG_TRIVIAL(debug)
+      // LOGD
       //     << "Found candidate object id = " << blob->id << "\t" << minDis
       //     << "\t" << blob->size << "\t" << blob->contour.size() << "\t"
       //     << blob->massCenter << " for " << trackedObj->id;
@@ -214,18 +214,18 @@ bool Tracker::filter(const Frame &in, Frame &out) {
       candIter++;
       continue;
     }
-    // BOOST_LOG_TRIVIAL(debug) << id() << "  (2): " << blob->id << " c " << blob->contour.size();
+    // LOGD << id() << "  (2): " << blob->id << " c " << blob->contour.size();
 
     // TODO Parameter?
     if (blob->contour.size() < 4) {
-        // BOOST_LOG_TRIVIAL(debug) << id() << "  (2): ignoring " << blob->id;
+        // LOGD << id() << "  (2): ignoring " << blob->id;
 
       delete blob;
       blob = NULL;
       // candIter = candidates.erase(candIter);
     } else {
       // init new detected object
-      // BOOST_LOG_TRIVIAL(debug) << id() << "  (2):   new trk " << blob->id << " " << nextId;
+      // LOGD << id() << "  (2):   new trk " << blob->id << " " << nextId;
       blob->id = this->nextId++;
       blob->fc = _fc;
       blob->ts = boost::posix_time::from_time_t(_ts);
@@ -239,7 +239,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
       >(10));*/
 
       newState.push_back(blob);
-      // BOOST_LOG_TRIVIAL(debug) << id() << "  (2):       trk " << blob->id;
+      // LOGD << id() << "  (2):       trk " << blob->id;
     }
     candIter++;
   }
@@ -252,7 +252,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
 
     // TODO Parameter!
     if (abs(_fc - obj->fc) > 5) {
-      // BOOST_LOG_TRIVIAL(debug) << id() << "  (3):       kill " << obj->id;
+      // LOGD << id() << "  (3):       kill " << obj->id;
       delete obj;
     } else {
       newState.push_back(obj);
@@ -274,19 +274,19 @@ bool Tracker::filter(const Frame &in, Frame &out) {
     matPtr img;
     try {
       img = in.getMatPtr(_in_img);
-    } catch (const boost::bad_any_cast &) {
-      BOOST_LOG_TRIVIAL(warning)  << id()
+    } catch (const std::bad_any_cast &) {
+      LOGW  << id()
           << " Could not cast input " << _in_img << ", filter  " << id()
           << " does not show objects.";
       return true;
     }
 
-    BOOST_LOG_TRIVIAL(debug) << id() << " Getting got _out_img: " << _out_img;
+    LOGD << id() << " Getting got _out_img: " << _out_img;
     matPtr img_out;
     try {
       img_out = in.getMatPtr(_out_img);
-    } catch (const boost::bad_any_cast &) {
-      BOOST_LOG_TRIVIAL(info)  << id() << " Creating outputs.img : " << _out_img;
+    } catch (const std::bad_any_cast &) {
+      LOGI  << id() << " Creating outputs.img : " << _out_img;
       img_out.reset(new Mat());
       out.addData(_out_img, img_out);
     }
@@ -304,7 +304,7 @@ void Tracker::showObjects(cv::Mat &depth) {
                   -255.0 * min / (max - min));
   cvtColor(depth, depth, COLOR_GRAY2RGB);
 
-  // BOOST_LOG_TRIVIAL(debug) << "showObjects " << detObjs.size();
+  // LOGD << "showObjects " << detObjs.size();
   for (size_t i = 0; i < detObjs.size(); i++) {
     if (detObjs[i]->first_fc == _fc) {
       circle(depth, detObjs[i]->massCenter, 4, detObjs[i]->color);

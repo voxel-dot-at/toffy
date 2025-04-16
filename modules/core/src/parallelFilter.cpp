@@ -16,7 +16,7 @@
 */
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
+
 
 #include "toffy/filterbank.hpp"
 #include "toffy/filterThread.hpp"
@@ -42,7 +42,7 @@ int ParallelFilter::handleConfigItem(
     const std::string& confFile,
     const boost::property_tree::ptree::const_iterator& it)
 {
-    BOOST_LOG_TRIVIAL(debug)
+    LOGD
         << __FUNCTION__ << ":: " << type() << " " << it->first;
 
     cout << "PF::handle " << it->first << endl;
@@ -113,7 +113,7 @@ bool ParallelFilter::filter(const Frame& /*in*/, Frame& out)
     if (mux) {
         mux->filter(res, out);
     } else {
-        BOOST_LOG_TRIVIAL(debug)
+        LOGD
             << name() << "::" << __FUNCTION__ << " --> No Muxer found! ";
     }
 

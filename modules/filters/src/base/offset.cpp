@@ -20,7 +20,7 @@
 #include <string>
 #include <limits.h>
 
-#include <boost/log/trivial.hpp>
+
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -33,7 +33,7 @@ using namespace toffy;
 using namespace toffy::filters;
 using namespace cv;
 using namespace std;
-namespace logging = boost::log;
+
 
 
 std::size_t OffSet::_filter_counter = 1;
@@ -49,7 +49,7 @@ OffSet::OffSet()
 
 /*
 int OffSet::loadConfig(const boost::property_tree::ptree& pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "(const
+    LOGD << __FUNCTION__ << "(const
 boost::property_tree::ptree& pt)"; const boost::property_tree::ptree& tree =
 pt.get_child(this->type());
 
@@ -62,7 +62,7 @@ pt.get_child(this->type());
 */
 
 void OffSet::updateConfig(const boost::property_tree::ptree &pt) {
-  BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+  LOGD << __FUNCTION__ << " " << id();
 
   using namespace boost::property_tree;
 
@@ -85,11 +85,11 @@ void OffSet::updateConfig(const boost::property_tree::ptree &pt) {
       _rois.push_back(roi);
     }
   } catch (const std::exception &ex) {
-    BOOST_LOG_TRIVIAL(debug) << "no roi found. Using full image.";
+    LOGD << "no roi found. Using full image.";
   }
 }
 
-bool OffSet::filter(const Frame &in, Frame &out) const {
+bool OffSet::filter(const Frame &in, Frame &out) {
   LOG(debug) << __FUNCTION__;
   using namespace boost::posix_time;
 
@@ -121,13 +121,13 @@ bool OffSet::filter(const Frame &in, Frame &out) const {
   }
 
   diff = boost::posix_time::microsec_clock::local_time() - start;
-  BOOST_LOG_TRIVIAL(debug) << "OffSet::filter: " << diff.total_microseconds();
+  LOGD << "OffSet::filter: " << diff.total_microseconds();
 
   return true;
 }
 
 void OffSet::addRoi(cv::Rect newRoi) {
-  BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+  LOGD << __FUNCTION__;
   _rois.push_back(newRoi);
 }
 

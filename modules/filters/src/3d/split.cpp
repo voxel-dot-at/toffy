@@ -19,7 +19,7 @@
 #include <fstream>
 #include <limits.h>
 
-#include <boost/log/trivial.hpp>
+
 #include <boost/foreach.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
@@ -66,8 +66,8 @@ bool Split::filter(const Frame &in, Frame& out)
     pcl::RangeImagePlanar::Ptr planar;
     try {
 	planar = std::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_in_cloud));
-    } catch(const boost::bad_any_cast &) {
-	BOOST_LOG_TRIVIAL(warning) <<
+    } catch(const std::bad_any_cast &) {
+	LOGW <<
 	    "Could not cast input " << _in_cloud <<
 	    ", filter  " << id() <<" not applied.";
 	return false;
@@ -88,7 +88,7 @@ bool Split::filter(const Frame &in, Frame& out)
 
 int Split::loadConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
     const boost::property_tree::ptree& split = pt.get_child("split");
     boost::optional<string> name = split.get_optional<string>("name");
     if (name.is_initialized()) {
@@ -119,7 +119,7 @@ boost::property_tree::ptree Split::getConfig() const
 
 void Split::updateConfig(const boost::property_tree::ptree &pt) 
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
     
 
 

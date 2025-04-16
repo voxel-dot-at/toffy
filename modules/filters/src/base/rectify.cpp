@@ -21,7 +21,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 
-#include <boost/log/trivial.hpp>
+
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -31,8 +31,8 @@ using namespace toffy;
 using namespace toffy::filters;
 using namespace cv;
 using namespace std;
-namespace logging = boost::log;
-namespace fs = boost::filesystem;
+
+
 
 
 std::size_t Rectify::_filter_counter = 1;
@@ -47,7 +47,7 @@ Rectify::Rectify(): Filter(Rectify::id_name,_filter_counter),
 }
 
 void Rectify::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -74,9 +74,9 @@ void Rectify::updateConfig(const boost::property_tree::ptree &pt) {
             cout << "_cameraMatrix : " << _cameraMatrix << endl;
             fs.release();
 	} else
-            BOOST_LOG_TRIVIAL(debug) << "Node cameraMatrix is not opencv.";
+            LOGD << "Node cameraMatrix is not opencv.";
     } else
-         BOOST_LOG_TRIVIAL(debug) << "Node options.cameraMatrix not found.";
+         LOGD << "Node options.cameraMatrix not found.";
 
     ocvo = pt.get_child_optional( "options.distCoeffs" );
     if (ocvo.is_initialized()) {
@@ -87,9 +87,9 @@ void Rectify::updateConfig(const boost::property_tree::ptree &pt) {
             fs.getFirstTopLevelNode() >> _distCoeffs;
             fs.release();
 	} else
-            BOOST_LOG_TRIVIAL(debug) << "Node distCoeffs is not opencv.";
+            LOGD << "Node distCoeffs is not opencv.";
     } else
-         BOOST_LOG_TRIVIAL(debug) << "Node options.distCoeffs not found.";
+         LOGD << "Node options.distCoeffs not found.";
 
     _in_img = pt.get<string>("inputs.img",_in_img);
     _in_cameraMatrix = pt.get<string>("inputs.cameraMatrix",_in_cameraMatrix);
@@ -115,7 +115,7 @@ boost::property_tree::ptree Rectify::getConfig() const {
 }
 
 bool Rectify::filter(const Frame &in, Frame& out) {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+	LOGD << __FUNCTION__ <<  " " << id();
 
 	matPtr img, n2;
 	try {
@@ -126,34 +126,34 @@ bool Rectify::filter(const Frame &in, Frame& out) {
 		} else {
 		    n2.reset(new cv::Mat());
 		}
-	} catch(const boost::bad_any_cast &) {
-		BOOST_LOG_TRIVIAL(warning) <<
+	} catch(const std::bad_any_cast &) {
+		LOGW <<
 			"Could not cast input " << _in_img <<
 			", filter  " << id() <<" not applied.";
 		return false;
 	}
 
 	if ( !map1.rows || ! initialized) {
-	  BOOST_LOG_TRIVIAL(debug) << "rectify: Initializing remap data";
+	  LOGD << "rectify: Initializing remap data";
 	    if (!_in_cameraMatrix.empty()) {
 		try {
 		    _cameraMatrix= std::any_cast<cv::Mat>(in.getData(_in_cameraMatrix));
-		} catch(const boost::bad_any_cast &) {
-		    BOOST_LOG_TRIVIAL(warning) <<
+		} catch(const std::bad_any_cast &) {
+		    LOGW <<
 			"Could not read input " << _in_cameraMatrix;
 		}
 	    }
 	    if (!_in_distCoeffs.empty()) {
 		try {
 		    _distCoeffs= std::any_cast<cv::Mat>(in.getData(_in_distCoeffs));
-		} catch(const boost::bad_any_cast &) {
-		    BOOST_LOG_TRIVIAL(warning) <<
+		} catch(const std::bad_any_cast &) {
+		    LOGW <<
 			"Could not read input " << _in_distCoeffs;
 		}
 	    }
 
 	    if (_cameraMatrix.empty() || _distCoeffs.empty()) {
-		BOOST_LOG_TRIVIAL(warning) <<
+		LOGW <<
 		    "No cameraMatrix or distCoeffs data, filter " << id() <<" not applied.";
 		return false;
 	    }

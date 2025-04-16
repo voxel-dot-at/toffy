@@ -23,7 +23,7 @@
     #include <cmath>
 #endif
 
-#include <boost/log/trivial.hpp>
+
 #include <any>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
@@ -41,6 +41,7 @@
 using namespace toffy;
 using namespace toffy::capturers;
 using namespace cv;
+
 namespace fs = boost::filesystem;
 
 //std::size_t Bta::_filter_counter = 1;
@@ -139,21 +140,21 @@ CapturerFilter::CapturerFilter(std::string type,
 }
 
 void CapturerFilter::savePath(const std::string &newPath) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     if (newPath.empty()) {
 	_savePath = newPath;
 	return;
     }
     fs::path fsPath(newPath);
     if ( !fs::exists(fsPath)) {
-	BOOST_LOG_TRIVIAL(warning) << "Given path " << newPath
+	LOGW << "Given path " << newPath
 				   << " does not exist.";
 	return;
     }
 
 
     if ( !fs::is_directory(fsPath)) {
-	BOOST_LOG_TRIVIAL(warning) << "Given path " << newPath
+	LOGW << "Given path " << newPath
 				   << " is not a directory."
 				   << " Removing file name to get the path";
 	fsPath = fsPath.parent_path();
@@ -171,17 +172,17 @@ void CapturerFilter::setSavePath(const std::string &newPath) {
 }
 
 int CapturerFilter::loadPath(const std::string &newPath) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     fs::path fsPath(newPath);
     if ( !fs::exists(fsPath)) {
-	BOOST_LOG_TRIVIAL(warning) << "Given path " << newPath
+	LOGW << "Given path " << newPath
 				   << " does not exist.";
 	return -1;
     }
 
 
     if ( !fs::is_directory(fsPath)) {
-	BOOST_LOG_TRIVIAL(warning) << "Given path " << newPath
+	LOGW << "Given path " << newPath
 				   << " is not a directory."
 				   << " Removing file name to get the path";
 	fsPath = fsPath.parent_path();
@@ -212,19 +213,19 @@ int CapturerFilter::loadPath(const std::string &newPath) {
     }
     if (!result_set.empty()) {
 	_loadPath = newPath;
-	//BOOST_LOG_TRIVIAL(debug) << (*result_set.begin()).first;
-	//BOOST_LOG_TRIVIAL(debug) << (*result_set.rbegin()).first;
+	//LOGD << (*result_set.begin()).first;
+	//LOGD << (*result_set.rbegin()).first;
 	_beginFile = (*result_set.begin()).first;
 	_endFile = (*result_set.rbegin()).first;
-	//BOOST_LOG_TRIVIAL(debug) << _beginFile;
-	//BOOST_LOG_TRIVIAL(debug) << _endFile;
+	//LOGD << _beginFile;
+	//LOGD << _endFile;
 	return result_set.size();
     }
     return -1;
 }
 
 void CapturerFilter::save(const bool &save) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     if (save == true) {
 	long int _saveTimeStamp;
 	#if defined(MSVC)
@@ -238,17 +239,17 @@ void CapturerFilter::save(const bool &save) {
 	#endif
 	fs::path newPath(_savePath);
 	//newPath /= name();
-	//string _strPath = savePath + string("/") + id() + string("/") + boost::lexical_cast<std::string>(_saveTimeStamp);
+	//string _strPath = savePath + string("/") + id() + string("/") + std::to_string(_saveTimeStamp);
 	if (!_saveFolder.empty())
 	    newPath /= _saveFolder;
 	if (_tsd)
-	    newPath /= boost::lexical_cast<std::string>(_saveTimeStamp);
+	    newPath /= std::to_string(_saveTimeStamp);
 	newPath /= name();
-	BOOST_LOG_TRIVIAL(debug) << newPath.string();
+	LOGD << newPath.string();
 	try {
 	    fs::create_directories(fs::absolute(newPath));
 	} catch(const fs::filesystem_error& e) {
-	    BOOST_LOG_TRIVIAL(warning) << "Could not create folder: "
+	    LOGW << "Could not create folder: "
 				       << _strPath << "; Reason: "
 				       << e.code().message();
 	    _save = false;
@@ -261,7 +262,7 @@ void CapturerFilter::save(const bool &save) {
 }
 
 void CapturerFilter::playback(const bool &pb) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     if (pb == true)
 	_cnt = _beginFile;
     _playBack = pb;
@@ -269,7 +270,7 @@ void CapturerFilter::playback(const bool &pb) {
 
 void CapturerFilter::updateConfig(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -302,7 +303,7 @@ void CapturerFilter::updateConfig(const boost::property_tree::ptree &pt)
 	    fs.getFirstTopLevelNode() >> _center_position;
 	    fs.release();
 	} else
-	    BOOST_LOG_TRIVIAL(debug) << "Node options.center_position not found.";
+	    LOGD << "Node options.center_position not found.";
 
 
 	ocvo = pt.get_child_optional( "options.rotations" );
@@ -315,14 +316,14 @@ void CapturerFilter::updateConfig(const boost::property_tree::ptree &pt)
 	    fs.getFirstTopLevelNode() >> _rotations;
 	    fs.release();
 	} else
-	    BOOST_LOG_TRIVIAL(debug) << "Node options.rotations not found.";
+	    LOGD << "Node options.rotations not found.";
 
 
 	_playBack = pt.get<bool>("options.playback",_playBack);
 	if (_playBack) { this->playback(_playBack);   }
 
     } catch (const std::exception& ex) {
-	BOOST_LOG_TRIVIAL(debug) << "Camera pose definition values wrong. Ex:" << ex.what();
+	LOGD << "Camera pose definition values wrong. Ex:" << ex.what();
 	return;
     }
 

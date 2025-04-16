@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#include <boost/log/trivial.hpp>
+
 
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
@@ -33,11 +33,10 @@ using namespace std;
 
 using namespace toffy;
 using namespace toffy::filters::f3d;
-using namespace boost::log::trivial;
 
 boost::property_tree::ptree Xyz2Pcl::getConfig() const
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
     boost::property_tree::ptree pt;
 
     pt = Filter::getConfig();
@@ -78,7 +77,7 @@ void Xyz2Pcl::updateConfig(const boost::property_tree::ptree& pt)
 
 bool Xyz2Pcl::filter(const Frame& in, Frame& out)
 {
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " " << id();
+    LOGI << __FUNCTION__ << " " << id();
     // try {
     {
         matPtr x = in.getMatPtr("x");
@@ -91,11 +90,11 @@ bool Xyz2Pcl::filter(const Frame& in, Frame& out)
         // }
 
         if (amplitudes) {
-            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " A!  " << id();
+            LOGD << __FUNCTION__ << " A!  " << id();
             matPtr a = in.getMatPtr("amplitudes");
             convertXyzA(in, out, x, y, z, a);
         } else {
-            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " nA!  " << id();
+            LOGD << __FUNCTION__ << " nA!  " << id();
             convertXyz(in, out, x, y, z);
         }
     }
@@ -140,7 +139,7 @@ bool Xyz2Pcl::convertXyz(const Frame&, Frame& out, toffy::matPtr mx,
         out.addData(out_cloud, cloud2);
     } else {
         // cloudPtr..:
-        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " C!  " << id();
+        LOGD << __FUNCTION__ << " C!  " << id();
         out.addData(out_cloud, cloud);
     }
     return true;

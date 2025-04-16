@@ -15,7 +15,7 @@
    limitations under the License.
 */
 #include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
+
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -50,7 +50,7 @@ KalmanAverage::~KalmanAverage() {}
 
 /*
 int KalmanAverage::loadConfig(const boost::property_tree::ptree& pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "(const
+    LOGD << __FUNCTION__ << "(const
 boost::property_tree::ptree& pt)"; const boost::property_tree::ptree& tree =
 pt.get_child(this->type());
 
@@ -64,7 +64,7 @@ pt.get_child(this->type());
 
 void KalmanAverage::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -97,13 +97,13 @@ boost::property_tree::ptree KalmanAverage::getConfig() const
 
 bool KalmanAverage::filter(const toffy::Frame& in, toffy::Frame& /*out*/)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
     matPtr img;
 
     try {
         img = std::any_cast<matPtr >(in.getData(_in_img));
-    } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << _in_img
+    } catch (const std::bad_any_cast&) {
+        LOGW << "Could not cast input " << _in_img
                                    << ", filter  " << id() << " not applied.";
         return false;
     }

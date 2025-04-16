@@ -32,7 +32,7 @@ using namespace std;
 DistAmpl::DistAmpl(std::string name)
     : Filter(name), _in_ampl("ampl"), _in_depth("depth")
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "DA";
+    LOGD << __FUNCTION__ << "DA";
 }
 
 bool DistAmpl::f1(const toffy::Frame& in, toffy::Frame& /*out*/)
@@ -78,7 +78,7 @@ int DistAmpl::loadConfig(const boost::property_tree::ptree& pt)
 
 void DistAmpl::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -127,7 +127,7 @@ boost::property_tree::ptree DistAmpl::getConfig() const
 /*
 int DistAmpl::loadConfig(const cv::FileNode &fn)
 {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+	LOGD << __FUNCTION__;
 	cout << "DA CONF START!!" << in_ampl <<endl;
 
 	FileNode amplRange = fn;
@@ -138,13 +138,13 @@ int DistAmpl::loadConfig(const cv::FileNode &fn)
 	//Look for inputs
 	FileNode ios = fn["inputs"];
 	if (ios.empty()) {
-		BOOST_LOG_TRIVIAL(warning) <<
+		LOGW <<
 			"Missing inputs for filter " <<	id() <<
 			" ... using defaults: in_a/d: " << in_ampl << " " << in_depth;
 	} else {
 		ios["ampl"] >> in_ampl;
 		ios["depth"] >> in_depth;
-		BOOST_LOG_TRIVIAL(debug) << id() << " input ampl: " << in_ampl << " d " << in_depth;
+		LOGD << id() << " input ampl: " << in_ampl << " d " << in_depth;
 	}
 
 

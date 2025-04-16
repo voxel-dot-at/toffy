@@ -6,7 +6,7 @@
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/log/trivial.hpp>
+
 #include <ctime>
 #include <iostream>
 #include <map>
@@ -29,6 +29,7 @@ using namespace toffy;
 using namespace toffy::capturers;
 using namespace cv;
 using namespace std;
+
 namespace fs = boost::filesystem;
 
 std::size_t Bta::_filter_counter = 1;
@@ -72,7 +73,7 @@ Bta::~Bta()
 
 int Bta::loadConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
     const boost::property_tree::ptree& bta = pt.get_child(type());
 
     Filter::loadConfig(pt);
@@ -92,24 +93,23 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
     bool present;
     present = pt_optional_get(bta, "options.dynamicOutputs", dynOutputs);
     if (present) {
-        BOOST_LOG_TRIVIAL(debug)
-            << __FUNCTION__ << " " << __LINE__ << " dynOutputs? " << dynOutputs;
+        LOGD << __FUNCTION__ << " " << __LINE__ << " dynOutputs? "
+             << dynOutputs;
     }
 
     present =
         pt_optional_get(bta, "options.modulationFrequency", modulationFreq);
     if (present) {
-        BOOST_LOG_TRIVIAL(debug)
-            << __FUNCTION__ << " " << __LINE__ << " modulationFreq set to  "
-            << modulationFreq;
+        LOGD << __FUNCTION__ << " " << __LINE__ << " modulationFreq set to  "
+             << modulationFreq;
     } else {
         modulationFreq = -1;
     }
     present = pt_optional_get(bta, "options.globalOffset", globalOfs);
     hasGlobalOfs = present;
     if (present) {
-        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__
-                                 << " globalOffset set to  " << globalOfs;
+        LOGD << __FUNCTION__ << " " << __LINE__ << " globalOffset set to  "
+             << globalOfs;
     }
 
     present = pt_optional_get(bta, "options.eth0Config", eth0Config);
@@ -121,8 +121,7 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
     boost::optional<bool> playbk = bta.get_optional<bool>("playback");
     if (playbk.is_initialized()) {
         playback(*playbk);
-        BOOST_LOG_TRIVIAL(debug)
-            << __FUNCTION__ << " " << __LINE__ << " playback?" << *playbk;
+        LOGD << __FUNCTION__ << " " << __LINE__ << " playback?" << *playbk;
     }
 
     boost::optional<bool> autoconnect = bta.get_optional<bool>("autoconnect");
@@ -145,8 +144,8 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
             sensor->setFrameRate(*fr);
         }
     }
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << __LINE__ << " blts? "
-                             << sensor->getBltstream();
+    LOGD << __FUNCTION__ << " " << __LINE__ << " blts? "
+         << sensor->getBltstream();
     if (sensor->getBltstream().length() > 0) {
         loadPath(sensor->getBltstream());
         playback(true);
@@ -157,7 +156,7 @@ int Bta::loadConfig(const boost::property_tree::ptree& pt)
 
 void Bta::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -179,8 +178,8 @@ void Bta::updateConfig(const boost::property_tree::ptree& pt)
     } else if (camType == "M520") {
         cam.reset(new cam::M520());
     } else {
-        BOOST_LOG_TRIVIAL(info) << "assuming default camera type; please set "
-                                   "options.camera to override!";
+        LOGI << "assuming default camera type; please set "
+                "options.camera to override!";
         cam.reset(new cam::P230());
     }
     update = true;
@@ -224,13 +223,11 @@ bool Bta::filter(const Frame& in, Frame& out)
         retries++;
         if (connect() < 0) {
             if (retries > RECONNECT) {
-                BOOST_LOG_TRIVIAL(error)
-                    << "Camera not reachable after " << RECONNECT
-                    << "tries. Stopping toffy.";
+                LOGE << "Camera not reachable after " << RECONNECT
+                     << "tries. Stopping toffy.";
                 exit(EXIT_FAILURE);  // @TODO report failure to filterBank?
             } else {
-                BOOST_LOG_TRIVIAL(warning)
-                    << "Could not reconnect to device. Retry: " << retries;
+                LOGW << "Could not reconnect to device. Retry: " << retries;
                 return false;
             }
             sleep(
@@ -241,7 +238,7 @@ bool Bta::filter(const Frame& in, Frame& out)
     }
 
     //diff = boost::posix_time::microsec_clock::local_time() - start;
-    //BOOST_LOG_TRIVIAL(debug)
+    //LOGD
     //    << "duration pre-capture: " << diff.total_milliseconds()
     //    << " playback? " << this->playback() << " bta_stream " << bta_stream;
 
@@ -256,26 +253,22 @@ bool Bta::filter(const Frame& in, Frame& out)
                 cnt(cnt() + 1);
                 if (cnt() > endFile()) cnt(beginFile());
             }
-            BOOST_LOG_TRIVIAL(debug)
-                << ((CapturerFilter*)this)->loadPath() + "/" +
-                       boost::lexical_cast<std::string>(cnt()) + fileExt();
+            LOGD << ((CapturerFilter*)this)->loadPath() + "/" +
+                        std::to_string(cnt()) + fileExt();
             data = sensor->loadRaw(((CapturerFilter*)this)->loadPath() + "/" +
-                                   boost::lexical_cast<std::string>(cnt()) +
-                                   fileExt());
+                                   std::to_string(cnt()) + fileExt());
         } else {
-            BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__
-                                     << " cap async? " << sensor->isAsync();
+            LOGD << "bta::filter " << __LINE__ << " cap async? "
+                 << sensor->isAsync();
             if (sensor->isAsync()) {
-                BOOST_LOG_TRIVIAL(debug)
-                    << "bta::filter " << __LINE__ << " cap async... "
-                    << sensor->isAsync();
+                LOGD << "bta::filter " << __LINE__ << " cap async... "
+                     << sensor->isAsync();
                 data = (char*)sensor->waitForNextFrame();
-                BOOST_LOG_TRIVIAL(debug) << "bta::filter " << __LINE__
-                                         << " cap async! " << sensor->isAsync();
+                LOGD << "bta::filter " << __LINE__ << " cap async! "
+                     << sensor->isAsync();
 
             } else {
-                BOOST_LOG_TRIVIAL(debug)
-                    << "bta::filter " << __LINE__ << " what should I do? ";
+                LOGD << "bta::filter " << __LINE__ << " what should I do? ";
             }
         }
     } else {  // live connection
@@ -283,20 +276,19 @@ bool Bta::filter(const Frame& in, Frame& out)
             // returns a BTA_Frame *
             data = (char*)sensor->waitForNextFrame();
         } else {
-            BOOST_LOG_TRIVIAL(debug)
-                << "bta::filter " << __LINE__ << " what should I do? ";
+            LOGD << "bta::filter " << __LINE__ << " what should I do? ";
         }
     }
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    //BOOST_LOG_TRIVIAL(debug)
+    //LOGD
     //    << "duration pre-capture:2 " << diff.total_microseconds();
 
     if (!data && !sensor->capture(data)) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not capture from sensor.";
+        LOGW << "Could not capture from sensor.";
 #ifdef BTA_P100
         // Issue in bta lib. We stop the application
-        BOOST_LOG_TRIVIAL(error) << "Camera not reacheable. Stopping the app.";
+        LOGE << "Camera not reacheable. Stopping the app.";
         exit(EXIT_FAILURE);
 #endif
         // retries++;
@@ -307,7 +299,7 @@ bool Bta::filter(const Frame& in, Frame& out)
         return false;
     }
 
-    // BOOST_LOG_TRIVIAL(info) << "Start bta filter.";
+    // LOGI << "Start bta filter.";
     unsigned int mf, it;
     sensor->getFrameRef(data, mf, it);
     out.addData(_out_mf, mf);
@@ -335,7 +327,7 @@ bool Bta::filter(const Frame& in, Frame& out)
     }
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    //BOOST_LOG_TRIVIAL(debug) << "duration data: " << diff.total_microseconds();
+    //LOGD << "duration data: " << diff.total_microseconds();
 
     if (dynOutputs) {
         this->setOutputsDynamic(in, out, start, data);
@@ -344,7 +336,7 @@ bool Bta::filter(const Frame& in, Frame& out)
     }
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    //BOOST_LOG_TRIVIAL(debug) << "duration free: " << diff.total_microseconds();
+    //LOGD << "duration free: " << diff.total_microseconds();
 
     return true;
 }
@@ -364,7 +356,7 @@ int Bta::connect()
             // beginFile(0);
             // cnt(beginFile()-1);
         } else if (((CapturerFilter*)this)->save() && bta_stream) {
-            BOOST_LOG_TRIVIAL(debug) << "strPath(): " << strPath();
+            LOGD << "strPath(): " << strPath();
             sensor->startGrabbing(strPath());
         }
         if (!playback()) {
@@ -384,9 +376,9 @@ int Bta::connect()
             int freq = sensor->getModulationFrequency();
             int it = sensor->getIntegrationTime();
             float ofs = sensor->getGlobalOffset();
-            BOOST_LOG_TRIVIAL(debug) << "ModulationFrequency: " << freq;
-            BOOST_LOG_TRIVIAL(debug) << "IntegrationTime: " << it;
-            BOOST_LOG_TRIVIAL(debug) << "Global offset: " << ofs;
+            LOGD << "ModulationFrequency: " << freq;
+            LOGD << "IntegrationTime: " << it;
+            LOGD << "Global offset: " << ofs;
 
             // if (sensor->hasChannels) {
             //     sensor->setChannels();
@@ -408,13 +400,13 @@ bool Bta::isConnected() { return sensor->isConnected(); }
 
 void Bta::playback(const bool& pb)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-    BOOST_LOG_TRIVIAL(debug) << "bta_stream: " << bta_stream;
-    BOOST_LOG_TRIVIAL(debug) << "pb: " << pb;
+    LOGD << __FUNCTION__;
+    LOGD << "bta_stream: " << bta_stream;
+    LOGD << "pb: " << pb;
     if (pb == true && bta_stream) {
         sensor->setDeviceType(BTA_DeviceTypeGenericBltstream);
         /*if (sensor->getDeviceType() != BTA_DeviceTypeGenericBltstream) {
-        BOOST_LOG_TRIVIAL(warning) << "Trying to read a bltstream file but the
+        LOGW << "Trying to read a bltstream file but the
     deviceType is not set to BTA_DeviceTypeGenericBltstream (15)!!!"; return;
     }*/
 
@@ -446,13 +438,13 @@ void Bta::playback(const bool& pb)
 
 int Bta::loadPath(const std::string& newPath)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     fs::path fsPath(newPath);
-    BOOST_LOG_TRIVIAL(debug) << "fsPath.extension(): " << fsPath.extension();
+    LOGD << "fsPath.extension(): " << fsPath.extension();
     if (fs::is_regular_file(fsPath) && fsPath.extension() == ".bltstream") {
         if (!fs::exists(fsPath)) {
-            BOOST_LOG_TRIVIAL(warning) << "bta::loadPath(): Given path ["
-                                       << newPath << "] does not exist.";
+            LOGW << "bta::loadPath(): Given path [" << newPath
+                 << "] does not exist.";
             return -1;
         }
         setLoadPath(newPath);
@@ -464,14 +456,14 @@ int Bta::loadPath(const std::string& newPath)
         return 1;
     } else {
         bta_stream = false;
-        BOOST_LOG_TRIVIAL(debug) << __LINE__ << "Bta::loadPath here";
+        LOGD << __LINE__ << "Bta::loadPath here";
         return CapturerFilter::loadPath(newPath);
     }
 }
 
 void Bta::savePath(const std::string& newPath)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     fs::path fsPath(newPath);
     cout << "is regular: " << fs::is_regular_file(fsPath) << endl;
     if (fsPath.extension() == ".bltstream") {
@@ -486,7 +478,7 @@ void Bta::savePath(const std::string& newPath)
 
 void Bta::save(const bool& save)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     if (save == true) {
         cout << "PATH::: " << getSavePath() << endl;
         long int _saveTimeStamp;
@@ -503,19 +495,18 @@ void Bta::save(const bool& save)
         // ".bltstream") { cout << "PATH::: " << saveFolder() << endl;
         fs::path newPath(getSavePath());
         // string _strPath = savePath + string("/") + id() + string("/") +
-        // boost::lexical_cast<std::string>(_saveTimeStamp);
-        BOOST_LOG_TRIVIAL(debug) << newPath.string();
+        // std::to_string(_saveTimeStamp);
+        LOGD << newPath.string();
         if (tsd()) {
-            newPath /= boost::lexical_cast<std::string>(_saveTimeStamp);
+            newPath /= std::to_string(_saveTimeStamp);
         }
         newPath /= name();
-        BOOST_LOG_TRIVIAL(debug) << newPath.string();
+        LOGD << newPath.string();
         try {
             fs::create_directories(fs::absolute(newPath));
         } catch (const fs::filesystem_error& e) {
-            BOOST_LOG_TRIVIAL(warning)
-                << "Could not create folder: " << strPath()
-                << "; Reason: " << e.code().message();
+            LOGW << "Could not create folder: " << strPath()
+                 << "; Reason: " << e.code().message();
             setSave(false);
             return;
         }
@@ -523,8 +514,7 @@ void Bta::save(const bool& save)
         // newPath /= getSavePath();
 
         if (fs::path(getSavePath()).extension() != ".bltstream") {
-            newPath /=
-                boost::lexical_cast<std::string>(_saveTimeStamp) + ".bltstream";
+            newPath /= std::to_string(_saveTimeStamp) + ".bltstream";
         }
 
         strPath(newPath.string());
@@ -552,8 +542,7 @@ void Bta::setOutputsClassic(const Frame& in, Frame& out,
         // } else if (sensor->frameMode == BTA_FrameModeZAmp) {  // 4
         //     this->setOutputsClassicZAmpl(in, out, start, data);
     } else {
-        BOOST_LOG_TRIVIAL(error)
-            << "ERROR UNIMPLEMENTED FRAME MODE " << sensor->frameMode;
+        LOGE << "ERROR UNIMPLEMENTED FRAME MODE " << sensor->frameMode;
     }
 }
 
@@ -600,7 +589,7 @@ void Bta::setOutputsClassicXYZ(const Frame& in, Frame& out,
     memcpy(pz, frame->channels[2]->data, frame->channels[2]->dataLen);
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration set: " << diff.total_microseconds();
+    LOGD << "duration set: " << diff.total_microseconds();
 
     if (flip()) {
         cv::flip(*mx, *mx, -1);
@@ -619,7 +608,7 @@ void Bta::setOutputsClassicXYZ(const Frame& in, Frame& out,
         }
     }
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
+    LOGD << "duration flip: " << diff.total_microseconds();
 }
 
 void Bta::setOutputsClassicXYZAmpl(const Frame& in, Frame& out,
@@ -671,7 +660,7 @@ void Bta::setOutputsClassicXYZAmpl(const Frame& in, Frame& out,
     memcpy(pa, frame->channels[3]->data, frame->channels[3]->dataLen);
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration set: " << diff.total_microseconds();
+    LOGD << "duration set: " << diff.total_microseconds();
 
     if (flip()) {
         cv::flip(*mx, *mx, -1);
@@ -693,7 +682,7 @@ void Bta::setOutputsClassicXYZAmpl(const Frame& in, Frame& out,
         }
     }
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
+    LOGD << "duration flip: " << diff.total_microseconds();
 }
 
 void Bta::setOutputsClassicZAmpl(const Frame& in, Frame& out,
@@ -734,7 +723,7 @@ void Bta::setOutputsClassicZAmpl(const Frame& in, Frame& out,
     memcpy(pa, frame->channels[3]->data, frame->channels[3]->dataLen);
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration set: " << diff.total_microseconds();
+    LOGD << "duration set: " << diff.total_microseconds();
 
     if (flip()) {
         cv::flip(*mz, *mz, -1);
@@ -750,7 +739,7 @@ void Bta::setOutputsClassicZAmpl(const Frame& in, Frame& out,
         }
     }
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
+    LOGD << "duration flip: " << diff.total_microseconds();
 }
 
 void Bta::setOutputsClassicDistAmpl(const Frame& in, Frame& out,
@@ -788,7 +777,7 @@ void Bta::setOutputsClassicDistAmpl(const Frame& in, Frame& out,
     sensor->getDistances(f, distsSize, data);
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration depth: " << diff.total_microseconds();
+    LOGD << "duration depth: " << diff.total_microseconds();
 
     // sensor->getAmpSize(data, x, y);
     // unsigned short *amplitude= NULL;
@@ -797,7 +786,7 @@ void Bta::setOutputsClassicDistAmpl(const Frame& in, Frame& out,
     sensor->getAmplitudes(da, (int&)size, data);
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration ampl: " << diff.total_microseconds();
+    LOGD << "duration ampl: " << diff.total_microseconds();
 
     if (flip()) {
         cv::flip(*a, *a, -1);
@@ -813,13 +802,13 @@ void Bta::setOutputsClassicDistAmpl(const Frame& in, Frame& out,
         }
     }
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
+    LOGD << "duration flip: " << diff.total_microseconds();
 
     out.addData(_out_depth, d);
     out.addData(_out_ampl, a);
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration add: " << diff.total_microseconds();
+    LOGD << "duration add: " << diff.total_microseconds();
 }
 
 void Bta::setOutputsClassicRawPhases(const Frame& in, Frame& out,
@@ -871,7 +860,7 @@ void Bta::setOutputsClassicRawPhases(const Frame& in, Frame& out,
     memcpy(p3, frame->channels[3]->data, frame->channels[3]->dataLen);
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration set: " << diff.total_microseconds();
+    LOGD << "duration set: " << diff.total_microseconds();
 
     if (flip()) {
         cv::flip(*m0, *m0, -1);
@@ -893,7 +882,7 @@ void Bta::setOutputsClassicRawPhases(const Frame& in, Frame& out,
         }
     }
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "duration flip: " << diff.total_microseconds();
+    LOGD << "duration flip: " << diff.total_microseconds();
 }
 
 void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
@@ -915,7 +904,7 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
         if (sensor->hasChannels) {
             sel = sensor->channelSelectionName(i);
         }
-        // BOOST_LOG_TRIVIAL(debug)
+        // LOGD
         //     << "dynOut[" << i << "] " << name << " " << sel << " " <<
         //     chan->dataFormat << " "
         //     << chan->xRes << "x" << chan->yRes << " " << chan->dataLen;
@@ -925,14 +914,13 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
             if (sensor->hasChannels &&
                 name ==
                     "color") {  // override color type with actual channel name
-                // BOOST_LOG_TRIVIAL(debug) << " channel nameset name " << name
+                // LOGD << " channel nameset name " << name
                 // << " to sel " << sel;
                 name = sel;
             } else {
                 if (name != sel) {
-                    BOOST_LOG_TRIVIAL(warning)
-                        << " channel name mismatch - check your config! name "
-                        << name << " sel " << sel;
+                    LOGW << " channel name mismatch - check your config! name "
+                         << name << " sel " << sel;
                 }
             }
         }
@@ -975,7 +963,7 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 break;
             }
             case BTA_DataFormatYuv422: {
-                // BOOST_LOG_TRIVIAL(debug) << "img yuv data! " << (width *
+                // LOGD << "img yuv data! " << (width *
                 // height)
                 //                          << " " << chan->dataLen;
                 int width = chan->xRes;
@@ -989,7 +977,7 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 break;
             }
             case BTA_DataFormatYuv444UYV: {
-                // BOOST_LOG_TRIVIAL(debug) << "img yuv444uyv data! " << (width
+                // LOGD << "img yuv444uyv data! " << (width
                 // * height)
                 //                          << " " << chan->dataLen;
                 int width = chan->xRes;
@@ -1017,8 +1005,8 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 break;
             }
             default:
-                BOOST_LOG_TRIVIAL(warning) << "unkown data format! IMPLEMENT 0x"
-                                           << hex << chan->dataFormat << dec;
+                LOGW << "unkown data format! IMPLEMENT 0x" << hex
+                     << chan->dataFormat << dec;
                 continue;
         }
 

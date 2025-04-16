@@ -241,7 +241,7 @@ endif()
 
 # Boost
 find_package(Boost
-    COMPONENTS log log_setup program_options system
+    COMPONENTS program_options system
         filesystem date_time serialization chrono thread
     REQUIRED)
 #include_directories(${Boost_INCLUDE_DIRS})

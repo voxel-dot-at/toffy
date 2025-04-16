@@ -17,7 +17,7 @@
 #ifndef __toffy_CONTROLLER_HPP__
 #define __toffy_CONTROLLER_HPP__
 
-#include <boost/thread.hpp>
+#include <thread>
 
 #include <toffy/filterbank.hpp>
 #include <toffy/frame.hpp>
@@ -144,7 +144,7 @@ public:
     Frame& getFrame() { return f; }
 
 private:
-    boost::thread _thread; ///< thread to run the toffy filtering
+    std::thread _thread; ///< thread to run the toffy filtering
     state _state; ///< running state of toffy.
     std::vector<void *> _loads;
 

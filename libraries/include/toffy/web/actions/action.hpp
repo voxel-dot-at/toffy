@@ -23,27 +23,26 @@ namespace Actions {
 
 class Action
 {
-
-public:
-
+   public:
     Action() {}
     ~Action() {}
     std::string id;
 
-    void toJsonString(boost::property_tree::ptree& ptree) {
-	ptree.add("action.id",id);
+    void toJsonString(boost::property_tree::ptree& ptree)
+    {
+        ptree.add("action.id", id);
     }
-    std::string toJsonString() {
-	boost::property_tree::ptree jOut;
-	std::stringstream ss;
+    std::string toJsonString()
+    {
+        boost::property_tree::ptree jOut;
+        std::stringstream ss;
 
-	toJsonString(jOut);
-	boost::property_tree::json_parser::write_json(ss,jOut,false);
+        toJsonString(jOut);
+        boost::property_tree::json_parser::write_json(ss, jOut, false);
 
-	return ss.str();
+        return ss.str();
     }
-
 };
 
-}
-}
+}  // namespace Actions
+}  // namespace toffy

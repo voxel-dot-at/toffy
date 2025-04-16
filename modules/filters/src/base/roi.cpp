@@ -19,7 +19,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <boost/log/trivial.hpp>
+
 
 #include "toffy/base/roi.hpp"
 
@@ -27,7 +27,7 @@ using namespace toffy;
 using namespace toffy::filters;
 using namespace cv;
 using namespace std;
-namespace logging = boost::log;
+
 
 std::size_t Roi::_filter_counter = 1;
 const std::string Roi::id_name = "roi";
@@ -51,7 +51,7 @@ toffy::filters::Roi::Roi()
 
 void toffy::filters::Roi::updateConfig(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -78,13 +78,13 @@ void toffy::filters::Roi::updateConfig(const boost::property_tree::ptree &pt)
 
 bool toffy::filters::Roi::filter(const Frame &in, Frame &out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     matPtr img;
     try {
         img = std::any_cast<matPtr >(in.getData(_in_img));
-    } catch (const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << _in_img
+    } catch (const std::bad_any_cast &) {
+        LOGW << "Could not cast input " << _in_img
                                    << ", filter  " << id() << " not applied.";
         return false;
     }
@@ -93,8 +93,8 @@ bool toffy::filters::Roi::filter(const Frame &in, Frame &out)
     if (_in_img != _out_img) {
         try {
             img_out = in.getMatPtr(_out_img);
-        } catch (const boost::bad_any_cast &) {
-            BOOST_LOG_TRIVIAL(info) << "Could not cast input " << _out_img;
+        } catch (const std::bad_any_cast &) {
+            LOGI << "Could not cast input " << _out_img;
             img_out.reset(new cv::Mat(img->size(), img->type()));
             out.addData(_out_img, img_out);
         }
@@ -146,20 +146,20 @@ bool toffy::filters::Roi::filter(const Frame &in, Frame &out)
                 }
             }
         } else
-            BOOST_LOG_TRIVIAL(info)
+            LOGI
                 << "Roi does not match image: img: " << rect_mat
                 << " roi: " << _roi << ". Skipping... .Filter  " << id()
                 << " not applied.";
     } else
-        BOOST_LOG_TRIVIAL(info)
+        LOGI
             << "Roi is null. Skipping... .Filter  " << id() << " not applied.";
 
     /*if (_in_img != _out_img) {
 	    matPtr img_out;
 	    try {
 		    img_out = in.getMatPtr(_out_img);
-	    } catch(const boost::bad_any_cast &) {
-		    BOOST_LOG_TRIVIAL(info) <<
+	    } catch(const std::bad_any_cast &) {
+		    LOGI <<
 			    "Could not cast input " << _out_img;
 		    img_out.reset(new cv::Mat(img->size(), img->type()));
 	    }

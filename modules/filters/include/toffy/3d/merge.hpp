@@ -41,7 +41,7 @@ public:
     virtual boost::property_tree::ptree getConfig() const;
     void updateConfig(const boost::property_tree::ptree &pt);
 
-    virtual bool filter(const Frame& in, Frame& out) const;
+    virtual bool filter(const Frame& in, Frame& out);
 };
 
 }}}

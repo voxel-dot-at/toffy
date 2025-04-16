@@ -20,7 +20,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include <boost/log/trivial.hpp>
+
 
 #include <opencv2/calib3d.hpp>
 
@@ -109,7 +109,7 @@ class Camera
     inline void pointTo3D(const cv::Point2d& point, float depthValue,
                           cv::Point3d& out)
     {
-        // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << point;
+        // LOGD << __FUNCTION__ << point;
 
         // Saving parameter from the camera matrix
         out.x = (static_cast<float>(point.x) - center.x) * depthValue *

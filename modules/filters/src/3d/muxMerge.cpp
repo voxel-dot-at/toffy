@@ -21,7 +21,7 @@
 
 
 #include <boost/foreach.hpp>
-#include <boost/log/trivial.hpp>
+
 
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/common/transforms.h>
@@ -43,7 +43,7 @@ static const bool dbg=false;
 /*
 int MuxMerge::loadConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << id();
+    LOGD << __FUNCTION__ << id();
     const boost::property_tree::ptree& node = pt.get_child("muxMerge");
 
     updateConfig(node);
@@ -55,7 +55,7 @@ int MuxMerge::loadConfig(const boost::property_tree::ptree& pt)
 
 void MuxMerge::updateConfig(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -67,7 +67,7 @@ void MuxMerge::updateConfig(const boost::property_tree::ptree &pt)
 	    _clouds.push_back(v.second.data());
 	}
     } catch (const std::exception& ex) {
-	BOOST_LOG_TRIVIAL(debug) << "Wrong inputs. Ex:" << ex.what();
+	LOGD << "Wrong inputs. Ex:" << ex.what();
     }
 
     _out_cloud = pt.get<std::string>("outputs.cloud",_out_cloud);
@@ -78,16 +78,16 @@ void MuxMerge::updateConfig(const boost::property_tree::ptree &pt)
 
 bool MuxMerge::filter(const std::vector<Frame*>& in, Frame& out) 
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     pcl::PCLPointCloud2Ptr output;
 
     try {
 	output = std::any_cast<pcl::PCLPointCloud2Ptr>(in[0]->getData(_out_cloud));
-    } catch(const boost::bad_any_cast &) {
+    } catch(const std::bad_any_cast &) {
 	output.reset(new pcl::PCLPointCloud2());
 	out.addData(_out_cloud, output );
-	BOOST_LOG_TRIVIAL(debug) <<
+	LOGD <<
 	    "Could not cast output " << _out_cloud <<
 	    ", filter  " << id() <<". Created.";
     }
@@ -96,8 +96,8 @@ bool MuxMerge::filter(const std::vector<Frame*>& in, Frame& out)
 
     try {
 	first = std::any_cast<pcl::PCLPointCloud2Ptr>(in[0]->getData(_clouds[0]));
-    } catch(const boost::bad_any_cast &) {
-	BOOST_LOG_TRIVIAL(warning) <<
+    } catch(const std::bad_any_cast &) {
+	LOGW <<
 	    "Could not cast input " << _clouds.front() <<
 	    ", filter  " << id() <<" not applied.";
 	return false;
@@ -111,8 +111,8 @@ bool MuxMerge::filter(const std::vector<Frame*>& in, Frame& out)
 	pcl::PCLPointCloud2Ptr rest;
 	try {
 	    rest = std::any_cast<pcl::PCLPointCloud2Ptr>(in[i]->getData(_clouds[i]));
-	} catch(const boost::bad_any_cast &) {
-	    BOOST_LOG_TRIVIAL(warning) <<
+	} catch(const std::bad_any_cast &) {
+	    LOGW <<
 		"Could not cast input " << _clouds[i] << " i: " << i <<
 		", filter  " << id() <<" not applied.";
 	    return false;

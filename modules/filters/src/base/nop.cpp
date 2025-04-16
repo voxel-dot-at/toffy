@@ -17,7 +17,7 @@
 
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
+
 
 #include "toffy/base/nop.hpp"
 
@@ -25,7 +25,7 @@ using namespace toffy;
 using namespace toffy::filters;
 using namespace cv;
 using namespace std;
-namespace logging = boost::log;
+
 
 Nop::Nop(): Filter("nop")
 {
@@ -33,7 +33,7 @@ Nop::Nop(): Filter("nop")
 
 /*
 int Nop::loadConfig(const boost::property_tree::ptree& pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "(const boost::property_tree::ptree& pt)";
+    LOGD << __FUNCTION__ << "(const boost::property_tree::ptree& pt)";
     const boost::property_tree::ptree& nop = pt.get_child(this->type());
 
     loadGlobals(nop);
@@ -44,7 +44,7 @@ int Nop::loadConfig(const boost::property_tree::ptree& pt) {
 }
 
 void Nop::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -55,7 +55,7 @@ void Nop::updateConfig(const boost::property_tree::ptree &pt) {
 
 bool Nop::filter(const Frame &in, Frame& out) 
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    LOGD << __FUNCTION__ <<  " " << id();
 
     out = in;
 

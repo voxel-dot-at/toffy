@@ -22,7 +22,7 @@
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/log/trivial.hpp>
+
 
 #include <opencv2/highgui.hpp>
 #include <toffy/io/csv_source.hpp>
@@ -44,7 +44,7 @@ CSVSource::CSVSource(): CapturerFilter(CSVSource::id_name, 0),
 CSVSource::~CSVSource() {}
 
 int CSVSource::loadConfig(const boost::property_tree::ptree& pt) {
-  BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::loadConfig() " << id();
+  LOGD << " ------------ CSVSource::loadConfig() " << id();
 
   Filter::loadConfig(pt);
 
@@ -66,7 +66,7 @@ int CSVSource::loadConfig(const boost::property_tree::ptree& pt) {
                   cout << "fc: " << fc << endl;
           } 
   }
-  BOOST_LOG_TRIVIAL(debug) << "CSVSource::loadConfig() configured to  " << width
+  LOGD << "CSVSource::loadConfig() configured to  " << width
                            << "x" << height << " " << _amplPattern << " "
                            << _depthPattern;
   return 1;
@@ -91,7 +91,7 @@ boost::property_tree::ptree CSVSource::getConfig() const {
 }
 
 void CSVSource::updateConfig(const boost::property_tree::ptree& pt) {
-          BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::updateConfig() " << id();
+          LOGD << " ------------ CSVSource::updateConfig() " << id();
 
   width = pt.get<int>("options.width", width);
   height = pt.get<int>("options.height", height);
@@ -111,15 +111,15 @@ void CSVSource::updateConfig(const boost::property_tree::ptree& pt) {
                   cout << "fc: " << fc << endl;
           } 
   }
-  BOOST_LOG_TRIVIAL(debug) << "CSVSource::loadConfig() configured to  " << width
+  LOGD << "CSVSource::loadConfig() configured to  " << width
                            << "x" << height << " " << _amplPattern << " "
                            << _depthPattern << " seq? " << useSequence;
 }
 
 bool CSVSource::filter(const Frame& /*in*/, Frame& out) {
-  BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::filter() " << id();
+  LOGD << " ------------ CSVSource::filter() " << id();
   cv::waitKey(500);
-  BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::filter() " << id();
+  LOGD << " ------------ CSVSource::filter() " << id();
 
   matPtr ampl;
   matPtr depth;

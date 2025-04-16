@@ -32,7 +32,7 @@ public:
     virtual boost::property_tree::ptree getConfig() const override;
     virtual void updateConfig(const boost::property_tree::ptree &pt) override;
 
-    virtual bool filter(const Frame& in, Frame& out) const override;
+    virtual bool filter(const Frame& in, Frame& out) override;
 private:
     std::string _in_cloud;
     cv::viz::Viz3d *sameWindow;

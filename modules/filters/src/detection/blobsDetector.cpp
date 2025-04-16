@@ -18,7 +18,7 @@
 #include <iostream>
 
 #include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
+
 #include <toffy/btaFrame.hpp>
 
 #include <opencv2/highgui.hpp>
@@ -58,7 +58,7 @@ BlobsDetector::~BlobsDetector() {}
 
 void BlobsDetector::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -164,15 +164,15 @@ bool BlobsDetector::filter(const toffy::Frame& in, toffy::Frame& out)
 
     try {
         fc = in.getUInt(btaFc);
-    } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << btaFc;
+    } catch (const std::bad_any_cast&) {
+        LOGW << "Could not cast input " << btaFc;
         return false;
     }
 
     try {
         ts = in.getUInt("ts");
-    } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not cast input "
+    } catch (const std::bad_any_cast&) {
+        LOGW << "Could not cast input "
                                    << "ts";
         return false;
     }
@@ -180,16 +180,16 @@ bool BlobsDetector::filter(const toffy::Frame& in, toffy::Frame& out)
     try {
         inImg = in.getMatPtr(in_img);
         ampl = in.getMatPtr(in_ampl);
-    } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << in_img
+    } catch (const std::bad_any_cast&) {
+        LOGW << "Could not cast input " << in_img
                                    << ", filter  " << id() << " not applied.";
         return false;
     }
 
     try {
         blobs = std::any_cast<DetObjectsPtr>(out.getData(out_blobs));
-    } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning)
+    } catch (const std::bad_any_cast&) {
+        LOGW
             << "Could not find object vector. Creating one";
         blobs.reset(new std::vector<DetectedObject*>);
     }
@@ -206,7 +206,7 @@ bool BlobsDetector::filter(const toffy::Frame& in, toffy::Frame& out)
 void BlobsDetector::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
                               std::vector<DetectedObject*>& detObj)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FILE__ << ": " << __FUNCTION__;
+    LOGD << __FILE__ << ": " << __FUNCTION__;
     vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
 

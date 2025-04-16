@@ -23,14 +23,12 @@
 #include <arpa/inet.h> // inet_aton
 
 #include <boost/property_tree/xml_parser.hpp>
-#include <boost/log/trivial.hpp>
+// 
+
+#include <toffy/logging.hpp>
 
 // for silencing warnings of unused parameters, use UNUSED(param); as in:
 #define UNUSED(expr) do { (void)(expr); } while (0)
-
-/* enable nice(r) logging by providing a short-hand version
- */
-#define LOG(lvl)    BOOST_LOG_TRIVIAL(lvl) << id() << "::" << __FUNCTION__ << "() : "
 
 /** optionally get a value from the property tree if it exists.
  * @return true if key exists and the value has been set, false otherwise
@@ -43,7 +41,7 @@ template<typename T> bool pt_optional_get(const boost::property_tree::ptree pt,
         val = *opt;
         return true;
     } else {
-        // BOOST_LOG_TRIVIAL(debug) << "pt_optional_get - key not set: " << key;
+        // LOGD << "pt_optional_get - key not set: " << key;
     }
     return false;
 }
@@ -76,9 +74,9 @@ static inline bool pt_optional_get_ipaddr(const boost::property_tree::ptree pt,
     }
     int success = inet_aton( addr.c_str(), &inaddr);
     if (!success) {
-        BOOST_LOG_TRIVIAL(warning) << "pt_optional_get_ipaddr() could not parse entry " << key << " : " << addr;
+        LOGW << "pt_optional_get_ipaddr() could not parse entry " << key << " : " << addr;
     } else {
-        BOOST_LOG_TRIVIAL(info) << "pt_optional_get_ipaddr set " << key << " " << addr;
+        LOGI << "pt_optional_get_ipaddr set " << key << " " << addr;
     }
     return success == 1;
 }

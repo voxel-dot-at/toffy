@@ -15,8 +15,10 @@
    limitations under the License.
 */
 #pragma once
-//#include <string>
-//#include <list>
+
+#include <thread>
+#include <condition_variable>
+#include <mutex>
 
 #include <boost/thread/thread.hpp>
 
@@ -84,15 +86,15 @@ private:
 
     bool keepRunning; ///< @todo document
 
-    boost::thread theThread; ///< @todo document
+    std::thread theThread; ///< @todo document
 
     std::list<Frame*> inQ; ///< @todo document
-    boost::mutex inMtx; ///< @todo document
-    boost::condition_variable inCond; ///< @todo document
+    std::mutex inMtx; ///< @todo document
+    std::condition_variable inCond; ///< @todo document
 
     std::list<Frame*> outQ; ///< @todo document
-    boost::mutex outMtx; ///< @todo document
-    boost::condition_variable outCond; ///< @todo document
+    std::mutex outMtx; ///< @todo document
+    std::condition_variable outCond; ///< @todo document
 
     /**
      * @brief loop

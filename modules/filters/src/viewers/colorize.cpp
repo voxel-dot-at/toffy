@@ -18,7 +18,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <boost/log/trivial.hpp>
+
 #include <any>
 
 #include <boost/date_time/posix_time/posix_time_types.hpp>
@@ -50,7 +50,7 @@ Colorize::~Colorize() {}
 
 void Colorize::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -105,12 +105,12 @@ bool Colorize::filter(const Frame& in, Frame& out)
     ptime start = microsec_clock::local_time();
     boost::posix_time::time_duration diff;
 
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     ///// INPUT
 
     if (!in.hasKey(in_img)) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not find input " << in_img
+        LOGW << "Could not find input " << in_img
                                    << ", filter  " << id() << " not applied.";
         return false;
     }
@@ -118,7 +118,7 @@ bool Colorize::filter(const Frame& in, Frame& out)
 
     Mat& inp = *img;
     if (!inp.data) {
-        BOOST_LOG_TRIVIAL(warning) << "missing image " << in_img << ", filter  "
+        LOGW << "missing image " << in_img << ", filter  "
                                    << id() << " not applied.";
         return false;
     }
@@ -139,7 +139,7 @@ bool Colorize::filter(const Frame& in, Frame& out)
     // store result in outupt.
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "Colorize got: " << diff.total_microseconds();
+    LOGD << "Colorize got: " << diff.total_microseconds();
 
     //show.convertTo(show,CV_8U,255.0/(1000-0),-255.0*0/(1000-0));
     if (max == min) {
@@ -148,7 +148,7 @@ bool Colorize::filter(const Frame& in, Frame& out)
     inp.convertTo(gray, CV_8U, 255.0 / (max - min), -255.0 * min / (max - min));
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug)
+    LOGD
         << "Colorize gray2rgb: " << diff.total_microseconds();
 
     // color conversion...:
@@ -162,7 +162,7 @@ bool Colorize::filter(const Frame& in, Frame& out)
         resize(col, *colored, Size(), scale, scale, method);
 
         diff = boost::posix_time::microsec_clock::local_time() - start;
-        BOOST_LOG_TRIVIAL(debug)
+        LOGD
             << "Colorize resize: " << diff.total_microseconds();
 
     } else {
@@ -172,7 +172,7 @@ bool Colorize::filter(const Frame& in, Frame& out)
     //imshow(name() + " " + out_img, col);
 
     diff = boost::posix_time::microsec_clock::local_time() - start;
-    BOOST_LOG_TRIVIAL(debug) << "Colorize fin: " << diff.total_microseconds();
+    LOGD << "Colorize fin: " << diff.total_microseconds();
 
     //// OUTPUT
     out.addData(out_img, colored);

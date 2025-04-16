@@ -18,7 +18,7 @@
 
 #include <any>
 #include <boost/algorithm/string/trim.hpp>
-#include <boost/log/trivial.hpp>
+
 
 #include <pcl/visualization/point_cloud_handlers.h>
 #include <pcl/visualization/pcl_visualizer.h>
@@ -46,7 +46,7 @@ CloudViewPCL::CloudViewPCL(): Filter(CloudViewPCL::id_name,_filter_counter),
 
 CloudViewPCL::~CloudViewPCL()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     _signal = 0;
     _thread.join();
     // Vtk does not close the windows in linux :-(
@@ -100,7 +100,7 @@ void CloudViewPCL::loopViewer()
     const std::string ref="reference"; // default id
     std::vector<pcl::visualization::PointCloudColorHandler<pcl::PCLPointCloud2>::Ptr > hdlr;
 
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
 
     pcl::visualization::PCLVisualizer viewer(std::string("3D Viewer ")+id() + " " +_in_cloud);
 #if (PCL_MAJOR_VERSION == 1) && (PCL_MINOR_VERSION >= 7)
@@ -173,19 +173,19 @@ void CloudViewPCL::loopViewer()
 	pcl_sleep(0.01);
     }
 
-    BOOST_LOG_TRIVIAL(debug) << "Thread " << __FUNCTION__ << " stopping";
+    LOGD << "Thread " << __FUNCTION__ << " stopping";
     viewer.removeAllPointClouds();
     viewer.spinOnce(100,true);
     viewer.close();
 
     _signal = 0;
-    BOOST_LOG_TRIVIAL(debug) << "Thread " << __FUNCTION__ << " ends";
+    LOGD << "Thread " << __FUNCTION__ << " ends";
     return;
 }
 
 bool CloudViewPCL::filter(const Frame &in, Frame& out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    LOGD << __FUNCTION__ << " " << id();
 
     toffy::Filter::setLoggingLvl();
 
@@ -224,7 +224,7 @@ bool CloudViewPCL::filter(const Frame &in, Frame& out)
     */
     if (_signal == 0) {
 	_signal = 1;
-	_thread = boost::thread(boost::bind(&CloudViewPCL::loopViewer,this));
+	_thread = std::thread(boost::bind(&CloudViewPCL::loopViewer,this));
     }
 
     return true;

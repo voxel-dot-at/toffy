@@ -14,7 +14,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <boost/log/trivial.hpp>
+#include <iostream>
+
+
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -25,7 +27,7 @@
 #include "toffy/filter_helpers.hpp"
 #include "toffy/event.hpp"
 #include <toffy/common/plugins.hpp>
-#include <iostream>
+#include <toffy/logging.hpp>
 
 #ifdef MSVC
 #include <windows.h>
@@ -56,25 +58,19 @@ bool FilterBank::filter(const Frame& in, Frame& out)
             success = _pipe[i]->filter(in, out);
 
         } catch (std::exception& e) {
-            BOOST_LOG_TRIVIAL(error) << name() << "::" << __FUNCTION__
-                                     << " Exception in " << _pipe[i]->name();
-            BOOST_LOG_TRIVIAL(error)
-                << name() << "::" << __FUNCTION__ << " " << e.what();
+            LOGE << name() << "::" << __FUNCTION__ << " Exception in "
+                 << _pipe[i]->name();
+            LOGE << name() << "::" << __FUNCTION__ << " " << e.what();
         }
 
         boost::posix_time::time_duration diff =
             microsec_clock::local_time() - start;
         setLoggingLvl();
         if (!success) {
-            BOOST_LOG_TRIVIAL(info)
-                << id() << "::filter" << i << "\t" << diff.total_milliseconds()
-                << "\t" << _pipe[i]->name() << "\t failed!" << endl;
+            LOGI << id() << "::filter" << i << "\t" << diff.total_milliseconds()
+                 << "\t" << _pipe[i]->name() << "\t failed!";
             return false;
         }
-
-        // BOOST_LOG_TRIVIAL(debug)
-        //    << id() << "::filter" << i << "\t" << _pipe[i]->name() << "\t done"
-        //    << "\t duration: " << diff.total_microseconds() << " us";
     }
     ready.post();
     return true;
@@ -82,7 +78,7 @@ bool FilterBank::filter(const Frame& in, Frame& out)
 
 boost::property_tree::ptree FilterBank::getConfig() const
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << id();
+    LOGD << __FUNCTION__ << id();
     boost::property_tree::ptree pt;
 
     for (size_t i = 0; i < _pipe.size(); i++) {
@@ -99,14 +95,13 @@ int FilterBank::handleConfigItem(
         // recurse into external config file
         FilterBank* fb = (FilterBank*)ff->createFilter(it->first);
         if (!fb) {
-            BOOST_LOG_TRIVIAL(error)
-                << "Error creating FilterBank for filterGroup in: "
-                << configFile;
+            LOGE << "Error creating FilterBank for filterGroup in: "
+                 << configFile;
             return -1;
         }
         //FilterBank* fb = new FilterBank();
-        BOOST_LOG_TRIVIAL(debug) << "FG RECURSE NEW FB #" << it->second.size()
-                                 << " " << it->second.data();
+        LOGD << "FG RECURSE NEW FB #" << it->second.size() << " "
+             << it->second.data();
         fb->loadFileConfig(it->second.data());
         add(fb);
         // Ignore comments and global options
@@ -114,8 +109,7 @@ int FilterBank::handleConfigItem(
                it->first == "plugins") {
         ;
     } else {
-        BOOST_LOG_TRIVIAL(debug)
-            << "FB LOAD FILTER:: " << it->first << " || " << it->second.size();
+        LOGD << "FB LOAD FILTER:: " << it->first << " || " << it->second.size();
         // instantiate new filter instance, configure and add it.
         Filter* f = instantiateFilter(it);
         if (f) {
@@ -130,21 +124,20 @@ int FilterBank::handleConfigItem(
 Filter* FilterBank::instantiateFilter(
     const boost::property_tree::ptree::const_iterator& it)
 {
-    BOOST_LOG_TRIVIAL(debug) << "FB INSTANTIATE FILTER:: " << it->first << endl;
+    LOGD << "FB INSTANTIATE FILTER:: " << it->first;
     Filter* f = ff->createFilter(it->first);
     if (f) {
         boost::property_tree::ptree pnode;
         pnode.add_child(it->first, it->second);
         string old = f->name();
 
-        BOOST_LOG_TRIVIAL(debug)
-            << "FB INSTANTIATE FILTER:: config " << it->first << endl;
+        LOGD << "FB INSTANTIATE FILTER:: config " << it->first;
         f->bank(this);
         f->loadConfig(pnode);
         //ff->renameFilter(f, old, f->name());
         return f;
     } else {
-        LOG(warning) " unknown filter " << it->first << " ignored!";
+        LOG(warning) << " unknown filter " << it->first << " ignored!";
         return 0;
     }
 }
@@ -154,13 +147,11 @@ int FilterBank::loadConfig(
     const boost::property_tree::ptree::const_iterator& begin,
     const boost::property_tree::ptree::const_iterator& end)
 {
-    BOOST_LOG_TRIVIAL(debug)
-        << "FilterBank::" << type() << "::" << __FUNCTION__ << "(begin, end)";
+    LOGD << "FilterBank::" << type() << "::" << __FUNCTION__ << "(begin, end)";
     int errors = 0;
     for (boost::property_tree::ptree::const_iterator it = begin; it != end;
          ++it) {
-        BOOST_LOG_TRIVIAL(debug)
-            << "FB  iter " << it->first << "\t" << it->second.size();
+        LOGD << "FB  iter " << it->first << "\t" << it->second.size();
         int ret = this->handleConfigItem(configFile, it);
         if (!ret) errors++;
     }
@@ -182,22 +173,19 @@ void FilterBank::add(Filter* f)
 int FilterBank::loadConfig(const boost::property_tree::ptree& pt,
                            const std::string& confFile /*= ""*/)
 {
-    BOOST_LOG_TRIVIAL(debug)
-        << __FUNCTION__ << " " << __LINE__ << " " << confFile;
+    LOGD << __FUNCTION__ << " " << __LINE__ << " " << confFile;
     // const boost::property_tree::ptree& ptRead = pt;
     boost::optional<const boost::property_tree::ptree&> pfilters =
         pt.get_child_optional("toffy");
     //TODO we keep working with configs not enclosed in a root <toffy> for compatibility
     if (!pfilters) {
-        BOOST_LOG_TRIVIAL(warning)
-            << "Could not open config file: "
-            << "Missing root node <toffy>.\n"
-            << "Add <toffy> as root node to remove this error.";
+        LOGW << "Could not open config file: "
+             << "Missing root node <toffy>.\n"
+             << "Add <toffy> as root node to remove this error.";
         return -1;
     } else {
         const boost::property_tree::ptree& ptRead = *pfilters;
-        BOOST_LOG_TRIVIAL(debug)
-            << __FUNCTION__ << " first node " << ptRead.begin()->first;
+        LOGD << __FUNCTION__ << " first node " << ptRead.begin()->first;
         loadGlobals(ptRead);
         return loadConfig(confFile, ptRead.begin(), ptRead.end());
     }
@@ -205,19 +193,17 @@ int FilterBank::loadConfig(const boost::property_tree::ptree& pt,
 
 int FilterBank::loadFileConfig(const std::string& confFile)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " FilterBank " << confFile;
+    LOGD << __FUNCTION__ << " FilterBank " << confFile;
 
     boost::property_tree::ptree pt;
     try {
         boost::property_tree::read_xml(confFile, pt);
 
-        BOOST_LOG_TRIVIAL(debug)
-            << __FUNCTION__ << " first node " << pt.begin()->first;
+        LOGD << __FUNCTION__ << " first node " << pt.begin()->first;
 
     } catch (boost::property_tree::xml_parser_error& e) {
-        BOOST_LOG_TRIVIAL(error)
-            << "FB Could not open config file: " << e.filename() << ". "
-            << e.what() << ", in line: " << e.line();
+        LOGE << "FB Could not open config file: " << e.filename() << ". "
+             << e.what() << ", in line: " << e.line();
         return -1;
     }
     // if needed for inherited filterbanks, use FilterBank:: here to avoid confusion with embedded files
@@ -241,11 +227,10 @@ Filter* FilterBank::getFilter(int i) { return _pipe.at(i); }
 int FilterBank::getFiltersByType(const std::string& type,
                                  std::vector<Filter*>& vec)
 {
-    for (std::vector<Filter *>::iterator it=_pipe.begin();
-         it < _pipe.end(); it++)
-    {
-        //BOOST_LOG_TRIVIAL(debug) << type;
-        //BOOST_LOG_TRIVIAL(debug) << (*it)->id();
+    for (std::vector<Filter*>::iterator it = _pipe.begin(); it < _pipe.end();
+         it++) {
+        //LOGD << type;
+        //LOGD << (*it)->id();
         if ((*it)->type() == "filterBank" ||
             (*it)->type() == "parallelFilter") {
             ((FilterBank*)(*it))->getFiltersByType(type, vec);
@@ -257,12 +242,12 @@ int FilterBank::getFiltersByType(const std::string& type,
 
 int FilterBank::countFiltersByType(const std::string& type)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     int cnt = 0;
     for (std::vector<Filter*>::iterator it = _pipe.begin(); it < _pipe.end();
          it++) {
-        //BOOST_LOG_TRIVIAL(debug) << type;
-        //BOOST_LOG_TRIVIAL(debug) << (*it)->id();
+        //LOGD << type;
+        //LOGD << (*it)->id();
         if ((*it)->type() == "filterBank" ||
             (*it)->type() == "parallelFilter") {
             cnt += ((FilterBank*)(*it))->countFiltersByType(type);
@@ -291,7 +276,7 @@ int FilterBank::remove(std::string name)
 int FilterBank::remove(size_t i)
 {
     if (i >= _pipe.size()) {
-        BOOST_LOG_TRIVIAL(warning) << "Position i: " << i << "out of bounds.";
+        LOGW << "Position i: " << i << "out of bounds.";
         return -1;
     }
     const string name = _pipe[i]->name();
@@ -302,14 +287,13 @@ int FilterBank::remove(size_t i)
 
 void FilterBank::clearBank()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     for (size_t i = 0; i < _pipe.size(); i++) {
         string n = _pipe[i]->name();
         try {
             ff->deleteFilter(_pipe[i]->name());
         } catch (std::exception& e) {
-            BOOST_LOG_TRIVIAL(warning)
-                << name() << "::clearBank failed at " << i << " " << n;
+            LOGW << name() << "::clearBank failed at " << i << " " << n;
 
             cout << "AU!!!! clearBank failed with: "
                  << " ****** " << e.what() << endl;
@@ -367,14 +351,14 @@ FilterBank* FilterBank::getBaseFilterbank()
 
 int FilterBank::loadGlobals(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     boost::optional<const boost::property_tree::ptree&> globals =
         pt.get_child_optional("globals");
     if (!globals) {
-        BOOST_LOG_TRIVIAL(info) << "No global configuration included.";
+        LOGI << "No global configuration included.";
         return 0;
     } else {
-        BOOST_LOG_TRIVIAL(info) << "Loading global configuration...";
+        LOGI << "Loading global configuration...";
         _globalConfig = *globals;
         updateConfig(_globalConfig);
         setLoggingLvl();
@@ -385,15 +369,14 @@ int FilterBank::loadGlobals(const boost::property_tree::ptree& pt)
 const boost::property_tree::ptree& FilterBank::getGlobals(
     std::string node /* = "" */)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     if (node.empty()) {
         return _globalConfig;
     } else {
         boost::optional<boost::property_tree::ptree&> globals =
             _globalConfig.get_child_optional(node.c_str());
         if (!globals) {
-            BOOST_LOG_TRIVIAL(warning)
-                << "Node " << node << " not present in global configurations.";
+            LOGW << "Node " << node << " not present in global configurations.";
             return _globalConfig;
         } else {
             return *globals;
@@ -403,11 +386,11 @@ const boost::property_tree::ptree& FilterBank::getGlobals(
 
 int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    LOGD << __FUNCTION__;
     BOOST_FOREACH (const boost::property_tree::ptree::value_type& v,
                    pt.get_child("plugins")) {
-        BOOST_LOG_TRIVIAL(debug) << "v.first " << v.first;
-        BOOST_LOG_TRIVIAL(debug) << "v.second " << v.second.data();
+        LOGD << "v.first " << v.first;
+        LOGD << "v.second " << v.second.data();
 
         cout << "v.first " << v.first << endl;
         cout << "v.second " << v.second.data() << endl;
@@ -416,8 +399,7 @@ int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
         HINSTANCE hGetProcIDDLL = LoadLibrary(v.second.data().c_str());
 
         if (!hGetProcIDDLL) {
-            BOOST_LOG_TRIVIAL(warning)
-                << "Could not load library: " << v.second.data();
+            LOGW << "Could not load library: " << v.second.data();
             continue;
         }
 
@@ -425,8 +407,7 @@ int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
             (toffy::commons::plugins::init_t)GetProcAddress(hGetProcIDDLL,
                                                             "init");
         if (!init) {
-            BOOST_LOG_TRIVIAL(warning)
-                << "Could not load plug-in filters from: " << v.second.data();
+            LOGW << "Could not load plug-in filters from: " << v.second.data();
 
 #else
         void* libHandle;
@@ -437,9 +418,8 @@ int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
 
         libHandle = dlopen(v.second.data().c_str(), RTLD_LAZY);
         if (!libHandle) {
-            BOOST_LOG_TRIVIAL(warning)
-                << "Could not load library: " << v.second.data() << std::endl
-                << dlerror();
+            LOGW << "Could not load library: " << v.second.data() << " "
+                 << dlerror();
 
             // reset errors
             dlerror();
@@ -449,15 +429,12 @@ int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
             (toffy::commons::plugins::init_t)dlsym(libHandle, "init");
         const char* dlsym_error = dlerror();
         if (dlsym_error) {
-            BOOST_LOG_TRIVIAL(warning)
-                << "Could not load plug-in filters from: " << v.second.data()
-                << std::endl
-                << dlerror();
+            LOGW << "Could not load plug-in filters from: " << v.second.data()
+                 << " " << dlerror();
 #endif
         } else {
             // use it to do the calculation
-            BOOST_LOG_TRIVIAL(info)
-                << "Loaded plug-in filters from: " << v.second.data();
+            LOGI << "Loaded plug-in filters from: " << v.second.data();
             // use it to do the calculation
             std::cout << "Calling init...\n";
             init(FilterFactory::getInstance());

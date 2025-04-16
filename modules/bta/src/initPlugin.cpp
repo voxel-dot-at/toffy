@@ -17,7 +17,7 @@ using namespace toffy;
 
 void toffy::bta::init(toffy::FilterFactory *ff) 
 {
-    BOOST_LOG_TRIVIAL(info) << "BTA:: HERE INIT";
+    LOGI << "BTA:: HERE INIT";
     ff->registerCreator(toffy::capturers::Bta::id_name, &toffy::capturers::Bta::creator);
     // callback-based variant - work in progress
     // ff->registerCreator(toffy::capturers::BtaCb::id_name, &toffy::capturers::BtaCb::creator);
@@ -32,7 +32,7 @@ void toffy::bta::init(toffy::FilterFactory *ff)
 #ifdef WITH_CONTROL
 void toffy::bta::initUI(control::ControllerFactory *cf) 
 {
-    BOOST_LOG_TRIVIAL(info) << "BTA:: HERE INIT UI";
+    LOGI << "BTA:: HERE INIT UI";
     cf->registerCreator(toffy::capturers::Bta::id_name, &toffy::control::BtaController::creator);
     cf->registerCreator(toffy::capturers::Bta::id_name+"Group", &toffy::control::BtaGroupController::creator);
     return;

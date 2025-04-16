@@ -46,7 +46,7 @@ class Transform : public Filter
     virtual ~Transform() {}
     static const std::string id_name;
 
-    virtual bool filter(const Frame& in, Frame& out) const;
+    virtual bool filter(const Frame& in, Frame& out);
 
     virtual boost::property_tree::ptree getConfig() const;
     void updateConfig(const boost::property_tree::ptree& pt);
