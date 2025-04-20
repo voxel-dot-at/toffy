@@ -44,6 +44,8 @@ set(PROJECT_VERSION_FULL "${PROJECT_VERSION}${PROJECT_VERSION_TWEAK}")
 message (STATUS "version: " ${VERSION} )
 message (STATUS ${PROJECT_NAME}" version: " ${PROJECT_VERSION_FULL} )
 
+set(INCLUDE_PREFIX "include/${PROJECT_NAME}_${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+
 ################################################################################
 # User project configuration
 ################################################################################

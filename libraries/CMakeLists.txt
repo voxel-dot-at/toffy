@@ -8,4 +8,4 @@ add_library(toffy_libs OBJECT
     $<TARGET_OBJECTS:toffy_tracking> 
     )
 
-install(DIRECTORY "include/" DESTINATION "include/")
+install(DIRECTORY "include/" DESTINATION "${INCLUDE_PREFIX}")

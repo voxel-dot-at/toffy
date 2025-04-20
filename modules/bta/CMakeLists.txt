@@ -1,4 +1,4 @@
 
 add_subdirectory(src)
 
-install(DIRECTORY "include/" DESTINATION "include/")
+install(DIRECTORY "include/" DESTINATION "${INCLUDE_PREFIX}")
