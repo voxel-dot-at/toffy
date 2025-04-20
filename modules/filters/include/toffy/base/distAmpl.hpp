@@ -16,9 +16,6 @@
 */
 #pragma once
 
-
-#include <boost/filesystem.hpp>
-
 #include <string>
 #include <toffy/filter.hpp>
 

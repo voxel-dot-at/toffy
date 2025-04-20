@@ -25,8 +25,9 @@
 
 
 #include <any>
+#include <filesystem>
+
 #include <boost/lexical_cast.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/range/algorithm_ext/erase.hpp>
@@ -42,7 +43,7 @@ using namespace toffy;
 using namespace toffy::capturers;
 using namespace cv;
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 //std::size_t Bta::_filter_counter = 1;
 

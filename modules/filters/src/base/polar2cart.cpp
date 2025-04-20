@@ -26,8 +26,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
 
-
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
 #include "toffy/base/polar2cart.hpp"

@@ -4,7 +4,7 @@
 #include <any>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/lexical_cast.hpp>
 
 #include <ctime>
@@ -30,7 +30,7 @@ using namespace toffy::capturers;
 using namespace cv;
 using namespace std;
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 std::size_t Bta::_filter_counter = 1;
 const std::string Bta::id_name = "bta";
