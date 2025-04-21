@@ -90,7 +90,9 @@ using namespace toffy::filters;
 using namespace std;
 
 FilterFactory* FilterFactory::uniqueFactory;
-boost::container::flat_map<std::string, Filter*> FilterFactory::_filters;
+std::map<std::string, Filter*> FilterFactory::_filters;
+
+std::map<std::string, CreateFilterFn> FilterFactory::creators;
 
 FilterFactory::FilterFactory() {}
 
@@ -120,7 +122,7 @@ FilterFactory::~FilterFactory()
 
 int FilterFactory::deleteFilter(std::string name)
 {
-    boost::container::flat_map<std::string, Filter*>::iterator it;
+    std::map<std::string, Filter*>::iterator it;
     it = _filters.find(name);
     if (it != _filters.end()) {
         delete it->second;
@@ -267,10 +269,8 @@ Filter* FilterFactory::createFilter(const std::string& type,
 int FilterFactory::renameFilter(Filter* f, const std::string& oldName,
                                 const std::string& newName)
 {
-    boost::container::flat_map<std::string, toffy::Filter*>::iterator oldF =
-        _filters.find(oldName);
-    boost::container::flat_map<std::string, toffy::Filter*>::iterator newF =
-        _filters.find(newName);
+    auto oldF = _filters.find(oldName);
+    auto newF = _filters.find(newName);
 
     if (newF != _filters.end()) {
         // filter with target name exists already!
@@ -295,9 +295,7 @@ int FilterFactory::getFiltersByType(const std::string& type,
                                     std::vector<Filter*>& vec)
 {
     LOGD << __FUNCTION__;
-    for (boost::container::flat_map<std::string, Filter*>::iterator it =
-             _filters.begin();
-         it < _filters.end(); it++) {
+    for (auto it = _filters.begin(); it != _filters.end(); it++) {
         // LOGD << type;
         // LOGD << (*it)->id();
         // if ((*it)->type() == "filterBank" ||
@@ -310,7 +308,6 @@ int FilterFactory::getFiltersByType(const std::string& type,
     return vec.size();
 }
 
-boost::container::flat_map<std::string, CreateFilterFn> FilterFactory::creators;
 
 void FilterFactory::registerCreator(std::string name, CreateFilterFn fn)
 {

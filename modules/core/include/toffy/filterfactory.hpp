@@ -16,6 +16,8 @@
 */
 #pragma once
 
+#include <map>
+
 #include "toffy/filter.hpp"
 
 #ifdef MSVC
@@ -131,12 +133,12 @@ public:
 private:
 
     static FilterFactory *uniqueFactory; ///< Singleton
-    static boost::container::flat_map<std::string, Filter* > _filters; ///< Filters container
+    static std::map<std::string, Filter* > _filters; ///< Filters container
     FilterFactory(); ///< Singleton
 
     /**
      * @brief Contains a list of filter creators which could be modify runtime.
      */
-    static boost::container::flat_map<std::string, CreateFilterFn> creators;
+    static std::map<std::string, CreateFilterFn> creators;
 };
 }

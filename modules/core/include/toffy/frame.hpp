@@ -290,7 +290,7 @@ class TOFFY_EXPORT Frame
      *
      * Its has a unique string key and uses std::any to save any kind
      * of data.
-     * Use boost::shared_ptr to avoid any memory leak.
+     * Use std::shared_ptr to avoid any memory leak.
      */
     boost::container::flat_map<std::string, std::any> data;
 
