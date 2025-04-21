@@ -16,7 +16,6 @@
 */
 #include <iostream>
 
-
 #include <toffy/controller.hpp>
 #include <toffy/parallelFilter.hpp>
 #include <toffy/common/plugins.hpp>
@@ -81,7 +80,7 @@ bool Controller::forward()
             ((ParallelFilter *)vec[i])->start();
         }
         _state = Controller::FORWARD;
-        _thread = std::thread(boost::bind(&Controller::loopFilters, this));
+        _thread = std::thread(std::bind(&Controller::loopFilters, this));
         if (!_thread.joinable()) {
             _state = Controller::IDLE;
             //check thread or the state changed inside
@@ -106,7 +105,7 @@ bool Controller::backward()
             ((ParallelFilter *)vec[i])->start();
         }
         _state = Controller::BACKWARD;
-        _thread = std::thread(boost::bind(&Controller::loopFilters, this));
+        _thread = std::thread(std::bind(&Controller::loopFilters, this));
         if (!_thread.joinable()) {
             _state = Controller::IDLE;
             //check thread or the state changed inside
@@ -131,7 +130,7 @@ bool Controller::stepForward()
             ((ParallelFilter *)vec[i])->start();
         }
         /*_state = Controller::FORWARD;
-	_thread = std::thread( boost::bind(&Controller::loopFiltersOnce, this));
+	_thread = std::thread( std::bind(&Controller::loopFiltersOnce, this));
 	if (!_thread.joinable()) {
 	    _state = Controller::IDLE;
 	    //check thread or the state changed inside
@@ -161,7 +160,7 @@ bool Controller::stedBackward()
             ((ParallelFilter *)vec[i])->start();
         }
         /*_state = Controller::BACKWARD;
-	_thread = std::thread( boost::bind(&Controller::loopFiltersOnce, this));
+	_thread = std::thread( std::bind(&Controller::loopFiltersOnce, this));
 	if (!_thread.joinable()) {
 	    _state = Controller::IDLE;
 	    //check thread or the state changed inside
@@ -238,7 +237,7 @@ int Controller::loadRuntimeConfig(const std::string &configFile)
 
     } catch (boost::property_tree::xml_parser_error &e) {
         LOGE << "FB Could not open config file: " << e.filename() << ". "
-            << e.what() << ", in line: " << e.line();
+             << e.what() << ", in line: " << e.line();
         return -1;
     }
 
@@ -249,7 +248,7 @@ int Controller::loadRuntimeConfig(const std::string &configFile)
                 it->second);
         else
             LOGW << "loadRuntimeConfig: "
-                << "Filter " << it->first << " not found.";
+                 << "Filter " << it->first << " not found.";
     }
     return 1;
 }
@@ -284,7 +283,7 @@ int Controller::loadConfigFile(const std::string &configFile)
 
     } catch (boost::property_tree::xml_parser_error &e) {
         LOGE << "FB Could not open config file: " << e.filename() << ". "
-            << e.what() << ", in line: " << e.line();
+             << e.what() << ", in line: " << e.line();
         return -1;
     }
 
@@ -351,7 +350,7 @@ void Controller::loadPlugin(std::string lib)
     const char *dlsym_error = dlerror();
     if (dlsym_error) {
         LOGW << "Could not load plug-in filters from: " << lib << " "
-            << dlsym_error;
+             << dlsym_error;
 #endif
     } else {
         // use it to do the calculation

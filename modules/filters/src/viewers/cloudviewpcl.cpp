@@ -224,7 +224,7 @@ bool CloudViewPCL::filter(const Frame &in, Frame& out)
     */
     if (_signal == 0) {
 	_signal = 1;
-	_thread = std::thread(boost::bind(&CloudViewPCL::loopViewer,this));
+	_thread = std::thread(std::bind(&CloudViewPCL::loopViewer,this));
     }
 
     return true;
