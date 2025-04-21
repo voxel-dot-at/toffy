@@ -20,7 +20,6 @@
 #include <boost/log/core.hpp>
 
 #include <boost/log/expressions.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
 #include <toffy/filter.hpp>
