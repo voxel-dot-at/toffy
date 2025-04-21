@@ -986,7 +986,7 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 }
                 // @TODO optimize
                 unsigned char* ptr = chan->data;
-                for (unsigned int i = 0; i < chan->dataLen; i += 3) {
+                for (unsigned int j = 0; j < chan->dataLen; j += 3) {
                     unsigned char u = ptr[0];
                     unsigned char y = ptr[1];
                     unsigned char v = ptr[2];

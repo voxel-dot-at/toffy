@@ -602,7 +602,6 @@ bool SampleConsensus::getInputPoints(const Frame& in,
                                      pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
 {
     pcl::RangeImagePlanar::Ptr p;
-    matPtr img3d;
 
     if (inCloudPtr) {
         typedef pcl::PointXYZ P;
