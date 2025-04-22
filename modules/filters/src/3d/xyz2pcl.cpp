@@ -110,7 +110,6 @@ bool Xyz2Pcl::convertXyz(const Frame&, Frame& out, toffy::matPtr mx,
     typedef pcl::PointXYZ P;
 //    pcl::PointCloud<P>::Ptr cloud(new pcl::PointCloud<P>(mx->cols, mx->rows));
     pcl::PointCloud<P>::Ptr cloud(new pcl::PointCloud<P>());
-    pcl::PCLPointCloud2::Ptr p;
 
     for (int y = borderTop; y < mx->rows - borderBottom; y++) {
         short* px = mx->ptr<short>(y, 0);

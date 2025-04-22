@@ -29,8 +29,6 @@
 
 using namespace toffy;
 
-// namespace sinks = boost::log::sinks;
-// namespace keywords = boost::log::keywords;
 
 Player::Player() : Player(toffy::log::debug, false) {}
 

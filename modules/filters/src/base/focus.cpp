@@ -18,10 +18,6 @@
 
 #include <opencv2/imgproc.hpp>
 
-
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
-
 #include "toffy/base/focus.hpp"
 
 using namespace toffy;

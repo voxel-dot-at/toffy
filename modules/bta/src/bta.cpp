@@ -1,11 +1,9 @@
 #include <stdlib.h>
 
-#include <boost/algorithm/string/trim.hpp>
 #include <any>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/lexical_cast.hpp>
+#include <filesystem>
 
 #include <ctime>
 #include <iostream>
@@ -30,7 +28,7 @@ using namespace toffy::capturers;
 using namespace cv;
 using namespace std;
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 std::size_t Bta::_filter_counter = 1;
 const std::string Bta::id_name = "bta";
@@ -987,7 +985,7 @@ void Bta::setOutputsDynamic(const Frame& /*in*/, Frame& out,
                 }
                 // @TODO optimize
                 unsigned char* ptr = chan->data;
-                for (unsigned int i = 0; i < chan->dataLen; i += 3) {
+                for (unsigned int j = 0; j < chan->dataLen; j += 3) {
                     unsigned char u = ptr[0];
                     unsigned char y = ptr[1];
                     unsigned char v = ptr[2];

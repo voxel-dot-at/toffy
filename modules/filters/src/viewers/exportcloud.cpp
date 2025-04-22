@@ -18,7 +18,6 @@
 #include <pcl/io/pcd_io.h>
 #include <opencv2/core.hpp>
 
-#include <boost/lexical_cast.hpp>
 #include <any>
 
 #include "toffy/filter_helpers.hpp"
@@ -138,7 +137,7 @@ bool ExportCloud::getInputPoints(const Frame &in,
 
         // 3d mat
         try {
-            matPtr img3d = std::any_cast<matPtr>(in.getData(_in_cloud));
+            img3d = std::any_cast<matPtr>(in.getData(_in_cloud));
             cloud.reset(new pcl::PointCloud<pcl::PointXYZ>(
                 /*width=*/img3d->cols, /*height=*/img3d->rows));
             float *dptr;

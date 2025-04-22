@@ -17,8 +17,6 @@
 #include <opencv2/core.hpp>
 
 #include <any>
-#include <boost/algorithm/string/trim.hpp>
-
 
 #include <pcl/visualization/point_cloud_handlers.h>
 #include <pcl/visualization/pcl_visualizer.h>
@@ -224,7 +222,7 @@ bool CloudViewPCL::filter(const Frame &in, Frame& out)
     */
     if (_signal == 0) {
 	_signal = 1;
-	_thread = std::thread(boost::bind(&CloudViewPCL::loopViewer,this));
+	_thread = std::thread(std::bind(&CloudViewPCL::loopViewer,this));
     }
 
     return true;

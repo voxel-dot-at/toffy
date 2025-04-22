@@ -15,8 +15,6 @@
    limitations under the License.
 */
 
-#include <boost/lexical_cast.hpp>
-
 #include "toffy/mux.hpp"
 
 

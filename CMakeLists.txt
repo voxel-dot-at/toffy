@@ -44,18 +44,20 @@ set(PROJECT_VERSION_FULL "${PROJECT_VERSION}${PROJECT_VERSION_TWEAK}")
 message (STATUS "version: " ${VERSION} )
 message (STATUS ${PROJECT_NAME}" version: " ${PROJECT_VERSION_FULL} )
 
+set(INCLUDE_PREFIX "include/${PROJECT_NAME}_${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+
 ################################################################################
 # User project configuration
 ################################################################################
 option (BUILD_STATIC "Build static version of the library" OFF)
-option (WITHOUT_PCL "Exclude pointclouds-based classes" OFF)
+option (DISABLE_PCL "Exclude pointclouds-based classes" OFF)
 option (WITH_PCL_CLOUDVIEW "Build pcl-based viewer" OFF)
 option (WITH_VISUALIZATION "Add viewer objects. Requires GUI" ON)
 option (BUILD_TESTS "Build test code." ON)
 
 message (STATUS "${CMAKE_PROJECT_NAME} options: ")
 message (STATUS "\t BUILD_STATIC: " ${BUILD_STATIC})
-message (STATUS "\t WITHOUT_PCL: " ${WITHOUT_PCL})
+message (STATUS "\t DISABLE_PCL: " ${DISABLE_PCL})
 message (STATUS "\t WITH_VISUALIZATION: " ${WITH_VISUALIZATION})
 
 ################################################################################
@@ -228,21 +230,9 @@ endif()
 # Find dependencies
 ################################################################################
 
-# rapidjson
-#include(ExternalProject)
-#include("${CMAKE_SOURCE_DIR}/cmake/rapidjson.cmake")
-#include_directories(
-#    ${RAPIDJSON_INCLUDE_DIR}
-#)
-#    ${CMAKE_SOURCE_DIR}/include
-#    ${GFLAGS_INCLUDE_DIR}
-#    ${BENCHMARK_INCLUDE_DIR}
-
-
 # Boost
 find_package(Boost
-    COMPONENTS program_options system
-        filesystem date_time serialization chrono thread
+    COMPONENTS program_options serialization chrono 
     REQUIRED)
 #include_directories(${Boost_INCLUDE_DIRS})
 list(APPEND LIBS ${Boost_LIBRARIES})
@@ -255,7 +245,7 @@ if(NOT MSVC)
 endif()
 
 # PCL
-if(NOT WITHOUT_PCL)
+if(NOT DISABLE_PCL)
     find_package(PCL COMPONENTS common filters io sample_consensus segmentation features visualization)
     include_directories(${PCL_INCLUDE_DIRS})
     add_definitions(${PCL_DEFINITIONS})
@@ -267,7 +257,7 @@ if(NOT WITHOUT_PCL)
     add_definitions(-DPCL_FOUND=1)
     message (STATUS "PCL_FOUND: " ${PCL_FOUND})
     if (NOT PCL_FOUND)
-        set(WITHOUT_PCL 1)
+        set(DISABLE_PCL 1)
     endif()
 endif()
 

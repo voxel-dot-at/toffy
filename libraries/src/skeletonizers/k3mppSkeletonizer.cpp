@@ -450,15 +450,14 @@ bool K3MPPSkeletonizer::phaseSingle(cv::Mat mat, cv::Mat& out, bool* lookup)
 bool K3MPPSkeletonizer::phaseSingle(cv::Mat& mat, bool* lookup)
 {
     //Go through the picture
-    unsigned char* cur = 0;
-    const unsigned char* prev = 0;
-    const unsigned char* next = 0;
     bool toReturn = false;
     //Rows
     for(int i = 0; i < mat.rows;i++){
-        //get line ptr
+        const unsigned char* prev = 0;
+        const unsigned char* next = 0;
+            //get line ptr
         if((i-1) > 0) prev = mat.ptr<unsigned char>(i-1);
-        cur = mat.ptr<unsigned char>(i);
+        unsigned char* cur = mat.ptr<unsigned char>(i);
         if((i+1) < mat.rows ) next = mat.ptr<unsigned char>(i+1);
 
         //Columns

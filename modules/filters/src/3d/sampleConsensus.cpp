@@ -18,7 +18,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/foreach.hpp>
 
-#include <boost/property_tree/json_parser.hpp>
+// #include <boost/property_tree/json_parser.hpp>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -386,7 +386,7 @@ bool SampleConsensus::runRegionGrowing(
         std::cout << "cluster " << i << " has " << clusters[i].indices.size()
                   << std::endl;
         char buf[64];
-        snprintf(buf, sizeof(buf), "out/clust_%d_%d.pcd", cnt, i);
+        snprintf(buf, sizeof(buf), "out/clust_%d_%u.pcd", cnt, i);
 
         // todo: optimize me
         pcl::PointIndices::Ptr p(new pcl::PointIndices);
@@ -602,7 +602,6 @@ bool SampleConsensus::getInputPoints(const Frame& in,
                                      pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud)
 {
     pcl::RangeImagePlanar::Ptr p;
-    matPtr img3d;
 
     if (inCloudPtr) {
         typedef pcl::PointXYZ P;

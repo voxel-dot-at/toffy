@@ -7,9 +7,6 @@
 
 #include <bta.h>
 
-#include <boost/log/core.hpp>
-#include <boost/log/expressions.hpp>
-
 #include <boost/property_tree/xml_parser.hpp>
 #include <thread>
 

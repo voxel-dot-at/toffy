@@ -32,8 +32,6 @@
 #include <condition_variable>
 #include <mutex>
 
-#include <boost/property_tree/ptree.hpp>
-
 #include <bta.h>
 #include <toffy/io/imagesensor.hpp>
 

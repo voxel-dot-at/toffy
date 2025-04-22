@@ -13,4 +13,4 @@ add_library(toffy_filters OBJECT
     $<TARGET_OBJECTS:toffy_viewers> 
     )
 
-install(DIRECTORY "include/" DESTINATION "include/")
+install(DIRECTORY "include/" DESTINATION "${INCLUDE_PREFIX}")

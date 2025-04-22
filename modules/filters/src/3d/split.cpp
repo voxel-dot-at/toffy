@@ -20,8 +20,8 @@
 #include <limits.h>
 
 
-#include <boost/foreach.hpp>
-#include <boost/property_tree/json_parser.hpp>
+// #include <boost/foreach.hpp>
+// #include <boost/property_tree/json_parser.hpp>
 
 #include <pcl/range_image/range_image_planar.h>
 #include <pcl/filters/passthrough.h>

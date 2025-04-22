@@ -95,7 +95,7 @@ bool Xyz2Mat::convertXyz(const Frame&, Frame& out, toffy::matPtr mx,
 {
     typedef pcl::PointXYZ P;
     pcl::PointCloud<P>::Ptr cloud(new pcl::PointCloud<P>(mx->cols, mx->rows));
-    pcl::PCLPointCloud2::Ptr p;
+
     for (int y = 0; y < mx->rows; y++) {
         short* px = mx->ptr<short>(y, 0);
         short* py = my->ptr<short>(y, 0);

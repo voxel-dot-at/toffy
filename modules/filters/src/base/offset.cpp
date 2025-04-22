@@ -22,7 +22,6 @@
 
 
 #include <boost/foreach.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 

@@ -20,8 +20,6 @@
 
 #include <any>
 
-#include <boost/container/flat_map.hpp>
-
 #include <opencv2/core.hpp>
 
 #include "toffy/frame.hpp"
