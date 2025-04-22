@@ -16,8 +16,6 @@
 */
 #include <iostream>
 
-#include <boost/algorithm/string/case_conv.hpp>
-
 #include "toffy/filter_helpers.hpp"
 #include "toffy/smoothing/average.hpp"
 

@@ -17,8 +17,6 @@
 #pragma once
 
 #include <vector>
-#include <boost/container/flat_set.hpp>
-#include <boost/property_tree/ptree.hpp>
 
 #include "toffy/filterbank.hpp"
 #include "toffy/filterThread.hpp"

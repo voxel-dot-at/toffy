@@ -16,7 +16,6 @@
 #include <fstream>
 #include <stdio.h>
 
-#include <boost/algorithm/string/trim.hpp>
 #include <any>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>

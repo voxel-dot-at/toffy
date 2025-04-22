@@ -17,7 +17,6 @@
 #include <iostream>
 
 #include "toffy/filter_helpers.hpp"
-#include <boost/algorithm/string/case_conv.hpp>
 
 #include <opencv2/imgproc/imgproc.hpp>
 # include <opencv2/highgui/highgui.hpp>

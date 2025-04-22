@@ -2,8 +2,6 @@
 #include <iostream>
 
 #include <boost/property_tree/xml_parser.hpp>
-// #include <boost/version.hpp>
-// #include <boost/foreach.hpp>
 
 #include <toffy/common/filenodehelper.hpp>
 

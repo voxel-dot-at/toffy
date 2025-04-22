@@ -17,8 +17,6 @@
 #include <opencv2/core.hpp>
 
 #include <any>
-#include <boost/algorithm/string/trim.hpp>
-
 
 #include <pcl/visualization/point_cloud_handlers.h>
 #include <pcl/visualization/pcl_visualizer.h>

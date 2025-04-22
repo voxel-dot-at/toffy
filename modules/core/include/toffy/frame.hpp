@@ -17,6 +17,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 
 // cf https://www.cppstories.com/2018/06/any/#migration-from-boostany
 #include <any>
@@ -292,13 +293,13 @@ class TOFFY_EXPORT Frame
      * of data.
      * Use std::shared_ptr to avoid any memory leak.
      */
-    boost::container::flat_map<std::string, std::any> data;
+    std::map<std::string, std::any> data;
 
     /** data type of the slot */
-    boost::container::flat_map<std::string, SlotDataType> meta;
+    std::map<std::string, SlotDataType> meta;
 
     /** optional description for a data slot */
-    boost::container::flat_map<std::string, std::string> desc;
+    std::map<std::string, std::string> desc;
 };
 
 inline unsigned int Frame::getUInt(const std::string& key) const

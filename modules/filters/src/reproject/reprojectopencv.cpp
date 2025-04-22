@@ -121,7 +121,7 @@ bool ReprojectOpenCv::filter(const Frame &in, Frame& out) {
       LOG(info) << __LINE__ << "cam mtx rep " << fl_x_reciprocal
                  << "x" << fl_y_reciprocal << " " << _cameraMatrix;
 
-      double noV, apertureWidth = 4.5 , // sensor w/h in mm
+      double apertureWidth = 4.5 , // sensor w/h in mm
                   apertureHeight = 4.5;
        double fovx, fovy,focLen, aspect;
       calibrationMatrixValues(_cameraMatrix, img->size(), apertureWidth,

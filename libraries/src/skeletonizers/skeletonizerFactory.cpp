@@ -22,8 +22,6 @@ SkeletonizerFactory::SkeletonizerFactory()
 
 SkeletonizerFactory::~SkeletonizerFactory()
 {
-	map<string,CreateSkeletonizerFn>::iterator it = m_FactoryMap.begin();
-	
 	m_FactoryMap.clear();
 }
 
