@@ -22,8 +22,7 @@
  
 #include <arpa/inet.h> // inet_aton
 
-#include <boost/property_tree/xml_parser.hpp>
-// 
+#include <boost/property_tree/ptree.hpp>
 
 #include <toffy/logging.hpp>
 
