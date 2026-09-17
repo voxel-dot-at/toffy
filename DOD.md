@@ -93,6 +93,21 @@ Only the gates matching the PR kind apply.
 - `modules/filters`, `modules/bta` and `apps/` all still compile — an API change that only
   builds `modules/core` is not done.
 - The Doxygen comment for each changed symbol is updated in the same PR (see 1.6).
+- **A new version tag is pushed.** This is not ceremony: the library version *and*
+  `SOVERSION` are derived from `git describe --tag` (`CMakeLists.txt:32`, `:357`). An
+  API change with no new tag therefore ships under the previous `SOVERSION`, so the
+  SONAME keeps advertising the old release while the exported mangled symbols have
+  already changed — downstream binaries then fail at load time against a library that
+  claims to be the version they linked. `v1.7.0` is the worked example: it exists only
+  to mark the `findPos()` / `remove()` signature change.
+- Run `tools/api_change_report.sh [BASE]` and put its output in the PR description. It
+  exits 1 when any installed header under `*/include/` changed, 2 if the base ref is
+  invalid (it fails closed on purpose), and 0 otherwise. The declaration listing is
+  advisory — text diffing cannot be exact — but the exit code is the gate.
+
+```sh
+tools/api_change_report.sh "$(git describe --tags --abbrev=0)"   # exit 1 => tag required
+```
 
 ### 2.5 Layering PR (PR 13)
 
