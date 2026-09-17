@@ -22,7 +22,7 @@ These are defects, not preferences. Each is small and independently verifiable.
 
 | # | Item | Finding | Risk |
 |---|---|---|---|
-| 1 | `FilterBank::stop()` calls `stop()`, not `start()` | A1 | trivial |
+| 1 | ~~`FilterBank::stop()` calls `stop()`, not `start()`~~ **DONE** — fixed, pinned by `FilterBankStop.StopStopsChildren` | A1 | trivial |
 | 2 | `remove(size_t)`: `_pipe.begin() + i` not `end() + i` | A2 | trivial |
 | 3 | `remove(string)`: bounds-check, return real status | A4 | low |
 | 4 | `findPos()`: return `int` / `optional`, not `size_t -1` | A3 | low |

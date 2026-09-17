@@ -7,7 +7,7 @@ project( toffy )
 SET(CMAKE_COLOR_MAKEFILE ON)
 SET(CMAKE_VERBOSE_MAKEFILE OFF)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ################################################################################
@@ -402,6 +402,7 @@ install(
 #######################################
 
 if( ${BUILD_TESTS})
+    enable_testing()
     add_subdirectory(tests)
 endif()
 

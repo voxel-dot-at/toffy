@@ -351,7 +351,7 @@ void FilterBank::start()
 void FilterBank::stop()
 {
     for (size_t i = 0; i < _pipe.size(); i++) {
-        _pipe[i]->start();
+        _pipe[i]->stop();
     }
 
     Filter::stop();

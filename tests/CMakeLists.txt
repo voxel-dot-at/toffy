@@ -1,5 +1,27 @@
+# Tests for toffy.
+#
+# Registered with CTest (see enable_testing() in the top-level CMakeLists.txt).
+# Run with:  cmake --build . && ctest --output-on-failure
 
+find_package(GTest REQUIRED)
 
+# ---------------------------------------------------------------------------
+# Existing config-loading test. Previously a bare executable that nothing ran.
+# ---------------------------------------------------------------------------
 add_executable(test_cond test_cond.cpp)
 target_link_libraries(test_cond toffy)
+add_test(
+    NAME cond_empty
+    COMMAND test_cond ${CMAKE_CURRENT_SOURCE_DIR}/xml/cond_empty.xml
+)
 
+# ---------------------------------------------------------------------------
+# Core unit tests
+# ---------------------------------------------------------------------------
+add_executable(test_frame test_frame.cpp)
+target_link_libraries(test_frame toffy GTest::gtest GTest::gtest_main)
+add_test(NAME frame COMMAND test_frame)
+
+add_executable(test_filterbank test_filterbank.cpp)
+target_link_libraries(test_filterbank toffy GTest::gtest GTest::gtest_main)
+add_test(NAME filterbank COMMAND test_filterbank)
