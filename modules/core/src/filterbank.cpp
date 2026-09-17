@@ -272,18 +272,25 @@ int FilterBank::countFiltersByType(const std::string& type)
     return cnt;
 }
 
-size_t FilterBank::findPos(std::string name)
+std::optional<int> FilterBank::findPos(const std::string& name) const
 {
     for (size_t i = 0; i < _pipe.size(); i++) {
-        if (_pipe.at(i)->name() == name) return i;
+        if (_pipe.at(i)->name() == name) return static_cast<int>(i);
     }
-    return -1;
+    return std::nullopt;
 }
 
-int FilterBank::remove(std::string name)
+int FilterBank::remove(const std::string& name)
 {
-    int pos = findPos(name);
-    _pipe.erase(_pipe.begin() + pos);
+    const std::optional<int> pos = findPos(name);
+    if (!pos) {
+        BOOST_LOG_TRIVIAL(warning)
+            << id() << "::remove: no filter named " << name;
+        return 0;
+    }
+    // Erase from the pipeline before the factory deletes the filter, so that
+    // _pipe never holds a dangling pointer between the two operations.
+    _pipe.erase(_pipe.begin() + *pos);
     ff->deleteFilter(name);
     return 1;
 }
@@ -291,12 +298,12 @@ int FilterBank::remove(std::string name)
 int FilterBank::remove(size_t i)
 {
     if (i >= _pipe.size()) {
-        BOOST_LOG_TRIVIAL(warning) << "Position i: " << i << "out of bounds.";
-        return -1;
+        BOOST_LOG_TRIVIAL(warning) << "Position i: " << i << " out of bounds.";
+        return 0;
     }
     const string name = _pipe[i]->name();
+    _pipe.erase(_pipe.begin() + i);
     ff->deleteFilter(name);
-    _pipe.erase(_pipe.end() + i);
     return 1;
 }
 

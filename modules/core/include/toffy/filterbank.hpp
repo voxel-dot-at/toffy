@@ -16,6 +16,7 @@
 */
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include <boost/container/flat_set.hpp>
@@ -166,24 +167,25 @@ class TOFFY_EXPORT FilterBank : public Filter
 
     /**
      * @brief Removes a filter from the FilterBank by name
-     * @param name
-     * @return Positive on success, negative or 0 in failed
+     * @param name Name of the filter to remove
+     * @return 1 if a filter was removed, 0 if no filter has that name
      */
-    int remove(std::string name);
+    int remove(const std::string& name);
 
     /**
      * @brief Removes a filter from the FilterBank by position
-     * @param i
-     * @return Positive on success, negative or 0 in failed
+     * @param i Index of the filter to remove
+     * @return 1 if a filter was removed, 0 if i is out of range
      */
     int remove(size_t i);
 
     /**
      * @brief Get the position of a filter in the filter bank
-     * @param name
-     * @return Positive position on success, negative if not found
+     * @param name Name of the filter to look up
+     * @return Index of the filter in the pipeline, or std::nullopt if no
+     * filter has that name
      */
-    size_t findPos(std::string name);
+    std::optional<int> findPos(const std::string& name) const;
 
     /**
      * @brief Get ne number of filter in the FilterBank

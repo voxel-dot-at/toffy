@@ -15,29 +15,28 @@
 */
 #pragma once
 
-#include <string>
-
 #include <toffy/filter.hpp>
+#include <toffy/filterfactory.hpp>
 
 /**
  * @brief Minimal concrete Filter for exercising FilterBank mechanics.
  *
- * Deliberately independent of the FilterFactory: bank tests must be able to
- * populate a bank without dragging in every built-in filter type. Note that
- * this means the factory does not know about these instances, so
- * FilterBank::clearBank()/remove() will not delete them -- they leak by
- * design until filter ownership is reworked (CLEANUP_PLAN P2-5).
+ * Instances must be created through makeDummyFilter(), i.e. via the
+ * FilterFactory, so that ownership matches production: FilterBank::clearBank()
+ * and FilterBank::remove() release filters by calling
+ * FilterFactory::deleteFilter(name), which only knows about filters the
+ * factory created. A DummyFilter built with plain new is therefore never
+ * released -- that leak is what P2-5 removes, and it would make the ASan gate
+ * in DOD.md 2.1 report the harness instead of the code under test.
  */
 class DummyFilter : public toffy::Filter
 {
    public:
-    explicit DummyFilter(const std::string& filterName)
-        : toffy::Filter("dummy", 0), wasCalled(false)
+    DummyFilter() : toffy::Filter("dummy"), wasCalled(false)
     {
         // Not strictly needed, but keeps the helper independent of the
         // uninitialised-member bug fixed separately in P0-5.
         bank(nullptr);
-        name(filterName);
     }
 
     bool filter(const toffy::Frame& /*in*/, toffy::Frame& /*out*/) override
@@ -48,3 +47,25 @@ class DummyFilter : public toffy::Filter
 
     bool wasCalled;
 };
+
+/// Registers the "dummy" creator. Calling it more than once just overwrites
+/// the same entry, which is harmless for tests.
+inline void registerDummyFilter()
+{
+    toffy::FilterFactory::registerCreator(
+        "dummy", []() -> toffy::Filter* { return new DummyFilter(); });
+}
+
+/// Creates a DummyFilter through the factory so the bank can release it.
+///
+/// Registration happens here on purpose. FilterFactory::createFilter() looks
+/// up unknown types with operator[] on the creator map, which inserts a null
+/// creator and then calls it (findings A18/A20), so an unregistered "dummy"
+/// segfaults instead of failing cleanly. Self-registering makes that
+/// unreachable from a test.
+inline DummyFilter* makeDummyFilter()
+{
+    registerDummyFilter();
+    return static_cast<DummyFilter*>(
+        toffy::FilterFactory::getInstance()->createFilter("dummy"));
+}

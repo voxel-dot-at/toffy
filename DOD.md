@@ -117,7 +117,7 @@ baseline on the current tree, so each target is checkable rather than aspiration
 
 | # | Criterion | Now | Target |
 |---|---|---|---|
-| 1 | All 12 `P0` correctness items closed, each with a regression test | 1/12 | 12/12 |
+| 1 | All 12 `P0` correctness items closed, each with a regression test | 4/12 | 12/12 |
 | 2 | All 16 plan items closed, or explicitly rejected with a written rationale | 0/16 | 16/16 |
 | 3 | CI configures, builds and runs `ctest` on every PR | none | required |
 | 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` combinations | PCL-off broken | 4/4 |
