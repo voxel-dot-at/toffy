@@ -32,7 +32,10 @@ if ! git rev-parse --verify --quiet "${BASE}^{commit}" >/dev/null; then
 fi
 
 # Public API is everything installed under an include/ directory.
-if ! CHANGED=$(git diff --name-only "${BASE}..HEAD" -- '*/include/*.hpp' '*/include/*.h' 2>/dev/null); then
+# Diff against the working tree rather than HEAD, so this also works as a
+# pre-commit check on uncommitted edits. On a clean CI checkout the two are
+# identical.
+if ! CHANGED=$(git diff --name-only "${BASE}" -- '*/include/*.hpp' '*/include/*.h' 2>/dev/null); then
     echo "api_change_report: git diff against ${BASE} failed" >&2
     exit 2
 fi
@@ -42,7 +45,7 @@ if [ -z "${CHANGED}" ]; then
     exit 0
 fi
 
-echo "Public headers changed between ${BASE} and $(git rev-parse --short HEAD):"
+echo "Public headers changed between ${BASE} and the working tree ($(git rev-parse --short HEAD)+):"
 echo "${CHANGED}" | sed 's/^/  /'
 echo
 echo "Changed declarations:"
@@ -51,7 +54,7 @@ for f in ${CHANGED}; do
     # headers, comments, blank lines, preprocessor lines and brace-only lines,
     # which are not signatures. Text diffing cannot be exact -- the exit code
     # is the contract, this listing is a hint.
-    decls=$(git diff -U0 -w "${BASE}..HEAD" -- "${f}" \
+    decls=$(git diff -U0 -w "${BASE}" -- "${f}" \
         | grep -E '^[+-]' \
         | grep -vE '^(\+\+\+|---)' \
         | grep -vE '^[+-][[:space:]]*(\*|/\*|//|\*/|@)' \
