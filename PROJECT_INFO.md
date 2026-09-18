@@ -80,7 +80,7 @@ live in **core**, not in `modules/filters`.
 | `include/toffy/filterfactory.hpp` | 142 | Factory API |
 | `src/player.cpp`, `include/toffy/player.hpp` | 273 | App facade + logging setup |
 | `src/filterThread.cpp` / `.hpp` | 228 | Worker thread + frame queues |
-| `include/toffy/event.hpp`, `src/event.cpp` | 156 | Event bus (incomplete) |
+| ~~`include/toffy/event.hpp`, `src/event.cpp`~~ | ~~156~~ | ~~Event bus (incomplete)~~ — deleted, `P2-14` |
 | `include/toffy/filter_helpers.hpp` | 84 | `LOG` macro, ptree option getters |
 | `include/toffy/mux.hpp`, `src/mux.cpp` | 105 | Fan-in of frames |
 | `include/toffy/btaFrame.hpp` | 50 | BTA-flavoured Frame subclass + slot-name constants |
@@ -144,9 +144,10 @@ live in **core**, not in `modules/filters`.
    `src/filter.cpp:92-101` logs a helpful message when the type node is missing, then
    unconditionally executes `pt.get_child(_type)`, which throws `ptree_bad_path`.
 
-8. **`Event::data()` dereferences a null pointer.** `include/toffy/event.hpp` returns
-   `*_data` with no null check; calling `data()` before `data(any)` was set crashes.
-   The default `Event()` ctor also leaves `_re_type` and `_sender` uninitialised.
+8. **~~`Event::data()` dereferences a null pointer.~~ RESOLVED BY REMOVAL** — the whole
+   `Event` class was deleted (`P2-14`) rather than repaired, so this and the uninitialised
+   `_re_type`/`_sender` in the default ctor no longer exist. Kept numbered so the `A8`
+   citations in `CLEANUP_PLAN.md` keep resolving.
 
 9. **`loadGlobals()` casts a possibly-null `_bank` to `FilterBank*`.**
    `src/filter.cpp:118-120` uses an unchecked `static_cast<FilterBank*>(_bank)` and
@@ -260,8 +261,10 @@ public `dbg` and `update` fields.
 **`Controller` exposes its internals.** `baseFilterBank` and `f` are public data members,
 and `Player` both wraps `Controller` and hands it out again via `getController()`.
 
-**Events are a stub.** `event.hpp` carries `@todo Implement the event logic`, and
-`Filter::processEvent` logs at `info` for every unhandled event.
+**~~Events are a stub.~~ REMOVED.** `event.hpp` carried `@todo Implement the event logic`
+and `Filter::processEvent` logged at `info` for every unhandled event. The class, both
+`processEvent()` virtuals and the header were deleted under `P2-14`; nothing outside core
+used them.
 
 **`btaFrame.hpp` lives in core.** BTA camera slot-name constants inside the framework
 module invert the dependency — core should not know about one vendor's camera.

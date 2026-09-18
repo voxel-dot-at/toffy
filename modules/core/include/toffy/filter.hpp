@@ -44,7 +44,6 @@
 
 namespace toffy {
 
-class Event;
 class Filter;
 
 typedef std::shared_ptr<toffy::Filter> FilterPtr;
@@ -278,19 +277,6 @@ class TOFFY_EXPORT Filter
      * @param bank FilterBank where the filter resides
      */
     void bank(Filter* bank) { _bank = bank; }
-
-    /**
-     * @brief processEvent
-     * @param e Data if the event to be runned
-     *
-     * Every filter could define in this method a set of actions that could
-     * be executed by call from other filters.
-     *
-     * The events are processed outside of the FilterBank sequential mode.
-     * Every filter must discribe his availabled events.
-     *
-     */
-    virtual void processEvent(Event& e);
 
    protected:
     /**

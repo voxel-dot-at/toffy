@@ -1,6 +1,5 @@
 add_library(toffy_core OBJECT 
     controller.cpp
-    event.cpp
     filter.cpp
     filterbank.cpp
     filterfactory.cpp

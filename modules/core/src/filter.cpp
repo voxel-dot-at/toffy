@@ -170,13 +170,6 @@ void Filter::removeListener(const FilterListener* l)
     }
 }
 
-void Filter::processEvent(Event& /*e*/)
-{
-    BOOST_LOG_TRIVIAL(debug) << id() << " " << __FUNCTION__;
-    BOOST_LOG_TRIVIAL(info) << "Filter does not have events declared.";
-    return;
-}
-
 void Filter::loadGlobals(const boost::property_tree::ptree& pt)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;

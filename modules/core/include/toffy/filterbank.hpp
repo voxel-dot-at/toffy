@@ -194,14 +194,6 @@ class TOFFY_EXPORT FilterBank : public Filter
     size_t size() const { return _pipe.size(); }
 
     /**
-     * @brief processEvent
-     * @param e
-     *
-     * @todo Document
-     */
-    virtual void processEvent(Event& e);
-
-    /**
      * @brief Runs all defined filters and accumulate result for external api
      * @return true if processing worked, false on error
      */

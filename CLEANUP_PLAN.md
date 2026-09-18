@@ -28,7 +28,7 @@ These are defects, not preferences. Each is small and independently verifiable.
 | 4 | ~~`findPos()`: return `int` / `optional`, not `size_t -1`~~ **DONE** — returns `std::optional<int>` (C++17); pinned by `FilterBankFindPos.MissingNameYieldsNoValue` | A3 | low |
 | 5 | ~~Initialise all `Filter` members in both ctors~~ **DONE** — in-class initialisers; pinned by `FilterConstruction.*` | A6 | trivial |
 | 6 | ~~`Frame`: copy/assign/clear `meta` + `desc` consistently~~ **DONE** — `operator=` defaulted; pinned by `FrameMetadata.*` | A5, A14 | low |
-| 7 | Null-check `Event::data()` | A8 | trivial |
+| 7 | ~~Null-check `Event::data()`~~ **OBSOLETE** — the whole `Event` class was deleted under `P2-14`, so the null dereference no longer exists. Do not fix in place. | A8 | — |
 | 8 | ~~Null-check after `fn()` in `createFilter()`~~ **DONE** — pinned by `FilterFactoryCreate.CreatorReturningNullIsRejected` (segfaulted before the fix) | A21 | trivial |
 | 9 | Null-check `baseFilterBank` in `~Controller` | C3 | trivial |
 | 10 | ~~`creators.find()` instead of `operator[]`~~ **DONE** — pinned by `FilterFactoryCreate.FailedLookupDoesNotRegisterTheType` | A19 | trivial |
@@ -364,7 +364,25 @@ Renames, all in the public API and all currently uncalled elsewhere, so do them 
 
 Leave a deprecated inline alias for each for one release.
 
-### 14 — Finish or delete the `Event` stub
+### 14 — Finish or delete the `Event` stub — **DONE (deleted)**
+
+Deleted rather than implemented. `toffy::Event`, `event.hpp`, `event.cpp`,
+`Filter::processEvent()` and `FilterBank::processEvent()` are gone. Verified before
+removal that nothing outside `modules/core` referenced them: no use in
+`modules/filters`, `modules/bta`, `apps/` or `tests/`. The `__infoEvent` XML tags in
+`apps/configs/` and the `infoEvent` field in `bta.xml` are unrelated BTA driver callback
+fields and were left alone.
+
+This also removed a latent null dereference that was never catalogued: when the receiver
+was a single `FILTER`, `FilterBank::processEvent()` did `ff->getFilter(e.receiver())` and
+called through the result without a null check, so an event naming an unknown filter
+faulted.
+
+**This is a breaking change**, unlike the rest of the programme so far: a public virtual
+was removed from `Filter`, so the vtable loses a slot, and an installed header is gone.
+`tools/api_change_report.sh v1.7.1` exits 1. Out-of-tree filters that override
+`processEvent` will not compile, and any plugin built against the old header is ABI-broken.
+See the version-tag note in the commit.
 
 `event.hpp` carries `@todo Implement the event logic`, and the class is not used by the
 run loop at all. While it stays:

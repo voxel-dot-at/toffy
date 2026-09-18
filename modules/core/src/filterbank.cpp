@@ -23,7 +23,6 @@
 
 #include "toffy/filterbank.hpp"
 #include "toffy/filter_helpers.hpp"
-#include "toffy/event.hpp"
 #include <toffy/common/plugins.hpp>
 #include <iostream>
 
@@ -323,18 +322,6 @@ void FilterBank::clearBank()
         }
     }
     _pipe.clear();
-}
-
-void FilterBank::processEvent(Event& e)
-{
-    if (e.receiverType() == Event::FILTER) {
-        Filter* f = ff->getFilter(e.receiver());
-        f->processEvent(e);
-    } else {  //Event::ReceiverType::FILTER_TYPE
-        std::vector<Filter*> fg;
-        ff->getFiltersByType(e.receiver(), fg);
-        for (size_t i = 0; i < fg.size(); i++) fg[i]->processEvent(e);
-    }
 }
 
 void FilterBank::init()
