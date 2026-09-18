@@ -19,6 +19,11 @@
 
 # temps
 *~
+# emacs auto-save / lock files (a stray #DOD.md# showed up as untracked).
+# The leading backslash is required: an unescaped # starts a comment, so a
+# pattern like "#*#" is silently ignored by git.
+\#*#
+.#*
 
 # CMake
 CMakeCache.txt
