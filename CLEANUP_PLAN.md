@@ -29,9 +29,9 @@ These are defects, not preferences. Each is small and independently verifiable.
 | 5 | ~~Initialise all `Filter` members in both ctors~~ **DONE** — in-class initialisers; pinned by `FilterConstruction.*` | A6 | trivial |
 | 6 | ~~`Frame`: copy/assign/clear `meta` + `desc` consistently~~ **DONE** — `operator=` defaulted; pinned by `FrameMetadata.*` | A5, A14 | low |
 | 7 | Null-check `Event::data()` | A8 | trivial |
-| 8 | Null-check after `fn()` in `createFilter()` | A20 | trivial |
+| 8 | ~~Null-check after `fn()` in `createFilter()`~~ **DONE** — pinned by `FilterFactoryCreate.CreatorReturningNullIsRejected` (segfaulted before the fix) | A21 | trivial |
 | 9 | Null-check `baseFilterBank` in `~Controller` | C3 | trivial |
-| 10 | `creators.find()` instead of `operator[]` | A18 | trivial |
+| 10 | ~~`creators.find()` instead of `operator[]`~~ **DONE** — pinned by `FilterFactoryCreate.FailedLookupDoesNotRegisterTheType` | A19 | trivial |
 | 11 | Delete or define `Player::stop()` | A13 | trivial |
 | 12 | Guard `pt.get_child(_type)` after diagnosing its absence | A7 | low |
 

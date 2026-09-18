@@ -126,6 +126,18 @@ public:
      */
     static void unregisterCreator(std::string name);
 
+    /**
+     * @brief Check whether a creator function is registered for a type.
+     * @param name the filter type name
+     * @return true if registerCreator() has registered this name
+     *
+     * Read-only query on the creator registry. It exists because a lookup must
+     * not go through operator[]: that default-constructs a missing key, so a
+     * failed lookup would insert a null entry into shared global state. See
+     * FilterFactory::createFilter().
+     */
+    static bool hasCreator(const std::string& name);
+
     void clearCreators() {creators.clear();}
 
 private:

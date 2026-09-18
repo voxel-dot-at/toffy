@@ -149,8 +149,7 @@ Filter* FilterFactory::createFilter(const std::string& type,
                                     std::string /* name */)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-    Filter* f;
-    cout << "FF new " << type << endl;
+    Filter* f = nullptr;
     if (type == "filterBank")
         f = new FilterBank();
     else if (type == "offset")
@@ -244,16 +243,23 @@ Filter* FilterFactory::createFilter(const std::string& type,
         f = new ParallelFilter();
 
     else {
-        // try an external creator fn:
-        cout << "external " << type << endl;
-        CreateFilterFn fn = creators[type];
-        cout << "external has " << fn << endl;
-        cout << "external end" << endl;
-        if (!fn) {
+        // Look the creator up without inserting. operator[] default-constructs
+        // a missing key, so the old `creators[type]` turned every failed lookup
+        // into a write to this shared registry: a typo'd filter type left a
+        // null entry behind and the map grew without bound.
+        const auto it = creators.find(type);
+        if (it == creators.end() || !it->second) {
             BOOST_LOG_TRIVIAL(error) << "Unknown filter: " << type;
-            return NULL;
+            return nullptr;
         }
-        f = fn();
+        f = it->second();
+        // The creator itself may hand back null; it used to be dereferenced a
+        // few lines below when the name was logged.
+        if (!f) {
+            BOOST_LOG_TRIVIAL(error)
+                << "Creator for filter type " << type << " returned null";
+            return nullptr;
+        }
     }
     BOOST_LOG_TRIVIAL(debug)
         << "created f->name(): " << f->name() << " id(): " << f->id()
@@ -320,4 +326,10 @@ void FilterFactory::registerCreator(std::string name, CreateFilterFn fn)
 void FilterFactory::unregisterCreator(std::string name)
 {
     creators.erase(name);
+}
+
+bool FilterFactory::hasCreator(const std::string& name)
+{
+    // find(), never operator[]: this is a query and must not create an entry.
+    return creators.find(name) != creators.end();
 }
