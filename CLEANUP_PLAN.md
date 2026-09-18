@@ -26,7 +26,7 @@ These are defects, not preferences. Each is small and independently verifiable.
 | 2 | ~~`remove(size_t)`: `_pipe.begin() + i` not `end() + i`~~ **DONE** — pinned by `FilterBankRemove.ByIndexRemovesTheElementAtThatIndex` | A2 | trivial |
 | 3 | ~~`remove(string)`: bounds-check, return real status~~ **DONE** — pinned by `FilterBankRemove.MissingNameLeavesBankIntact` | A4 | low |
 | 4 | ~~`findPos()`: return `int` / `optional`, not `size_t -1`~~ **DONE** — returns `std::optional<int>` (C++17); pinned by `FilterBankFindPos.MissingNameYieldsNoValue` | A3 | low |
-| 5 | Initialise all `Filter` members in both ctors | A6 | trivial |
+| 5 | ~~Initialise all `Filter` members in both ctors~~ **DONE** — in-class initialisers; pinned by `FilterConstruction.*` | A6 | trivial |
 | 6 | `Frame`: copy/assign/clear `meta` + `desc` consistently | A5, A14 | low |
 | 7 | Null-check `Event::data()` | A8 | trivial |
 | 8 | Null-check after `fn()` in `createFilter()` | A20 | trivial |

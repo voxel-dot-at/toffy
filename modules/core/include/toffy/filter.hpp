@@ -108,7 +108,7 @@ class TOFFY_EXPORT Filter
         _name,        ///< id alias @deprecated Is the same as id
         _type;        ///< Type id of the filter
 
-    Filter* _bank;  ///< reference to the filter bank whre the filter resides
+    Filter* _bank = nullptr;  ///< reference to the filter bank whre the filter resides
     // static std::size_t _filter_counter;
 
     /*
@@ -126,11 +126,12 @@ class TOFFY_EXPORT Filter
      * @todo Find a better way to individually set log level.
      * changing severity filter affects everithing.
      */
-    boost::log::trivial::severity_level _log_lvl;
+    boost::log::trivial::severity_level _log_lvl = boost::log::trivial::info;
 
    public:
-    bool dbg,    ///< flag for activating debug options (images view, log, etc)
-        update;  ///< Flag for indicating config updated
+    bool dbg =
+        false,  ///< flag for activating debug options (images view, log, etc)
+        update = false;  ///< Flag for indicating config updated
 
     /**
      * @brief Filter
@@ -305,7 +306,7 @@ class TOFFY_EXPORT Filter
      *  @{
      */
    private:
-    filterState state;                       ///< Filter state
+    filterState state = filterLoaded;        ///< Filter state
     std::vector<FilterListener*> listeners;  ///< listeners
     std::string errMsg;                      ///< error
 

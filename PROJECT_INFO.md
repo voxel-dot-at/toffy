@@ -127,11 +127,18 @@ live in **core**, not in `modules/filters`.
    `getDescription()` keep reporting types/descriptions for keys that are gone, and
    `hasKey() == false` while `getDataType() != NotFound`.
 
-6. **`Filter` default constructor leaves members uninitialised.**
-   `src/filter.cpp:56` is `Filter::Filter() : _type("...") {}` — `_bank`, `_log_lvl`,
+6. **`Filter` constructors leave members uninitialised.**
+   `src/filter.cpp:41` is `Filter::Filter() : _type("...") {}` — `_bank`, `_log_lvl`,
    `dbg`, `update` and `state` are all uninitialised. `bank()` then returns garbage,
    which `loadGlobals()` casts and dereferences (see A9), and `getState()` returns
    garbage before `init()`.
+
+   Worse than first recorded: the *typed* constructor (`src/filter.cpp:43`) initialises
+   `_bank`, `_log_lvl`, `dbg` and `update` but **also omits `state`**, so no construction
+   path ever set it. Confirmed empirically when the regression test was written —
+   `getState()` returned `861460480` and `-1214622000` on the two construction paths.
+   Fixed with in-class member initialisers rather than constructor init lists, so a
+   future constructor cannot forget again.
 
 7. **`Filter::loadConfig()` throws right after diagnosing the problem.**
    `src/filter.cpp:92-101` logs a helpful message when the type node is missing, then
