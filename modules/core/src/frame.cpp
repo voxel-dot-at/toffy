@@ -21,14 +21,15 @@
 
 using namespace toffy;
 
-Frame::Frame() : data(), meta() {}
+Frame::Frame() : data(), meta(), desc() {}
 
-Frame::Frame(const Frame& f) : data(f.data), meta(f.meta) {}
+Frame::Frame(const Frame& f) : data(f.data), meta(f.meta), desc(f.desc) {}
 
 Frame::~Frame()
 {
     data.clear();
     meta.clear();
+    desc.clear();
 }
 
 bool Frame::hasKey(std::string key) const
@@ -71,14 +72,23 @@ void Frame::addData(std::string key, boost::any v, SlotDataType dt,
 
 bool toffy::Frame::removeData(std::string key)
 {
-    if (data.find(key) != data.end()) {
-        data.erase(data.find(key));
-        return true;
-    } else
-        return false;
+    // data, meta and desc are parallel maps: a key must be dropped from all
+    // three, otherwise getDataType() keeps reporting a type for a slot that no
+    // longer exists while hasKey() correctly says it is gone.
+    const auto it = data.find(key);
+    if (it == data.end()) return false;
+    data.erase(it);
+    meta.erase(key);
+    desc.erase(key);
+    return true;
 }
 
-void Frame::clearData() { return data.clear(); }
+void Frame::clearData()
+{
+    data.clear();
+    meta.clear();
+    desc.clear();
+}
 
 
 void Frame::info(std::vector<SlotInfo>& fields) const

@@ -75,15 +75,17 @@ class TOFFY_EXPORT Frame
     virtual ~Frame();
 
     /**
-     * @brief operator =
-     * @param x
-     * @return
+     * @brief Copy assignment.
+     *
+     * Defaulted on purpose. Frame owns three parallel maps -- data, meta and
+     * desc -- that have to stay in sync. The hand-written version assigned
+     * only `data`, so after `f1 = f2` every getDataType() returned NotFound
+     * and getDescription() came back empty while hasKey() returned true.
+     *
+     * @param x the frame to copy from
+     * @return a reference to this frame
      */
-    Frame& operator=(const Frame& x)
-    {
-        data = x.data;
-        return *this;
-    }
+    Frame& operator=(const Frame& x) = default;
 
     typedef enum
     {
