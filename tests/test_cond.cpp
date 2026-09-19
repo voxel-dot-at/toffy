@@ -26,8 +26,13 @@ using namespace toffy;
 int main(int argc, char** argv)
 {
     std::string file = "tests/xml/cond_empty.xml";
-    toffy::Player* player;
-    player = new toffy::Player(boost::log::trivial::debug, false);
+    // On the stack, not heap-allocated. It used to be `player = new Player(...)`
+    // with no matching delete, which LeakSanitizer correctly reported as a direct
+    // leak plus the whole indirect chain hanging off Controller and its base
+    // FilterBank. loadConfig() and runOnce() are commented out below, so the
+    // object's only real job here is installing the logging configuration -- and
+    // it is now destroyed normally at the end of main.
+    toffy::Player player(boost::log::trivial::debug, false);
     FilterBank fb;
 
     if (argc >= 2) {
