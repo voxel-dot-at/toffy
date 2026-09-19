@@ -46,8 +46,25 @@ namespace toffy {
  * @brief Share pointer to cv::Mat
  */
 typedef std::shared_ptr<cv::Mat> matPtr;
+
+// Guarded, like the pcl includes above: these names name pcl templates, so a
+// PCL-less build cannot parse them. They were previously outside the guard, which
+// made -DWITHOUT_PCL=ON fail to compile here even though every addData()/getter
+// that used them was already correctly conditional.
+//
+// The CloudXyz / CloudXyzRgb enumerators in SlotDataType are deliberately NOT
+// guarded. They are plain integers with no pcl dependency, and removing them in a
+// PCL-less build would renumber nothing but would make SlotDataType differ between
+// two builds of the same header -- so a consumer compiled one way would disagree
+// with a library built the other about a value that is stored, reported via
+// SlotInfo and compared in filters. Keeping them unconditional costs two unused
+// enumerators; guarding them would trade that for a silent ABI mismatch.
+#if PCL_FOUND
+/** @brief Shared pointer to an xyz point cloud */
 typedef pcl::PointCloud<pcl::PointXYZ>::Ptr pclCloudXyzPtr;
+/** @brief Shared pointer to an xyz+rgb point cloud */
 typedef pcl::PointCloud<pcl::PointXYZRGB>::Ptr pclCloudXyzRgbPtr;
+#endif
 
 /**
  * @brief Frame is a container where any filter could add, retrieve, modify and

@@ -1,4 +1,8 @@
-if ( ${PCL_VISUALIZATION_FOUND} AND ${WITH_PCL_CLOUDVIEW})
+# if() takes variable *names*: expanding ${PCL_VISUALIZATION_FOUND} here left it
+# empty when PCL is disabled, so CMake parsed "if( AND OFF)" and aborted with
+# "Unknown arguments specified". That made -DWITHOUT_PCL=ON unconfigurable, which
+# is why the unguarded pcl typedefs in frame.hpp went unnoticed.
+if (PCL_VISUALIZATION_FOUND AND WITH_PCL_CLOUDVIEW)
     set(PCL_SRCS 
         cloudviewpcl.cpp
     )
@@ -8,7 +12,9 @@ else()
     set(PCL_SRCS "" )
 endif()
 
-if ( ${OPENCV_VIZ_FOUND} AND ${WITH_VISUALIZATION} )
+# Same fix as above: latent, because it only breaks when OpenCV's viz component is
+# absent -- currently it is installed, so the expansion happens to be non-empty.
+if (OPENCV_VIZ_FOUND AND WITH_VISUALIZATION)
     set(VIZ_SRCS 
         cloudviewopencv.cpp
     )
