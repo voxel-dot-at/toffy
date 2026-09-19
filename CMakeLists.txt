@@ -334,6 +334,13 @@ if (PCL_FOUND)
     set(TOFFY_3D_OBJ $<TARGET_OBJECTS:toffy_3d>)
 endif()
 
+# Same pattern as toffy_3d: the bta module is only added when the proprietary bta
+# library was found, so its objects are referenced conditionally.
+set(TOFFY_BTA_OBJ "")
+if (HAS_BTA)
+    set(TOFFY_BTA_OBJ $<TARGET_OBJECTS:toffy_bta>)
+endif()
+
 add_library( ${PROJECT_NAME} SHARED 
     # libs
     $<TARGET_OBJECTS:toffy_libs> 
@@ -344,7 +351,7 @@ add_library( ${PROJECT_NAME} SHARED
     $<TARGET_OBJECTS:toffy_tracking> 
 
     # modules:
-    $<TARGET_OBJECTS:toffy_bta> 
+    ${TOFFY_BTA_OBJ} 
     $<TARGET_OBJECTS:toffy_core> 
     # filters
     $<TARGET_OBJECTS:toffy_filters> 
