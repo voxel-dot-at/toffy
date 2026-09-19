@@ -65,7 +65,28 @@ TEST(FilterConstruction, TypedConstructorInitialisesMembers)
     ProbeFilter f;
 
     EXPECT_EQ(nullptr, f.bank());
-    EXPECT_EQ(boost::log::trivial::info, f.logLvl());
+
+    // The expected level depends on the build type, and asserting `info`
+    // unconditionally was a latent bug in this test rather than in the code:
+    // Filter::Filter(type, counter) deliberately overrides the level to debug
+    // under CM_DEBUG, which CMake defines for CMAKE_BUILD_TYPE=Debug. The test
+    // therefore passed only in Release -- the default build type -- and failed in
+    // every Debug build, which is what CI uses.
+    //
+    // Note the asymmetry this pins down: the *default* constructor has no such
+    // override and stays at info in both configurations, so the two constructors
+    // disagree about the initial log level. Worth unifying, but that is a
+    // behaviour change and not this test's business.
+#ifdef CM_DEBUG
+    const boost::log::trivial::severity_level expectedLvl =
+        boost::log::trivial::debug;
+#else
+    const boost::log::trivial::severity_level expectedLvl =
+        boost::log::trivial::info;
+#endif
+    EXPECT_EQ(expectedLvl, f.logLvl())
+        << "an uninitialised _log_lvl is the P0-5 bug; this asserts it is set to "
+        << "the level the constructor actually documents for this build type";
     EXPECT_FALSE(f.dbg);
     EXPECT_FALSE(f.update);
     EXPECT_EQ(filterLoaded, f.getState());
