@@ -1,12 +1,39 @@
-# Toffy — Project Notes & Cleanup Plan
+# Toffy — Project Notes (evidence)
 
 Scope of this document: an evidence-based summary of the codebase with a focus on
-`modules/core`, plus a prioritised cleanup list. All findings cite `file:line` so they
-can be verified independently. The checked-in Doxygen docs were **not** used as a
-source of truth (see [Documentation](#g-documentation)) — everything below comes from
-the headers and sources.
+`modules/core`. All findings cite `file:line` so they can be verified independently.
+The checked-in Doxygen docs were **not** used as a source of truth (see
+[Documentation](#g-documentation)) — everything below comes from the headers and sources.
 
-Status: analysis only. **No code has been changed yet.**
+This file holds the **findings only**. The numbered work is in
+[`CLEANUP_PLAN.md`](CLEANUP_PLAN.md), the PR order in
+[`CLEANUP_SEQUENCE.md`](CLEANUP_SEQUENCE.md) and the gates in
+[`DOD.md`](DOD.md).
+
+## Status
+
+**P0 is complete: 12 of 12 items closed.** Also done: `P1-1` (ctest harness, 7 tests),
+`P2-14` (the `Event` stub was deleted, not finished), and the C++17 half of `P2-16`.
+
+Findings below are a record, not a to-do list, so several describe code that no longer
+exists. They are marked rather than deleted so that the `A`-number citations used by the
+plan keep resolving. Where a fix was partial this is stated — notably `A12` (only the
+`joinable()` guard landed; the `std::terminate` risk in the four run methods is open) and
+`C3` (null guards landed; `clearCreators()` teardown is untouched).
+
+Still open and worth knowing before anything else:
+
+- **No CI builds or tests this project.** `.github/` is Codacy, Flawfinder and Dependabot
+  only. The harness exists; nothing runs it automatically. `DOD 1.2` says "CI green" must
+  not be cited as evidence, and it still cannot be.
+- **A PCL-less build does not compile.** The typedefs at `frame.hpp:49-50` sit outside the
+  `#if PCL_FOUND` guard covering the includes. This is a `DOD 1.1` gate.
+- **A version tag is outstanding.** `P2-14` removed a public virtual from `Filter`, so the
+  vtable shrank; `SOVERSION` comes from `git describe`. This branch tops out at `v1.7.1`
+  while `origin/next` carries `v1.9.0`, so the number is a merge decision — but it cannot
+  ship untagged.
+- **`A23` (no consistent error convention) blocks further correctness work** in config
+  loading; see the empirical evidence recorded there.
 
 ---
 
