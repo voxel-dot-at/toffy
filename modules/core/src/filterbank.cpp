@@ -139,6 +139,13 @@ Filter* FilterBank::instantiateFilter(
         BOOST_LOG_TRIVIAL(debug)
             << "FB INSTANTIATE FILTER:: config " << it->first << endl;
         f->bank(this);
+        // The return value is deliberately not checked here, and P0-12 does not
+        // change that. Making it fatal looks obvious but is not: the codebase
+        // has no agreed meaning for a non-positive loadConfig() (finding A23).
+        // Cond::loadConfig() returns <= 0 for a merely *empty* cond, which is a
+        // valid configuration -- treating it as an error aborts config loading
+        // (observed: ctest cond_empty). Propagating failures requires settling
+        // A23 first, so it is out of scope for this item.
         f->loadConfig(pnode);
         //ff->renameFilter(f, old, f->name());
         return f;

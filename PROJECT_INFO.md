@@ -234,6 +234,16 @@ live in **core**, not in `modules/filters`.
     `loadConfig` mixes `-1`, `0`, `1` and `throw std::runtime_error`. Callers cannot write
     correct error handling against this.
 
+    Confirmed empirically while fixing `P0-12`: `FilterBank::instantiateFilter()` does not
+    check `loadConfig()`'s return value, and the obvious-looking fix -- treat non-positive
+    as failure -- **breaks a valid configuration**. `Cond::loadConfig()` returns `<= 0` for
+    a cond with no dependent filters, which is a legitimate empty cond, not an error; with
+    the check in place `ctest cond_empty` aborted with `std::runtime_error`
+    ("filterBank::loadConfig() failure"). So the return code cannot be propagated until the
+    convention is decided. This is why `P0-12` guards the throw but deliberately leaves the
+    return value unchecked, and why `A23` must be resolved before config errors can be made
+    loud.
+
 ---
 
 ### B. API & design

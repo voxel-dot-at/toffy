@@ -98,6 +98,11 @@ int Filter::loadConfig(const boost::property_tree::ptree& pt)
             << "looked for an XML subtree called " << _type
             << " please check your code, the Filter object seems "
             << "to be have the wrong name!";
+        // Stop here. Falling through reached pt.get_child(_type) below, which
+        // throws ptree_bad_path: the diagnostic above was always followed by an
+        // exception, so a caller relying on the documented return code never
+        // saw either the error or a chance to recover.
+        return -1;
     }
 
     const boost::property_tree::ptree& node = pt.get_child(_type);

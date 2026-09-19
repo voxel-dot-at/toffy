@@ -33,7 +33,7 @@ These are defects, not preferences. Each is small and independently verifiable.
 | 9 | Null-check `baseFilterBank` in `~Controller` | C3 | trivial |
 | 10 | ~~`creators.find()` instead of `operator[]`~~ **DONE** — pinned by `FilterFactoryCreate.FailedLookupDoesNotRegisterTheType` | A19 | trivial |
 | 11 | Delete or define `Player::stop()` | A13 | trivial |
-| 12 | Guard `pt.get_child(_type)` after diagnosing its absence | A7 | low |
+| 12 | ~~Guard `pt.get_child(_type)` after diagnosing its absence~~ **DONE** — returns `-1`; pinned by `FilterLoadConfig.MissingTypeNodeReportsFailureInsteadOfThrowing` and `MatchingTypeNodeStillSucceeds`. Note: the ignored return value in `instantiateFilter()` was deliberately *not* made fatal — see `A23`. | A7 | low |
 
 ### Notes on the non-obvious ones
 

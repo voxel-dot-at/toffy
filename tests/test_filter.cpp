@@ -19,6 +19,7 @@
 #include <gtest/gtest.h>
 
 #include <boost/log/trivial.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #include <toffy/filter.hpp>
 
@@ -71,4 +72,38 @@ TEST(FilterConstruction, TypedConstructorInitialisesMembers)
     EXPECT_EQ("probefilter", f.type());
     EXPECT_FALSE(f.id().empty());
     EXPECT_EQ(f.id(), f.name());
+}
+
+// Regression tests for CLEANUP_PLAN P0-12 / finding A7.
+//
+// Filter::loadConfig() looked the type node up with pt.find(), logged a
+// detailed diagnostic when it was absent -- and then fell straight through
+// into an unguarded pt.get_child(_type), which throws ptree_bad_path. The
+// careful error message was therefore always followed by an exception, so
+// callers using the documented int return code never saw it.
+TEST(FilterLoadConfig, MissingTypeNodeReportsFailureInsteadOfThrowing)
+{
+    ProbeFilter f;
+
+    boost::property_tree::ptree pt;
+    pt.put("some_other_filter.name", "mislabelled");
+
+    int ret = 1;
+    ASSERT_NO_THROW(ret = f.loadConfig(pt))
+        << "diagnosed the missing node, then threw ptree_bad_path anyway";
+    EXPECT_LE(ret, 0)
+        << "filter.hpp documents 'positive on success, negative or 0 if failed'";
+}
+
+// The guard must not reject the well-formed case: a node named after the
+// filter's type still loads and still sets the name from config.
+TEST(FilterLoadConfig, MatchingTypeNodeStillSucceeds)
+{
+    ProbeFilter f;
+
+    boost::property_tree::ptree pt;
+    pt.put("probefilter.name", "probe1");
+
+    EXPECT_GT(f.loadConfig(pt), 0);
+    EXPECT_EQ("probe1", f.name());
 }
