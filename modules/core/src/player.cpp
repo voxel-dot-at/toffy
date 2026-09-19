@@ -115,6 +115,15 @@ void Player::run() {
 
 }
 
+// Declared since the first release but never defined, so every caller got an
+// undefined-reference link error (finding A16). Delegates to Controller::stop();
+// the public signature stays void, so Controller's bool is intentionally not
+// surfaced -- changing it would be an API change, which is out of scope here.
+void Player::stop() {
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    _controller.stop();
+}
+
 void Player::loadPlugin(std::string lib) {
 
     return _controller.loadPlugin(lib);

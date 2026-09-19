@@ -32,7 +32,7 @@ These are defects, not preferences. Each is small and independently verifiable.
 | 8 | ~~Null-check after `fn()` in `createFilter()`~~ **DONE** — pinned by `FilterFactoryCreate.CreatorReturningNullIsRejected` (segfaulted before the fix) | A21 | trivial |
 | 9 | Null-check `baseFilterBank` in `~Controller` | C3 | trivial |
 | 10 | ~~`creators.find()` instead of `operator[]`~~ **DONE** — pinned by `FilterFactoryCreate.FailedLookupDoesNotRegisterTheType` | A19 | trivial |
-| 11 | Delete or define `Player::stop()` | A13 | trivial |
+| 11 | ~~Delete or define `Player::stop()`~~ **DONE** — defined, delegating to `Controller::stop()`; pinned by `PlayerStop.*`. Citation corrected (`A13` → `A16`; `A13` is `Frame::operator=`). Also guarded the unconditional `join()` that defining it would have newly exposed — the joinable() half of `A12`, the rest stays in `P2-6`/`P2-7`. | A16 | trivial |
 | 12 | ~~Guard `pt.get_child(_type)` after diagnosing its absence~~ **DONE** — returns `-1`; pinned by `FilterLoadConfig.MissingTypeNodeReportsFailureInsteadOfThrowing` and `MatchingTypeNodeStillSucceeds`. Note: the ignored return value in `instantiateFilter()` was deliberately *not* made fatal — see `A23`. | A7 | low |
 
 ### Notes on the non-obvious ones

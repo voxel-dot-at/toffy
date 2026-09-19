@@ -166,11 +166,13 @@ live in **core**, not in `modules/filters`.
     (`src/filterfactory.cpp:148-265`) → returns `NULL` → every `<filterGroup>` node
     errors out.
 
-12. **`Controller::stop()` joins a possibly non-joinable thread.**
-    `src/controller.cpp:186-196` calls `_thread.join()` unconditionally; if `forward()`
-    was never called this throws `boost::thread_resource_error`. Related:
-    `src/controller.cpp:84` assigns `_thread = boost::thread(...)` — assigning to an
-    already-joinable `boost::thread` calls `std::terminate()`.
+12. **`Controller::stop()` joins a possibly non-joinable thread.** *Partially fixed:*
+    the unconditional `_thread.join()` is now guarded by `joinable()`, because defining
+    `Player::stop()` (A16) would otherwise have exposed the throw on a path no caller could
+    previously reach. **Still open:** `src/controller.cpp:84` and its three siblings assign
+    `_thread = boost::thread(...)` — assigning to an already-joinable `boost::thread` calls
+    `std::terminate()`. That, and the four near-duplicate run methods that let the bug hide
+    in four places, remain `P2-6`/`P2-7`.
 
 13. **`Frame::operator=` drops the type metadata.** `include/toffy/frame.hpp:82-86`
     copies *only* `data`:
@@ -196,10 +198,11 @@ live in **core**, not in `modules/filters`.
     `opt*()` variants are safe, and nothing in the header marks the plain getters as
     throwing. `BtaFrame::getDepth()` (`include/toffy/btaFrame.hpp`) inherits the hazard.
 
-16. **`Player::stop()` is declared but never defined.**
-    `include/toffy/player.hpp:108` declares it; there is no definition anywhere in the
-    tree (`grep -rn 'Player::stop'` → no hits). Any caller gets a link error, so the
-    documented stop path is unusable.
+16. **~~`Player::stop()` is declared but never defined.~~ FIXED** — defined as a
+    delegation to `Controller::stop()`, pinned by `PlayerStop.StopIsDefined`. Before the
+    fix any caller got `undefined reference to toffy::Player::stop()` at link time, which
+    is also why the fault survived: the declared API could never be called, so nothing ever
+    discovered it did not exist.
 
 17. **Typos are baked into the public API.** `getSertMatPtr` (`frame.hpp:282,392`),
     `Controller::stedBackward()` (`controller.hpp:97`, `controller.cpp:154`), and

@@ -30,6 +30,10 @@ add_executable(test_filterfactory test_filterfactory.cpp)
 target_link_libraries(test_filterfactory toffy GTest::gtest GTest::gtest_main)
 add_test(NAME filterfactory COMMAND test_filterfactory)
 
+add_executable(test_player test_player.cpp)
+target_link_libraries(test_player toffy GTest::gtest GTest::gtest_main)
+add_test(NAME player COMMAND test_player)
+
 add_executable(test_filterbank test_filterbank.cpp)
 target_link_libraries(test_filterbank toffy GTest::gtest GTest::gtest_main)
 add_test(NAME filterbank COMMAND test_filterbank)

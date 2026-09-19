@@ -186,7 +186,14 @@ bool Controller::stedBackward()
 bool Controller::stop()
 {
     _state = Controller::IDLE;
-    _thread.join();
+    // Join only a thread that was actually started. _thread becomes joinable in
+    // forward()/backward()/stepForward()/stedBackward(); joining it unconditionally
+    // made stop() throw boost::thread_resource_error whenever it ran before any of
+    // them (finding A12). The rest of A12 -- the four duplicated run methods and
+    // the _thread = boost::thread(...) assignments, which call std::terminate if a
+    // previous thread is still joinable -- is left to P2-6/P2-7.
+    if (_thread.joinable())
+        _thread.join();
     std::vector<Filter *> vec;
     baseFilterBank->getFiltersByType("parallelFilter", vec);
     for (size_t i = 0; i < vec.size(); i++) {
