@@ -300,6 +300,15 @@ pointer-owned state. Names are mutable, so this is not a stable identity.
 wipes the *process-wide* creator registry. A second `Controller` or `Player` in the same
 process therefore starts with no built-in filters at all.
 
+*Partially addressed (`P0-9`):* both the destructor's `->id()` and the constructor's
+`->bank(NULL)` are now guarded — the constructor throws if the factory cannot supply the
+base bank. **`clearCreators()` is unchanged**, because removing it is a behaviour change
+that belongs with the ownership work in `P2-5`. It is currently benign for built-in types:
+`createFilter()` resolves those through a hard-coded chain rather than the creator map, so a
+second `Controller` still works (pinned by `ControllerLifecycle.SequentialControllersStillWork`).
+Only *registered* creators — plugins, `Player::loadFilter()` — are lost, and nothing tests
+that yet.
+
 **`FilterThread` copies a raw owner.** `include/toffy/filterThread.hpp:42` documents that
 the thread owns the `Filter` and deletes it; the copy ctor at `:53` copies `f` with no
 transfer of ownership → two owners, two deletes. The Rule of Five is not applied, and the

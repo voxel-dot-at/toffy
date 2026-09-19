@@ -15,6 +15,8 @@
    limitations under the License.
 */
 #include <iostream>
+#include <stdexcept>
+
 #include <boost/log/trivial.hpp>
 
 #include <toffy/controller.hpp>
@@ -54,6 +56,14 @@ Controller::Controller() : baseFilterBank(NULL), _state(Controller::IDLE)
     baseFilterBank = static_cast<FilterBank *>(
         toffy::FilterFactory::getInstance()->createFilter("filterBank",
                                                           "baseController"));
+    // createFilter() returns null for a type it cannot resolve, and ->bank(NULL)
+    // was then an unconditional null dereference. Fail loudly instead: a
+    // Controller without its base bank can never run a pipeline, so constructing
+    // one only moves the failure to an obscure later point. Throwing also means
+    // ~Controller never runs on a half-built object.
+    if (!baseFilterBank)
+        throw std::runtime_error(
+            "Controller: FilterFactory could not create the base FilterBank");
     baseFilterBank->bank(NULL);
 }
 
@@ -61,8 +71,14 @@ Controller::~Controller()
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     _state = Controller::IDLE;
-    toffy::FilterFactory::getInstance()->deleteFilter(baseFilterBank->id());
-    baseFilterBank = NULL;
+    // Defensive: the constructor now guarantees a non-null bank (it throws
+    // otherwise), so this guards against future construction paths rather than a
+    // reachable fault today. ->id() through null here would fault while the
+    // owning object is being torn down, which is a poor failure to debug.
+    if (baseFilterBank) {
+        toffy::FilterFactory::getInstance()->deleteFilter(baseFilterBank->id());
+        baseFilterBank = NULL;
+    }
     toffy::FilterFactory::getInstance()->clearCreators();
     /*for (size_t i = 0; i < _loads.size(); i++) {
 	cout << "_loads: " << _loads[i] << endl;
