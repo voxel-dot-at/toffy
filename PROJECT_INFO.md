@@ -12,8 +12,9 @@ This file holds the **findings only**. The numbered work is in
 
 ## Status
 
-**P0 is complete: 12 of 12 items closed.** Also done: `P1-1` (ctest harness, 7 tests),
-`P2-14` (the `Event` stub was deleted, not finished), and the C++17 half of `P2-16`.
+**P0 is complete: 12 of 12 items closed.** Also done: `P1-1` (ctest harness, 7 tests, plus
+CI), `P2-14` (the `Event` stub was deleted, not finished), and the C++17 half of `P2-16`.
+That is 2 of the 16 `P1`/`P2` items; the structural work is still ahead.
 
 Findings below are a record, not a to-do list, so several describe code that no longer
 exists. They are marked rather than deleted so that the `A`-number citations used by the
@@ -21,24 +22,46 @@ plan keep resolving. Where a fix was partial this is stated — notably `A12` (o
 `joinable()` guard landed; the `std::terminate` risk in the four run methods is open) and
 `C3` (null guards landed; `clearCreators()` teardown is untouched).
 
-Still open and worth knowing before anything else:
+## Where the gates stand
 
-- **CI now builds and tests on every push and PR** (`.github/workflows/ci.yml`): a
-  PCL-on/PCL-off matrix plus an ASan/UBSan/LSan job. `DOD 1.2`'s warning that "CI green"
-  must not be cited no longer applies to this repo — but note the runners cannot have the
-  proprietary bta SDK, so CI only ever exercises the BTA-off axis.
-- **Docs are still not gated.** CI compiles and tests code; it does not build Doxygen, so
-  broken references and `\todo` drift stay invisible.
-- **A PCL-less build now works** (`-DWITHOUT_PCL=ON`: clean build, 7/7 ctest; default
-  PCL-on build provably unchanged). `DOD 1.1` is still not fully green, but the remaining
-  gap is a **different axis**: a BTA-less build is broken by an unconditional
-  `add_subdirectory(bta)`, pre-existing and confirmed on `HEAD`. See section E.
-- **A version tag is outstanding.** `P2-14` removed a public virtual from `Filter`, so the
-  vtable shrank; `SOVERSION` comes from `git describe`. This branch tops out at `v1.7.1`
-  while `origin/next` carries `v1.9.0`, so the number is a merge decision — but it cannot
-  ship untagged.
+- **`DOD 1.1` is green: all four dependency configurations build and pass.** PCL on/off
+  × BTA on/off were each configured from scratch, built and run — 7/7 in every cell.
+  Both axes were broken before this branch: PCL-off on unguarded typedefs and CMake `if()`
+  clauses that expanded to nothing, BTA-off on an unconditional `add_subdirectory(bta)`.
+- **CI builds and tests on every push and PR** (`.github/workflows/ci.yml`): a PCL-on/
+  PCL-off matrix plus an ASan/UBSan/LSan job. Two limits when citing a green run — runners
+  cannot have the proprietary bta SDK, so only the BTA-off axis is covered automatically,
+  and **docs are not built by anything**, so broken `\ref`s and `\todo` drift stay invisible.
+- **`v1.10.0` is tagged** (annotated) for the `Event` removal and vtable change. Before it,
+  this tree built `libtoffy.so.1.7.1` with none of 1.7.1's symbols — the SONAME advertised
+  compatibility it no longer had. The tag is **local; it has not been pushed.** It is
+  `1.10.0` rather than the convention-implied `1.8.0` so it does not sort below the
+  `v1.9.0` that exists on `origin/next`; those two numbering lines still need reconciling
+  when the branches meet.
 - **`A23` (no consistent error convention) blocks further correctness work** in config
   loading; see the empirical evidence recorded there.
+
+## What is still open, measured
+
+Re-measured on the current tree, not carried over from the original audit:
+
+| | metric | now | target |
+|---|---|---|---|
+| | `P1`/`P2` plan items closed | 2 / 16 | 16 / 16 |
+| 5 | `std::cout` in `modules/` | 42 | 0 |
+| 6 | `#warning` directives | 1 | 0 |
+| 7 | `DLLExport` occurrences | 22 | 0 |
+| 8 | headers defining `RAWFILE` | 3 | 1 or 0 |
+| 9 | `#include <toffy/viewers/...>` from core | 1 | 0 |
+| 10 | `interprocess` primitives in core | 2 | 0 |
+| 11 | hard-coded `else if (type ==` branches | 37 | 0 |
+| 12 | `@todo` in `modules/core` | 21 (was 23; the `Event` deletion removed 2) | ≤ 5 |
+| 12b | `@todo` in `filterThread.hpp` | 10 | 0 |
+| 14 | `#ifdef MSVC` branches, never compiled | 19 | 0 |
+| 15 | compiler warnings in `modules/core` | 3 | 0 |
+
+The mechanical items barely moved because this branch deliberately took correctness and
+build work first; they belong to `P2-2`, `P2-3`, `P2-4` and `P2-15`.
 
 ---
 

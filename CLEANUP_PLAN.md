@@ -88,7 +88,22 @@ that are gone.
 
 ## P1 — Small, behaviour-visible, low-risk
 
-### 1 — Add a test harness first
+### 1 — Add a test harness first — **DONE**
+
+Complete. `enable_testing()` plus 7 `add_test()` targets (gtest) across `frame`, `filter`,
+`filterbank`, `filterfactory`, `controller`, `player` and `cond`, and
+`.github/workflows/ci.yml` now builds and runs them on every push and PR — a PCL-on/PCL-off
+matrix plus a separate ASan/UBSan/LeakSanitizer job. The first tests pin the P0 fixes as
+specified here: `remove()` on a missing name, `findPos()` on an empty bank, `Frame`
+copy/assign preserving `meta` + `desc`, and `stop()` actually stopping.
+
+Two things this caught that were not predicted: a `FilterConstruction` assertion that was
+only ever run in Release and fails in Debug (the constructor sets `debug` under `CM_DEBUG`),
+and `test_cond` leaking its `Player` — found by the sanitizer job, not by review.
+
+The paragraphs below are kept as the original rationale.
+
+---
 
 There is no `enable_testing()`, no `add_test()`, no gtest/catch2 anywhere. `tests/` holds a
 single 44-line `test_cond.cpp` built as a bare executable that nothing runs. CI
@@ -421,7 +436,26 @@ Plan:
    `git blame --ignore-rev`.
 3. Add a CI check (`clang-format --dry-run -Werror`) so the tree cannot drift again.
 
-### 16 — Clean up the build flags
+### 16 — Clean up the build flags — **partially done (1 of 5)**
+
+Done: the **C++17 bump** (`CMAKE_CXX_STANDARD 17`), which was the decision this item asked
+for early — `findPos()` now returns `std::optional<int>` and would have needed a fallback
+shape otherwise.
+
+Still open, all four remaining sub-items measured on the current tree:
+
+| sub-item | now |
+|---|---|
+| `add_definitions(-O2 -fPIC)` forcing `-O2` into Debug | still present |
+| redundant `add_definitions(-Wall)` | still present |
+| `-Werror` on touched files | absent (0 occurrences) |
+| `#if (BOOST_VERSION > 105500)` dead branch | still present in `controller.cpp` |
+
+Note that CI builds `Debug`, so the `-O2`-in-Debug problem is live in CI: stack frames are
+inlined away exactly when a sanitizer report needs them. That raises this item's priority
+above where it was written.
+
+---
 
 Four cheap fixes in the top-level `CMakeLists.txt`:
 

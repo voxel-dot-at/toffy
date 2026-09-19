@@ -14,17 +14,29 @@ cannot silently come back.
 
 ## 1. Per-PR — applies to every PR in the programme
 
-1. **Builds in all four dependency configurations**, not just the developer's:
+1. **Builds in all four dependency configurations**, not just the developer's. This gate is
+   now **green in all four cells**, which it was not when this document was written:
 
-   | `PCL_FOUND` | `HAS_BTA` | note |
-   |---|---|---|
-   | on | on | the reference build |
-   | on | off | default |
-   | off | on | |
-   | off | off | **currently broken** — the PCL typedefs at `frame.hpp:49-50` are outside the `#if PCL_FOUND` guard that covers the includes at `:27-30` |
+   | `PCL_FOUND` | `HAS_BTA` | status | how to reproduce |
+   |---|---|---|---|
+   | on | on | ✅ builds, 7/7 ctest | default (needs the bta SDK) |
+   | on | off | ✅ builds, 7/7 ctest | `-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON` |
+   | off | on | ✅ builds, 7/7 ctest | `-DWITHOUT_PCL=ON` |
+   | off | off | ✅ builds, 7/7 ctest | both flags |
+
+   The original note blamed only the unguarded PCL typedefs in `frame.hpp`. That was the
+   first blocker of several, and the interesting part is that the typedefs had never been
+   *seen* to fail: two CMake `if( ${VAR} )` clauses expanded to nothing when the dependency
+   was absent, so configuration aborted before reaching the compiler. Fixing the header
+   exposed the CMake bugs, which exposed an empty `add_library(toffy_3d OBJECT "")`, which
+   exposed `exportcloud.hpp` holding a `pcl::PCDWriter` by value and an unnecessary
+   `<pcl/io/pcd_io.h>` in `exportcsv.hpp`. Separately, `add_subdirectory(bta)` was
+   unconditional, so every BTA-off configuration failed to link with ~162 undefined `BTA*`
+   references.
 
    A PCL-less build is not optional to check: it is the configuration most downstream
-   packagers will hit first.
+   packagers will hit first. Note that CI can only ever cover the **BTA-off** axis (the SDK
+   is proprietary), so the two BTA-on cells still require a machine that has it.
 
 2. **CI is green, and CI actually builds and tests.** This gate now exists:
    `.github/workflows/ci.yml` configures, compiles and runs `ctest` on every push and PR,
@@ -70,11 +82,15 @@ Only the gates matching the PR kind apply.
 - The regression test is committed **before** the fix commit, and the PR body shows it
   failing on the parent commit.
 - PR 3 (`_pipe` mutation: `remove()`, `findPos()`, `stop()`) additionally passes an
-  **ASan/UBSan** build. That path is live undefined behaviour today, so a green normal build
-  proves very little — run the bank add/remove/`clearBank()` sequence under ASan and show
-  the output.
+  **ASan/UBSan** build. That path was live undefined behaviour, so a green normal build
+  proved very little. This is now automated: the `sanitizers` job in
+  `.github/workflows/ci.yml` runs the whole suite under ASan + UBSan + LeakSanitizer with
+  `detect_leaks=1` on every push, so it no longer has to be run and pasted by hand.
 - `stop()` is asserted to actually stop: a test drives a bank, calls `stop()`, and asserts
-  every child reports `filterIdle`. Today it reports `filterRunning` forever.
+  every child reports `filterIdle`. **Done** — `FilterBankStop.StopStopsChildren`.
+- The other PR-3 fixes are pinned too: `FilterBankRemove.ByIndexRemovesTheElementAtThatIndex`,
+  `FilterBankRemove.MissingNameLeavesBankIntact`, `FilterBankFindPos.MissingNameYieldsNoValue`.
+  Each was confirmed to fail on its parent commit before the fix landed.
 
 ### 2.2 Threading PR (PR 12)
 
@@ -101,12 +117,29 @@ Only the gates matching the PR kind apply.
   builds `modules/core` is not done.
 - The Doxygen comment for each changed symbol is updated in the same PR (see 1.6).
 - **A new version tag is pushed.** This is not ceremony: the library version *and*
-  `SOVERSION` are derived from `git describe --tag` (`CMakeLists.txt:32`, `:357`). An
+  `SOVERSION` are derived from `git describe --tag` (`CMakeLists.txt:32`, `:372`). An
   API change with no new tag therefore ships under the previous `SOVERSION`, so the
   SONAME keeps advertising the old release while the exported mangled symbols have
   already changed — downstream binaries then fail at load time against a library that
-  claims to be the version they linked. `v1.7.0` is the worked example: it exists only
-  to mark the `findPos()` / `remove()` signature change.
+  claims to be the version they linked.
+
+  Two worked examples, both real:
+  - **`v1.7.0`** — exists only to mark the `findPos()` / `remove()` signature change.
+  - **`v1.10.0`** — marks the deletion of `toffy::Event` and the removal of the public
+    virtual `Filter::processEvent()`, which shrinks `Filter`'s vtable by one slot. Before
+    the tag, this tree built `libtoffy.so.1.7.1` with SONAME `libtoffy.so.1.7.1` while
+    exporting **none** of the `Event`/`processEvent` symbols the real 1.7.1 exported — the
+    hazard above, demonstrated with `readelf` rather than asserted. After the tag the SONAME
+    is `libtoffy.so.1.10.0` and a stale binary refuses to load.
+
+  Numbering note: `1.10.0` rather than the convention-implied `1.8.0`, so the number does
+  not sort below `v1.9.0`, which exists on `origin/next`. That branch diverged from
+  `b6d7665` and is not an ancestor of the cleanup line, so the two schemes still need
+  reconciling when they meet.
+
+  Also worth knowing before the next bump: `SOVERSION` is set to the **full** version, not
+  the major alone, so every patch bump changes the SONAME and forces a downstream relink.
+  That is why version decisions here cannot be routine.
 - Run `tools/api_change_report.sh [BASE]` and put its output in the PR description. It
   exits 1 when any installed header under `*/include/` changed, 2 if the base ref is
   invalid (it fails closed on purpose), and 0 otherwise. The declaration listing is
@@ -137,24 +170,34 @@ tools/api_change_report.sh "$(git describe --tags --abbrev=0)"   # exit 1 => tag
 The cleanup is done when all of the following hold. The **now** column is the measured
 baseline on the current tree, so each target is checkable rather than aspirational.
 
-| # | Criterion | Now | Target |
-|---|---|---|---|
-| 1 | All 12 `P0` correctness items closed, each with a regression test | 6/12 | 12/12 |
-| 2 | All 16 plan items closed, or explicitly rejected with a written rationale | 0/16 | 16/16 |
-| 3 | CI configures, builds and runs `ctest` on every PR | none | required |
-| 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` combinations | PCL-off broken | 4/4 |
-| 5 | `std::cout` in library code (`modules/`) | 42 | 0 |
-| 6 | `#warning` directives | 1 | 0 |
-| 7 | `DLLExport` occurrences (vestigial macro) | 22 | 0 |
-| 8 | Headers defining `RAWFILE` | 3 | 1 or 0 |
-| 9 | `#include <toffy/viewers/...>` from `modules/core` | 1 | 0 |
-| 10 | `interprocess` primitives in core | 2 | 0 |
-| 11 | Hard-coded type branches in `createFilter()` | 37 | 0 |
-| 12 | `@todo` markers in `modules/core` | 23 | ≤ 5, and **0** in `filterThread.hpp` |
-| 13 | `delete` of a `Filter` outside its owner | present | 0 |
-| 14 | `#ifdef MSVC` branches that are neither compiled nor tested | present | 0 |
-| 15 | Compiler warnings in `modules/core` under `-Wall -Wextra` | uncounted | 0, with `-Werror` on that directory |
-| 16 | Docs describing behaviour that does not exist | ≥ 3 | 0 |
+Re-measured on the current tree (`v1.10.0`, commit `7fea594`). Four criteria are now met;
+the mechanical counters are unchanged because the work since P0 has been correctness, build
+and CI rather than cleanup.
+
+| # | Criterion | Now | Target | |
+|---|---|---|---|---|
+| 1 | All 12 `P0` correctness items closed, each with a regression test | **12/12** | 12/12 | ✅ |
+| 2 | All 16 plan items closed, or explicitly rejected with a written rationale | 2/16 (`P1-1`, `P2-14`; `P2-16` 1-of-5) | 16/16 | |
+| 3 | CI configures, builds and runs `ctest` on every PR | matrix + sanitizers | required | ✅ |
+| 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` combinations | **4/4** | 4/4 | ✅ |
+| 5 | `std::cout` in library code (`modules/`) | 42 | 0 | |
+| 6 | `#warning` directives | 1 | 0 | |
+| 7 | `DLLExport` occurrences (vestigial macro) | 22 | 0 | |
+| 8 | Headers defining `RAWFILE` | 3 | 1 or 0 | |
+| 9 | `#include <toffy/viewers/...>` from `modules/core` | 1 | 0 | |
+| 10 | `interprocess` primitives in core | 2 | 0 | |
+| 11 | Hard-coded type branches in `createFilter()` | 37 | 0 | |
+| 12 | `@todo` markers in `modules/core` | 21 (was 23; `filterThread.hpp` still 10) | ≤ 5, and **0** in `filterThread.hpp` | |
+| 13 | `delete` of a `Filter` outside its owner | present | 0 | |
+| 14 | `#ifdef MSVC` branches that are neither compiled nor tested | 19 (5 `#if`, 12 `#ifdef`, 2 `#ifndef`) | 0 | |
+| 15 | Compiler warnings in `modules/core` under `-Wall -Wextra` | **3** — all one `-Woverloaded-virtual=` on the `filter()` const-overload trap | 0, with `-Werror` on that directory | |
+| 16 | Docs describing behaviour that does not exist | ≥ 3 (the Doxygen `use.dox` still documents the removed `minimal_toffy` / web UI) | 0 | |
+
+Criterion 15 is now counted rather than uncounted, and is worth reading carefully: the 3
+warnings are a single root cause, the `filter()` const/non-const overload trap, which is
+plan item `P2-12`. Fixing that item should take core to **zero** warnings, which is what
+makes `-Werror` on `modules/core` achievable. That is the cheapest remaining win on this
+table.
 
 ### Verification block
 
@@ -180,6 +223,10 @@ grep -rn "include <toffy/viewers" modules/core
 # 10 — no inter-process primitives in a single-process pipeline
 grep -rn "interprocess" modules/core
 
+# 14 — dead Windows branches. The pattern must cover #if, #ifdef AND #ifndef;
+# a pattern matching only "#if"/"#ifdef" under-counts by 2 (17 instead of 19).
+grep -rnE '^[[:space:]]*#[[:space:]]*if(n?def)?[[:space:]].*MSVC' modules/ | wc -l
+
 # 11 — factory is a lookup, not a type list
 grep -c "else if (type ==" modules/core/src/filterfactory.cpp   # expect 0
 
@@ -188,7 +235,37 @@ grep -rc "@todo" modules/core | grep -v ":0$"
 
 # 3 — tests exist and pass
 ctest --test-dir build --output-on-failure
+
+# 4 — all four dependency configurations build and pass. Each must print 7/7.
+for f in "" "-DWITHOUT_PCL=ON" "-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON" \
+         "-DWITHOUT_PCL=ON -DCMAKE_DISABLE_FIND_PACKAGE_bta=ON"; do
+  d=$(mktemp -d); cmake -S . -B "$d" $f >/dev/null 2>&1 \
+    && cmake --build "$d" -j"$(nproc)" >/dev/null 2>&1 \
+    && (cd "$d" && ctest 2>&1 | grep -E "tests passed|tests failed")
+  rm -rf "$d"
+done
+
+# 15 — core warnings. Expect 0 once P2-12 (the filter() overload trap) lands.
+cd build && touch ../modules/core/src/*.cpp && make toffy_core 2>&1 | grep -ci warning
+
+# 2.4 — an API change since the last tag requires a new tag. Exit 1 => tag required.
+tools/api_change_report.sh "$(git describe --tags --abbrev=0)"
+
+# 2.4 — the tag actually reached the ABI: SONAME must match the tag.
+git describe --tags --abbrev=0
+readelf -d build/libtoffy.so | grep -i soname
 ```
+
+Two gotchas when running the block above, both encountered for real:
+
+- **The SONAME check needs a freshly configured build directory.** CMake resolves
+  `git describe` at *configure* time and bakes the result into `SOVERSION`, so an existing
+  build directory keeps producing the old SONAME after a new tag is created — running this
+  in a `build/` configured before `v1.10.0` prints `libtoffy.so.1.7.1` and looks like the
+  tag failed. Re-run `cmake -S . -B build` (or use a clean directory) first.
+- **`api_change_report.sh` compares against the most recent tag**, so once the tag for the
+  current work exists it correctly returns 0. It is a *pre*-tag gate: run it before tagging,
+  not after, or it will tell you nothing.
 
 ### Explicitly out of scope
 
@@ -206,3 +283,12 @@ Not part of "done", so that the finish line stays reachable:
 **Done means: the P0 defects are closed by tests that failed before the fix, CI builds and
 tests the library in every dependency configuration, and the mechanical checks above return
 zero.**
+
+Progress against that sentence: the first two clauses are met — P0 is 12/12 with
+regression tests observed failing beforehand, and CI builds and tests in every dependency
+configuration that a runner can reach. The third is not: criteria 5–14 and 16 are
+essentially untouched, because the work so far went into correctness, the build matrix and
+CI rather than into cleanup. The remaining cleanup is dominated by four structural items —
+`P2-4` (the 37-branch factory), `P2-5` (one owner per `Filter`), `P2-7` (threading) and
+`P2-3` (the 42 `std::cout` sites) — and `P2-5` is the keystone that the other three get
+easier behind.
