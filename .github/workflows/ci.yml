@@ -1,0 +1,132 @@
+name: CI
+
+# Builds and runs the ctest suite. This is the gate the project never had:
+# .github/ previously held only Codacy, Flawfinder and Dependabot, i.e. static
+# analysis bots and a dependency updater, so nothing ever compiled or tested a
+# change and "CI green" could not be cited as evidence (DOD 1.2).
+#
+# Triggers on pushes to any branch, not just main, because the cleanup work
+# happens on feature branches and a gate that only runs after merge is not a
+# gate. Concurrency cancels superseded runs so this stays cheap.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: build & test (${{ matrix.label }})
+    runs-on: ubuntu-latest
+    strategy:
+      # Both configurations must be reported. With fail-fast the second cell
+      # would be cancelled when the first fails, and the two fail for unrelated
+      # reasons -- PCL-dependent code and PCL-independent code.
+      fail-fast: false
+      matrix:
+        include:
+          # The bta library is proprietary Becom SDK and cannot exist on a
+          # runner, so every CI configuration is BTA-off. That axis is covered
+          # here by construction; a BTA-on build can only be checked on a
+          # developer machine that has the SDK.
+          - label: "PCL on,  BTA off"
+            without_pcl: "OFF"
+          - label: "PCL off, BTA off"
+            without_pcl: "ON"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          # libboost-all-dev rather than the individual component packages: the
+          # build needs log, log_setup, program_options, system, filesystem,
+          # date_time, serialization, chrono and thread, plus the header-only
+          # container headers. The umbrella package is the reliable option; it
+          # can be trimmed later if install time matters.
+          sudo apt-get install -y --no-install-recommends \
+            cmake \
+            build-essential \
+            pkg-config \
+            libboost-all-dev \
+            libopencv-dev \
+            libgtest-dev \
+            libpcl-dev
+
+      - name: Report toolchain
+        run: |
+          cmake --version | head -1
+          g++ --version | head -1
+          pkg-config --modversion opencv4 || true
+
+      - name: Configure
+        run: |
+          set -euxo pipefail
+          # No BUILD_DOC flag: it is referenced nowhere in the build and does
+          # nothing. docs/CMakeLists.txt is include()'d unconditionally and its
+          # target only ever runs on demand, so CI simply never builds it.
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DWITHOUT_PCL=${{ matrix.without_pcl }}
+
+      - name: Build
+        run: cmake --build build -j "$(nproc)"
+
+      - name: Test
+        # --output-on-failure so a red run is diagnosable from the log alone,
+        # without re-running anything.
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Upload CMake logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmake-logs-${{ matrix.label }}
+          path: |
+            build/CMakeFiles/CMakeConfigureLog.yaml
+            build/CMakeCache.txt
+            build/Testing/Temporary/LastTest.log
+          if-no-files-found: ignore
+
+  sanitizers:
+    name: build & test (ASan + UBSan)
+    runs-on: ubuntu-latest
+    # A green ctest is weak evidence for a memory error; the sanitizers are the
+    # stage gate DOD 2 puts on the threading and ownership work (P2-7, P2-5).
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake build-essential pkg-config \
+            libboost-all-dev libopencv-dev libgtest-dev libpcl-dev
+
+      - name: Configure
+        run: |
+          set -euxo pipefail
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build
+        run: cmake --build build -j "$(nproc)"
+
+      - name: Test
+        env:
+          ASAN_OPTIONS: detect_leaks=1:abort_on_error=0
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0
+        run: ctest --test-dir build --output-on-failure

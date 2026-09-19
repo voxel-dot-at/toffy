@@ -23,9 +23,12 @@ plan keep resolving. Where a fix was partial this is stated — notably `A12` (o
 
 Still open and worth knowing before anything else:
 
-- **No CI builds or tests this project.** `.github/` is Codacy, Flawfinder and Dependabot
-  only. The harness exists; nothing runs it automatically. `DOD 1.2` says "CI green" must
-  not be cited as evidence, and it still cannot be.
+- **CI now builds and tests on every push and PR** (`.github/workflows/ci.yml`): a
+  PCL-on/PCL-off matrix plus an ASan/UBSan/LSan job. `DOD 1.2`'s warning that "CI green"
+  must not be cited no longer applies to this repo — but note the runners cannot have the
+  proprietary bta SDK, so CI only ever exercises the BTA-off axis.
+- **Docs are still not gated.** CI compiles and tests code; it does not build Doxygen, so
+  broken references and `\todo` drift stay invisible.
 - **A PCL-less build now works** (`-DWITHOUT_PCL=ON`: clean build, 7/7 ctest; default
   PCL-on build provably unchanged). `DOD 1.1` is still not fully green, but the remaining
   gap is a **different axis**: a BTA-less build is broken by an unconditional
@@ -85,9 +88,16 @@ live in **core**, not in `modules/filters`.
   build types, including Debug.
 - Optional deps gated by preprocessor macros added globally: `-DPCL_FOUND=1` (`:267`),
   `-DHAS_BTA=1` (`:307`), `-DOCV_VERSION_*` (`:280`).
-- **No test harness.** No `enable_testing()`, no `add_test()`, no gtest/catch2.
-  `tests/test_cond.cpp` is a bare executable. CI is Codacy + Flawfinder only
-  (`.github/`), i.e. static analysis bots with no build or test gate.
+- **Test harness and CI now exist.** `enable_testing()` plus 7 `add_test()` targets
+   (gtest), and `.github/workflows/ci.yml` builds and runs them on every push and PR.
+  Previously `.github/` held only Codacy, Flawfinder and Dependabot — static analysis
+  bots and a dependency updater, nothing that compiled or tested anything.
+- **`BUILD_DOC` does not exist.** It is referenced nowhere in the build; `docs/CMakeLists.txt`
+  is `include()`'d unconditionally (`CMakeLists.txt:591`) and its `docs` target only ever
+  runs on demand. Any earlier claim that it "defaults to OFF" was wrong — the flag is inert.
+- **`CMAKE_BUILD_TYPE` defaults to Release** (`CMakeLists.txt:92-94`), and Debug defines
+  `CM_DEBUG`, which changes `Filter`'s initial log level. Behaviour differs between the two,
+  so both must be built — CI does.
 
 ---
 
@@ -571,8 +581,10 @@ which the vast majority is stock `#`-commented defaults; only a few dozen lines 
 project settings. It should be regenerated or reduced to the settings that matter.
 
 **Docs are generated but never gated.** `docs/CMakeLists.txt` adds a `docs` custom target
-that only runs when Doxygen is found and only builds on demand; `BUILD_DOC` defaults to
-`OFF`. No CI job builds docs, so broken `\ref`s and `\todo` accumulation are invisible.
+that only runs when Doxygen is found and only builds on demand. CI builds and tests the code
+but does **not** build docs, so broken `\ref`s and `\todo` accumulation remain invisible —
+that is the one gate the new workflow deliberately does not close yet. (`BUILD_DOC` is not
+the mechanism: it is referenced nowhere in the build.)
 
 **Config reference is XML-only.** `docs/configDocs/xmls/` holds one XML per filter, and
 `bta.xml` exists twice (`docs/configDocs/bta.xml` and `docs/descDocs/bta.xml`) — duplicated

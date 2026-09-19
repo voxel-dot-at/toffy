@@ -26,10 +26,17 @@ cannot silently come back.
    A PCL-less build is not optional to check: it is the configuration most downstream
    packagers will hit first.
 
-2. **CI is green, and CI actually builds and tests.** Today `.github/` contains only
-   `codacy.yml`, `flawfinder.yml` and `dependabot.yml` — two static-analysis bots and a
-   dependency updater. There is **no workflow that configures, compiles or runs anything**.
-   Until PR 1 lands, "CI green" is not evidence of anything and must not be cited as such.
+2. **CI is green, and CI actually builds and tests.** This gate now exists:
+   `.github/workflows/ci.yml` configures, compiles and runs `ctest` on every push and PR,
+   as a PCL-on/PCL-off matrix plus a separate ASan/UBSan/LSan job. The original wording —
+   that `.github/` held only Codacy, Flawfinder and Dependabot and nothing compiled
+   anything — no longer applies.
+
+   Two limits to keep in mind when citing a green run:
+   - Runners cannot have the proprietary Becom bta SDK, so CI only ever covers the
+     **BTA-off** axis. A BTA-on build still has to be checked on a machine that has the SDK.
+   - CI does **not** build the Doxygen docs, so broken `\ref`s and `\todo` drift are not
+     caught by anything.
 
 3. **`ctest` passes**, and any new test fails on the parent commit for the right reason.
    For a fix PR, paste the pre-fix failure into the PR description. A test that has never
