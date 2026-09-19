@@ -26,8 +26,9 @@ Still open and worth knowing before anything else:
 - **No CI builds or tests this project.** `.github/` is Codacy, Flawfinder and Dependabot
   only. The harness exists; nothing runs it automatically. `DOD 1.2` says "CI green" must
   not be cited as evidence, and it still cannot be.
-- **A PCL-less build does not compile.** The typedefs at `frame.hpp:49-50` sit outside the
-  `#if PCL_FOUND` guard covering the includes. This is a `DOD 1.1` gate.
+- **A PCL-less build still does not configure.** The `frame.hpp` typedef guard and the
+  `viewers/CMakeLists.txt` `if()` bug are fixed, but three blockers remain in
+  `modules/filters` — see section E. `DOD 1.1` stays red until all three are done.
 - **A version tag is outstanding.** `P2-14` removed a public virtual from `Filter`, so the
   vtable shrank; `SOVERSION` comes from `git describe`. This branch tops out at `v1.7.1`
   while `origin/next` carries `v1.9.0`, so the number is a merge decision — but it cannot
@@ -429,16 +430,30 @@ Each has its own `#ifdef` for the `.rw`/`.r` variant. Any translation unit that
 transitively includes two of them gets a redefinition warning at best. It also leaks a
 two-character macro into every consumer of the library.
 
-**The `#if PCL_FOUND` guards are inconsistent.** `frame.hpp:27-30` guards the PCL
-*includes*, but the PCL typedefs at `:49-50` are *not* guarded:
+**A PCL-less build still does not work.** *Partially fixed:* `frame.hpp` guarded the PCL
+*includes* but left the two typedefs naming those templates outside the guard, so
+`-DWITHOUT_PCL=ON` failed with `'pcl' does not name a type`; that is now fixed, and the
+`if( ${VAR} )`-vs-`if(VAR)` bug in `viewers/CMakeLists.txt` that made the configuration
+abort before reaching the compiler is fixed too.
 
-```cpp
-typedef pcl::PointCloud<pcl::PointXYZ>::Ptr pclCloudXyzPtr;
-```
+**Still broken, in dependency order** — `DOD 1.1` must stay red until all three are done:
 
-A PCL-less build therefore fails to compile, even though the file clearly intends to
-support it. Note also that `PCL_FOUND` arrives via a global `add_definitions` (`:267`), so
-it is not part of the exported interface — consumers must reproduce the flag themselves.
+1. `modules/filters/src/3d/CMakeLists.txt:20` — `add_library(toffy_3d OBJECT "")` with no
+   sources when PCL is off. Making the target conditional also requires making its two
+   consumers conditional: `CMakeLists.txt:345` and `modules/filters/CMakeLists.txt:6`, both
+   `$<TARGET_OBJECTS:toffy_3d>`.
+2. `viewers/exportcloud.hpp` — unconditional `#include <pcl/point_cloud.h>` and
+   `<pcl/io/pcd_io.h>`, plus a `pcl::PCDWriter _w;` **member**. `exportcloud.cpp` is in the
+   always-built source list, so it compiles regardless of PCL. Needs real ifdefs, not a
+   typedef guard.
+3. `viewers/init.cpp` — includes `cloudviewpcl.hpp` and `exportcloud.hpp` unconditionally
+   while correctly guarding only their *registration* with `#if PCL_VIZ`.
+
+`exportYaml`, `exportcsv`, `imageview`, `videoout` and `colorize` are clean, and
+`filterfactory.cpp` guards its PCL includes properly.
+
+Note also that `PCL_FOUND` arrives via a global `add_definitions` (`:267`), so it is not
+part of the exported interface — consumers must reproduce the flag themselves.
 
 **Dead version branches.** `controller.cpp` keeps `#if (BOOST_VERSION > 105500)`, guarding
 a `char` log-severity variant from a 2017-era Boost that no supported compiler accepts.
