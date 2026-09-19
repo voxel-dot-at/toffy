@@ -26,9 +26,10 @@ Still open and worth knowing before anything else:
 - **No CI builds or tests this project.** `.github/` is Codacy, Flawfinder and Dependabot
   only. The harness exists; nothing runs it automatically. `DOD 1.2` says "CI green" must
   not be cited as evidence, and it still cannot be.
-- **A PCL-less build still does not configure.** The `frame.hpp` typedef guard and the
-  `viewers/CMakeLists.txt` `if()` bug are fixed, but three blockers remain in
-  `modules/filters` — see section E. `DOD 1.1` stays red until all three are done.
+- **A PCL-less build now works** (`-DWITHOUT_PCL=ON`: clean build, 7/7 ctest; default
+  PCL-on build provably unchanged). `DOD 1.1` is still not fully green, but the remaining
+  gap is a **different axis**: a BTA-less build is broken by an unconditional
+  `add_subdirectory(bta)`, pre-existing and confirmed on `HEAD`. See section E.
 - **A version tag is outstanding.** `P2-14` removed a public virtual from `Filter`, so the
   vtable shrank; `SOVERSION` comes from `git describe`. This branch tops out at `v1.7.1`
   while `origin/next` carries `v1.9.0`, so the number is a merge decision — but it cannot
@@ -430,30 +431,48 @@ Each has its own `#ifdef` for the `.rw`/`.r` variant. Any translation unit that
 transitively includes two of them gets a redefinition warning at best. It also leaks a
 two-character macro into every consumer of the library.
 
-**A PCL-less build still does not work.** *Partially fixed:* `frame.hpp` guarded the PCL
-*includes* but left the two typedefs naming those templates outside the guard, so
-`-DWITHOUT_PCL=ON` failed with `'pcl' does not name a type`; that is now fixed, and the
-`if( ${VAR} )`-vs-`if(VAR)` bug in `viewers/CMakeLists.txt` that made the configuration
-abort before reaching the compiler is fixed too.
+**A PCL-less build now works.** `frame.hpp` used to guard the PCL *includes* but leave the
+two typedefs naming those templates outside the guard, so `-DWITHOUT_PCL=ON` failed with
+`'pcl' does not name a type`. Fixing that exposed that the configuration had never actually
+reached the compiler, because of an `if( ${VAR} )`-vs-`if(VAR)` bug that aborted CMake first.
 
-**Still broken, in dependency order** — `DOD 1.1` must stay red until all three are done:
+Full set of fixes on the PCL axis:
 
-1. `modules/filters/src/3d/CMakeLists.txt:20` — `add_library(toffy_3d OBJECT "")` with no
-   sources when PCL is off. Making the target conditional also requires making its two
-   consumers conditional: `CMakeLists.txt:345` and `modules/filters/CMakeLists.txt:6`, both
-   `$<TARGET_OBJECTS:toffy_3d>`.
-2. `viewers/exportcloud.hpp` — unconditional `#include <pcl/point_cloud.h>` and
-   `<pcl/io/pcd_io.h>`, plus a `pcl::PCDWriter _w;` **member**. `exportcloud.cpp` is in the
-   always-built source list, so it compiles regardless of PCL. Needs real ifdefs, not a
-   typedef guard.
-3. `viewers/init.cpp` — includes `cloudviewpcl.hpp` and `exportcloud.hpp` unconditionally
-   while correctly guarding only their *registration* with `#if PCL_VIZ`.
+- `frame.hpp` — typedefs guarded; the `CloudXyz`/`CloudXyzRgb` enumerators deliberately
+  left unconditional so `SlotDataType` cannot differ between two builds of the header.
+- `viewers/CMakeLists.txt`, `3d/CMakeLists.txt` — `if( ${PCL_FOUND} )` style clauses
+  expanded to nothing when PCL was off, so CMake parsed `if( AND OFF)` and died with
+  "Unknown arguments specified". `if()` takes variable *names*.
+- `3d/CMakeLists.txt` — `add_library(toffy_3d OBJECT "")` is rejected by CMake, so the
+  target is now conditional and its two consumers (`CMakeLists.txt`,
+  `modules/filters/CMakeLists.txt`) reference it through a `PCL_FOUND`-gated variable.
+- `viewers/exportcloud.hpp` — holds a `pcl::PCDWriter` by value, so the whole class is
+  guarded and `exportcloud.cpp` moved into a PCL-gated source list; `init.cpp` guards the
+  include, factory function and registration to match.
+- `viewers/init.cpp` — included `cloudviewpcl.hpp` unconditionally while guarding only its
+  registration.
+- `viewers/exportcsv.hpp` — `#include <pcl/io/pcd_io.h>` with **no** `pcl::` usage anywhere
+  in the header or its source. Purely unnecessary, and it made an always-built
+  PCL-independent filter fail to compile.
+- `reproject/CMakeLists.txt` — `reprojectpcl.cpp` was always built; now gated. (`
+  filterfactory.cpp` already guarded both the include and the `reprojectpcl` branch.)
 
-`exportYaml`, `exportcsv`, `imageview`, `videoout` and `colorize` are clean, and
-`filterfactory.cpp` guards its PCL includes properly.
+Verified: clean `-DWITHOUT_PCL=ON` build, 74 TUs, 7/7 ctest. The default PCL-on build is
+provably unaffected — configuring `HEAD` and this tree yields identical compilation-unit
+lists (234 each), and the default build is clean with 7/7.
 
-Note also that `PCL_FOUND` arrives via a global `add_definitions` (`:267`), so it is not
-part of the exported interface — consumers must reproduce the flag themselves.
+**`PCL_FOUND` is still not part of the exported interface.** It arrives via a global
+`add_definitions` (`:267`), so consumers must reproduce the flag themselves or `Frame`
+changes shape under them. Worth an exported compile definition.
+
+**Separate pre-existing bug, found while testing the `DOD 1.1` matrix: a BTA-less build is
+broken.** `modules/CMakeLists.txt` does `add_subdirectory(bta)` **unconditionally**, so the
+bta module compiles even when `find_package(bta)` fails, and linking then fails with ~162
+undefined `BTA*` references. Confirmed on `HEAD`, so it is unrelated to the PCL work. The
+`DOD 1.1` matrix is therefore: PCL-on/BTA-on ✅, PCL-off/BTA-on ✅, and both BTA-off cells
+❌ until `add_subdirectory(bta)` and its consumers are gated the same way the PCL ones now
+are. There is no option to disable BTA — testing it needs
+`-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON`.
 
 **Dead version branches.** `controller.cpp` keeps `#if (BOOST_VERSION > 105500)`, guarding
 a `char` log-severity variant from a 2017-era Boost that no supported compiler accepts.

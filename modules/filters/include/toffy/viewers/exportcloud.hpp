@@ -16,10 +16,19 @@
 */
 #pragma once
 
+#include "toffy/filter.hpp"
+
+// ExportCloud is a PCL filter in the literal sense: it holds a pcl::PCDWriter by
+// value and takes a pcl::PointCloud<...>::Ptr& in a member signature, so the
+// class cannot be declared without pcl. Everything pcl-dependent is therefore
+// inside this guard, and exportcloud.cpp moved from the always-built list into
+// the PCL source list in viewers/CMakeLists.txt. Registration is guarded to match
+// in viewers/init.cpp, so a PCL-less build simply has no "exportcloud" filter
+// rather than failing to compile.
+#if PCL_FOUND
+
 #include <pcl/point_cloud.h>
 #include <pcl/io/pcd_io.h>
-
-#include "toffy/filter.hpp"
 
 namespace toffy {
 
@@ -49,4 +58,6 @@ private:
     bool exportXyz(const Frame& in, Frame& out);
 
 };
-}
+}  // namespace toffy
+
+#endif  // PCL_FOUND

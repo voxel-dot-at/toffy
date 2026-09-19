@@ -16,7 +16,10 @@
 #pragma once
 
 #include "toffy/filter.hpp"
-#include <pcl/io/pcd_io.h>
+// The pcl/io/pcd_io.h include that used to sit here was unnecessary: neither
+// exportcsv.hpp nor exportcsv.cpp names a single pcl:: symbol. It was not dead
+// weight -- it made this always-built, PCL-independent filter fail to compile in a
+// -DWITHOUT_PCL=ON tree, where the pcl headers are not even on the include path.
 
 namespace toffy {
 

@@ -326,6 +326,14 @@ add_subdirectory(modules)
 # # Create lib and target
 # ################################################################################
 
+# toffy_3d is only created when PCL is enabled (an OBJECT library needs at least one
+# source), so its objects are referenced conditionally here and in
+# modules/filters/CMakeLists.txt.
+set(TOFFY_3D_OBJ "")
+if (PCL_FOUND)
+    set(TOFFY_3D_OBJ $<TARGET_OBJECTS:toffy_3d>)
+endif()
+
 add_library( ${PROJECT_NAME} SHARED 
     # libs
     $<TARGET_OBJECTS:toffy_libs> 
@@ -342,7 +350,7 @@ add_library( ${PROJECT_NAME} SHARED
     $<TARGET_OBJECTS:toffy_filters> 
 
     $<TARGET_OBJECTS:toffy_base> 
-    $<TARGET_OBJECTS:toffy_3d> 
+    ${TOFFY_3D_OBJ} 
     $<TARGET_OBJECTS:toffy_capture> 
     $<TARGET_OBJECTS:toffy_detection> 
     $<TARGET_OBJECTS:toffy_import> 

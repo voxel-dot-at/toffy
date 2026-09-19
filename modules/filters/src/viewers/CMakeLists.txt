@@ -24,15 +24,25 @@ else()
     set(VIZ_SRCS "" )
 endif()
 
+# exportcloud needs PCL itself -- it holds a pcl::PCDWriter by value -- not just
+# the pcl visualization component, so it is gated on PCL_FOUND rather than on
+# WITH_PCL_CLOUDVIEW. Its class declaration, factory function and registration are
+# guarded the same way, so the three stay in step.
+if (PCL_FOUND)
+    set(PCL_IO_SRCS exportcloud.cpp)
+else()
+    set(PCL_IO_SRCS "")
+endif()
+
 add_library(toffy_viewers OBJECT 
     colorize.cpp
-    exportcloud.cpp
     exportcsv.cpp
     exportYaml.cpp
     imageview.cpp
     videoout.cpp
     ${VIZ_SRCS}
     ${PCL_SRCS}
+    ${PCL_IO_SRCS}
     init.cpp
     )
 
