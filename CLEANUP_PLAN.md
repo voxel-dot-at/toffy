@@ -447,24 +447,49 @@ Plan:
    `git blame --ignore-rev`.
 3. Add a CI check (`clang-format --dry-run -Werror`) so the tree cannot drift again.
 
-### 16 — Clean up the build flags — **partially done (1 of 5)**
+### 16 — Clean up the build flags — **4 of 5 done**
 
-Done: the **C++17 bump** (`CMAKE_CXX_STANDARD 17`), which was the decision this item asked
-for early — `findPos()` now returns `std::optional<int>` and would have needed a fallback
-shape otherwise.
-
-Still open, all four remaining sub-items measured on the current tree:
-
-| sub-item | now |
+| sub-item | state |
 |---|---|
-| `add_definitions(-O2 -fPIC)` forcing `-O2` into Debug | still present |
-| redundant `add_definitions(-Wall)` | still present |
-| `-Werror` on touched files | absent (0 occurrences) |
-| `#if (BOOST_VERSION > 105500)` dead branch | still present in `controller.cpp` |
+| C++17 bump (`CMAKE_CXX_STANDARD 17`) | ✅ done — the decision this item wanted early; `findPos()` returns `std::optional<int>` because of it |
+| `add_definitions(-O2 -fPIC)` forcing `-O2` into every build type | ✅ removed |
+| redundant `add_definitions(-Wall)` | ✅ removed |
+| `#if (BOOST_VERSION > 105500)` dead branch | ✅ removed from `controller.cpp` |
+| `-Werror` | ⬜ **deliberately not enabled** — see below |
 
-Note that CI builds `Debug`, so the `-O2`-in-Debug problem is live in CI: stack frames are
-inlined away exactly when a sanitizer report needs them. That raises this item's priority
-above where it was written.
+**The `-O2` was worse than described, in a second direction.** The write-up here said it
+"forces `-O2` into every build type, including Debug". Measured from `flags.make`, it also
+overrode **Release**: `add_definitions` content is emitted *after* `CMAKE_CXX_FLAGS_<CONFIG>`
+on the command line, so Release compiled `-O3 … -O2` and got `-O2`. Nobody was ever getting
+`-O3`. Debug had no `-O0` at all, because CMake's `CMAKE_CXX_FLAGS_DEBUG` is just `-g` — so
+"Debug" meant `-O2 -g -ggdb`, and CI builds Debug, which means sanitizer reports were being
+generated against inlined-away frames.
+
+After the change, measured directly: Debug → no `-O` flag (GCC default `-O0`), Release →
+`-O3`, RelWithDebInfo → `-O2`.
+
+**Two deviations from the literal instructions here**, both deliberate:
+
+- The plan said "Keep `-fPIC`". It is gone from `add_definitions`, but PIC is still applied —
+  `CMAKE_POSITION_INDEPENDENT_CODE ON` sits on the line directly above and makes CMake emit
+  `-fPIC` itself (verified present in `flags.make`). The property is the mechanism; the flag
+  was noise on top of it.
+- The plan said to delete the redundant `-Wall`, and it went — but it is worth knowing it was
+  not merely redundant. It sat *outside* the `if(GNUCC/GNUCXX)` check, so it also reached
+  MSVC, which does not accept `-Wall`. Deleting it fixed a latent Windows problem, not just a
+  duplication.
+
+**`-Werror` is the one sub-item left, and it stays left until `P2-12` lands.** Core still emits
+3 warnings under `-Wall -Wextra` (2 in a PCL-less build — the count is config-dependent, so
+quote the config when quoting it), all one root cause: the `filter()` const/non-const overload
+trap. Enabling `-Werror` now would fail every build, which is exactly what this item warned
+against. The plan's interim suggestion — `-Werror` on files touched by each PR — is the right
+way to hold the line meanwhile; note that core's 3 warnings are *not* narrowing/sign-compare
+warnings as this item originally assumed, they are all the overload trap.
+
+Verification for this change: 4 dependency configurations × {Debug, Release} = 8 builds, all
+configuring, building and passing 7/7 `ctest`; warning count unchanged before and after at 3
+(PCL on) and 2 (PCL off), measured against a `HEAD` worktree with an identical method.
 
 ---
 

@@ -15,7 +15,7 @@ Re-checked against `8d4c306`. The table below is the plan; this is what has actu
 | PR | State | Evidence |
 |---|---|---|
 | **1** test harness + CI | ✅ **done** | `enable_testing()` (`CMakeLists.txt:420`), 7 `add_test()` targets, `.github/workflows/ci.yml` (matrix + sanitizers) |
-| **2** build flags | 🟡 **1 of 4** | C++17 bumped; `-O2`-in-Debug, redundant `-Wall`, `-Werror` and the `BOOST_VERSION` branch all still there |
+| **2** build flags | 🟡 **4 of 5** | C++17 bumped; global `-O2` removed (Debug now `-O0`, Release back to `-O3`); redundant `-Wall` gone; dead `BOOST_VERSION` branch gone. Only `-Werror` left, blocked on `P2-12` |
 | **3** `stop()`/`remove()`/`findPos()` | ✅ **done** | `std::optional<int> findPos`, `_pipe.begin() + i`, `stop()` calls `stop()`; 4 tests pin it |
 | **4** member init + null checks | ✅ **done** | in-class initialisers in `filter.hpp`; `Controller` ctor throws |
 | **5** `Frame` metadata | ✅ **done** | `operator= = default`; all three maps handled together |
@@ -33,10 +33,12 @@ Re-checked against `8d4c306`. The table below is the plan; this is what has actu
 | **17** delete `Event` | ✅ **done** | `event.hpp`/`event.cpp` gone; tagged `v1.10.0` (local, **not pushed**) |
 | **18** `clang-format` | ❌ not started | 11 of 20 core files still contain hard tabs |
 
-**Six of eighteen PRs are done** (1, 3, 4, 5, 6, 17) plus one quarter of PR 2. The whole P0
-block and the test/CI fence are in place, which was the point of the critical path's first
-stretch. Everything from PR 7 onward — the structural work — is untouched, which matches the
-`2/16` figure in `DOD.md`.
+**Six of eighteen PRs are done** (1, 3, 4, 5, 6, 17), plus 4 of the 5 sub-items of PR 2. The
+whole P0 block, the test/CI fence and the build-flag cleanup are in place, which was the point
+of the critical path's first stretch — PR 2's `-O2` removal in particular was what made the
+concurrency work in PR 12 diagnosable at all. Everything from PR 7 onward — the structural
+work — is untouched, which still matches the `2/16` figure in `DOD.md` (PR 2 counts as open
+until `-Werror` lands).
 
 ---
 

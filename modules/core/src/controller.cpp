@@ -287,13 +287,11 @@ void Controller::saveRunConfig(std::string fileName)
     pt = baseFilterBank->getConfig();
 //std::stringstream ss;
 //boost::property_tree::xml_parser::write_xml(ss,pt);
-#if (BOOST_VERSION > 105500)
+    // The old `#if (BOOST_VERSION > 105500)` guard around this is gone: the
+    // `xml_writer_settings<char>` fallback it protected has not been compilable
+    // on any supported Boost for years, so the branch was dead code.
     boost::property_tree::xml_parser::xml_writer_settings<std::string> settings(
         '\t', 1);
-#else
-    boost::property_tree::xml_parser::xml_writer_settings<char> settings('\t',
-                                                                         1);
-#endif
     boost::property_tree::xml_parser::write_xml(fileName, pt, std::locale(),
                                                 settings);
     //std::cout << "OUTPUT: " << ss.str() << std::endl;

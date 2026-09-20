@@ -134,9 +134,24 @@ live in **core**, not in `modules/filters`.
 
 - CMake, `CMAKE_CXX_STANDARD 17` (`CMakeLists.txt:10`) — bumped from 14 under `P2-16`, which
   is what let `findPos()` return `std::optional<int>`.
-- Warnings: `-Wall -Wextra` (`:207`) and a redundant `-Wall` (`:317`). **No `-Werror`.**
-- Global `add_definitions(-O2 -fPIC)` (`:294`) — optimisation level hard-coded for all
-  build types, including Debug.
+- Warnings: `-Wall -Wextra -Wno-long-long` from `add_compile_options` (`:207`, the Unix
+  branch of the compiler check). The unconditional `add_definitions(-Wall)` that also sat at
+  `:317` is gone — it was redundant, and being *outside* the compiler check it also reached
+  MSVC, which does not accept `-Wall`. **No `-Werror`** — deliberately; see `P2-16`.
+- **Optimisation is left to `CMAKE_BUILD_TYPE`.** The global `add_definitions(-O2 -fPIC)` at
+  `:294` is gone. The measured behaviour is worth recording, because it was **not** what the
+  original analysis assumed: `add_definitions` content lands *after*
+  `CMAKE_CXX_FLAGS_<CONFIG>` on the compiler command line, so that `-O2` did not just force
+  `-O2` into Debug — it also **overrode Release's `-O3` down to `-O2`**. Debug had no `-O0`
+  at all (CMake's `CMAKE_CXX_FLAGS_DEBUG` is only `-g`), so "Debug" really meant
+  `-O2 -g -ggdb`. Now measured directly from `flags.make`: Debug → no `-O` flag (GCC default
+  `-O0`), Release → `-O3`, RelWithDebInfo → `-O2`. `-fPIC` was dropped too, but PIC is still
+  applied — `CMAKE_POSITION_INDEPENDENT_CODE ON` (`:293`) makes CMake emit `-fPIC` itself.
+  That satisfies the plan's "keep `-fPIC`" note through the mechanism it was actually asking
+  for rather than the literal flag.
+- **Core's warning count is configuration-dependent**: 3 with PCL on (the `DOD 15` figure),
+  2 with `-DWITHOUT_PCL=ON` — one of the three `-Woverloaded-virtual=` sites is behind a PCL
+  guard. Quote the config when quoting the number.
 - Optional deps gated by preprocessor macros added globally: `-DPCL_FOUND=1` (`:267`),
   `-DHAS_BTA=1` (`:307`), `-DOCV_VERSION_*` (`:280`).
 - **Test harness and CI now exist.** `enable_testing()` plus 7 `add_test()` targets

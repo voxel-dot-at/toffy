@@ -191,7 +191,7 @@ and CI rather than cleanup.
 | 12 | `@todo` markers in `modules/core` | 21 (was 23; `filterThread.hpp` still 10) | ≤ 5, and **0** in `filterThread.hpp` | |
 | 13 | `delete` of a `Filter` outside its owner | present | 0 | |
 | 14 | `#ifdef MSVC` branches that are neither compiled nor tested | 19 (5 `#if`, 12 `#ifdef`, 2 `#ifndef`) | 0 | |
-| 15 | Compiler warnings in `modules/core` under `-Wall -Wextra` | **3** — all one `-Woverloaded-virtual=` on the `filter()` const-overload trap | 0, with `-Werror` on that directory | |
+| 15 | Compiler warnings in `modules/core` under `-Wall -Wextra` | **3** with PCL on, **2** with `-DWITHOUT_PCL=ON` — all one `-Woverloaded-virtual=` on the `filter()` const-overload trap | 0, with `-Werror` on that directory | |
 | 16 | Docs describing behaviour that does not exist | ≥ 3 (the Doxygen `use.dox` still documents the removed `minimal_toffy` / web UI) | 0 | |
 
 Criterion 15 is now counted rather than uncounted, and is worth reading carefully: the 3
@@ -199,6 +199,18 @@ warnings are a single root cause, the `filter()` const/non-const overload trap, 
 plan item `P2-12`. Fixing that item should take core to **zero** warnings, which is what
 makes `-Werror` on `modules/core` achievable. That is the cheapest remaining win on this
 table.
+
+The count is **configuration-dependent**: one of the three overload sites sits behind a PCL
+guard, so a `-DWITHOUT_PCL=ON` build reports 2, not 3. The 3 above is the default (PCL-on)
+figure. Quote the configuration alongside the number, or a PCL-less CI job will look like it
+fixed a warning that is still there.
+
+Build-flag work landed since this table was first drawn (`P2-16`): the global
+`add_definitions(-O2 -fPIC)` and the redundant `add_definitions(-Wall)` are gone, and so is
+the dead `#if (BOOST_VERSION > 105500)` branch. Removing the global `-O2` also restored
+Release's `-O3`, which that flag had been silently overriding — see `P2-16`. It changed no
+warning counts (verified against a `HEAD` worktree: 3 before, 3 after with PCL on; 2 and 2
+without).
 
 ### Verification block
 

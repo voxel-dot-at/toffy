@@ -290,8 +290,17 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 list(APPEND LIBS ${OpenCV_LIBS})
 
+# Optimisation level is deliberately NOT set here. The `add_definitions(-O2 -fPIC)`
+# that used to follow this line landed *after* CMAKE_CXX_FLAGS_<CONFIG> on the
+# compiler command line, so it did two kinds of damage: in Debug it was the only
+# -O flag at all (CMAKE_CXX_FLAGS_DEBUG is just `-g`), giving an optimised,
+# hard-to-debug "Debug" build; in Release it overrode CMake's default -O3 down to
+# -O2, so nobody ever got -O3. Letting CMAKE_BUILD_TYPE decide now yields Debug
+# -O0, Release -O3, RelWithDebInfo -O2 (all verified from flags.make).
+#
+# No -fPIC either: the property below makes CMake emit it on every target, which
+# is the supported way to ask for position-independent code.
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-add_definitions(-O2 -fPIC)
 
 #
 # bta library -- communication with Becom Systems cameras (Argos, Sentis, ...)
@@ -314,8 +323,15 @@ else()
     message(WARNING "no bta library!")
 endif()
 
-add_definitions(-Wall  )
-# add_definitions(-Weffc++ )
+# Warning flags come from the Unix branch of the compiler check above
+# (`add_compile_options(-pthread -g -ggdb -Wall -Wextra -Wno-long-long)`). The
+# unconditional `add_definitions(-Wall)` that used to sit here was both redundant
+# and wrong twice over: it was outside the compiler check, so it also reached
+# MSVC, which does not accept -Wall.
+#
+# -Werror is intentionally NOT enabled: modules/core still emits 3 warnings, all
+# one root cause (the const/non-const filter() overload trap, P2-12). Enabling it
+# now would block every build until that API change lands. See DOD.md criterion 15.
 
 add_subdirectory(libraries)
 
