@@ -19,8 +19,35 @@ That is 2 of the 16 `P1`/`P2` items; the structural work is still ahead.
 Findings below are a record, not a to-do list, so several describe code that no longer
 exists. They are marked rather than deleted so that the `A`-number citations used by the
 plan keep resolving. Where a fix was partial this is stated — notably `A12` (only the
-`joinable()` guard landed; the `std::terminate` risk in the four run methods is open) and
+`joinable()` guard landed; the `std::terminate` risk in the four run methods is open),
+`A21` (null check landed; the non-overwriting `_filters.insert` remains) and
 `C3` (null guards landed; `clearCreators()` teardown is untouched).
+
+### Re-verified against the tree
+
+Every count in this document was re-measured rather than carried over, and the whole
+`DOD 1.1` matrix was re-run from scratch on `8d4c306`: **4/4 configurations build, 7/7
+`ctest` in each**. The mechanical counters (42 `std::cout`, 1 `#warning`, 22 `DLLExport`,
+3 `RAWFILE` headers, 1 viewers include, 2 `interprocess`, 37 factory branches, 21 `@todo`,
+19 `MSVC` branches) and the 3 `-Woverloaded-virtual=` warnings in core all reproduced
+exactly as stated.
+
+Corrections made during that pass, all of them this document describing a state it had
+already moved past:
+
+| Was | Now |
+|---|---|
+| `CMAKE_CXX_STANDARD 14` | **17** — bumped under `P2-16` |
+| `tests/` = "one file, `test_cond.cpp` (44 lines)" | 7 gtest sources, 586 lines, 7 `add_test()` targets |
+| core = 4,084 lines | **3,993**; `src/frame.cpp` was missing from the inventory entirely |
+| "a BTA-less build is broken" | **fixed** — `add_subdirectory(bta)` is gated by `if (HAS_BTA)`; 4/4 green |
+| "docs misdescribe `findPos`/`remove`" | doc comments were corrected with the fixes |
+| 23 `@todo` in core, `filterbank.hpp` 6 | **21**, `filterbank.hpp` **5** |
+| findings A1–A7, A13, A19, A21 written as live | marked `FIXED (P0-n)` |
+
+The last row matters most for future readers: the marking policy in the paragraph above was
+not being applied consistently, so ten already-fixed defects read as open. That is how a
+record like this gets disbelieved.
 
 ## Where the gates stand
 
@@ -96,7 +123,7 @@ The mental model is a **filter pipeline over a shared blackboard**:
 | `modules/bta/` | Becom BTA camera driver wrapper (optional, `HAS_BTA`) |
 | `modules/commons/` | Small shared helpers (e.g. `plugins.hpp`) |
 | `apps/` | Executables (`toffyRunner`, `tst_pb`) |
-| `tests/` | **One** file, `test_cond.cpp` (44 lines) |
+| `tests/` | 7 gtest sources (586 lines) + `dummy_filter.hpp` + `xml/` fixtures, wired to 7 `add_test()` targets |
 | `docs/` | Doxygen sources (`.dox`), largely stale |
 
 Note the naming trap: `modules/filters/` is a *sibling category*, while
@@ -105,7 +132,8 @@ live in **core**, not in `modules/filters`.
 
 ## 3. Build system facts
 
-- CMake, `CMAKE_CXX_STANDARD 14` (`CMakeLists.txt:10`).
+- CMake, `CMAKE_CXX_STANDARD 17` (`CMakeLists.txt:10`) — bumped from 14 under `P2-16`, which
+  is what let `findPos()` return `std::optional<int>`.
 - Warnings: `-Wall -Wextra` (`:207`) and a redundant `-Wall` (`:317`). **No `-Werror`.**
 - Global `add_definitions(-O2 -fPIC)` (`:294`) — optimisation level hard-coded for all
   build types, including Debug.
@@ -126,25 +154,26 @@ live in **core**, not in `modules/filters`.
 
 ## 4. `modules/core` inventory
 
-4,084 lines total (headers + sources).
+**3,993 lines** total (headers + sources), re-counted on the current tree.
 
 | File | LOC | Responsibility |
 |---|---|---|
-| `src/filterbank.cpp` | 472 | Pipeline execution, XML config instantiation, plugin loading |
-| `include/toffy/filter.hpp` | 411 | `Filter` base, `filterState`, `FilterListener`, `Port` |
-| `include/toffy/frame.hpp` | 402 | `Frame` blackboard + all inline typed accessors |
-| `src/controller.cpp` | 382 | Run loop, threading, plugin loading |
-| `include/toffy/filterbank.hpp` | 370 | Composite bank API |
-| `src/filterfactory.cpp` | 323 | Singleton registry + type-name dispatch |
-| `src/filter.cpp` | 196 | Base config/log/state plumbing |
+| `src/filterbank.cpp` | 473 | Pipeline execution, XML config instantiation, plugin loading |
+| `include/toffy/frame.hpp` | 421 | `Frame` blackboard + all inline typed accessors |
+| `src/controller.cpp` | 405 | Run loop, threading, plugin loading |
+| `include/toffy/filter.hpp` | 398 | `Filter` base, `filterState`, `FilterListener`, `Port` |
+| `include/toffy/filterbank.hpp` | 364 | Composite bank API |
+| `src/filterfactory.cpp` | 335 | Singleton registry + type-name dispatch |
+| `src/filter.cpp` | 194 | Base config/log/state plumbing |
 | `include/toffy/controller.hpp` | 156 | Controller API |
-| `src/parallelFilter.cpp` | 147 | Parallel lanes |
-| `include/toffy/filterfactory.hpp` | 142 | Factory API |
-| `src/player.cpp`, `include/toffy/player.hpp` | 273 | App facade + logging setup |
-| `src/filterThread.cpp` / `.hpp` | 228 | Worker thread + frame queues |
+| `include/toffy/filterfactory.hpp` | 154 | Factory API |
+| `src/player.cpp` / `include/toffy/player.hpp` | 148 / 134 | App facade + logging setup |
+| `src/parallelFilter.cpp` / `.hpp` | 147 / 92 | Parallel lanes |
+| `src/filterThread.cpp` / `include/toffy/filterThread.hpp` | 125 / 103 | Worker thread + frame queues |
+| `src/frame.cpp` | 105 | `Frame` out-of-line members |
 | ~~`include/toffy/event.hpp`, `src/event.cpp`~~ | ~~156~~ | ~~Event bus (incomplete)~~ — deleted, `P2-14` |
 | `include/toffy/filter_helpers.hpp` | 84 | `LOG` macro, ptree option getters |
-| `include/toffy/mux.hpp`, `src/mux.cpp` | 105 | Fan-in of frames |
+| `include/toffy/mux.hpp` / `src/mux.cpp` | 67 / 38 | Fan-in of frames |
 | `include/toffy/btaFrame.hpp` | 50 | BTA-flavoured Frame subclass + slot-name constants |
 
 ## 5. How a run actually happens
@@ -164,32 +193,37 @@ live in **core**, not in `modules/filters`.
 
 ### A. Correctness bugs (fix first — these are not style issues)
 
-1. **`FilterBank::stop()` starts the filters.** `src/filterbank.cpp:351-355` iterates
-   `_pipe` and calls `_pipe[i]->start()`. Copy-paste of `start()`. Stopping a bank
-   leaves every child in `filterRunning`.
+1. **~~`FilterBank::stop()` starts the filters.~~ FIXED (`P0-1`)** — the loop body called
+   `_pipe[i]->start()`, a copy-paste of `start()` two functions above, so stopping a bank
+   left every child in `filterRunning`. Now calls `stop()`; pinned by
+   `FilterBankStop.StopStopsChildren`.
 
-2. **`FilterBank::remove(size_t)` erases from the wrong end.**
-   `src/filterbank.cpp:299`: `_pipe.erase(_pipe.end() + i)`. Should be
-   `_pipe.begin() + i`. `end() + i` is out-of-range iterator arithmetic for every `i`
-   (including `i == 0`) → undefined behaviour / heap corruption. The bounds check just
-   above (`:293`) is correct, which makes this easy to miss.
+2. **~~`FilterBank::remove(size_t)` erases from the wrong end.~~ FIXED (`P0-2`)** — was
+   `_pipe.erase(_pipe.end() + i)`, out-of-range iterator arithmetic for *every* `i`
+   (including `0`) → undefined behaviour / heap corruption. The bounds check immediately
+   above it was correct, which is what made it survive review. Now `_pipe.begin() + i`;
+   pinned by `FilterBankRemove.ByIndexRemovesTheElementAtThatIndex`.
 
-3. **`findPos()` cannot express "not found".** `src/filterbank.cpp:275-281` returns
-   `size_t` but `return -1` on failure → `SIZE_MAX`, while the header documents
-   "negative if not found" (`filterbank.hpp:266-272`).
+3. **~~`findPos()` cannot express "not found".~~ FIXED (`P0-4`)** — returned `size_t` with
+   `return -1` on failure (→ `SIZE_MAX`) while the header documented "negative if not
+   found". Now returns `std::optional<int>`; pinned by
+   `FilterBankFindPos.MissingNameYieldsNoValue`. The header comment was corrected in the
+   same change.
 
-4. **`remove(std::string)` then has no bounds check.** `src/filterbank.cpp:283-289`
-   narrows `findPos()` into `int pos` (so `SIZE_MAX` → `-1`) and calls
-   `_pipe.erase(_pipe.begin() + pos)` unconditionally. Removing a name that does not
-   exist is UB. It also always `return 1` (success).
+4. **~~`remove(std::string)` had no bounds check.~~ FIXED (`P0-3`)** — it narrowed
+   `findPos()` into `int pos` (so `SIZE_MAX` → `-1`) and erased at `begin() + pos`
+   unconditionally, always returning 1. Now checks the optional, logs, and returns 0;
+   pinned by `FilterBankRemove.MissingNameLeavesBankIntact`. `remove(size_t)` likewise
+   returns 0 out of range.
 
-5. **`Frame` silently loses metadata.** `src/frame.cpp:26` copy-constructs only
-   `data` and `meta`, never `desc`. `clearData()` (`:81`) clears only `data`;
-   `removeData()` (`:72-79`) erases only from `data`. Consequence: `getDataType()` and
-   `getDescription()` keep reporting types/descriptions for keys that are gone, and
-   `hasKey() == false` while `getDataType() != NotFound`.
+5. **~~`Frame` silently lost metadata.~~ FIXED (`P0-6`)** — the copy ctor copied only `data`
+   and `meta`, `clearData()` cleared only `data`, and `removeData()` erased only from
+   `data`, so `getDataType()`/`getDescription()` kept reporting slots that were gone while
+   `hasKey()` correctly said they were. All three maps are now handled together
+   (ctor, dtor, `removeData`); `operator=` is `= default`. Pinned by `FrameMetadata.*`.
 
-6. **`Filter` constructors leave members uninitialised.**
+6. **~~`Filter` constructors left members uninitialised.~~ FIXED (`P0-5`)** — see the
+   original analysis below, which is why the fix used in-class initialisers.
    `src/filter.cpp:41` is `Filter::Filter() : _type("...") {}` — `_bank`, `_log_lvl`,
    `dbg`, `update` and `state` are all uninitialised. `bank()` then returns garbage,
    which `loadGlobals()` casts and dereferences (see A9), and `getState()` returns
@@ -202,9 +236,12 @@ live in **core**, not in `modules/filters`.
    Fixed with in-class member initialisers rather than constructor init lists, so a
    future constructor cannot forget again.
 
-7. **`Filter::loadConfig()` throws right after diagnosing the problem.**
-   `src/filter.cpp:92-101` logs a helpful message when the type node is missing, then
-   unconditionally executes `pt.get_child(_type)`, which throws `ptree_bad_path`.
+7. **~~`Filter::loadConfig()` threw right after diagnosing the problem.~~ FIXED
+   (`P0-12`)** — it logged a helpful message when the type node was missing, then
+   unconditionally executed `pt.get_child(_type)`, which throws `ptree_bad_path`. Now
+   returns `-1` before the throw; pinned by
+   `FilterLoadConfig.MissingTypeNodeReportsFailureInsteadOfThrowing` and
+   `MatchingTypeNodeStillSucceeds`.
 
 8. **~~`Event::data()` dereferences a null pointer.~~ RESOLVED BY REMOVAL** — the whole
    `Event` class was deleted (`P2-14`) rather than repaired, so this and the uninitialised
@@ -236,17 +273,12 @@ live in **core**, not in `modules/filters`.
     `std::terminate()`. That, and the four near-duplicate run methods that let the bug hide
     in four places, remain `P2-6`/`P2-7`.
 
-13. **`Frame::operator=` drops the type metadata.** `include/toffy/frame.hpp:82-86`
-    copies *only* `data`:
-
-    ```cpp
-    Frame& operator=(const Frame& x) { data = x.data; return *this; }
-    ```
-
-    `meta` and `desc` are not assigned, so after `f1 = f2` every `getDataType()` returns
-    `NotFound` while `hasKey()` returns `true`. This is worse than the copy ctor (which
-    at least copies `meta`) and it is silent. `Frame` declares a dtor and a copy ctor but
-    gets assignment wrong — a textbook Rule-of-Three break.
+13. **~~`Frame::operator=` dropped the type metadata.~~ FIXED (`P0-6`)** — it copied *only*
+    `data` (`Frame& operator=(const Frame& x) { data = x.data; return *this; }`), so after
+    `f1 = f2` every `getDataType()` returned `NotFound` while `hasKey()` returned `true`.
+    Worse than the copy ctor and silent: `Frame` declared a dtor and a copy ctor but got
+    assignment wrong — a textbook Rule-of-Three break. Now `= default`, which removes the
+    hand-written bug *and* the chance of reintroducing it.
 
 14. **`addData(long)` stores a value that no getter can read.**
     `include/toffy/frame.hpp:140-144` overloads for `long` / `unsigned long` tag the slot
@@ -276,19 +308,24 @@ live in **core**, not in `modules/filters`.
     destructor of the very object it points at, and never nulls it. Any delete leaves a
     dangling global. In practice the factory is never deleted at all, so it simply leaks.
 
-19. **`creators[type]` inserts while looking up.** `src/filterfactory.cpp:249` uses
-    `operator[]` on the static creator map. A typo'd filter type therefore *mutates* a
-    shared global registry by inserting a null entry, instead of failing. Use `find()`.
+19. **~~`creators[type]` inserted while looking up.~~ FIXED (`P0-10`)** — `operator[]` on
+    the static creator map meant a typo'd filter type *mutated* a shared global registry by
+    inserting a null entry instead of failing. Now `creators.find()`, with the null-entry
+    case rejected too; pinned by `FilterFactoryCreate.FailedLookupDoesNotRegisterTheType`.
 
 20. **`createFilter()` ignores its `name` argument.** `src/filterfactory.cpp:148` leaves
     the parameter deliberately unnamed (`std::string /* name */`), although
     `include/toffy/filterfactory.hpp:68-73` documents it as the filter identifier. Callers
     who pass a name silently get a generated one.
 
-21. **A creator that returns null is dereferenced.** `src/filterfactory.cpp:257-262`
-    calls `f->name()` with no null check after `f = fn()`. The following
-    `_filters.insert(...)` also does not overwrite, so an id collision leaks the new
-    filter and leaves it unregistered.
+21. **A creator that returns null is dereferenced.** *Partially fixed (`P0-8`):* the null
+    dereference is gone — `f = it->second()` is now followed by an explicit null check and
+    an error return, where `f->name()` used to be called unconditionally. Pinned by
+    `FilterFactoryCreate.CreatorReturningNullIsRejected`, which segfaulted before the fix.
+    **Still open:** the following `_filters.insert(std::pair<std::string, Filter*>(f->id(), f))`
+    is still an `insert`, not an assignment, so an id collision silently leaves the new
+    filter unregistered and leaked. It does not bite today because `id()` embeds a
+    per-construction counter, but it is a latent leak and belongs with `P2-5`.
 
 22. **`FilterBank::insert()` has no bounds check.**
     `include/toffy/filterbank.hpp:100-103` computes `_pipe.insert(it + pos, f)` from an
@@ -498,14 +535,17 @@ lists (234 each), and the default build is clean with 7/7.
 `add_definitions` (`:267`), so consumers must reproduce the flag themselves or `Frame`
 changes shape under them. Worth an exported compile definition.
 
-**Separate pre-existing bug, found while testing the `DOD 1.1` matrix: a BTA-less build is
-broken.** `modules/CMakeLists.txt` does `add_subdirectory(bta)` **unconditionally**, so the
-bta module compiles even when `find_package(bta)` fails, and linking then fails with ~162
-undefined `BTA*` references. Confirmed on `HEAD`, so it is unrelated to the PCL work. The
-`DOD 1.1` matrix is therefore: PCL-on/BTA-on ✅, PCL-off/BTA-on ✅, and both BTA-off cells
-❌ until `add_subdirectory(bta)` and its consumers are gated the same way the PCL ones now
-are. There is no option to disable BTA — testing it needs
-`-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON`.
+**A BTA-less build used to be broken; it now works.** Found while testing the `DOD 1.1`
+matrix: `modules/CMakeLists.txt` did `add_subdirectory(bta)` **unconditionally**, so the bta
+module compiled even when `find_package(bta)` failed and linking then died with ~162
+undefined `BTA*` references. It was confirmed on `HEAD` at the time, and was unrelated to the
+PCL work.
+
+**FIXED** — `add_subdirectory(bta)` is now gated by `if (HAS_BTA)` (`modules/CMakeLists.txt:8-10`)
+and the single `$<TARGET_OBJECTS:toffy_bta>` consumer is gated the same way. Re-verified on the
+current tree: all four `PCL_FOUND` × `HAS_BTA` cells configure, build and pass 7/7 `ctest`, so
+the `DOD 1.1` matrix is 4/4 green and agrees with `DOD.md`. There is still no explicit option
+to disable BTA — testing the off axis needs `-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON`.
 
 **Dead version branches.** `controller.cpp` keeps `#if (BOOST_VERSION > 105500)`, guarding
 a `char` log-severity variant from a 2017-era Boost that no supported compiler accepts.
@@ -572,10 +612,13 @@ anywhere in the repo (`grep -rn minimal_toffy` → no matches; `apps/` contains 
 `toffyRunner` and `tst_pb`), and the web control was dropped in commit `54d9577`. A new
 reader following this page cannot get to a running system.
 
-**The docs misdescribe the buggy functions.** `filterbank.hpp` documents `findPos()` as
-returning "negative if not found", which `size_t` cannot do (A3), and documents both
-`remove()` overloads as "positive on success, negative or 0 in failed" while they always
-`return 1` (A4). A reader trusting the docs would not suspect the bugs.
+**~~The docs misdescribe the buggy functions.~~ FIXED with the code.** `filterbank.hpp` once
+documented `findPos()` as returning "negative if not found", which `size_t` cannot do (A3),
+and documented both `remove()` overloads as "positive on success, negative or 0 in failed"
+while they always `return 1` (A4). The doc comments were corrected alongside the fixes and now
+match the code: `findPos()` says "or `std::nullopt` if no filter has that name", and
+`remove(size_t)` says "1 if a filter was removed, 0 if `i` is out of range". This was the one
+case where trusting the documentation actively hid a defect.
 
 **Deprecated things are still used.** `filter.hpp` marks `_name` and
 `Filter::loadFileConfig()` `@deprecated` ("we don't want a filter reading files, only the
@@ -584,8 +627,9 @@ filterbank"), yet `FilterBank::handleConfigItem()` still drives config loading t
 
 **The most dangerous class is the least documented.** `filterThread.hpp` carries 10
 `@todo document` markers — including on every queue, mutex and condition variable it uses
-to synchronise across threads. Core contains 23 `@todo`s in total, concentrated in
-`filterThread.hpp` (10), `filterbank.hpp` (6) and `controller.hpp` (4).
+to synchronise across threads. Core contains **21** `@todo`s in total (down from 23; the
+`Event` deletion removed 2), concentrated in `filterThread.hpp` (10), `filterbank.hpp` (5)
+and `controller.hpp` (4); `filter.hpp` and `player.hpp` carry one each.
 
 **Commented-out API sketches stand in for real docs.** `frame.hpp:262-280` is a block of
 planned `insGet`/`setGet` accessors, with `optBool` etc. duplicated as comments right above

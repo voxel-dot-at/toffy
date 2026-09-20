@@ -8,6 +8,38 @@ This file only answers *what order, and why*. Nothing here re-states the defects
 
 ---
 
+## Where the sequence stands
+
+Re-checked against `8d4c306`. The table below is the plan; this is what has actually landed.
+
+| PR | State | Evidence |
+|---|---|---|
+| **1** test harness + CI | ✅ **done** | `enable_testing()` (`CMakeLists.txt:420`), 7 `add_test()` targets, `.github/workflows/ci.yml` (matrix + sanitizers) |
+| **2** build flags | 🟡 **1 of 4** | C++17 bumped; `-O2`-in-Debug, redundant `-Wall`, `-Werror` and the `BOOST_VERSION` branch all still there |
+| **3** `stop()`/`remove()`/`findPos()` | ✅ **done** | `std::optional<int> findPos`, `_pipe.begin() + i`, `stop()` calls `stop()`; 4 tests pin it |
+| **4** member init + null checks | ✅ **done** | in-class initialisers in `filter.hpp`; `Controller` ctor throws |
+| **5** `Frame` metadata | ✅ **done** | `operator= = default`; all three maps handled together |
+| **6** `creators.find()`, `Player::stop()`, `get_child` | ✅ **done** | `Player::stop()` defined at `player.cpp:122` |
+| **7** debug leftovers | ❌ not started | 42 `std::cout` in `modules/`, 1 `#warning`, 22 `DLLExport` |
+| **8** Windows paths | ❌ not started | 19 `MSVC` preprocessor branches still present |
+| **9** factory → registration | ❌ not started | 37 `else if (type ==` branches remain |
+| **10** one owner per `Filter` | ❌ not started | `_pipe` and the factory still hold raw `Filter*` |
+| **11** collapse run methods | ❌ not started | `stedBackward()`, `CERROR` still in the public API |
+| **12** threading | ❌ not started | `bool keepRunning` (`filterThread.hpp:85`), 2 `interprocess` uses |
+| **13** module layering | ❌ not started | `#include <toffy/viewers/imageview.hpp>` still in `controller.cpp` |
+| **14** plugin loaders | ❌ not started | all three `::loadPlugins` still exist (`controller.cpp:329`, `filterbank.cpp:405`, `player.cpp:132`) |
+| **15** logging policy | ❌ not started | `setLoggingLvl()` still on the hot path |
+| **16** `Frame` API + `filter()` overload | ❌ not started | `getSertMatPtr` remains; the 3 `-Woverloaded-virtual=` warnings are this trap |
+| **17** delete `Event` | ✅ **done** | `event.hpp`/`event.cpp` gone; tagged `v1.10.0` (local, **not pushed**) |
+| **18** `clang-format` | ❌ not started | 11 of 20 core files still contain hard tabs |
+
+**Six of eighteen PRs are done** (1, 3, 4, 5, 6, 17) plus one quarter of PR 2. The whole P0
+block and the test/CI fence are in place, which was the point of the critical path's first
+stretch. Everything from PR 7 onward — the structural work — is untouched, which matches the
+`2/16` figure in `DOD.md`.
+
+---
+
 ## Recommended PR order
 
 | PR | Contents | Depends on | Why here |
@@ -39,11 +71,11 @@ reimplementation, `P2-7`'s `FilterThread` ownership and the deletion of the name
 `clearBank()` teardown all fall out of that one decision, so attempting any of them first
 means doing it twice.
 
-**PR 1 is a hard gate, not a formality.** There is currently no `enable_testing()`, no
-`add_test()`, and no CI job that even compiles the project — `.github/` contains only
-Codacy, Flawfinder and Dependabot. Until PR 1 lands, "verified" can only mean "I ran
-`toffyRunner` once". Every P0 fix should arrive with a test that **fails on `main`**, and
-the PR description should show that failure.
+**PR 1 was a hard gate, and it has landed.** The description below is the original rationale;
+it no longer describes the tree. `enable_testing()`, 7 `add_test()` targets and a CI workflow
+that configures, builds and runs `ctest` on every push all exist now — `.github/` is no longer
+just Codacy, Flawfinder and Dependabot. The standing rule survives, though: every fix arrives
+with a test that **fails on its parent commit**, and the PR description shows that failure.
 
 **PRs 3, 4, 5 and 6 are mutually independent** (all depend only on PR 1) and can run in
 parallel. They touch different files: `filterbank.cpp`, `filter.{hpp,cpp}`, `frame.{hpp,cpp}`

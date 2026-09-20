@@ -399,33 +399,44 @@ was removed from `Filter`, so the vtable loses a slot, and an installed header i
 `processEvent` will not compile, and any plugin built against the old header is ABI-broken.
 See the version-tag note in the commit.
 
-`event.hpp` carries `@todo Implement the event logic`, and the class is not used by the
-run loop at all. While it stays:
+**Original rationale, kept for the record.** Everything below described the stub as live;
+the class is gone, so none of it is actionable any more.
 
-- `data()` returns `*_data` with no null check — calling it before `data(any)` was set
-  dereferences null (A8).
-- The default `Event()` leaves `_re_type` and `_sender` uninitialised.
-- `receiver()` and `event()` return `std::string` by value; should be `const&`.
-- `receiverType()` is not `const`.
-- `Filter::processEvent` logs "Filter does not have events declared" at `info` for every
-  unhandled event — log spam the moment events are used.
+`event.hpp` carried `@todo Implement the event logic`, and the class was not used by the
+run loop at all. While it stayed:
 
-Plan: either implement the bus (typed payloads, `std::function` subscribers, no raw
+- `data()` returned `*_data` with no null check — calling it before `data(any)` was set
+  dereferenced null (A8).
+- The default `Event()` left `_re_type` and `_sender` uninitialised.
+- `receiver()` and `event()` returned `std::string` by value; should have been `const&`.
+- `receiverType()` was not `const`.
+- `Filter::processEvent` logged "Filter does not have events declared" at `info` for every
+  unhandled event — log spam the moment events were used.
+
+The plan was: either implement the bus (typed payloads, `std::function` subscribers, no raw
 `Filter*` sender) or remove the class until there is a consumer. A half-implemented event
-system in a header every filter includes is worse than none.
+system in a header every filter includes is worse than none. **Delete was chosen.** If a
+real event bus is ever wanted, start from that sentence rather than resurrecting the
+deleted code.
 
 
 ### 15 — Enforce formatting, then keep it enforced
 
 A `.clang-format` (6 KB) sits at the repo root but is neither applied nor checked.
 
-Measured state of `modules/core` (22 header/source files):
+Measured state of `modules/core` (**20** header/source files, re-counted — it was 22 before
+`event.hpp`/`event.cpp` were deleted):
 
-- **13 of 22 files contain hard tabs.**
-- Namespace brace style is split almost evenly: 6 files use `namespace toffy {`, 5 use
-  `namespace toffy` + newline. `frame.hpp` and `filterbank.hpp` disagree with each other.
+- **11 of 20 files contain hard tabs** (was 13 of 22; two tab-bearing files went away with
+  `Event`).
+- Namespace brace style is still split, now 5 headers on `namespace toffy {` and 6 on
+  `namespace toffy` + newline. Same-line: `controller.hpp`, `filter.hpp`, `filterbank.hpp`,
+  `frame.hpp`, `player.hpp`. Newline: `btaFrame.hpp`, `filterThread.hpp`,
+  `filter_helpers.hpp`, `filterfactory.hpp`, `mux.hpp`, `parallelFilter.hpp`. (The earlier
+  example here cited `frame.hpp` vs `filterbank.hpp`; those two now agree, so the split runs
+  between `filter.hpp` and `parallelFilter.hpp` instead.)
 - Also normalised for free: `it < v.end()` iterator comparisons, stray `;` after function
-  bodies (`frame.hpp:362-390`), and the whole-class 4-space-plus indent in `mux.hpp`.
+  bodies, and the whole-class 4-space-plus indent in `mux.hpp`.
 
 Plan:
 

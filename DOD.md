@@ -170,7 +170,8 @@ tools/api_change_report.sh "$(git describe --tags --abbrev=0)"   # exit 1 => tag
 The cleanup is done when all of the following hold. The **now** column is the measured
 baseline on the current tree, so each target is checkable rather than aspirational.
 
-Re-measured on the current tree (`v1.10.0`, commit `7fea594`). Four criteria are now met;
+Re-measured on the current tree (`v1.10.0`, commit `8d4c306`; the whole matrix below was
+re-run from scratch there and every counter reproduced exactly). Four criteria are now met;
 the mechanical counters are unchanged because the work since P0 has been correctness, build
 and CI rather than cleanup.
 
