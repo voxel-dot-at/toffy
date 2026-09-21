@@ -14,8 +14,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <iostream>
-
 #include <boost/log/trivial.hpp>
 
 #include "toffy/filterbank.hpp"
@@ -42,15 +40,16 @@ int ParallelFilter::handleConfigItem(
     const std::string& confFile,
     const boost::property_tree::ptree::const_iterator& it)
 {
+    // The `cout << "PF::handle "` that followed this logged the same two values
+    // as the line above, so it is deleted rather than converted.
     BOOST_LOG_TRIVIAL(debug)
         << __FUNCTION__ << ":: " << type() << " " << it->first;
 
-    cout << "PF::handle " << it->first << endl;
     if (it->first == "parallelFilter") {
         // recurse
         return loadConfig(confFile, it->second.begin(), it->second.end());
     } else if (it->first == "thread") {
-        cout << "PF::THREAD FOUND!" << endl;
+        BOOST_LOG_TRIVIAL(debug) << "PF::thread node";
         Filter* f;
         if (it->second.size() > 1) {
             // instantiate a filterbank
@@ -65,7 +64,7 @@ int ParallelFilter::handleConfigItem(
             FilterBank* fb = new FilterBank();
             const boost::property_tree::ptree pt = it->second.begin()->second;
 
-            cout << "DD " << pt.data() << endl;
+            BOOST_LOG_TRIVIAL(debug) << "PF::filterGroup file " << pt.data();
             fb->bank(NULL);
             fb->loadFileConfig(pt.data());
 
@@ -82,7 +81,7 @@ int ParallelFilter::handleConfigItem(
 
     } else if (it->first == "barrier") {
         boost::property_tree::ptree::const_iterator child = it->second.begin();
-        cout << "PF::BARRIER FOUND! " << child->first << endl;
+        BOOST_LOG_TRIVIAL(debug) << "PF::barrier node " << child->first;
 
         Filter* f = instantiateFilter(child);
 
@@ -105,10 +104,10 @@ bool ParallelFilter::filter(const Frame& /*in*/, Frame& out)
     // sync all threads to get one result
     res.resize(lanes.size());
     for (i = 0; i < lanes.size(); i++) {
-        cout << "ParallelFilter::filter.deq " << i << endl;
+        BOOST_LOG_TRIVIAL(trace) << name() << "::filter dequeuing lane " << i;
         res[i] = lanes[i]->dequeue();
     }
-    cout << "ParallelFilter::filter.deqed " << endl;
+    BOOST_LOG_TRIVIAL(trace) << name() << "::filter all lanes dequeued";
 
     if (mux) {
         mux->filter(res, out);

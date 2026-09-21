@@ -25,13 +25,11 @@
 
 #include "toffy/filterfactory.hpp"
 
-#ifdef MSVC
-#define DLLExport __declspec(dllexport)
-#define RAWFILE ".rw"
-#else
-#define DLLExport /**/
-#define RAWFILE ".r"
-#endif
+// RAWFILE used to be defined here, in capturerFilter.hpp and in BtaWrapper.hpp --
+// three public headers, each with its own MSVC #ifdef, so any translation unit that
+// transitively included two of them risked a redefinition. Its only consumer is
+// bta.cpp, so it now lives once, in toffy/bta/BtaWrapper.hpp. DLLExport also went:
+// TOFFY_EXPORT is the real export macro.
 
 namespace toffy {
 

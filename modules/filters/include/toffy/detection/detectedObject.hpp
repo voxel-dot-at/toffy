@@ -25,11 +25,7 @@
 #include "toffy/toffy_export.h"
 
 
-#ifdef MSVC
-  #define DLLExport __declspec( dllexport )
-#else
-  #define DLLExport /**/
-#endif
+// DLLExport removed -- TOFFY_EXPORT is the real export macro.
 
 /** @defgroup Detection Detection
  *
@@ -49,7 +45,7 @@ namespace detection {
  * like contour, center position, etc...
  *
  */
-class /*DLLExport*/ TOFFY_EXPORT DetectedObject {
+class TOFFY_EXPORT DetectedObject {
     static int COUNTER; ///< Internal object identifier
 public:
 

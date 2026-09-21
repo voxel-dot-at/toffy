@@ -21,11 +21,8 @@
 #include <opencv2/core.hpp>
 #include <deque>
 
-#ifdef MSVC
-#define DLLExport __declspec(dllexport)
-#else
-#define DLLExport /**/
-#endif
+// DLLExport removed; TOFFY_EXPORT (available via toffy/filter.hpp -> frame.hpp ->
+// the CMake-generated toffy_export.h) is the real export macro.
 
 /**
  * @brief
@@ -36,7 +33,7 @@ namespace filters {
 namespace smoothing {
 /** perform averaging of the (depth) channel over multiple frames.
      */
-class DLLExport Average : public Filter
+class TOFFY_EXPORT Average : public Filter
 {
     std::string _in_img, _out_img;
     static std::size_t _filter_counter;

@@ -16,11 +16,12 @@ Re-checked against `8d4c306`. The table below is the plan; this is what has actu
 |---|---|---|
 | **1** test harness + CI | ✅ **done** | `enable_testing()` (`CMakeLists.txt:420`), 7 `add_test()` targets, `.github/workflows/ci.yml` (matrix + sanitizers) |
 | **2** build flags | 🟡 **4 of 5** | C++17 bumped; global `-O2` removed (Debug now `-O0`, Release back to `-O3`); redundant `-Wall` gone; dead `BOOST_VERSION` branch gone. Only `-Werror` left, blocked on `P2-12` |
+| **7a** dead macros | ✅ **done** | 22 `DLLExport` → `TOFFY_EXPORT` or deleted; `WIN`/`UNIX` removed; `RAWFILE` 3 headers → 1 |
 | **3** `stop()`/`remove()`/`findPos()` | ✅ **done** | `std::optional<int> findPos`, `_pipe.begin() + i`, `stop()` calls `stop()`; 4 tests pin it |
 | **4** member init + null checks | ✅ **done** | in-class initialisers in `filter.hpp`; `Controller` ctor throws |
 | **5** `Frame` metadata | ✅ **done** | `operator= = default`; all three maps handled together |
 | **6** `creators.find()`, `Player::stop()`, `get_child` | ✅ **done** | `Player::stop()` defined at `player.cpp:122` |
-| **7** debug leftovers | ❌ not started | 42 `std::cout` in `modules/`, 1 `#warning`, 22 `DLLExport` |
+| **7** debug leftovers | 🟡 **core done** | `modules/core`: 0 debug prints, 0 `#warning`, 0 `DLLExport`, `RAWFILE` down to 1 header, `WIN`/`UNIX` gone. **129 prints remain in `filters`/`bta`** — the real figure, once bare `cout` is counted (the old "42" missed them) |
 | **8** Windows paths | ❌ not started | 19 `MSVC` preprocessor branches still present |
 | **9** factory → registration | ❌ not started | 37 `else if (type ==` branches remain |
 | **10** one owner per `Filter` | ❌ not started | `_pipe` and the factory still hold raw `Filter*` |

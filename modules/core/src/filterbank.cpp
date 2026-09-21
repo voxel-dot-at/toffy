@@ -321,11 +321,12 @@ void FilterBank::clearBank()
         try {
             ff->deleteFilter(_pipe[i]->name());
         } catch (std::exception& e) {
+            // The shouty `cout << "AU!!!! ..."` that used to follow this carried
+            // e.what(), which the log line above did not -- so fold it in here
+            // rather than losing the only copy of the diagnostic.
             BOOST_LOG_TRIVIAL(warning)
-                << name() << "::clearBank failed at " << i << " " << n;
-
-            cout << "AU!!!! clearBank failed with: "
-                 << " ****** " << e.what() << endl;
+                << name() << "::clearBank failed at " << i << " " << n
+                << " : " << e.what();
         }
     }
     _pipe.clear();
@@ -410,9 +411,6 @@ int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
         BOOST_LOG_TRIVIAL(debug) << "v.first " << v.first;
         BOOST_LOG_TRIVIAL(debug) << "v.second " << v.second.data();
 
-        cout << "v.first " << v.first << endl;
-        cout << "v.second " << v.second.data() << endl;
-
 #ifdef MSVC
         HINSTANCE hGetProcIDDLL = LoadLibrary(v.second.data().c_str());
 
@@ -456,11 +454,8 @@ int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
                 << dlerror();
 #endif
         } else {
-            // use it to do the calculation
             BOOST_LOG_TRIVIAL(info)
                 << "Loaded plug-in filters from: " << v.second.data();
-            // use it to do the calculation
-            std::cout << "Calling init...\n";
             init(FilterFactory::getInstance());
         }
 #ifndef MSVC

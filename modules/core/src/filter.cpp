@@ -150,7 +150,8 @@ void Filter::updateConfig(const boost::property_tree::ptree& pt)
     _log_lvl = static_cast<boost::log::trivial::severity_level>(
         pt.get<int>("options.loglvl", _log_lvl));
     pt_optional_get_default(pt, "name", _name, _name);
-    std::cout << id() << "::updateConfig NAME SET TO " << _name << std::endl;
+    BOOST_LOG_TRIVIAL(debug) << id() << "::" << __FUNCTION__ << " name set to "
+                            << _name;
 }
 
 void Filter::setState(filterState state)
@@ -180,8 +181,6 @@ void Filter::loadGlobals(const boost::property_tree::ptree& pt)
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     boost::optional<std::string> global =
         pt.get_optional<std::string>("global");
-    // std::cout << "global.is_initialized()" << global.is_initialized() <<
-    // std::endl;
     if (global.is_initialized()) {
         const boost::property_tree::ptree gOptions =
             static_cast<FilterBank*>(_bank)->getBaseFilterbank()->getGlobals(

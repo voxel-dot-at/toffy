@@ -16,18 +16,15 @@
 #ifndef __IMAGESENSOR_HPP__
 #define __IMAGESENSOR_HPP__
 
-#if defined(MSVC)
-#define DLLExport __declspec(dllexport)
-#define WIN true
-#else
-#define DLLExport /**/
-#define UNIX true
-#endif
+// DLLExport, WIN and UNIX removed. TOFFY_EXPORT is the real export macro, and
+// WIN/UNIX were never referenced anywhere except in three commented-out lines in
+// BtaWrapper.cpp -- they also leaked two extremely generic macro names into every
+// consumer of the library.
 
 #include <toffy/io/sensor.hpp>
 #include <opencv2/core.hpp>
 
-class DLLExport ImageSensor : public Sensor
+class TOFFY_EXPORT ImageSensor : public Sensor
 {
    public:
     virtual int start() = 0;

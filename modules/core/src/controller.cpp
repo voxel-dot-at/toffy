@@ -80,11 +80,10 @@ Controller::~Controller()
         baseFilterBank = NULL;
     }
     toffy::FilterFactory::getInstance()->clearCreators();
-    /*for (size_t i = 0; i < _loads.size(); i++) {
-	cout << "_loads: " << _loads[i] << endl;
-	dlclose(_loads[i]);
-    }
-    _loads.clear();*/
+    // TODO(P2-10): _loads is never drained, so dlopen() handles leak for the
+    // lifetime of the process. The dlclose() loop that used to sit here was
+    // commented out and has been deleted; unloading plug-ins cannot be
+    // reinstated until _loads stops being an untyped std::vector<void*>.
 }
 
 bool Controller::forward()
@@ -241,14 +240,12 @@ void Controller::loopFiltersOnce()
 
     if (_state > Controller::IDLE) {
         if (_state == Controller::BACKWARD) f.addData("backward", true);
-        std::cout << "in thread." << std::endl;
         baseFilterBank->filter(f, f);
         if (_state == Controller::BACKWARD) f.removeData("backward");
         cv::waitKey(1);
         _state = Controller::IDLE;
     }
     BOOST_LOG_TRIVIAL(debug) << "Thread " << __FUNCTION__ << " ends";
-    std::cout << "Thread ends." << std::endl;
 }
 
 int Controller::loadRuntimeConfig(const std::string &configFile)
@@ -294,7 +291,6 @@ void Controller::saveRunConfig(std::string fileName)
         '\t', 1);
     boost::property_tree::xml_parser::write_xml(fileName, pt, std::locale(),
                                                 settings);
-    //std::cout << "OUTPUT: " << ss.str() << std::endl;
 }
 
 int Controller::loadConfigFile(const std::string &configFile)
@@ -332,8 +328,6 @@ void Controller::loadPlugins(const boost::property_tree::ptree &pt)
         BOOST_LOG_TRIVIAL(debug) << "v.first " << v.first;
         BOOST_LOG_TRIVIAL(debug) << "v.second " << v.second.data();
 
-        //cout << "v.first " << v.first << endl;
-        //cout << "v.second " << v.second.data() << endl;
         loadPlugin(v.second.data());
     }
 
@@ -362,7 +356,7 @@ void Controller::loadPlugin(std::string lib)
 
 #else
     void *libHandle;
-    std::cout << "lib: " << lib << std::endl;
+    BOOST_LOG_TRIVIAL(debug) << "Loading plug-in from: " << lib;
     libHandle = dlopen(lib.c_str(), RTLD_LAZY);
     if (!libHandle) {
         BOOST_LOG_TRIVIAL(warning)
@@ -382,10 +376,7 @@ void Controller::loadPlugin(std::string lib)
             << dlsym_error;
 #endif
     } else {
-        // use it to do the calculation
         BOOST_LOG_TRIVIAL(info) << "Loaded plug-in filters from: " << lib;
-        // use it to do the calculation
-        std::cout << "Calling hello...\n";
         init(FilterFactory::getInstance());
 
 #ifdef MSVC

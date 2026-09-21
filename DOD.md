@@ -178,13 +178,13 @@ and CI rather than cleanup.
 | # | Criterion | Now | Target | |
 |---|---|---|---|---|
 | 1 | All 12 `P0` correctness items closed, each with a regression test | **12/12** | 12/12 | ✅ |
-| 2 | All 16 plan items closed, or explicitly rejected with a written rationale | 2/16 (`P1-1`, `P2-14`; `P2-16` 1-of-5) | 16/16 | |
+| 2 | All 16 plan items closed, or explicitly rejected with a written rationale | 2/16 (`P1-1`, `P2-14`; `P2-16` 4-of-5, `P2-3` core-only) | 16/16 | |
 | 3 | CI configures, builds and runs `ctest` on every PR | matrix + sanitizers | required | ✅ |
 | 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` combinations | **4/4** | 4/4 | ✅ |
-| 5 | `std::cout` in library code (`modules/`) | 42 | 0 | |
-| 6 | `#warning` directives | 1 | 0 | |
-| 7 | `DLLExport` occurrences (vestigial macro) | 22 | 0 | |
-| 8 | Headers defining `RAWFILE` | 3 | 1 or 0 | |
+| 5 | Debug prints in library code (`modules/`) — **`std::cout` *and* bare `cout`** | **129** (29 `std::cout` + 100 bare `cout`); **0 in `modules/core`** | 0 | |
+| 6 | `#warning` directives | **0** (was 1) | 0 | ✅ |
+| 7 | `DLLExport` occurrences (vestigial macro) | **0** live (was 22) | 0 | ✅ |
+| 8 | Headers defining `RAWFILE` | **1** (was 3) | 1 or 0 | ✅ |
 | 9 | `#include <toffy/viewers/...>` from `modules/core` | 1 | 0 | |
 | 10 | `interprocess` primitives in core | 2 | 0 | |
 | 11 | Hard-coded type branches in `createFilter()` | 37 | 0 | |
@@ -217,15 +217,29 @@ without).
 Copy-pasteable; each command must return nothing (or the stated value) when the programme is
 complete.
 
+Comments in the tree now name the things that used to be there ("DLLExport removed…"), so
+every check below strips comment lines first. Without that, items 6 and 7 report the cleanup
+notes rather than the code — they currently return 1 and 8 hits respectively, all comments.
+
+`NC='grep -vE ":\s*(//|\*|/\*)"'` — set this up once:
+
 ```sh
-# 5 — no debug output in library code
-grep -rn "std::cout" modules/ --include=*.cpp --include=*.hpp
+NC() { grep -vE ':[0-9]+:[[:space:]]*(//|\*|/\*)'; }
+
+# 5 — no debug output in library code.
+# Counting only `std::cout` UNDERSTATES this by ~3x: most of modules/ does
+# `using namespace std;`, so the prints are bare `cout <<`. Count both.
+grep -rnE '(^|[^:a-zA-Z_.])(std::)?cout *<<' modules/ --include=*.cpp --include=*.hpp | NC
+
+# 5b — core specifically (currently 0; use this to see per-file remainder elsewhere)
+grep -rnE '(^|[^:a-zA-Z_.])(std::)?cout *<<' modules/ --include=*.cpp --include=*.hpp | NC \
+  | awk -F: '{print $1}' | sort | uniq -c | sort -rn
 
 # 6 — no build noise
-grep -rn "#warning" modules/
+grep -rn "#warning" modules/ | NC
 
 # 7 — vestigial export macro removed
-grep -rn "DLLExport" modules/
+grep -rn "DLLExport" modules/ | NC
 
 # 8 — RAWFILE defined in at most one place
 grep -rn "define RAWFILE" modules/

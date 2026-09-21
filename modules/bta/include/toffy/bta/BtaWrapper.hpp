@@ -16,15 +16,17 @@
 #ifndef __M100WRAPPER_H__
 #define __M100WRAPPER_H__
 
+// DLLExport, WIN and UNIX removed (TOFFY_EXPORT is the real export macro; WIN/UNIX
+// were referenced only in commented-out code).
+//
+// RAWFILE stays, and stays only here: bta.cpp is its single consumer. It used to be
+// defined identically in core/filterbank.hpp and capture/capturerFilter.hpp as well.
+// Note the value keys off MSVC, which the library build never defines -- so in
+// practice this has always been ".r". Preserved as-is rather than "fixed", since
+// changing an on-disk file extension is a behaviour change, not a cleanup.
 #if defined(MSVC)
-#define DLLExport __declspec(dllexport)
-#define WIN true
-#define UNIX false
 #define RAWFILE ".rw"
 #else
-#define DLLExport /**/
-#define UNIX true
-#define WIN false
 #define RAWFILE ".r"
 #endif
 
@@ -42,7 +44,7 @@ struct network
 
 const int MAX_CHANNEL_SELECTIONS = 8;
 
-class DLLExport BtaWrapper : public ImageSensor
+class TOFFY_EXPORT BtaWrapper : public ImageSensor
 {
    public:
     BtaWrapper();

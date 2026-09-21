@@ -143,26 +143,64 @@ Pick one:
 
 Leaving them is the worst option: it looks like support and is neither compiled nor tested.
 
-### 3 — Remove debug leftovers and dead code
+### 3 — Remove debug leftovers and dead code — **core done; scope was 5× understated**
 
-- `std::cout` in library code: `controller.cpp:223` (`"in thread."`) and `:228`
-  (`"Thread ends."`) fire on every single-step; `filterbank.cpp:314` prints
-  `"AU!!!! clearBank failed…"`; `filterfactory.cpp:153,248` and `filter.cpp` print config
-  noise. Route through `BOOST_LOG_TRIVIAL` or delete.
-- `#warning bta missing!` (`filterfactory.cpp:104`) fires on every default build.
-- `DLLExport` is defined in `frame.hpp:34-38`, `filterbank.hpp` and `filterfactory.hpp`
-  (commented out at `:51`) but `TOFFY_EXPORT` from `generate_export_header` is what is
-  really used. Delete all `DLLExport` definitions.
-- `RAWFILE` is defined in three headers (`filterbank.hpp:29,32`,
-  `filters/.../capturerFilter.hpp`, `bta/BtaWrapper.hpp`) — a redefinition hazard that also
-  leaks into every consumer. Move to one internal header or a `constexpr` in a `.cpp`.
-- `#if (BOOST_VERSION > 105500)` in `controller.cpp` keeps a branch for a 2017 Boost; the
-  alternative branch uses an API that no longer exists.
-- Commented-out blocks: `controller.cpp:41-49` (a stale singleton), `frame.hpp:262-280`
-  (planned `insGet`/`setGet`), `mux.hpp` (pure virtuals), `filterbank.cpp:107,144,433-436`.
-- `using namespace std;` / `using namespace cv;` in `filterbank.cpp:37-38`,
-  `filterfactory.cpp:37`, `controller.cpp:38-39`. `cv` is not needed at all in
-  `filterbank.cpp`.
+**The headline finding is that this item's metric was wrong, and wrong in the direction that
+made the job look small.** The counter was `grep -rn 'std::cout' modules/` → 42. But most of
+the codebase does `using namespace std;`, so the actual debug prints are mostly bare `cout <<`,
+which that grep cannot see. Measured properly (bare `cout` included, comment lines excluded):
+
+| metric | plan said | actually |
+|---|---|---|
+| `std::cout` in `modules/` | 42 | 29 remaining |
+| bare `cout <<` in `modules/` | **not counted** | **100 remaining** |
+| **live debug prints, all of `modules/`** | ~42 | **129** |
+| **live debug prints in `modules/core`** | ~9 | **0 — done** |
+
+So P2-3 is not a 42-site job, it is a ~129-site job, and none of the remainder is in core.
+Anyone re-running the old grep will conclude the tree got *worse* than the plan thought
+(42 → 29 looks like 13 fixed) while 100 uncounted prints sit untouched. **Fix the metric
+before quoting progress on this item.**
+
+**Done — all of `modules/core`:**
+
+- Every `std::cout` and bare `cout` in core is gone (verified: 0 and 0). Hot-path noise was
+  deleted outright — `"in thread."` fired on every single-step, four `"hola"` prints sat in
+  `bilateral.cpp`, and several prints duplicated a `BOOST_LOG_TRIVIAL` on the line above
+  them. Genuinely useful diagnostics were converted to `BOOST_LOG_TRIVIAL`, at `trace` where
+  they sit in the worker/frame loop (`filterThread.cpp`, `parallelFilter.cpp`) so they are
+  suppressible, and `debug` elsewhere.
+- `#warning bta missing!` deleted. CMake already says `message(WARNING "no bta library!")`,
+  so it was redundant build noise on every default compile.
+- **All 22 `DLLExport` occurrences deleted** across 8 headers. It was live on exactly 3 class
+  declarations (`Average`, `ImageSensor`, `BtaWrapper`); those now use `TOFFY_EXPORT`, the
+  real macro from `generate_export_header`. On non-MSVC `DLLExport` expanded to nothing, so
+  this is a no-op on Linux — and MSVC is never defined inside the library (see `P2-2`), so
+  the `dllexport` branch was unreachable from here.
+- **`WIN` and `UNIX` macros deleted** — not in the original list. They were `#define WIN true`
+  in a *public header*, referenced only by three commented-out lines, leaking two of the most
+  generic macro names imaginable into every consumer.
+- **`RAWFILE` reduced from 3 headers to 1** (`bta/BtaWrapper.hpp`), which is where its single
+  consumer (`bta.cpp`) lives. Value left as-is: it keys off `MSVC`, so it has always been
+  `".r"` in practice, but changing an on-disk file extension is a behaviour change, not a
+  cleanup.
+- Commented-out code removed, including the stale `dlclose()` loops. Where the commented code
+  encoded unfinished intent (plug-in unloading) it became a `TODO(P2-10)` pointing at the
+  finding, so the information survives without the dead text.
+- `<iostream>` and `using namespace std;` dropped from the core `.cpp` files that no longer
+  need them.
+
+**Still open — 129 prints in `modules/filters` and `modules/bta`.** Worst offenders:
+`groundprojection.cpp` (20), `BtaWrapper.cpp` (18), `squareDetect.cpp` (16, incl. 9 bare),
+`blobs.cpp` (8), `simpleBlobs.cpp` (7), `csv_source.cpp` (6). Recommend it as its own PR:
+none of that code is covered by `ctest`, and a 129-site sweep across untested filters should
+not share a commit with core, where there is a test fence.
+
+**Measurement hazard introduced by this cleanup:** the explanatory comments left where macros
+used to be contain the macro names, so a naive `grep -rn 'DLLExport' modules/` now returns 8
+comment lines and looks like nothing was removed. The DOD verification greps need to exclude
+comments — `| grep -vE ':[0-9]+:\s*(//|\*|/\*)'` — or these items will read as unfinished
+forever.
 
 ---
 

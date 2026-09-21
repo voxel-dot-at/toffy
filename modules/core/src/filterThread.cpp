@@ -14,14 +14,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <iostream>
-
 #include <boost/log/trivial.hpp>
 
 #include "toffy/filterThread.hpp"
 
 using namespace toffy;
-using namespace std;
 
 FilterThread::~FilterThread()
 {
@@ -62,13 +59,11 @@ Frame* FilterThread::dequeue()
 {
     Frame* fr;
 
-    //cout << "FT deq " << outQ.size() << endl;
-
     if ( outQ.empty() ) {
 	boost::mutex mtx;
 	boost::unique_lock<boost::mutex> lock(mtx);
 
-	//cout << "FT deq wait " << endl;
+	BOOST_LOG_TRIVIAL(trace) << "FT deq wait";
 	outCond.wait(lock);
     }
     outMtx.lock();
@@ -93,33 +88,36 @@ void FilterThread::loop()
     boost::unique_lock<boost::mutex> lock(mtx);
     Frame* in;
 
-    cout << "FT thread started " << boost::this_thread::get_id() << endl;
+    BOOST_LOG_TRIVIAL(info) << "FT thread started " << boost::this_thread::get_id();
     while (keepRunning) {
 	while (inQ.empty()) {
-	    cout << "FT wait for data" << endl;
+	    // trace, not debug: this is reached on every wait in the worker loop.
+	    // It used to be `cout << ... << endl`, i.e. a flushing write to stdout
+	    // per iteration of a real-time frame loop.
+	    BOOST_LOG_TRIVIAL(trace) << "FT wait for data";
 	    inCond.wait(lock);
 	    if (!keepRunning) {
-		cout << "FT loop exit" << endl;
+		BOOST_LOG_TRIVIAL(debug) << "FT loop exit";
 		return;
 	    }
 	}
-	cout << "FT get data" << endl;
+	BOOST_LOG_TRIVIAL(trace) << "FT get data";
 	// get one frame
 	inMtx.lock();
 	in = inQ.front();
 	inQ.pop_front();
 	inMtx.unlock();
 
-	cout << "FT run filter on " << in << endl;
+	BOOST_LOG_TRIVIAL(trace) << "FT run filter on " << in;
 	// run the filter
 	f->filter(*in, *in);
 
-	cout << "FT push result" << endl;
+	BOOST_LOG_TRIVIAL(trace) << "FT push result";
 	// post the result
 	outMtx.lock();
 	outQ.push_back(in);
 	outMtx.unlock();
 	outCond.notify_all();
     }
-    cout << "FT thread loop exit " << boost::this_thread::get_id() << endl;
+    BOOST_LOG_TRIVIAL(info) << "FT thread loop exit " << boost::this_thread::get_id();
 }

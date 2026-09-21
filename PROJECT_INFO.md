@@ -26,11 +26,18 @@ plan keep resolving. Where a fix was partial this is stated — notably `A12` (o
 ### Re-verified against the tree
 
 Every count in this document was re-measured rather than carried over, and the whole
-`DOD 1.1` matrix was re-run from scratch on `8d4c306`: **4/4 configurations build, 7/7
-`ctest` in each**. The mechanical counters (42 `std::cout`, 1 `#warning`, 22 `DLLExport`,
-3 `RAWFILE` headers, 1 viewers include, 2 `interprocess`, 37 factory branches, 21 `@todo`,
-19 `MSVC` branches) and the 3 `-Woverloaded-virtual=` warnings in core all reproduced
-exactly as stated.
+`DOD 1.1` matrix was re-run from scratch (most recently on the `P2-3`/`P2-16` work: **4/4
+configurations build, 7/7 `ctest` in each**). At the time of the first re-verification the
+mechanical counters (42 `std::cout`, 1 `#warning`, 22 `DLLExport`, 3 `RAWFILE` headers,
+1 viewers include, 2 `interprocess`, 37 factory branches, 21 `@todo`, 19 `MSVC` branches) and
+the 3 `-Woverloaded-virtual=` warnings in core all reproduced exactly as stated.
+
+They have since moved, because `P2-16` and the core half of `P2-3` landed: `#warning` and
+`DLLExport` are now **0**, `RAWFILE` is in **1** header, `WIN`/`UNIX` are gone, the
+`BOOST_VERSION` branch is gone, and `modules/core` contains **no debug prints at all**. The
+`std::cout` figure of 42 turned out to be the wrong metric entirely — see row 5 of the table
+below, and the note on bare `cout` in section E. The untouched counters (viewers include,
+`interprocess`, factory branches, `@todo`, `MSVC` branches) still read as first measured.
 
 Corrections made during that pass, all of them this document describing a state it had
 already moved past:
@@ -74,21 +81,34 @@ Re-measured on the current tree, not carried over from the original audit:
 
 | | metric | now | target |
 |---|---|---|---|
-| | `P1`/`P2` plan items closed | 2 / 16 | 16 / 16 |
-| 5 | `std::cout` in `modules/` | 42 | 0 |
-| 6 | `#warning` directives | 1 | 0 |
-| 7 | `DLLExport` occurrences | 22 | 0 |
-| 8 | headers defining `RAWFILE` | 3 | 1 or 0 |
+| | `P1`/`P2` plan items closed | 2 / 16 (`P2-16` 4-of-5, `P2-3` core-only) | 16 / 16 |
+| 5 | debug prints in `modules/` — `std::cout` **and** bare `cout` | **129** (29 + 100); **0 in core** | 0 |
+| 5b | debug prints in `modules/core` | **0** (was 9 `std::cout` + bare) | 0 ✅ |
+| 6 | `#warning` directives | **0** (was 1) | 0 ✅ |
+| 7 | `DLLExport` occurrences | **0** live (was 22) | 0 ✅ |
+| 8 | headers defining `RAWFILE` | **1** (was 3) | 1 or 0 ✅ |
+| 8b | `WIN`/`UNIX` macros in public headers | **0** (were 2, in `imagesensor.hpp`/`BtaWrapper.hpp`) | 0 ✅ |
 | 9 | `#include <toffy/viewers/...>` from core | 1 | 0 |
 | 10 | `interprocess` primitives in core | 2 | 0 |
 | 11 | hard-coded `else if (type ==` branches | 37 | 0 |
 | 12 | `@todo` in `modules/core` | 21 (was 23; the `Event` deletion removed 2) | ≤ 5 |
 | 12b | `@todo` in `filterThread.hpp` | 10 | 0 |
 | 14 | `#ifdef MSVC` branches, never compiled | 19 | 0 |
-| 15 | compiler warnings in `modules/core` | 3 | 0 |
+| 15 | compiler warnings in `modules/core` | 3 with PCL on, 2 without | 0 |
 
-The mechanical items barely moved because this branch deliberately took correctness and
-build work first; they belong to `P2-2`, `P2-3`, `P2-4` and `P2-15`.
+**Row 5 is a correction, not a progress update.** The metric used to be `grep -rn 'std::cout'
+modules/` → 42. That grep cannot see bare `cout <<`, and most of `modules/` does
+`using namespace std;`, so the real figure was never 42 — counting both spellings and
+excluding comments gives **129**. The old number understated the remaining work by roughly
+3×, and every one of the 129 is now in `modules/filters`/`modules/bta` (core is at 0).
+
+**Rows 6–8b are measured with comment lines stripped.** The cleanup left explanatory comments
+naming the macros it removed, so a naive `grep -rn 'DLLExport' modules/` returns 8 comment
+lines and looks like no work was done. Strip with
+`grep -vE ':[0-9]+:[[:space:]]*(//|\*|/\*)'` — the DOD verification block now does this.
+
+The remaining mechanical items belong to `P2-2` (MSVC branches), `P2-3` (the 129 prints),
+`P2-4` (the factory chain) and `P2-15` (formatting).
 
 ---
 
@@ -501,20 +521,28 @@ branch in `filterbank.cpp`, `controller.cpp` and `frame.hpp` compiles as POSIX. 
 Windows plugin-loading paths (`LoadLibrary`/`GetProcAddress`) are unreachable, and the
 POSIX paths (`dlfcn.h`) would be selected on Windows.
 
-**`DLLExport` is vestigial.** It is defined in `frame.hpp:34-38`, `filterbank.hpp` and
-`filterfactory.hpp` — where it is even commented out at `:51` (`class /*DLLExport*/
-TOFFY_EXPORT FilterFactory`).
+**~~`DLLExport` is vestigial.~~ FIXED (`P2-3`)** — all 22 occurrences deleted from **8**
+headers, not the 3 this finding originally listed; the audit had only looked at core. It was
+`#define`d in `frame.hpp`, `filterbank.hpp`, `filterfactory.hpp`, `capturerFilter.hpp`,
+`detectedObject.hpp`, `average.hpp`, `imagesensor.hpp` and `BtaWrapper.hpp`, and actually used
+on only 3 class declarations (`Average`, `ImageSensor`, `BtaWrapper`) — the rest were dead or
+commented out (`class /*DLLExport*/ TOFFY_EXPORT FilterFactory`). Those 3 now use
+`TOFFY_EXPORT`, the real macro from CMake's `generate_export_header`. No-op on Linux, since
+`DLLExport` expanded to `/**/` off-MSVC, and the `dllexport` branch was unreachable from
+inside the library anyway (see the `MSVC` finding above).
 
-The real export macro is `TOFFY_EXPORT`, generated by CMake's `generate_export_header`.
-`DLLExport` is dead weight in three public headers and should be deleted.
+**`WIN` and `UNIX` were also going.** Not in the original audit: `imagesensor.hpp` and
+`BtaWrapper.hpp` did `#define WIN true` / `#define UNIX true` in *public headers*, referenced
+only by three commented-out lines in `BtaWrapper.cpp`. Two of the most generic macro names in
+C, leaking into every consumer. Deleted.
 
-**`RAWFILE` is defined in three separate public headers.**
-`filterbank.hpp:29,32`, `filters/include/toffy/capture/capturerFilter.hpp:26,29` and
-`bta/include/toffy/bta/BtaWrapper.hpp:23,28` each `#define RAWFILE`.
-
-Each has its own `#ifdef` for the `.rw`/`.r` variant. Any translation unit that
-transitively includes two of them gets a redefinition warning at best. It also leaks a
-two-character macro into every consumer of the library.
+**~~`RAWFILE` is defined in three separate public headers.~~ FIXED (`P2-3`)** — it is now
+defined once, in `bta/BtaWrapper.hpp`, next to its only consumer (`bta.cpp:61`). It used to be
+repeated in `filterbank.hpp` and `capture/capturerFilter.hpp` with their own `#ifdef`s, so a
+translation unit including two of them risked a redefinition, and every consumer of the
+library inherited a two-character macro. The `.rw`/`.r` value is unchanged on purpose: it keys
+off `MSVC`, which the library build never defines, so it has always been `".r"` — but silently
+changing an on-disk file extension is a behaviour change, not a cleanup.
 
 **A PCL-less build now works.** `frame.hpp` used to guard the PCL *includes* but leave the
 two typedefs naming those templates outside the guard, so `-DWITHOUT_PCL=ON` failed with
@@ -562,11 +590,26 @@ current tree: all four `PCL_FOUND` × `HAS_BTA` cells configure, build and pass 
 the `DOD 1.1` matrix is 4/4 green and agrees with `DOD.md`. There is still no explicit option
 to disable BTA — testing the off axis needs `-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON`.
 
-**Dead version branches.** `controller.cpp` keeps `#if (BOOST_VERSION > 105500)`, guarding
-a `char` log-severity variant from a 2017-era Boost that no supported compiler accepts.
+**~~Dead version branches.~~ FIXED (`P2-16`).** `controller.cpp` kept
+`#if (BOOST_VERSION > 105500)`, guarding a `char` log-severity variant from a 2017-era Boost
+that no supported compiler accepts. The `#else` branch is gone.
 
-**`#warning bta missing!`** (`filterfactory.cpp:104`) fires on every build of the default
-configuration, training everyone to ignore build noise.
+**~~`#warning bta missing!`~~ FIXED (`P2-3`).** It fired on every build of the default
+configuration, training everyone to ignore build noise. Deleted — CMake already emits
+`message(WARNING "no bta library!")`, so the information was never lost, just doubled and
+attached to the wrong audience.
+
+**The debug-print metric was measuring the wrong thing — and still is, if you copy the old
+command.** `grep -rn 'std::cout' modules/` returns 42, and that number has been quoted as the
+size of `P2-3`. But most of `modules/` has `using namespace std;` at file scope, so the debug
+prints are overwhelmingly **bare** `cout <<`, which that pattern cannot match. Counting both
+spellings and stripping comments: **129 live prints**, of which only 29 are `std::cout`.
+
+Two consequences. First, the item is ~3× bigger than planned. Second, and more subtle: the
+same `using namespace std;` that hides them is *why* they are there — writing `cout` instead of
+`std::cout` is a one-character saving that costs grep-ability, and it cost it here. Core's
+copies are all gone and its file-scope `using namespace std;` directives went with them, so
+new debug prints in core will at least say `std::cout` and be countable.
 
 ---
 

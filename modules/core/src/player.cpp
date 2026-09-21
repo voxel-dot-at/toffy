@@ -39,13 +39,10 @@ Player::Player(): Player(logging::trivial::severity_level::debug, false) {
 
 Player::Player(logging::trivial::severity_level severity, bool file) {
     if (file) {
-        /*logging::add_console_log(
-            std::cout,
-            keywords::format = "[%TimeStamp%]: %Message%",
-            keywords::auto_flush = true,
-            keywords::severity = logging::trivial::info
-        );*/
-        // Output message to file
+        // Only a file sink is added here, so constructing Player with file=true
+        // sends nothing to the console. That is existing behaviour, noted because
+        // the commented-out add_console_log() that used to sit here made it look
+        // like console output was meant to be added alongside.
         logging::add_file_log
                 (
                     keywords::file_name = "toffy_%N.log", /*< file name pattern >*/

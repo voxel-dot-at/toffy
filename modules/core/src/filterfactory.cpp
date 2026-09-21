@@ -101,9 +101,11 @@ FilterFactory* FilterFactory::getInstance()
         // init the linked-in plugins:
 #ifdef HAS_BTA
         toffy::bta::init(uniqueFactory);
-#else
-#warning bta missing!
 #endif
+        // No BTA is a supported configuration, not a code smell: the build already
+        // says so via `message(WARNING "no bta library!")` in CMakeLists.txt. A
+        // #warning here fired on every compile of the default configuration and
+        // trained everyone to ignore build output.
         toffy::tracking::initFilters(*uniqueFactory);
         toffy::viewers::initFilters(*uniqueFactory);
     }
