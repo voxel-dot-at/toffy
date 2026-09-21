@@ -41,3 +41,7 @@ add_test(NAME player COMMAND test_player)
 add_executable(test_filterbank test_filterbank.cpp)
 target_link_libraries(test_filterbank toffy GTest::gtest GTest::gtest_main)
 add_test(NAME filterbank COMMAND test_filterbank)
+
+add_executable(test_logging test_logging.cpp)
+target_link_libraries(test_logging toffy GTest::gtest GTest::gtest_main)
+add_test(NAME logging COMMAND test_logging)

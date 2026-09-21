@@ -12,9 +12,11 @@ This file holds the **findings only**. The numbered work is in
 
 ## Status
 
-**P0 is complete: 12 of 12 items closed.** Also done: `P1-1` (ctest harness, 7 tests, plus
-CI), `P2-14` (the `Event` stub was deleted, not finished), and the C++17 half of `P2-16`.
-That is 2 of the 16 `P1`/`P2` items; the structural work is still ahead.
+**P0 is complete: 12 of 12 items closed.** Also done: `P1-1` (ctest harness, now 8 tests,
+plus CI), `P2-8` (logging policy out of `Filter`), `P2-14` (the `Event` stub was deleted, not
+finished), and 4 of the 5 sub-items of `P2-16`. `P2-3` is done for `modules/core` but its
+scope turned out to be ~3× larger than planned once bare `cout` was counted — see row 5 below.
+That is **3 of the 16** `P1`/`P2` items; the structural work is still ahead.
 
 Findings below are a record, not a to-do list, so several describe code that no longer
 exists. They are marked rather than deleted so that the `A`-number citations used by the
@@ -27,7 +29,8 @@ plan keep resolving. Where a fix was partial this is stated — notably `A12` (o
 
 Every count in this document was re-measured rather than carried over, and the whole
 `DOD 1.1` matrix was re-run from scratch (most recently on the `P2-3`/`P2-16` work: **4/4
-configurations build, 7/7 `ctest` in each**). At the time of the first re-verification the
+configurations build, 8/8 `ctest` in each** — 7/7 before `P2-8` added `test_logging`). At the
+ time of the first re-verification the
 mechanical counters (42 `std::cout`, 1 `#warning`, 22 `DLLExport`, 3 `RAWFILE` headers,
 1 viewers include, 2 `interprocess`, 37 factory branches, 21 `@todo`, 19 `MSVC` branches) and
 the 3 `-Woverloaded-virtual=` warnings in core all reproduced exactly as stated.
@@ -59,7 +62,7 @@ record like this gets disbelieved.
 ## Where the gates stand
 
 - **`DOD 1.1` is green: all four dependency configurations build and pass.** PCL on/off
-  × BTA on/off were each configured from scratch, built and run — 7/7 in every cell.
+  × BTA on/off were each configured from scratch, built and run — 8/8 in every cell.
   Both axes were broken before this branch: PCL-off on unguarded typedefs and CMake `if()`
   clauses that expanded to nothing, BTA-off on an unconditional `add_subdirectory(bta)`.
 - **CI builds and tests on every push and PR** (`.github/workflows/ci.yml`): a PCL-on/
@@ -81,7 +84,7 @@ Re-measured on the current tree, not carried over from the original audit:
 
 | | metric | now | target |
 |---|---|---|---|
-| | `P1`/`P2` plan items closed | 2 / 16 (`P2-16` 4-of-5, `P2-3` core-only) | 16 / 16 |
+| | `P1`/`P2` plan items closed | 3 / 16 (`P1-1`, `P2-8`, `P2-14`; `P2-16` 4-of-5, `P2-3` core-only) | 16 / 16 |
 | 5 | debug prints in `modules/` — `std::cout` **and** bare `cout` | **129** (29 + 100); **0 in core** | 0 |
 | 5b | debug prints in `modules/core` | **0** (was 9 `std::cout` + bare) | 0 ✅ |
 | 6 | `#warning` directives | **0** (was 1) | 0 ✅ |
@@ -213,7 +216,10 @@ live in **core**, not in `modules/filters`.
 
 ## 5. How a run actually happens
 
-1. `Player` ctor installs Boost.Log sinks and a **global** severity filter.
+1. `Player` ctor installs Boost.Log sinks and a **global** severity filter. Sink install is
+   guarded to once per process (`P2-8`) — `~Player` no longer removes sinks, so without the
+   guard sequential `Player`s would each add a file sink and duplicate every record. Boost.Log
+   as built here cannot enumerate the core's sinks, so the guard has to be a local flag.
 2. `Player::loadConfig()` reads XML, loads `<plugins>`, then
    `FilterBank::loadConfig()` walks the `<toffy>` node; each child name is looked up in
    `FilterFactory::createFilter()`, `bank()` is set, and `loadConfig()` is called on it.
@@ -482,13 +488,26 @@ throws `bad_semaphore`. Since `FilterBank::filter()` posts once per pipeline run
 (`filterbank.cpp:79`) and nothing is required to be waiting, the count drifts upward.
 A `std::binary_semaphore` or `condition_variable` is the correct primitive.
 
-**`setLoggingLvl()` mutates process-global logging from a per-filter method.**
-`src/filter.cpp` implements it by calling `logging::core::get()->set_filter(...)`.
+**~~`setLoggingLvl()` mutates process-global logging from a per-filter method.~~ FIXED
+(`P2-8`).** `src/filter.cpp` used to implement it by calling
+`logging::core::get()->set_filter(...)`, so one filter's configured level silently overrode
+the level for the entire application, including every other filter — and which one won
+depended on pipeline order. `filter.hpp`'s `@todo` ("changing severity filter affects
+everithing") admitted it.
 
-That means one filter's configured level silently overrides the level for the entire
-application, including other filters. `filter.hpp` already carries an `@todo` admitting
-this ("changing severity filter affects everithing"). See also F — it is called on the
-hot path.
+`_log_lvl` is now data only: `setLoggingLvl()` derives `dbg` from it and touches nothing
+shared. The one sanctioned way to move the process-wide level is
+`static Filter::setGlobalLogLevel()`, called once by the application. Two follow-on defects
+surfaced while fixing this:
+
+- `updateConfig()` set `_log_lvl` but never refreshed `dbg`; it only looked correct because
+  the per-frame hot path called `setLoggingLvl()` behind its back. Removing the hot path would
+  have frozen `dbg` — a bug that depended on another bug.
+- `<loglvl>99</loglvl>` was cast straight into the severity enum, yielding a value outside
+  `trace..fatal`. Now clamped.
+
+`~Player` also stopped calling `remove_all_sinks()`, which had silenced logging process-wide
+the moment any `Player` was destroyed. See F for the hot-path half of this.
 
 **Listeners are raw, never auto-unsubscribed pointers.** `filter.hpp` stores
 `std::vector<FilterListener*>` and `setState()` iterates it while notifying.
@@ -586,7 +605,7 @@ PCL work.
 
 **FIXED** — `add_subdirectory(bta)` is now gated by `if (HAS_BTA)` (`modules/CMakeLists.txt:8-10`)
 and the single `$<TARGET_OBJECTS:toffy_bta>` consumer is gated the same way. Re-verified on the
-current tree: all four `PCL_FOUND` × `HAS_BTA` cells configure, build and pass 7/7 `ctest`, so
+current tree: all four `PCL_FOUND` × `HAS_BTA` cells configure, build and pass 8/8 `ctest`, so
 the `DOD 1.1` matrix is 4/4 green and agrees with `DOD.md`. There is still no explicit option
 to disable BTA — testing the off axis needs `-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON`.
 
@@ -641,9 +660,11 @@ inside the `if`, then `erase(iterator)` which searches once more.
 but then calls `getDataType(key)` and `getDescription(key)`, each a fresh map lookup,
 instead of walking `meta`/`desc` alongside.
 
-**`FilterBank::filter()` reconfigures logging three times per filter, per frame.**
-`filterbank.cpp:49` before the loop, `:53` for every filter, and `:67` again after every
-filter. Each call can touch the global logging core (see D).
+**~~`FilterBank::filter()` reconfigures logging three times per filter, per frame.~~ FIXED
+(`P2-8`).** It called the bank's own level before the loop, each child's inside the loop, and
+the bank's again after every child — three `set_filter()` calls on the shared logging core per
+filter per frame, each constructing a new filter expression and taking the core's lock. All
+three are gone, along with the one in `FilterBank::loadGlobals()` (see D).
 
 **Wall-clock timing uses local time.** `filterbank.cpp:54,66` use
 `microsec_clock::local_time()`, which jumps on DST and NTP adjustments. Use

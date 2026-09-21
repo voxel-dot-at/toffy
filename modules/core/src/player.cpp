@@ -43,7 +43,20 @@ Player::Player(logging::trivial::severity_level severity, bool file) {
         // sends nothing to the console. That is existing behaviour, noted because
         // the commented-out add_console_log() that used to sit here made it look
         // like console output was meant to be added alongside.
-        logging::add_file_log
+        //
+        // Installed at most once per process (P2-8). Two things force this:
+        //   * ~Player no longer calls remove_all_sinks() (that silenced logging
+        //     for the whole process), so without a guard sequential Players
+        //     would accumulate a file sink each and duplicate every record;
+        //   * add_file_log() builds a *new* sink on each call, so Boost's own
+        //     "already registered, call ignored" rule does not help.
+        // Boost.Log as built here exposes no way to enumerate the core's sinks
+        // (only add_sink/remove_sink/remove_all_sinks), so the flag has to live
+        // on this side rather than being queried from the logging core.
+        static bool file_sink_installed = false;
+        if (!file_sink_installed) {
+            file_sink_installed = true;
+            logging::add_file_log
                 (
                     keywords::file_name = "toffy_%N.log", /*< file name pattern >*/
                     keywords::rotation_size = 10 * 1024 * 1024,/*< rotate files every 10 MiB... >*/
@@ -53,6 +66,7 @@ Player::Player(logging::trivial::severity_level severity, bool file) {
                     keywords::open_mode = (std::ios::out | std::ios::app),
                     keywords::severity = logging::trivial::debug
                 );
+        }
     }
     logging::core::get()->set_filter(logging::trivial::severity >= severity);
     logging::add_common_attributes();
@@ -60,7 +74,10 @@ Player::Player(logging::trivial::severity_level severity, bool file) {
 
 Player::~Player() {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-    logging::core::get()->remove_all_sinks();
+    // Used to call logging::core::get()->remove_all_sinks() here, which silenced
+    // logging for the *whole process* the moment one Player went out of scope --
+    // any filter or any other Player still running lost its output. Sinks are
+    // application-owned; the application tears them down, not a library object.
 }
 
 void Player::loadFilter(std::string name, CreateFilterFn fn) {

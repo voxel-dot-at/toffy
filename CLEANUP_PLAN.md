@@ -295,22 +295,59 @@ Also restore `#include <list>` (`filterThread.hpp:19`, commented out) and add th
 `<boost/thread/mutex.hpp>` / `<boost/thread/condition_variable.hpp>` / `<memory>` includes
 that `filterThread.hpp`, `event.hpp` and `mux.hpp` currently get by transitive luck.
 
-### 8 — Move logging policy out of `Filter`
+### 8 — Move logging policy out of `Filter` — **DONE**
 
-`Filter` owns a `_log_lvl` member and `setLoggingLvl()` reconfigures the **global**
-`boost::log` core from a per-filter method — so the last filter to run dictates the level
-for the whole process. `FilterBank::filter()` calls it three times per filter per frame
-(`filterbank.cpp:49,53,67`). This is the `@todo` in `filter.hpp` ("changing severity filter
-affects everithing").
+Implemented the plan's second option: per-filter levels are **data only**, and there is one
+application-level filter.
 
-Plan: keep a per-filter level as *data*, but apply it at the log call site (or drop
-per-filter levels entirely and keep one application-level filter). Remove the
-`setLoggingLvl()` calls from the hot path. Replace the `_log_lvl <= 1` magic number in
-`filter.cpp` with `boost::log::trivial::debug`.
+- **`setLoggingLvl()` no longer touches the global core.** It now derives `dbg` from the
+  filter's own `_log_lvl` and nothing else. The name is kept (5 filters and `FilterBank` call
+  it) but the doc comment says plainly that it no longer "sets the boost log filter severity",
+  which is exactly what made it dangerous.
+- **All three hot-path calls removed** from `FilterBank::filter()`, plus the one in
+  `FilterBank::loadGlobals()`. That was three reconfigurations of the process-wide logging
+  core per filter per frame.
+- **New `static Filter::setGlobalLogLevel(severity_level)`** — the single sanctioned entry
+  point to the shared core. Called once by the application (`Player`'s ctor already sets it),
+  never per filter and never from the frame loop.
+- **`_log_lvl <= 1` replaced with `<= boost::log::trivial::debug`.**
+- **`@todo` in `filter.hpp` resolved** and the member documented as data-only.
 
-Related: `Player`'s ctor installs sinks and a global severity filter, and `~Player` calls
-`remove_all_sinks()` — so destroying one `Player` silences logging for the whole
-application. Logging setup belongs to `main()`, not to a library object's lifetime.
+Two defects found while implementing, both fixed:
+
+- **`updateConfig()` set `_log_lvl` but never refreshed `dbg`.** It only appeared to work
+  because `FilterBank::filter()` called `setLoggingLvl()` every frame — so removing the hot
+  path would have silently frozen `dbg` at its constructor value. `updateConfig()` now calls
+  `setLoggingLvl()` itself. This is the classic case of a bug depending on another bug.
+- **`<loglvl>99</loglvl>` was `static_cast` straight into the severity enum**, producing a
+  value outside `trace..fatal`. Now clamped.
+
+**`Player` lifetime (the "Related" paragraph), done as far as it can be here:**
+
+- `~Player` no longer calls `remove_all_sinks()`. Destroying one `Player` silenced logging
+  for the entire process — any filter or second `Player` still running lost its output.
+- That removal *requires* a guard, otherwise sequential `Player`s accumulate a file sink each
+  and duplicate every log record. `add_file_log()` builds a new sink per call, so Boost's own
+  "already registered, call ignored" rule does not help, and **the Boost.Log as built here
+  exposes no way to enumerate the core's sinks** (only `add_sink`/`remove_sink`/`remove_all_sinks`
+  — `sinks()` and `registered_sinks()` are both absent). Installation is therefore tracked with
+  a function-local static on this side.
+- Moving sink setup to `main()` entirely is still open — it is a public-API change
+  (`Player`'s ctor signature), not a cleanup.
+
+**Behaviour change, deliberate:** setting `<loglvl>` on one filter no longer changes global
+output. Previously it did, nondeterministically — whichever filter ran last won. The level is
+now set once by the application via `Filter::setGlobalLogLevel()` or `Player`'s ctor.
+
+**Verified against the DOD's own gate.** `tests/test_logging.cpp` adds 7 tests; **4 fail on
+the pre-fix code** (checked in a `HEAD` worktree with only `setGlobalLogLevel` back-ported so
+the file would compile), including the headline `RunningABankDoesNotRelaxTheGlobalLevel`,
+which captures log output through a sink and asserts a trace-level child cannot leak debug
+records past an `info` threshold. The other 3 pass before *and* after on purpose —
+`OptionsLogLevelStillOverridesLogLevel` pins the original precedence, which an earlier draft
+of this change silently inverted by collapsing the two `get<int>()` calls into one nested
+expression. The headline test also asserts a warning *is* captured, so it cannot pass
+vacuously on a broken sink. 8/8 `ctest` after the change.
 
 ### 9 — Fix the module layering
 

@@ -14,7 +14,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <iostream>
+#include <algorithm>
 #include <sstream>
 
 #include <boost/log/core.hpp>
@@ -62,11 +62,25 @@ Filter::Filter(std::string type, std::size_t counter /*= -1*/)
 
 void Filter::setLoggingLvl()
 {
-    logging::core::get()->set_filter(logging::trivial::severity >= _log_lvl);
-    if (_log_lvl <= 1)
-        dbg = true;
-    else
-        dbg = false;
+    // P2-8: this used to be
+    //     logging::core::get()->set_filter(logging::trivial::severity >= _log_lvl);
+    // i.e. a *per-filter* method reconfigured the severity filter of the whole
+    // process. In a pipeline the effective level was therefore whatever the last
+    // filter to run happened to want -- order-dependent, and re-evaluated three
+    // times per filter per frame by FilterBank::filter().
+    //
+    // The per-filter level is now plain data: it drives `dbg` here and stays
+    // readable via logLvl() / getConfig(). The process-wide severity filter
+    // belongs to the application (Player's ctor sets it); use
+    // Filter::setGlobalLogLevel() if you need to move it after startup.
+    dbg = (_log_lvl <= logging::trivial::debug);
+}
+
+void Filter::setGlobalLogLevel(boost::log::trivial::severity_level lvl)
+{
+    // The single place allowed to touch the shared logging core. Call it once,
+    // from the application, not from a filter and never from the frame loop.
+    logging::core::get()->set_filter(logging::trivial::severity >= lvl);
 }
 
 void Filter::setLogLevel(const std::string& level)
@@ -145,10 +159,23 @@ boost::property_tree::ptree Filter::getConfig() const
 
 void Filter::updateConfig(const boost::property_tree::ptree& pt)
 {
+    // Precedence preserved deliberately: the original applied `loglvl` first and
+    // then `options.loglvl` with the previous result as its default, so when both
+    // are present `options.loglvl` wins. Collapsing the two into one nested get()
+    // inverts that -- keep them sequential.
+    const int lvl =
+        pt.get<int>("options.loglvl",
+                    pt.get<int>("loglvl", static_cast<int>(_log_lvl)));
+    // Config values are untrusted: <loglvl>99</loglvl> used to be cast straight
+    // into the severity enum, producing a value outside trace..fatal. Clamp it.
     _log_lvl = static_cast<boost::log::trivial::severity_level>(
-        pt.get<int>("loglvl", _log_lvl));
-    _log_lvl = static_cast<boost::log::trivial::severity_level>(
-        pt.get<int>("options.loglvl", _log_lvl));
+        std::min(std::max(lvl, static_cast<int>(logging::trivial::trace)),
+                 static_cast<int>(logging::trivial::fatal)));
+    // Refresh `dbg` from the configured level. Nothing else did: `dbg` was only
+    // ever updated when a caller happened to invoke setLoggingLvl(), so a filter
+    // configured with <loglvl>debug</loglvl> kept dbg == false until the bank
+    // called it on the (now removed) hot path.
+    setLoggingLvl();
     pt_optional_get_default(pt, "name", _name, _name);
     BOOST_LOG_TRIVIAL(debug) << id() << "::" << __FUNCTION__ << " name set to "
                             << _name;

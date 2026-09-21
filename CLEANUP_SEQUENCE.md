@@ -29,17 +29,24 @@ Re-checked against `8d4c306`. The table below is the plan; this is what has actu
 | **12** threading | ❌ not started | `bool keepRunning` (`filterThread.hpp:85`), 2 `interprocess` uses |
 | **13** module layering | ❌ not started | `#include <toffy/viewers/imageview.hpp>` still in `controller.cpp` |
 | **14** plugin loaders | ❌ not started | all three `::loadPlugins` still exist (`controller.cpp:329`, `filterbank.cpp:405`, `player.cpp:132`) |
-| **15** logging policy | ❌ not started | `setLoggingLvl()` still on the hot path |
+| **15** logging policy | ✅ **done** | `setLoggingLvl()` is data-only; 3 hot-path calls removed; `Filter::setGlobalLogLevel()` added; `~Player` no longer kills process logging. 7 new tests, 4 of them failing pre-fix |
 | **16** `Frame` API + `filter()` overload | ❌ not started | `getSertMatPtr` remains; the 3 `-Woverloaded-virtual=` warnings are this trap |
 | **17** delete `Event` | ✅ **done** | `event.hpp`/`event.cpp` gone; tagged `v1.10.0` (local, **not pushed**) |
 | **18** `clang-format` | ❌ not started | 11 of 20 core files still contain hard tabs |
 
-**Six of eighteen PRs are done** (1, 3, 4, 5, 6, 17), plus 4 of the 5 sub-items of PR 2. The
-whole P0 block, the test/CI fence and the build-flag cleanup are in place, which was the point
-of the critical path's first stretch — PR 2's `-O2` removal in particular was what made the
-concurrency work in PR 12 diagnosable at all. Everything from PR 7 onward — the structural
-work — is untouched, which still matches the `2/16` figure in `DOD.md` (PR 2 counts as open
-until `-Werror` lands).
+**Seven of eighteen PRs are done** (1, 3, 4, 5, 6, 15, 17), plus 4 of the 5 sub-items of
+PR 2 and the core half of PR 7. The whole P0 block, the test/CI fence and the build-flag
+cleanup are in place, which was the point of the critical path's first stretch — PR 2's `-O2`
+removal in particular was what made the concurrency work in PR 12 diagnosable at all.
+
+PR 15 was pulled forward out of order deliberately: it is independent of the ownership chain
+(PR 10) it nominally follows, and leaving three global logging reconfigurations per filter per
+frame in place made every other hot-path change harder to measure. It is the first PR after P0
+to arrive with a test that fails on its parent commit for the *behaviour* rather than a crash —
+`RunningABankDoesNotRelaxTheGlobalLevel` captures log output through a sink.
+
+Still untouched: the structural core of the plan — PRs 9–14 and 16–18. `DOD.md` counts `3/16`
+plan items now (`P1-1`, `P2-8`, `P2-14`), with `P2-16` at 4-of-5 and `P2-3` core-only.
 
 ---
 

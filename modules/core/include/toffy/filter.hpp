@@ -110,21 +110,16 @@ class TOFFY_EXPORT Filter
     Filter* _bank = nullptr;  ///< reference to the filter bank whre the filter resides
     // static std::size_t _filter_counter;
 
-    /*
-     * From boost trivial log
-     * //! Trivial severity levels
-    enum severity_level
-    {
-        trace,
-        debug,
-        info,
-        warning,
-        error,
-        fatal
-    };
-     * @todo Find a better way to individually set log level.
-     * changing severity filter affects everithing.
-     */
+    // Per-filter log level, as *data only* (P2-8). It drives `dbg` and is
+    // reported by logLvl()/getConfig(); it deliberately does NOT reconfigure the
+    // process-wide boost::log filter. Boost's trivial severity levels are, in
+    // order: trace, debug, info, warning, error, fatal.
+    //
+    // The old behaviour -- a per-filter setter calling
+    // logging::core::get()->set_filter() -- meant the last filter to run set the
+    // level for the entire application, and FilterBank::filter() did it three
+    // times per filter per frame. Use setGlobalLogLevel() to move the process
+    // level, once, from the application.
     boost::log::trivial::severity_level _log_lvl = boost::log::trivial::info;
 
    public:
@@ -359,9 +354,23 @@ class TOFFY_EXPORT Filter
     const std::string& getErrorMsg() { return errMsg; }
 
     /**
-     * @brief Sets the boost log filter severity
+     * @brief Refresh this filter's derived state (`dbg`) from its own log level.
+     *
+     * Does NOT touch the process-wide logging configuration -- see the note on
+     * the `_log_lvl` member. Name kept for compatibility; it no longer "sets the
+     * boost log filter severity", which is exactly why it was dangerous.
      */
     void setLoggingLvl();
+
+    /**
+     * @brief Set the severity filter for the whole process.
+     * @param lvl minimum severity that will be emitted
+     *
+     * This is the one sanctioned entry point to the shared logging core. Call it
+     * once from the application (Player's ctor already does). Do not call it per
+     * filter or per frame.
+     */
+    static void setGlobalLogLevel(boost::log::trivial::severity_level lvl);
 
     /**
      * @brief set boost log level to one of debug, info,... defaults to info if

@@ -45,11 +45,14 @@ bool FilterBank::filter(const Frame& in, Frame& out)
 {
     using namespace boost::posix_time;
 
-    setLoggingLvl();  // set our own log level..
+    // No setLoggingLvl() here or in the loop (P2-8). This used to run the bank's
+    // own level, then each child's, then the bank's again after every child --
+    // three reconfigurations of the *process-wide* logging core per filter per
+    // frame, with the effective level ending up as whichever filter ran last.
+    // The logging level is application state now; see Filter::setGlobalLogLevel.
     for (size_t i = 0; i < _pipe.size(); i++) {
         bool success = false;
 
-        _pipe[i]->setLoggingLvl();
         ptime start = microsec_clock::local_time();
         try {
             success = _pipe[i]->filter(in, out);
@@ -63,7 +66,6 @@ bool FilterBank::filter(const Frame& in, Frame& out)
 
         boost::posix_time::time_duration diff =
             microsec_clock::local_time() - start;
-        setLoggingLvl();
         if (!success) {
             BOOST_LOG_TRIVIAL(info)
                 << id() << "::filter" << i << "\t" << diff.total_milliseconds()
@@ -378,8 +380,9 @@ int FilterBank::loadGlobals(const boost::property_tree::ptree& pt)
     } else {
         BOOST_LOG_TRIVIAL(info) << "Loading global configuration...";
         _globalConfig = *globals;
+        // updateConfig() now refreshes _log_lvl and `dbg` itself, so the separate
+        // setLoggingLvl() call that used to follow is gone.
         updateConfig(_globalConfig);
-        setLoggingLvl();
         return 1;
     }
 }

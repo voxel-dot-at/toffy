@@ -19,10 +19,10 @@ cannot silently come back.
 
    | `PCL_FOUND` | `HAS_BTA` | status | how to reproduce |
    |---|---|---|---|
-   | on | on | ✅ builds, 7/7 ctest | default (needs the bta SDK) |
-   | on | off | ✅ builds, 7/7 ctest | `-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON` |
-   | off | on | ✅ builds, 7/7 ctest | `-DWITHOUT_PCL=ON` |
-   | off | off | ✅ builds, 7/7 ctest | both flags |
+   | on | on | ✅ builds, 8/8 ctest | default (needs the bta SDK) |
+   | on | off | ✅ builds, 8/8 ctest | `-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON` |
+   | off | on | ✅ builds, 8/8 ctest | `-DWITHOUT_PCL=ON` |
+   | off | off | ✅ builds, 8/8 ctest | both flags |
 
    The original note blamed only the unguarded PCL typedefs in `frame.hpp`. That was the
    first blocker of several, and the interesting part is that the typedefs had never been
@@ -178,7 +178,7 @@ and CI rather than cleanup.
 | # | Criterion | Now | Target | |
 |---|---|---|---|---|
 | 1 | All 12 `P0` correctness items closed, each with a regression test | **12/12** | 12/12 | ✅ |
-| 2 | All 16 plan items closed, or explicitly rejected with a written rationale | 2/16 (`P1-1`, `P2-14`; `P2-16` 4-of-5, `P2-3` core-only) | 16/16 | |
+| 2 | All 16 plan items closed, or explicitly rejected with a written rationale | **3/16** (`P1-1`, `P2-8`, `P2-14`; `P2-16` 4-of-5, `P2-3` core-only) | 16/16 | |
 | 3 | CI configures, builds and runs `ctest` on every PR | matrix + sanitizers | required | ✅ |
 | 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` combinations | **4/4** | 4/4 | ✅ |
 | 5 | Debug prints in library code (`modules/`) — **`std::cout` *and* bare `cout`** | **129** (29 `std::cout` + 100 bare `cout`); **0 in `modules/core`** | 0 | |
@@ -263,7 +263,7 @@ grep -rc "@todo" modules/core | grep -v ":0$"
 # 3 — tests exist and pass
 ctest --test-dir build --output-on-failure
 
-# 4 — all four dependency configurations build and pass. Each must print 7/7.
+# 4 — all four dependency configurations build and pass. Each must print 8/8.
 for f in "" "-DWITHOUT_PCL=ON" "-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON" \
          "-DWITHOUT_PCL=ON -DCMAKE_DISABLE_FIND_PACKAGE_bta=ON"; do
   d=$(mktemp -d); cmake -S . -B "$d" $f >/dev/null 2>&1 \
