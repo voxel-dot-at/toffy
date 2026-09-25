@@ -24,7 +24,7 @@
 
 using toffy::Controller;
 
-// Regression tests for CLEANUP_PLAN P0-9 / finding C3.
+// Regression tests for cleanup/plan/p0-correctness.md P0-9 / finding C3.
 //
 // Controller's constructor did `baseFilterBank = createFilter("filterBank", ...)`
 // and then immediately called ->bank(NULL) on the result with no null check, and

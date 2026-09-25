@@ -41,7 +41,12 @@ build_32/
 library/docs/public
 library/docs/internal
 build64/
-build*
+# Anchored and directory-only on purpose. An unanchored `build*` also matches
+# *files* named build* at any depth, which silently swallowed two chapters of
+# the cleanup docs (cleanup/findings/build.md, cleanup/plan/build-and-hygiene.md)
+# — `git add -A` skipped them and nothing complained. If you add a build tree
+# below the repository root, name it here explicitly.
+/build*/
 
 #QTCreator
 *.user

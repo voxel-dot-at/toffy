@@ -26,7 +26,7 @@
 using toffy::Filter;
 using toffy::filterLoaded;
 
-// Regression test for CLEANUP_PLAN P0-5 / finding A6.
+// Regression test for cleanup/plan/p0-correctness.md P0-5 / finding A6.
 //
 // Filter::Filter() was `Filter::Filter() : _type("...") {}`, which left _bank,
 // _log_lvl, dbg and update indeterminate. Both constructors also omitted
@@ -95,7 +95,7 @@ TEST(FilterConstruction, TypedConstructorInitialisesMembers)
     EXPECT_EQ(f.id(), f.name());
 }
 
-// Regression tests for CLEANUP_PLAN P0-12 / finding A7.
+// Regression tests for cleanup/plan/p0-correctness.md P0-12 / finding A7.
 //
 // Filter::loadConfig() looked the type node up with pt.find(), logged a
 // detailed diagnostic when it was absent -- and then fell straight through

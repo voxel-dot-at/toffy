@@ -32,7 +32,7 @@ TEST(FilterBankSmoke, NewBankIsEmpty)
     EXPECT_EQ(0u, fb.size());
 }
 
-// Regression test for CLEANUP_PLAN P0-1 / finding A1:
+// Regression test for cleanup/plan/p0-correctness.md P0-1 / finding A1:
 // FilterBank::stop() called start() on every child, so no filter ever saw a
 // stop and every child stayed in filterRunning forever.
 TEST(FilterBankStop, StopStopsChildren)
@@ -51,7 +51,7 @@ TEST(FilterBankStop, StopStopsChildren)
     EXPECT_EQ(toffy::filterIdle, fb.getState());
 }
 
-// Regression tests for CLEANUP_PLAN P0-2/P0-3/P0-4 (findings A2, A3, A4).
+// Regression tests for cleanup/plan/p0-correctness.md P0-2/P0-3/P0-4 (findings A2, A3, A4).
 //
 // findPos() returned size_t and "-1" on failure, i.e. SIZE_MAX. remove(name)
 // narrowed that into an int and erased at begin() - 1 with no bounds check;

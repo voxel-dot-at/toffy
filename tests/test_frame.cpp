@@ -37,7 +37,7 @@ TEST(FrameSmoke, AddAndRetrieveInt)
     EXPECT_EQ(42, f.getInt("answer"));
 }
 
-// Regression tests for CLEANUP_PLAN P0-6 / findings A5 and A13.
+// Regression tests for cleanup/plan/p0-correctness.md P0-6 / findings A5 and A13.
 //
 // Frame keeps three parallel maps: data, meta (the SlotDataType tag) and desc.
 // Only `data` was copied, assigned, cleared and erased from, so hasKey() and

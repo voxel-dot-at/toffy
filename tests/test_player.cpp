@@ -22,7 +22,7 @@
 
 using toffy::Player;
 
-// Regression test for CLEANUP_PLAN P0-11 / finding A16.
+// Regression test for cleanup/plan/p0-correctness.md P0-11 / finding A16.
 //
 // Player::stop() was declared in the public header but had no definition
 // anywhere in the tree, so any caller got an undefined-reference link error.

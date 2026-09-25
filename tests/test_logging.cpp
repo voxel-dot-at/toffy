@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-// Unit tests for logging policy -- CLEANUP_PLAN P2-8.
+// Unit tests for logging policy -- cleanup/plan/structure.md P2-8.
 //
 // Filter::setLoggingLvl() used to call
 //     logging::core::get()->set_filter(severity >= _log_lvl)
