@@ -2,8 +2,8 @@
 
 **This is the only place a measured number is written down.** Other chapters link here.
 
-Re-measured on `feature/code-cleanup` at `569f071` (`P3-7`), i.e. after `P3-1`, `P3-4` and
-`P3-7` landed; GCC 13.3, CMake 3.28.3, default configuration (PCL on, BTA on). Every command
+Re-measured on `feature/code-cleanup` at `5ec61d7`, i.e. after `P3-1`, `P3-4`, `P3-7` and
+`P3-3` landed; GCC 13.3, CMake 3.28.3, default configuration (PCL on, BTA on). Every command
 below is copy-pasteable from the repository root; run them before quoting a figure.
 
 An earlier revision of this header cited `4739900`, which is not an ancestor of `HEAD` — it
@@ -52,6 +52,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 22 | files containing hard tabs / files in core | `modules/core` | **11 / 20** | 0 / 20 | |
 | 23 | lines of code | `modules/core` | **4 021** | — | |
 | 24 | `ctest` targets | `tests/` | **8** | ≥ 8 | ✅ |
+| 25 | `const`-only `filter()` overrides that do not say `override` | `modules/`, `libraries/` | **0** (was 3, fixed by `P3-3`; 4 sites now carry it) | 0 | ✅ |
 
 ## The commands
 
@@ -119,6 +120,12 @@ grep -rn "system(" modules/filters --include=*.cpp
 #      carry matched nothing at all, and the figure was being carried on trust.
 grep -rnE "snprintf\([^;]*[Pp]attern" modules libraries --include=*.cpp
 #   5 sites: csv_source.cpp:162,183 and exportcsv.cpp:92,100,103
+
+# 25 — const-only filter() overrides with no override keyword. Each one is a filter
+#      P2-12 would silently turn into a new virtual that overrides nothing: compiles,
+#      stops processing frames. 0 since P3-3; the second command lists what it became.
+grep -rn "filter(const Frame" modules libraries --include=*.hpp | grep "const;" | grep -v override | wc -l
+grep -rn "out) const override" modules libraries --include=*.hpp
 
 # 22, 23 — formatting and size
 grep -rlP '\t' modules/core --include=*.cpp --include=*.hpp | wc -l

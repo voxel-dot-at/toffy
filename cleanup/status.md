@@ -3,7 +3,7 @@
 What has landed, what is in flight, and what the release situation is. Counters are in
 [`counters.md`](counters.md); the order the rest goes in is in [`order.md`](order.md).
 
-State as of `569f071` (`feature/code-cleanup`), re-checked against the tree rather than
+State as of `5ec61d7` (`feature/code-cleanup`), re-checked against the tree rather than
 carried over from the previous round.
 
 ## Landed
@@ -23,12 +23,13 @@ carried over from the previous round.
 | **19** | `P3-1` verification scope + `libraries/sensor/` orphan | ✅ done | 2 unreferenced headers deleted; counters 7a 3→0, 8c 2→0, 14a 16→15, 18 8→7. Counter 21's command was also broken (grepped `_pattern`, the variables are `_depthPattern`/`_amplPattern`) |
 | **20** | `P3-4` `using Filter::filter;` + `-Werror` on core | ✅ done | core 3 → **0** warnings in all four configurations; `toffy_core` builds `-Werror`; gate proven by injecting an unused variable into `filter.cpp` and watching the build stop; tree 32 → 28 warnings |
 | **21** | `P3-7` `if( ${VAR} )` sweep + CI check | ✅ done | 4 sites → 0; `cmake-hygiene` job added, scoped to the 29 tracked CMake files, verified red on a re-introduced site and green on the fixed tree |
+| **22** | `P3-3` `override` on the four `const`-only filters | ✅ done | counter 25 3 → **0**; `const` deliberately kept (dropping it is warning-free but opens a `const Filter&` → `return false` window on installed headers) — the drop moves into `P2-12`, where the base change closes it again in the same diff |
 
-**Ten of the eighteen PRs are done** (1, 3, 4, 5, 6, 15, 17, 19, 20, 21), and PR 2 is now
-complete rather than 4-of-5. That is the whole `P0` block, the test/CI fence, the build-flag
-cleanup and core's warning gate: the critical path's first stretch, plus the three cheap
-second-pass items that removed a false green, closed a class of silent build breakage and
-made a later change compile-checked.
+**Eleven of the eighteen PRs are done** (1, 3, 4, 5, 6, 15, 17, 19, 20, 21, 22), and PR 2 is
+now complete rather than 4-of-5. That is the whole `P0` block, the test/CI fence, the
+build-flag cleanup and core's warning gate: the critical path's first stretch, plus all four
+cheap second-pass items — a false green removed, a class of silent build breakage closed, a
+warning gate landed, and `P2-12` made compile-checked.
 
 `P1`/`P2` items closed: **4 of 16** (`P1-1`, `P2-8`, `P2-14`, `P2-16`), with `P2-3`
 core-only. `P2-16` closed when `P3-4` landed the `-Werror` half of it.
@@ -48,9 +49,10 @@ core-only. `P2-16` closed when `P3-4` landed the `-Werror` half of it.
 | **18** | `P2-15` formatting | ❌ 11 of 20 core files have hard tabs; clang-format 18.1.3 **is** installed |
 
 The second-pass work (`P3-1` … `P3-11`) is listed in
-[`plan/second-pass.md`](plan/second-pass.md). Three of its four cheap items are done (`P3-1`,
-`P3-4`, `P3-7`); `P3-3` is the remaining one — three lines, no behaviour change, and it
-makes `P2-12` compile-checked. `P3-2` and `P2-12` are API changes and belong with a tag.
+[`plan/second-pass.md`](plan/second-pass.md). All four of its cheap items are done (`P3-1`,
+`P3-3`, `P3-4`, `P3-7`); what is left there is `P3-5`/`P3-6` (the two `modules/filters`
+safety items), `P3-9` (the test that makes `P2-12` provable), `P3-10`, `P3-11`, `P3-8` and
+`P3-2`. `P3-2` and `P2-12` are API changes and belong with a tag.
 
 ## Gates
 

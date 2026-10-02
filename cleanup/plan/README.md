@@ -77,7 +77,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 |---|---|---|---|
 | `P3-1` | widen the verification scope; delete the `libraries/sensor/` orphan | 2 files | ✅ |
 | `P3-2` | delete the dead, installed `toffy/web/` headers | 4 files | ❌ API |
-| `P3-3` | make the four `const`-only filters `override` before `P2-12` | 8 sites | ❌ |
+| `P3-3` | make the four `const`-only filters `override` before `P2-12` | 4 sites | ✅ |
 | `P3-4` | `using Filter::filter;` in `Mux`; `-Werror` on core | 1 line | ✅ |
 | `P3-5` | `objectTrack`: `system()` on config data | 1 function | ❌ |
 | `P3-6` | `csv_source`: check `fscanf`, validate the pattern | ~10 lines | ❌ |
