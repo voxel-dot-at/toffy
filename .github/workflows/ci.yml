@@ -79,7 +79,18 @@ jobs:
             -DWITHOUT_PCL=${{ matrix.without_pcl }}
 
       - name: Build
-        run: cmake --build build -j "$(nproc)"
+        # tee'd so the warning report step below can see what the compiler said.
+        # pipefail is load-bearing: without it the exit status of the pipeline is
+        # tee's and a failed build would sail through to the Test step.
+        run: |
+          set -eo pipefail
+          cmake --build build -j "$(nproc)" 2>&1 | tee build.log
+
+      - name: Warning report (P3-11)
+        # Prints the warning count per area and fails only on modules/core, which
+        # is compiled -Werror since P3-4. The rest of the tree is reported, not
+        # gated - see tools/warning_report.sh for why.
+        run: tools/warning_report.sh build.log
 
       - name: Test
         # --output-on-failure so a red run is diagnosable from the log alone,
@@ -95,6 +106,7 @@ jobs:
             build/CMakeFiles/CMakeConfigureLog.yaml
             build/CMakeCache.txt
             build/Testing/Temporary/LastTest.log
+            build.log
           if-no-files-found: ignore
 
   sanitizers:

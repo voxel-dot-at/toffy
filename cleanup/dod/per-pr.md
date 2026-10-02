@@ -47,7 +47,11 @@
    `-Werror` (`option(CORE_WERROR ON)`, GNU/Clang only, `target_compile_options` PRIVATE so
    it cannot leak), so a new warning in core is a build break, not a review comment. If a
    future compiler release makes that unbuildable, say so in the PR rather than turning the
-   option off silently.
+   option off silently. Every CI build also runs `tools/warning_report.sh` over the build
+   log (`P3-11`): it prints the count per area — `modules/core`, `modules/filters`,
+   `modules/bta`, `libraries`, `apps`, `external/` — and fails only on `modules/core`. Locally,
+   run it on a **clean** build (`cmake --build build -j"$(nproc)" 2>&1 | tools/warning_report.sh -`);
+   an up-to-date tree compiles nothing and the report says so instead of reporting a zero.
 
 5. **One numbered plan item per commit, one PR-stage per group of commits.** The plan's
    ground rule: never mix a public rename with a behaviour change in one commit.

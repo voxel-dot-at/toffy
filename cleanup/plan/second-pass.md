@@ -190,12 +190,38 @@ generated there too and is genuinely used.
 assertion. `tools/api_change_report.sh` will still exit 1, because installed headers
 changed; see the note in that item about the tag decision.
 
-## `P3-11` — a CI warning counter that does not change the build
+## `P3-11` — a CI warning counter that does not change the build — **done**
 
-Nothing outside core measures warnings: a full build emits 28 warnings today and nobody
-looks. Print `grep -c warning:` per target on every PR and fail only if `modules/core`
-goes above 0 — core is already held there by `-Werror` (`P3-4`), so what this item adds is
-visibility for the other 28 instead of silently re-emitting them.
-[`../findings/audit-2024-09.md`](../findings/audit-2024-09.md) has the breakdown; the
-`-Wmaybe-uninitialized` cluster in the K3M skeletonizers is the part worth a human look
+Nothing outside core measured warnings: a full build emitted 28 warnings and nobody
+looked. [`../findings/audit-2024-09.md`](../findings/audit-2024-09.md) had the breakdown;
+the `-Wmaybe-uninitialized` cluster in the K3M skeletonizers is the part worth a human look
 before it is dismissed.
+
+**What landed:** `tools/warning_report.sh`, run as a step in the `build-test` CI job after
+the build. It reads the build log (not the source tree), attributes every warning line to
+the area the compiler named — `modules/core`, `modules/filters`, `modules/bta`,
+`libraries`, `apps`, `external/` — and prints the per-area table, the worst files and a
+by-message histogram. It exits 1 **only** for `modules/core`, which `-Werror` (`P3-4`)
+already holds at 0; everything else is reported. The Build step now `tee`s its output to
+`build.log` under `set -eo pipefail` — without `pipefail` the pipeline's status is `tee`'s
+and a failed build would reach the Test step looking fine — and `build.log` is added to the
+failure artifact.
+
+**Why only core gates:** gating `modules/filters` would fail every run on 20-odd
+pre-existing warnings, and a job that always fails gets disabled rather than acted on. The
+number becomes actionable by being visible, which is the whole item.
+
+**Measured, not asserted:**
+
+| input | core | total | exit |
+|---|---|---|---|
+| pre-`P3-4` default build log | 4 | 32 | 1 |
+| current tree, Release, PCL off, BTA off | 0 | 25 | 0 |
+| current tree, Debug, PCL on, BTA off (the CI configuration) | 0 | 16 | 0 |
+| empty log | 0 | 0 | 0 |
+
+The first row is the check that it can fail; the last is the check that it does not fail on
+nothing. Note the last two rows: **the tree-wide count is configuration-dependent** — the
+same tree emits 16 in Debug and 25 in Release (PCL off, BTA off in both), because
+`-Wmaybe-uninitialized` (7 of them, the K3M cluster) is only diagnosed with optimisation
+on. Quote the configuration with 15a.

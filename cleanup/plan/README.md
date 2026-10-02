@@ -85,4 +85,4 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P3-8` | `toffy_tracking` layering inversion | CMake | ❌ |
 | `P3-9` | a test that a filter's body actually ran | 1 test | ❌ |
 | `P3-10` | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | ❌ |
-| `P3-11` | CI warning counter, without changing the build | CI | ❌ |
+| `P3-11` | CI warning counter, without changing the build | CI | ✅ |

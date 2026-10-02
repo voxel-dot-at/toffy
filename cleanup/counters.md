@@ -41,7 +41,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 14 | `MSVC` preprocessor branches | `modules/` | **12** (was 19) | 0 | |
 | 14a | | tree | **15** (was 16; one went with the orphan) | 0 | |
 | 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **0** in all four configurations, and `toffy_core` is compiled with `-Werror` (`P3-4`) | 0 | ✅ |
-| 15a | warnings in a full default build | tree | **28** (was 32; the `Mux` using-declaration also silenced a 4th, in `3d/muxMerge.hpp`) | reported, not gated | |
+| 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **28** (was 32; the `Mux` using-declaration also silenced a 4th, in `3d/muxMerge.hpp`) — reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
 | 16 | docs describing a product that does not exist | `docs/`, installed headers | **≥ 3** | 0 | |
 | 17 | installed public headers that do not compile | install tree | **4** | 0 | |
 | 18 | public headers including the CMake-generated `toffy_export.h` | tree | **7** (was 8; one went with the orphan) — `P3-10` targets 0 | 0 | |
@@ -94,6 +94,13 @@ grep -rnE '^[[:space:]]*#[[:space:]]*if(n?def)?[[:space:]].*MSVC' modules/ libra
 # 15 — core warnings. 0 since P3-4, and toffy_core now builds -Werror, so a
 #      non-zero answer here is a build failure, not a count.
 cd build && touch ../modules/core/src/*.cpp && make toffy_core 2>&1 | grep -c "warning:"
+
+# 15a — tree-wide warnings, bucketed, from a build log (what CI runs). Counting
+#       `grep -c warning:` on a log is NOT the same as counting unique sites: a
+#       header warning included by 10 TUs is emitted 10 times, and that is what
+#       the developer sees. State the configuration — see the note below. Run it
+#       on a CLEAN build: an up-to-date tree emits nothing and reports 0.
+cmake --build build -j"$(nproc)" 2>&1 | tools/warning_report.sh -
 
 # 17 — installed headers that cannot compile (needs a build dir)
 cmake --build build --target install -- DESTDIR=/tmp/ti >/dev/null
@@ -166,5 +173,10 @@ watching the build stop with `all warnings being treated as errors`.
 
 The count used to be configuration-dependent (one site behind a PCL guard); at zero that no
 longer matters, and all four `PCL_FOUND` × `HAS_BTA` cells were measured at 0 core warnings.
-The tree-wide figure (15a) is **not** gated: 28 warnings remain outside core and CI reports
-them without failing on them (`P3-11`).
+The tree-wide figure (15a) is **not** gated: 28 warnings remain outside core and
+`tools/warning_report.sh` prints them per area on every CI build, exiting 1 only for
+`modules/core` (`P3-11`). It is a build-log reader, so its scope is whatever the compiler
+was told to compile — and its number is configuration-dependent in a way core's is not:
+the same tree emits **28** (Release, PCL on, BTA on), **25** (Release, PCL off, BTA off)
+and **16** (Debug, PCL on, BTA off — the CI configuration), because `-Wmaybe-uninitialized`,
+7 of the 28, is only diagnosed with optimisation on. Quote the configuration.
