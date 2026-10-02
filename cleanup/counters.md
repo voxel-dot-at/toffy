@@ -36,7 +36,8 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 13 | `delete` of a `Filter*` | `modules/core` | **4 sites, 3 owners** | 1 owner | |
 | 14 | `MSVC` preprocessor branches | `modules/` | **12** (was 19) | 0 | |
 | 14a | | tree | **15** (was 16; one went with the orphan) | 0 | |
-| 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **3** PCL-on / **2** PCL-off | 0, with `-Werror` | |
+| 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **0** in all four configurations, and `toffy_core` is compiled with `-Werror` (`P3-4`) | 0 | ✅ |
+| 15a | warnings in a full default build | tree | **28** (was 32; the `Mux` using-declaration also silenced a 4th, in `3d/muxMerge.hpp`) | reported, not gated | |
 | 16 | docs describing a product that does not exist | `docs/`, installed headers | **≥ 3** | 0 | |
 | 17 | installed public headers that do not compile | install tree | **4** | 0 | |
 | 18 | public headers including the CMake-generated `toffy_export.h` | tree | **7** (was 8; one went with the orphan) — `P3-10` targets 0 | 0 | |
@@ -85,7 +86,8 @@ grep -rn "delete " modules/core/src | grep -vE ':[0-9]+:[[:space:]]*//'
 grep -rnE '^[[:space:]]*#[[:space:]]*if(n?def)?[[:space:]].*MSVC' modules/ | wc -l
 grep -rnE '^[[:space:]]*#[[:space:]]*if(n?def)?[[:space:]].*MSVC' modules/ libraries/ apps/ | wc -l
 
-# 15 — core warnings (expect 0 once the Mux using-declaration lands, see P3-4)
+# 15 — core warnings. 0 since P3-4, and toffy_core now builds -Werror, so a
+#      non-zero answer here is a build failure, not a count.
 cd build && touch ../modules/core/src/*.cpp && make toffy_core 2>&1 | grep -c "warning:"
 
 # 17 — installed headers that cannot compile (needs a build dir)
@@ -140,9 +142,15 @@ the same `libtoffy.so` — holds 97 more prints, 33 of them in `thickTracer8.cpp
 Tree-wide, library code prints **225** times, not 128. `apps/main.cpp` also prints, but
 that is a CLI talking to its user and is not counted.
 
-**15 (3 warnings).** All three name the same declaration and are one root cause — but not
-the one the plan blamed. `Mux` declares `filter(const std::vector<Frame*>&, Frame&)`,
-which *hides* `Filter::filter(...)`; the fix is a `using Filter::filter;` line, not the
-`P2-12` API change. See [`findings/api.md`](findings/api.md) and `P3-4`. The count is
-configuration-dependent (one site sits behind a PCL guard), so quote the configuration
-with the number.
+**15 (0 warnings, was 3).** All three named the same declaration and were one root cause —
+but not the one the plan blamed. `Mux` declares `filter(const std::vector<Frame*>&, Frame&)`,
+which *hides* `Filter::filter(...)`; the fix was a `using Filter::filter;` line, not the
+`P2-12` API change ([`findings/api.md`](findings/api.md), `P3-4`). `toffy_core` is now
+compiled with `-Werror` behind `option(CORE_WERROR ON)`, scoped to that target and to
+GNU/Clang; the gate was tested by injecting an unused variable into `filter.cpp` and
+watching the build stop with `all warnings being treated as errors`.
+
+The count used to be configuration-dependent (one site behind a PCL guard); at zero that no
+longer matters, and all four `PCL_FOUND` × `HAS_BTA` cells were measured at 0 core warnings.
+The tree-wide figure (15a) is **not** gated: 28 warnings remain outside core and CI reports
+them without failing on them (`P3-11`).

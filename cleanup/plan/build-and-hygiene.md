@@ -134,7 +134,7 @@ Plan:
 | `add_definitions(-O2 -fPIC)` forcing `-O2` into every build type | ✅ removed |
 | redundant `add_definitions(-Wall)` | ✅ removed |
 | `#if (BOOST_VERSION > 105500)` dead branch | ✅ removed from `controller.cpp` |
-| `-Werror` | ⬜ **deliberately not enabled** — see below |
+| `-Werror` | ✅ enabled for `modules/core` only (`P3-4`), behind `option(CORE_WERROR ON)` — still deliberately off everywhere else |
 
 **The `-O2` was worse than described, in a second direction.** The write-up here said it
 "forces `-O2` into every build type, including Debug". Measured from `flags.make`, it also
@@ -158,13 +158,20 @@ After the change, measured directly: Debug → no `-O` flag (GCC default `-O0`),
   MSVC, which does not accept `-Wall`. Deleting it fixed a latent Windows problem, not just a
   duplication.
 
-**`-Werror` is the one sub-item left, and it stays left until `P2-12` lands.** Core still emits
-3 warnings under `-Wall -Wextra` (2 in a PCL-less build — the count is config-dependent, so
-quote the config when quoting it), all one root cause: the `filter()` const/non-const overload
-trap. Enabling `-Werror` now would fail every build, which is exactly what this item warned
-against. The plan's interim suggestion — `-Werror` on files touched by each PR — is the right
-way to hold the line meanwhile; note that core's 3 warnings are *not* narrowing/sign-compare
-warnings as this item originally assumed, they are all the overload trap.
+**`-Werror` — done for core, and the stated blocker was wrong.** This item gated `-Werror` on
+`P2-12` because core's 3 warnings under `-Wall -Wextra` were assumed to be the `filter()`
+const/non-const overload trap. They were not: all three were `Mux` hiding `Filter::filter` by
+declaring a different signature, and one `using Filter::filter;` line removed them (`P3-4`,
+control/treatment in [`../findings/api.md`](../findings/api.md)). Core is now at 0 warnings in
+all four dependency configurations and `toffy_core` compiles with `-Werror`, so the count
+cannot grow again.
+
+It is scoped to that one target (`target_compile_options(toffy_core PRIVATE -Werror)`, not
+`add_compile_options`), to GNU/Clang only, and behind `option(CORE_WERROR ON)` so a downstream
+build on a compiler this tree has not been measured with has an escape hatch. The rest of the
+tree still emits 28 warnings and is reported, not gated (`P3-11`). `P2-12` stays open: the
+design trap — a `const Filter&` getting `false` from `FilterBank`/`ParallelFilter` — was never
+what those warnings were reporting.
 
 Verification for this change: 4 dependency configurations × {Debug, Release} = 8 builds, all
 configuring, building and passing 7/7 `ctest`; warning count unchanged before and after at 3

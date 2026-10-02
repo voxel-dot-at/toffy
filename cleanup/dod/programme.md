@@ -29,15 +29,20 @@ vs `128` for the same greps.
 | 18 | Public headers including the CMake-generated `toffy_export.h` | 0 |
 | 19 | CMake `if( ${VAR} )` sites | 0 |
 
-Four of these are met today (1, 3, 4, 6) and three more are met inside `modules/` but not
-tree-wide (7, 8b, and 5 in core) — which is the difference between a criterion and a grep.
+Met today: 1, 3, 4, 6, 7, 8, 8b and 15 — and 5 inside `modules/core` only, with 225 prints
+still standing tree-wide. Two of those greens arrived late and were false for a while: 7 and
+8b read 0 while the pattern sat in `libraries/sensor/`, outside the greps' scope, until
+`P3-1` deleted the orphan. That is the difference between a criterion and a grep — the scope
+is part of the claim ([`../dod/README.md`](../dod/README.md)).
 
-**Criterion 15 is the cheapest remaining win and its stated blocker was wrong.** The three
-warnings are one root cause, but it is `Mux` hiding `Filter::filter` by declaring a
-different signature, not the `P2-12` overload trap: a single `using Filter::filter;` line
-takes core to zero (`P3-4`). The count is configuration-dependent — one site sits behind a
-PCL guard, so `-DWITHOUT_PCL=ON` reports one fewer — so quote the configuration alongside
-the number, or a PCL-less CI job will look like it fixed a warning that is still there.
+**Criterion 15 is met, and the blocker it was gated on was wrong.** The three warnings were
+one root cause, but it was `Mux` hiding `Filter::filter` by declaring a different signature,
+not the `P2-12` overload trap: a single `using Filter::filter;` line took core to zero
+(`P3-4`, landed). `toffy_core` now compiles `-Werror`, so the criterion holds itself — the
+count cannot drift upward again without a build failure. Measured at 0 in all four
+`PCL_FOUND` × `HAS_BTA` configurations, which also retires the configuration-dependence
+warning this criterion used to carry: at zero, "2 in a PCL-less build" has nowhere to hide.
+The same line removed a fourth warning outside core, in `3d/muxMerge.hpp`.
 
 **Criterion 5 has two blind spots stacked on it.** Counting only `std::cout` misses the
 bare `cout <<` sites that most of the tree writes (`using namespace std;`), which was a
@@ -65,7 +70,8 @@ for f in "" "-DWITHOUT_PCL=ON" "-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON" \
   rm -rf "$d"
 done
 
-# 15 — core warnings. Expect 0 once P3-4 (the Mux using-declaration) lands.
+# 15 — core warnings. 0 since P3-4; toffy_core builds -Werror, so a nonzero count here
+#      is a build failure rather than something to note in a commit message.
 cd build && touch ../modules/core/src/*.cpp && make toffy_core 2>&1 | grep -ci warning
 
 # 2.4 — an API change since the last tag requires a new tag. Exit 1 => tag required.

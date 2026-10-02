@@ -42,9 +42,12 @@
 
 4. **No new compiler warnings** under the existing `-Wall -Wextra`
    (`CMakeLists.txt:207`) in any file the PR touches. Do not enable `-Werror` globally — the
-   pre-existing count would fail the build — but do not add to it either. `modules/core` is
-   the exception once `P3-4` lands: core is one line away from zero warnings, so from that
-   PR onwards `-Werror` applies to `modules/core` and a new warning there is a build break.
+   28 warnings outside `modules/core` would fail the build — but do not add to them either.
+   `modules/core` is the exception and `P3-4` has landed: `toffy_core` compiles with
+   `-Werror` (`option(CORE_WERROR ON)`, GNU/Clang only, `target_compile_options` PRIVATE so
+   it cannot leak), so a new warning in core is a build break, not a review comment. If a
+   future compiler release makes that unbuildable, say so in the PR rather than turning the
+   option off silently.
 
 5. **One numbered plan item per commit, one PR-stage per group of commits.** The plan's
    ground rule: never mix a public rename with a behaviour change in one commit.

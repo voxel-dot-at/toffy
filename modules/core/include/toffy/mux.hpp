@@ -32,6 +32,17 @@ namespace toffy
     {
     public:
 	/**
+	 * Bring the base overload set into scope.
+	 *
+	 * Mux declares filter(const std::vector<Frame*>&, Frame&), and a
+	 * declaration in a derived class hides - rather than overloads - every
+	 * base function of the same name. Without this line the two Filter::filter
+	 * overloads are invisible through Mux, which is what the three
+	 * -Woverloaded-virtual= warnings in core were reporting (P3-4).
+	 */
+	using Filter::filter;
+
+	/**
 	 * @brief Mux
 	 * @param name
 	 *

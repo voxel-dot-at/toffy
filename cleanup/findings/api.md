@@ -101,7 +101,15 @@ Add to `DOD 2.4`: *"a filter that overrides only one `filter()` overload is exer
 test that asserts its body ran"* — one test, and it is the only thing that distinguishes
 "compiles" from "works" here.
 
-### N3 — core can be warning-free today, without waiting for `P2-12`
+### N3 — ~~core can be warning-free today, without waiting for `P2-12`~~ **DONE (`P3-4`)**
+
+Landed: the `using Filter::filter;` line is in `mux.hpp`, core measures 0 warnings in all
+four dependency configurations, and `toffy_core` compiles `-Werror` behind
+`option(CORE_WERROR ON)`. The control/treatment table below is kept because it is the
+evidence that the one line — not `P2-12` — was what the warnings were reporting. One
+addition to the measurement: the same line also silenced a **fourth** warning outside core,
+in `modules/filters/include/toffy/3d/muxMerge.hpp`, so a full default build went from 32
+warnings to 28.
 
 The `DOD` criterion 15 note (0 warnings, `-Werror` on core) gated itself on `P2-12` and
 described the three warnings as *"all one root cause: the `filter()` const/non-const overload

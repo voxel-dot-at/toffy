@@ -11,7 +11,7 @@ carried over from the previous round.
 | PR | Item | State | Evidence |
 |---|---|---|---|
 | **1** | test harness + CI | ✅ done | `enable_testing()` (`CMakeLists.txt:436`), **8** `add_test()` targets, `.github/workflows/ci.yml` (PCL matrix + ASan/UBSan/LSan job) |
-| **2** | build flags | 🟡 4 of 5 | C++17 bumped; global `-O2` gone (Debug → `-O0`, Release back to `-O3`); redundant `-Wall` gone; dead `BOOST_VERSION` branch gone. Only `-Werror` left — see `P3-4`, which unblocks it |
+| **2** | build flags | ✅ done | C++17 bumped; global `-O2` gone (Debug → `-O0`, Release back to `-O3`); redundant `-Wall` gone; dead `BOOST_VERSION` branch gone; `-Werror` on `toffy_core` via `P3-4` (`option(CORE_WERROR ON)`) |
 | **3** | `stop()` / `remove()` / `findPos()` | ✅ done | `std::optional<int> findPos`, `_pipe.begin() + i`, `stop()` calls `stop()`; 4 tests pin it |
 | **4** | member init + null checks | ✅ done | in-class initialisers in `filter.hpp`; `Controller` ctor throws |
 | **5** | `Frame` metadata | ✅ done | `operator = default`; all three maps handled together |
@@ -20,10 +20,13 @@ carried over from the previous round.
 | **7a** | dead macros | ✅ done | 22 `DLLExport` deleted, `WIN`/`UNIX` gone, `RAWFILE` 3 headers → 1. Side effect: 7 of the 19 `MSVC` branches went with them |
 | **15** | logging policy | ✅ done | `setLoggingLvl()` is data-only; 3 hot-path calls removed; `Filter::setGlobalLogLevel()` added; `~Player` no longer kills process logging. 7 new tests, 4 of them failing pre-fix |
 | **17** | delete `Event` | ✅ done | `event.hpp`/`event.cpp` gone; tagged `v1.10.0` — **local only, not pushed**, and it points at `7fea594`, not the branch tip |
+| **19** | `P3-1` verification scope + `libraries/sensor/` orphan | ✅ done | 2 unreferenced headers deleted; counters 7a 3→0, 8c 2→0, 14a 16→15, 18 8→7. Counter 21's command was also broken (grepped `_pattern`, the variables are `_depthPattern`/`_amplPattern`) |
+| **20** | `P3-4` `using Filter::filter;` + `-Werror` on core | ✅ done | core 3 → **0** warnings in all four configurations; `toffy_core` builds `-Werror`; gate proven by injecting an unused variable into `filter.cpp` and watching the build stop; tree 32 → 28 warnings |
 
-**Seven of the original eighteen PRs are done** (1, 3, 4, 5, 6, 15, 17), plus 4 of the 5
-sub-items of PR 2 and the core half of PR 7. That is the whole P0 block, the test/CI fence
-and the build-flag cleanup: the critical path's first stretch.
+**Nine of the eighteen PRs are done** (1, 3, 4, 5, 6, 15, 17, 19, 20), and PR 2 is now
+complete rather than 4-of-5. That is the whole `P0` block, the test/CI fence, the build-flag
+cleanup and core's warning gate: the critical path's first stretch, plus the two cheap
+second-pass items that removed a false green and made a later change compile-checked.
 
 `P1`/`P2` items closed: **3 of 16** (`P1-1`, `P2-8`, `P2-14`), with `P2-16` at 4-of-5 and
 `P2-3` core-only.
@@ -42,10 +45,11 @@ and the build-flag cleanup: the critical path's first stretch.
 | **16** | `P2-11` + `P2-12` `Frame` API, `filter()` overload | ❌ see `P3-9` before touching `P2-12` |
 | **18** | `P2-15` formatting | ❌ 11 of 20 core files have hard tabs; clang-format 18.1.3 **is** installed |
 
-The second-pass work (`P3-1` … `P3-10`) is listed in
-[`plan/second-pass.md`](plan/second-pass.md). Four of its items — `P3-1`, `P3-4`, `P3-3a`,
-`P3-7` — are together about fifteen lines, carry no behaviour change, and each one either
-removes a false green or makes a later change compile-checked.
+The second-pass work (`P3-1` … `P3-11`) is listed in
+[`plan/second-pass.md`](plan/second-pass.md). Two of its four cheap items are done (`P3-1`,
+`P3-4`); `P3-3` and `P3-7` are the remaining pair — together about ten lines, no behaviour
+change, one makes `P2-12` compile-checked and the other closes a class of silent build
+breakage. `P3-2` and `P2-12` are API changes and belong with a tag.
 
 ## Gates
 

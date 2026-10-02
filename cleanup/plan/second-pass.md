@@ -8,19 +8,19 @@ from that round and are kept so the mapping stays traceable.
 **None of this is on the critical path** (`1 → 7 → 9 → 10 → {11,12,13} → 16 → 17 → 18`)
 and none of it depends on the ownership work, so it can all run alongside.
 
-| Item | Was | Title | Size | Risk | Unblocks |
-|---|---|---|---|---|---|
-| `P3-1` | `S1` | widen the verification scope; delete the orphan | 2 files | none | honest counters 7, 8c, 14a |
-| `P3-4` | `S4` | `using Filter::filter;` in `Mux`, then `-Werror` on core | 1 line + CMake | none | `DOD 15`, `P2-16`'s last sub-item |
-| `P3-3` | `S3a` | `override` on the four `const`-only filters | 8 sites | none | makes `P2-12` compile-checked |
-| `P3-7` | `S7` | `if( ${VAR} )` → `if(VAR)` | 4 lines | none | a class of silent build breakage |
-| `P3-6` | `S6` | `csv_source`: check `fscanf`, validate the pattern | ~10 lines | low | 2 `-Wunused-result`, silently corrupt frames |
-| `P3-5` | `S5` | `objectTrack`: `system()` → `execv`, or delete | 1 function | low | the only `system()` in the tree |
-| `P3-9` | `S3` (gate) | a test that a filter's body actually ran | 1 test | none | separates "compiles" from "works" |
-| `P3-2` | `S2` | delete the dead, installed `toffy/web/` headers | 4 files | API — needs a tag | an installed header that cannot compile |
-| `P3-8` | `S8` | `toffy_tracking` layering inversion | CMake | low | — |
-| `P3-10` | — | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | none on the shipped ABI | `DOD 18`; one less generated header in the public API |
-| `P3-11` | `S9` | CI warning counter, without changing the build | CI | none | visibility of the 29 non-core warnings |
+| Item | Was | Title | Size | Risk | State | Unblocks |
+|---|---|---|---|---|---|---|
+| `P3-1` | `S1` | widen the verification scope; delete the orphan | 2 files | none | ✅ | honest counters 7, 8c, 14a |
+| `P3-4` | `S4` | `using Filter::filter;` in `Mux`, then `-Werror` on core | 1 line + CMake | none | ✅ | `DOD 15`, `P2-16`'s last sub-item |
+| `P3-3` | `S3a` | `override` on the four `const`-only filters | 8 sites | none | ❌ | makes `P2-12` compile-checked |
+| `P3-7` | `S7` | `if( ${VAR} )` → `if(VAR)` | 4 lines | none | ❌ | a class of silent build breakage |
+| `P3-6` | `S6` | `csv_source`: check `fscanf`, validate the pattern | ~10 lines | low | ❌ | 2 `-Wunused-result`, silently corrupt frames |
+| `P3-5` | `S5` | `objectTrack`: `system()` → `execv`, or delete | 1 function | low | ❌ | the only `system()` in the tree |
+| `P3-9` | `S3` (gate) | a test that a filter's body actually ran | 1 test | none | ❌ | separates "compiles" from "works" |
+| `P3-2` | `S2` | delete the dead, installed `toffy/web/` headers | 4 files | API — needs a tag | ❌ | an installed header that cannot compile |
+| `P3-8` | `S8` | `toffy_tracking` layering inversion | CMake | low | ❌ | — |
+| `P3-10` | — | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | none on the shipped ABI | ❌ | `DOD 18`; one less generated header in the public API |
+| `P3-11` | `S9` | CI warning counter, without changing the build | CI | none | ❌ | visibility of the 28 non-core warnings |
 
 `P3-1`, `P3-4`, `P3-3` and `P3-7` are together roughly fifteen lines, carry no behaviour
 change, and each one either removes a false green or makes a later change compile-checked.
@@ -167,10 +167,10 @@ changed; see the note in that item about the tag decision.
 
 ## `P3-11` — a CI warning counter that does not change the build
 
-Nothing outside core measures warnings: a full build emits 32 warnings today and nobody
+Nothing outside core measures warnings: a full build emits 28 warnings today and nobody
 looks. Print `grep -c warning:` per target on every PR and fail only if `modules/core`
-goes above 0 — that holds the line at core (where `P3-4` makes it achievable) while making
-the other 29 visible instead of silently re-emitted.
+goes above 0 — core is already held there by `-Werror` (`P3-4`), so what this item adds is
+visibility for the other 28 instead of silently re-emitting them.
 [`../findings/audit-2024-09.md`](../findings/audit-2024-09.md) has the breakdown; the
 `-Wmaybe-uninitialized` cluster in the K3M skeletonizers is the part worth a human look
 before it is dismissed.
