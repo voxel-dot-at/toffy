@@ -329,11 +329,13 @@ endif()
 # and wrong twice over: it was outside the compiler check, so it also reached
 # MSVC, which does not accept -Wall.
 #
-# -Werror is intentionally NOT enabled: modules/core emits 3 warnings under
-# -Wall -Wextra, all of them one root cause -- Mux declares a filter() overload
-# that *hides* Filter's, so the base overload set is not visible there. One
-# `using Filter::filter;` in mux.hpp clears all three (P3-4); that is what
-# unblocks -Werror, not the P2-12 API change this comment used to blame.
+# -Werror is NOT enabled globally, and the rest of the tree is what stops it: 28
+# warnings outside modules/core (counters.md 15a) would fail every build. It IS
+# enabled for toffy_core -- modules/core has been warning-free since P3-4, which
+# cleared its 3 warnings with one `using Filter::filter;` in mux.hpp (the root
+# cause was Mux *hiding* Filter's overload set, not the P2-12 API change this
+# comment used to blame). See modules/core/src/CMakeLists.txt and the CORE_WERROR
+# option there. tools/warning_report.sh reports the rest on every CI build.
 # See cleanup/dod/programme.md criterion 15.
 
 add_subdirectory(libraries)
