@@ -3,7 +3,7 @@
 What has landed, what is in flight, and what the release situation is. Counters are in
 [`counters.md`](counters.md); the order the rest goes in is in [`order.md`](order.md).
 
-State as of `e943a37` (`feature/code-cleanup`), re-checked against the tree rather than
+State as of `569f071` (`feature/code-cleanup`), re-checked against the tree rather than
 carried over from the previous round.
 
 ## Landed
@@ -24,19 +24,20 @@ carried over from the previous round.
 | **20** | `P3-4` `using Filter::filter;` + `-Werror` on core | ✅ done | core 3 → **0** warnings in all four configurations; `toffy_core` builds `-Werror`; gate proven by injecting an unused variable into `filter.cpp` and watching the build stop; tree 32 → 28 warnings |
 | **21** | `P3-7` `if( ${VAR} )` sweep + CI check | ✅ done | 4 sites → 0; `cmake-hygiene` job added, scoped to the 29 tracked CMake files, verified red on a re-introduced site and green on the fixed tree |
 
-**Nine of the eighteen PRs are done** (1, 3, 4, 5, 6, 15, 17, 19, 20), and PR 2 is now
+**Ten of the eighteen PRs are done** (1, 3, 4, 5, 6, 15, 17, 19, 20, 21), and PR 2 is now
 complete rather than 4-of-5. That is the whole `P0` block, the test/CI fence, the build-flag
-cleanup and core's warning gate: the critical path's first stretch, plus the two cheap
-second-pass items that removed a false green and made a later change compile-checked.
+cleanup and core's warning gate: the critical path's first stretch, plus the three cheap
+second-pass items that removed a false green, closed a class of silent build breakage and
+made a later change compile-checked.
 
-`P1`/`P2` items closed: **3 of 16** (`P1-1`, `P2-8`, `P2-14`), with `P2-16` at 4-of-5 and
-`P2-3` core-only.
+`P1`/`P2` items closed: **4 of 16** (`P1-1`, `P2-8`, `P2-14`, `P2-16`), with `P2-3`
+core-only. `P2-16` closed when `P3-4` landed the `-Werror` half of it.
 
 ## Open
 
 | PR | Item | State |
 |---|---|---|
-| **8** | `P2-2` Windows paths — fix or delete | ❌ 12 `MSVC` branches in `modules/`, 16 tree-wide |
+| **8** | `P2-2` Windows paths — fix or delete | ❌ 12 `MSVC` branches in `modules/`, 15 tree-wide |
 | **9** | `P2-4` factory → registration | ❌ 37 branches |
 | **10** | `P2-5` one owner per `Filter` | ❌ the keystone |
 | **11** | `P2-6` + `P2-13` run methods, state, typos | ❌ |
@@ -47,10 +48,9 @@ second-pass items that removed a false green and made a later change compile-che
 | **18** | `P2-15` formatting | ❌ 11 of 20 core files have hard tabs; clang-format 18.1.3 **is** installed |
 
 The second-pass work (`P3-1` … `P3-11`) is listed in
-[`plan/second-pass.md`](plan/second-pass.md). Two of its four cheap items are done (`P3-1`,
-`P3-4`); `P3-3` and `P3-7` are the remaining pair — together about ten lines, no behaviour
-change, one makes `P2-12` compile-checked and the other closes a class of silent build
-breakage. `P3-2` and `P2-12` are API changes and belong with a tag.
+[`plan/second-pass.md`](plan/second-pass.md). Three of its four cheap items are done (`P3-1`,
+`P3-4`, `P3-7`); `P3-3` is the remaining one — three lines, no behaviour change, and it
+makes `P2-12` compile-checked. `P3-2` and `P2-12` are API changes and belong with a tag.
 
 ## Gates
 

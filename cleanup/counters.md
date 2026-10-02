@@ -2,9 +2,13 @@
 
 **This is the only place a measured number is written down.** Other chapters link here.
 
-Re-measured on `feature/code-cleanup` at `4739900` plus the `P3-1` deletion landed in this
-commit; GCC 13.3, CMake 3.28.3, default configuration (PCL on, BTA on). Every command below
-is copy-pasteable from the repository root; run them before quoting a figure.
+Re-measured on `feature/code-cleanup` at `569f071` (`P3-7`), i.e. after `P3-1`, `P3-4` and
+`P3-7` landed; GCC 13.3, CMake 3.28.3, default configuration (PCL on, BTA on). Every command
+below is copy-pasteable from the repository root; run them before quoting a figure.
+
+An earlier revision of this header cited `4739900`, which is not an ancestor of `HEAD` — it
+was the pre-amend version of the README commit and is unreachable from this branch. Cite a
+commit that `git log` can actually show.
 
 **Scope is part of the number.** `modules/core`, `modules/` and the whole tree are three
 different answers for most of these, and the programme has twice quoted one for another —
@@ -15,7 +19,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | # | metric | scope | now | target | |
 |---|---|---|---|---|---|
 | 1 | `P0` correctness items closed, each with a regression test | — | **12/12** | 12/12 | ✅ |
-| 2 | `P1`/`P2` plan items closed | 16 items | **3/16** | 16/16 | |
+| 2 | `P1`/`P2` plan items closed | 16 items | **4/16** (`P1-1`, `P2-8`, `P2-14`, `P2-16`) | 16/16 | |
 | 3 | CI configures, builds and runs `ctest` on every push | `.github/` | matrix + sanitizers | required | ✅ |
 | 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` configurations | build | **4/4**, 8/8 ctest each | 4/4 | ✅ |
 | 5 | debug prints in library code | `modules/` | **128** | 0 | |
@@ -44,7 +48,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 18a | `TOFFY_EXPORT` annotation sites | tree | **17** in 16 headers | 0 | |
 | 19 | CMake `if( ${VAR} )` sites | build | **0** (was 4) — CI now fails on any new one | 0 | ✅ |
 | 20 | `system()` on configuration data | `modules/filters` | **1** | 0 | |
-| 21 | config string used as a `printf` format | `modules/filters` | **2** | 0 | |
+| 21 | config string used as a `printf` format | `modules/filters` | **5** in 2 files — `csv_source.cpp` 2, `exportcsv.cpp` 3 (was recorded as 2, because only `csv_source` had been read) | 0 | |
 | 22 | files containing hard tabs / files in core | `modules/core` | **11 / 20** | 0 / 20 | |
 | 23 | lines of code | `modules/core` | **4 021** | — | |
 | 24 | `ctest` targets | `tests/` | **8** | ≥ 8 | ✅ |
@@ -98,9 +102,6 @@ printf '#include <toffy/web/common/plugins.hpp>\n' | g++ -std=c++17 -fsyntax-onl
 # 18 — the generated export header
 grep -rn "^[[:space:]]*#[[:space:]]*include *[<\"]toffy/toffy_export.h" modules libraries apps
 # 18a — count annotation sites, not mentions: P2-3 left eight "DLLExport is gone,
-#       TOFFY_EXPORT is the real macro" comments behind (raw grep 25, sites 17).
-grep -rn TOFFY_EXPORT modules libraries apps | grep -vE ':[0-9]+:[[:space:]]*(//|\*)' | wc -l
-# 18a — count annotation sites, not mentions: P2-3 left eight "DLLExport is gone,
 #       TOFFY_EXPORT is the real macro" comments behind (raw grep: 25, sites: 17).
 grep -rn TOFFY_EXPORT modules libraries apps | grep -vE ':[0-9]+:[[:space:]]*(//|\*)' | wc -l
 
@@ -113,8 +114,11 @@ git ls-files -z '*.cmake' '*CMakeLists.txt' \
 
 # 20, 21
 grep -rn "system(" modules/filters --include=*.cpp
-#     the variables are _depthPattern/_amplPattern, so a "_pattern" grep finds nothing
+# 21 — a config string passed as snprintf's format argument. The variables are
+#      _depthPattern/_amplPattern/_filePattern, so the "_pattern" grep this counter used to
+#      carry matched nothing at all, and the figure was being carried on trust.
 grep -rnE "snprintf\([^;]*[Pp]attern" modules libraries --include=*.cpp
+#   5 sites: csv_source.cpp:162,183 and exportcsv.cpp:92,100,103
 
 # 22, 23 — formatting and size
 grep -rlP '\t' modules/core --include=*.cpp --include=*.hpp | wc -l
