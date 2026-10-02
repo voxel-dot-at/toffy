@@ -36,3 +36,18 @@ ctest --test-dir build --output-on-failure
 detected by `find_package` and switch on `PCL_FOUND` / `HAS_BTA` — see
 [`cleanup/overview.md`](cleanup/overview.md) for what each configuration does and does not
 cover.
+
+| Option | Default | Effect |
+|---|---|---|
+| `WITHOUT_PCL` | `OFF` | exclude the point-cloud classes; supported, and built in CI |
+| `WITH_VISUALIZATION` | `ON` | viewer objects, needs a GUI |
+| `WITH_PCL_CLOUDVIEW` | `OFF` | the PCL cloud viewer |
+| `BUILD_TESTS` | `ON` | the `ctest` suite in `tests/` |
+| `BUILD_STATIC` | `OFF` | static library instead of the shared one |
+
+All four PCL × BTA combinations are expected to configure, build and pass `ctest`; see
+[`cleanup/dod/per-pr.md`](cleanup/dod/per-pr.md).
+
+`Welcome.txt` is a verbatim duplicate of this file's opening five lines (verified with
+`diff`, not assumed). It is generated from nothing, so it drifts the moment one of those
+lines is edited here and not there.
