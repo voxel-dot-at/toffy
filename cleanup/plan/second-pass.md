@@ -63,19 +63,42 @@ Deleting them is an API removal, so `../dod/stage-gates.md` §2.4 applies (tag +
 need for the `use.dox` rewrite in the same area — the page and the headers describe the
 same dead product.
 
-## `P3-3` — make the four `const`-only filters `override` first
+## `P3-3` — make the four `const`-only filters `override` first — **done**
 
 `P2-12` says "delete the `const` overload from the base and keep one non-`const` virtual".
-Four classes outside core implement **only** the `const` form, and three of them do not
-say `override`, so deleting the base overload turns them into new virtuals that override
-nothing: they keep compiling and stop running. Evidence, including the minimal
+Four classes outside core implement **only** the `const` form, and three of them did not
+say `override`, so deleting the base overload turned them into new virtuals that override
+nothing: they kept compiling and stopped running. Evidence, including the minimal
 reproduction: [`../findings/api.md`](../findings/api.md).
 
-**Commit 1 (this item):** drop `const` from the four declarations and four definitions in
-`modules/filters` and add `override` to all of them. Nothing changes at runtime — the
-base's delegation resolves to the same body — and it turns any missed site from a silent
-behaviour change into a compile error.
-**Commit 2:** `P2-12` proper.
+**What landed:** `override` on all four declarations — `OffSet`, `Transform`, `Merge`
+(the three that were unmarked) and `CloudViewOpenCv`, which already had it and now carries
+the same comment as the other three. Counters 25: 3 → 0.
+
+**What was *not* done, on purpose:** the `const` drop from the original S3 wording. It moves
+into `P2-12`, and two measurements are why:
+
+- **Dropping `const` is warning-free, so no `using` declarations are needed here.** Measured
+  by dropping `const` from `OffSet`'s declaration *and* definition and rebuilding: no
+  `-Woverloaded-virtual`. `Mux` warns because its `filter()` overrides nothing; a derived
+  declaration that *is* an override of the surviving base virtual does not trigger it. That
+  removes the one thing that could have made `P2-12` need per-site fixes.
+- **Dropping `const` here would open a behaviour window that `P2-12` cannot close.** Once a
+  class overrides only the non-`const` virtual, a caller holding a `const Filter&` gets the
+  base's `return false`. Inside this tree that caller does not exist — the only
+  `const`-qualified call of `filter()` is the base's own delegation (`filter.hpp:197`);
+  `FilterBank`, `ParallelFilter`, `FilterThread` and `Controller` all call through
+  non-`const` `Filter*`. But these are *installed* headers, and `P3-3` is not a tagged API
+  change, so the window would be real for anyone downstream for as long as the two commits
+  sit apart.
+
+`override` alone gets the whole benefit: when `P2-12` deletes the base's `const` overload,
+all four sites fail to compile, which is exactly the outcome the finding asked for. The
+`const` drop then happens in the same commit as the base change, so the two cannot drift.
+
+**Verified:** full `DOD 1.1` matrix — 4/4 configurations build, 8/8 `ctest` in each, warning
+counts unchanged (28 / 27 / 26 / 25). No test is added by this item, because it changes no
+runtime path — the fence that distinguishes "compiles" from "runs" is `P3-9`, still open.
 
 ## `P3-4` — `using Filter::filter;` in `Mux`, then `-Werror` on core
 
