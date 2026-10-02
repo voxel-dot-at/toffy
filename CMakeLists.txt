@@ -306,7 +306,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # bta library -- communication with Becom Systems cameras (Argos, Sentis, ...)
 #
 find_package( bta )
-if (${bta_FOUND})
+if (bta_FOUND)
     message(INFO " bta inc  ${bta_INCLUDE_DIRS}")
     message(INFO " bta lib  ${bta_LIBRARIES}")
     message(INFO " bta defs ${bta_DEFINITIONS}")
@@ -435,7 +435,7 @@ install(
 # Tests
 #######################################
 
-if( ${BUILD_TESTS})
+if (BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()

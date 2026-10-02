@@ -42,7 +42,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 17 | installed public headers that do not compile | install tree | **4** | 0 | |
 | 18 | public headers including the CMake-generated `toffy_export.h` | tree | **7** (was 8; one went with the orphan) — `P3-10` targets 0 | 0 | |
 | 18a | `TOFFY_EXPORT` annotation sites | tree | **17** in 16 headers | 0 | |
-| 19 | CMake `if( ${VAR} )` sites | build | **4** | 0 | |
+| 19 | CMake `if( ${VAR} )` sites | build | **0** (was 4) — CI now fails on any new one | 0 | ✅ |
 | 20 | `system()` on configuration data | `modules/filters` | **1** | 0 | |
 | 21 | config string used as a `printf` format | `modules/filters` | **2** | 0 | |
 | 22 | files containing hard tabs / files in core | `modules/core` | **11 / 20** | 0 / 20 | |
@@ -104,9 +104,12 @@ grep -rn TOFFY_EXPORT modules libraries apps | grep -vE ':[0-9]+:[[:space:]]*(//
 #       TOFFY_EXPORT is the real macro" comments behind (raw grep: 25, sites: 17).
 grep -rn TOFFY_EXPORT modules libraries apps | grep -vE ':[0-9]+:[[:space:]]*(//|\*)' | wc -l
 
-# 19 — the CMake bug class that hid the PCL-less build failure
-grep -rn 'if[[:space:]]*([[:space:]]*\${' --include=CMakeLists.txt . \
-  | grep -v MATCHES | grep -vE '^\./(build|build_asan|build_test)/'
+# 19 — the CMake bug class that hid the PCL-less build failure. Scope: the tracked
+#      CMake files. A plain recursive grep also hits build/generated/toffyConfig.cmake,
+#      which is generated and not ours - that is a false positive, not a finding.
+git ls-files -z '*.cmake' '*CMakeLists.txt' \
+  | xargs -0 -r grep -HE '(if|elseif|while)[[:space:]]*\([[:space:]]*\$\{' \
+  | grep -vE 'MATCHES|STREQUAL'
 
 # 20, 21
 grep -rn "system(" modules/filters --include=*.cpp

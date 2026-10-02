@@ -13,7 +13,7 @@ and none of it depends on the ownership work, so it can all run alongside.
 | `P3-1` | `S1` | widen the verification scope; delete the orphan | 2 files | none | ✅ | honest counters 7, 8c, 14a |
 | `P3-4` | `S4` | `using Filter::filter;` in `Mux`, then `-Werror` on core | 1 line + CMake | none | ✅ | `DOD 15`, `P2-16`'s last sub-item |
 | `P3-3` | `S3a` | `override` on the four `const`-only filters | 8 sites | none | ❌ | makes `P2-12` compile-checked |
-| `P3-7` | `S7` | `if( ${VAR} )` → `if(VAR)` | 4 lines | none | ❌ | a class of silent build breakage |
+| `P3-7` | `S7` | `if( ${VAR} )` → `if(VAR)` | 4 lines | none | ✅ | a class of silent build breakage |
 | `P3-6` | `S6` | `csv_source`: check `fscanf`, validate the pattern | ~10 lines | low | ❌ | 2 `-Wunused-result`, silently corrupt frames |
 | `P3-5` | `S5` | `objectTrack`: `system()` → `execv`, or delete | 1 function | low | ❌ | the only `system()` in the tree |
 | `P3-9` | `S3` (gate) | a test that a filter's body actually ran | 1 test | none | ❌ | separates "compiles" from "works" |
@@ -109,16 +109,18 @@ the image and reports success. Evidence: [`../findings/security.md`](../findings
 Validate the pattern once at config time and check the `fscanf` return. Small, local, and
 it turns a silently corrupt frame into a logged error.
 
-## `P3-7` — `if( ${VAR} )` → `if(VAR)`
+## `P3-7` — `if( ${VAR} )` → `if(VAR)` — **DONE**
 
 The bug class that hid the PCL-less build failure was fixed on the PCL axis but never
-swept. Four sites remain; `if( ${BUILD_TESTS})` is the one that will bite, because a value
-containing a space turns into a CMake error rather than a false. Evidence and the
-demonstration: [`../findings/build.md`](../findings/build.md).
+swept. Four sites, all now `if(VAR)`: `bta_FOUND`, `BUILD_TESTS`, and two
+`OPENCV_TRACKING_FOUND`. `MATCHES` comparisons (`if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")`)
+are correct as written and stayed.
 
-One mechanical commit. `MATCHES` comparisons (`if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")`)
-are correct as written and stay. Worth a CI line:
-`grep -rn 'if[ ]*([ ]*\${' --include=CMakeLists.txt` excluding `MATCHES`.
+The CI line went in too, scoped more tightly than originally suggested — over the repository
+root the suggested grep reports `build/generated/toffyConfig.cmake`, a generated file, so the
+shipped check covers only the tracked CMake files and excludes `MATCHES`/`STREQUAL`. It was
+verified to fail on a re-introduced site. Evidence, the measured CMake behaviour and the
+reason the four sites sat unnoticed: [`../findings/build.md`](../findings/build.md) N6.
 
 ## `P3-8` — the `toffy_tracking` layering inversion
 

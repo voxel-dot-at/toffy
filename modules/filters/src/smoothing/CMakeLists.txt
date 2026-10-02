@@ -1,4 +1,4 @@
-if ( ${OPENCV_TRACKING_FOUND} )
+if (OPENCV_TRACKING_FOUND)
     set(TRACK_SRCS 
         kalmanaverage.cpp
     )

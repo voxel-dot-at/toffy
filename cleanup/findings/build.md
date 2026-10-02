@@ -196,7 +196,7 @@ This is an API removal, so per `DOD 2.4` it needs a version tag and a run of
 close to nil, but the gate still applies. Doing it also removes the need for the `use.dox`
 rewrite in the same area: the page and the headers describe the same dead product.
 
-### N6 — the `if( ${VAR} )` bug class is still in the build
+### N6 — ~~the `if( ${VAR} )` bug class is still in the build~~ **FIXED (`P3-7`)**
 
 This document set documents this bug class well: two CMake `if( ${VAR} )` clauses expanded to nothing
 when the variable was absent, which is why a PCL-less build never reached the compiler. The
@@ -218,10 +218,30 @@ if( ${MAYBE} )          # MAYBE empty  -> silently false, no error
 if( ${MAYBE} AND FOO )  # MAYBE empty  -> CMake Error: if given arguments: "AND" "FOO"
 ```
 
-**Suggestion S7 — one mechanical commit: `if( ${VAR} )` → `if(VAR)`** for the four sites above
-(`MATCHES` comparisons like `if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")` are correct as written
-and should stay). Worth a CI line too: `grep -rn 'if[ ]*([ ]*\${' --include=CMakeLists.txt`
-excluding `MATCHES`.
+**Suggestion S7 — one mechanical commit: `if( ${VAR} )` → `if(VAR)`** — **done**, all four
+sites (`MATCHES` comparisons like `if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")` are correct as
+written and stayed).
+
+The CI line was worth adding, but not in the form suggested: `grep -rn 'if[ ]*([ ]*\${' \
+--include=CMakeLists.txt` over the repository root also matches
+`build/generated/toffyConfig.cmake`, a generated file that legitimately contains
+`if(${_NAME}_FIND_REQUIRED_${comp})`. A check that reports a finding nobody owns gets ignored,
+which is how a gate dies. The shipped version scopes to the 29 **tracked** CMake files
+(`git ls-files`) and excludes `MATCHES`/`STREQUAL`; it was verified to go red when a site is
+re-introduced and green when it is removed. See the `cmake-hygiene` job in
+`.github/workflows/ci.yml`.
+
+Measured behaviour of the bug class on CMake 3.28, for the record:
+
+```cmake
+if( ${MAYBE} )          # empty      -> silently FALSE, no diagnostic
+if( ${MAYBE} AND ON )   # empty      -> CMake Error: "AND" "ON" — Unknown arguments
+if( ${MAYBE} AND ON )   # "a b"      -> dev warning, evaluates FALSE
+```
+
+The first row is the reason four sites sat unnoticed for years: they were not broken, they
+were silently always-false, which for `bta_FOUND` and `OPENCV_TRACKING_FOUND` happened to
+agree with the truth whenever the dependency was missing.
 
 ### N7 — `libraries/` depends on a target defined in `modules/filters/`
 

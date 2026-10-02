@@ -130,3 +130,37 @@ jobs:
           ASAN_OPTIONS: detect_leaks=1:abort_on_error=0
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0
         run: ctest --test-dir build --output-on-failure
+
+  cmake-hygiene:
+    name: cmake hygiene (if( ${VAR} ) sweep)
+    runs-on: ubuntu-latest
+    # P3-7 / finding N6. This bug class is what hid the PCL-less build for as long
+    # as it took: if() takes variable *names*, so an empty variable makes
+    #   if( ${V} )          silently false, and
+    #   if( ${V} AND X )    a hard "Unknown arguments specified" configure error.
+    # Both were measured on cmake 3.28 (see cleanup/findings/build.md).
+    #
+    # Scope, stated per DOD 0 rule 9: the 29 *tracked* CMakeLists.txt and *.cmake
+    # files (git ls-files, so generated files in a build tree cannot produce a false
+    # positive - toffyConfig.cmake in build/generated/ does contain if(${...}) and is
+    # not ours to fix). MATCHES/STREQUAL comparisons are excluded because expanding
+    # the left operand first is the idiom there and is correct as written.
+    #
+    # Verified to be capable of failing: re-introducing one site locally turns this
+    # step red, and removing it turns it green again.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No if( ${VAR} ) sites
+        run: |
+          set -uo pipefail
+          hits=$(git ls-files -z '*.cmake' '*CMakeLists.txt' \
+                   | xargs -0 -r grep -HE '(if|elseif|while)[[:space:]]*\([[:space:]]*\$\{' \
+                   | grep -vE 'MATCHES|STREQUAL' || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"
+            echo '::error::if( ${VAR} ) expands before if() evaluates it. Write if(VAR).' \
+              'See cleanup/plan/second-pass.md P3-7 and cleanup/findings/build.md N6.'
+            exit 1
+          fi
+          echo 'no if( ${VAR} ) sites in the tracked CMake files'
