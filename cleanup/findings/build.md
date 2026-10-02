@@ -40,11 +40,15 @@ inside the library anyway (see the `MSVC` finding above).
 The 3 classes went to `TOFFY_EXPORT` because it was the macro the build actually
 generates; that turned out to be a weaker argument than it looked.
 
-**…and the deletion was incomplete.** `libraries/sensor/include/toffy/imagesensor.hpp`
-still defines `DLLExport`, `WIN` and `UNIX` and still annotates `class DLLExport
-ImageSensor`. It is a pre-`P2-3` copy of `modules/bta/include/toffy/io/imagesensor.hpp`,
-has no `CMakeLists.txt`, is in no `add_subdirectory`, is on no include path and is not
-installed — so the counters read 0 while the pattern sat in the tree. `P3-1` deletes it.
+**…and the deletion was incomplete — FIXED (`P3-1`).** `libraries/sensor/include/toffy/imagesensor.hpp`
+still defined `DLLExport`, `WIN` and `UNIX` and still annotated `class DLLExport
+ImageSensor`. It was a pre-`P2-3` copy of `modules/bta/include/toffy/io/imagesensor.hpp`,
+had no `CMakeLists.txt`, was in no `add_subdirectory`, was on no include path and was not
+installed — so the counters read 0 while the pattern sat in the tree. Both headers in
+`libraries/sensor/` are now deleted; `diff` of the deleted file against the live one showed
+exactly the `P2-3` changes plus the `#include <toffy/sensor.hpp>` path, i.e. the same file
+at two vintages, which is what made it safe to remove rather than to fix. Counters 7a and
+8c are now true zeros rather than false ones.
 
 **`WIN` and `UNIX` were also going.** Not in the original audit: `imagesensor.hpp` and
 `BtaWrapper.hpp` did `#define WIN true` / `#define UNIX true` in *public headers*, referenced
@@ -75,12 +79,14 @@ is generated — and it does nothing:
   `toffy_EXPORTS` test. On Linux the macro cannot change anything.
 - **On MSVC it would be actively wrong:** with nothing defining `toffy_EXPORTS`, every
   annotated class in the library would be compiled `__declspec(dllimport)`.
-- **It drags a build artifact into the public API.** 8 public headers do
+- **It drags a build artifact into the public API.** 7 public headers do
   `#include <toffy/toffy_export.h>`, so including `toffy/frame.hpp` requires CMake's
   generated include dir, and `make install` has to ship `toffy_export.h` for the rest of
   the installed headers to parse.
 
-27 uses across 15 headers, 8 includes. `P3-10` deletes them and keeps
+17 annotation sites across 16 headers, 7 includes (counters 18/18a; the raw
+`TOFFY_EXPORT` grep says 25 because eight of the mentions are `P2-3`'s own
+"DLLExport is gone" comments). `P3-10` deletes them and keeps
 `${CMAKE_CURRENT_BINARY_DIR}/generated/` on the include path for `toffy_config.h`, which
 *is* used. The gate is that `readelf --dyn-syms` on `libtoffy.so` is unchanged.
 

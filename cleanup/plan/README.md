@@ -75,7 +75,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 
 | Item | Title | Size | State |
 |---|---|---|---|
-| `P3-1` | widen the verification scope; delete the `libraries/sensor/` orphan | 2 files | ❌ |
+| `P3-1` | widen the verification scope; delete the `libraries/sensor/` orphan | 2 files | ✅ |
 | `P3-2` | delete the dead, installed `toffy/web/` headers | 4 files | ❌ API |
 | `P3-3` | make the four `const`-only filters `override` before `P2-12` | 8 sites | ❌ |
 | `P3-4` | `using Filter::filter;` in `Mux`; `-Werror` on core | 1 line | ❌ |
@@ -84,5 +84,5 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P3-7` | `if( ${VAR} )` → `if(VAR)`, 4 sites | 4 lines | ❌ |
 | `P3-8` | `toffy_tracking` layering inversion | CMake | ❌ |
 | `P3-9` | a test that a filter's body actually ran | 1 test | ❌ |
-| `P3-10` | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | ⬜ in flight |
+| `P3-10` | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | ❌ |
 | `P3-11` | CI warning counter, without changing the build | CI | ❌ |

@@ -2,9 +2,9 @@
 
 **This is the only place a measured number is written down.** Other chapters link here.
 
-Re-measured on `e943a37` (`feature/code-cleanup`, `git describe` → `v1.10.0-5-ge943a37`),
-GCC 13.3, CMake 3.28.3, default configuration (PCL on, BTA on). Every command below is
-copy-pasteable from the repository root; run them before quoting a figure.
+Re-measured on `feature/code-cleanup` at `4739900` plus the `P3-1` deletion landed in this
+commit; GCC 13.3, CMake 3.28.3, default configuration (PCL on, BTA on). Every command below
+is copy-pasteable from the repository root; run them before quoting a figure.
 
 **Scope is part of the number.** `modules/core`, `modules/` and the whole tree are three
 different answers for most of these, and the programme has twice quoted one for another —
@@ -24,10 +24,10 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 5c | | tree, library code | **225** | 0 | |
 | 6 | `#warning` directives | tree | **0** (was 1) | 0 | ✅ |
 | 7 | `DLLExport` occurrences | `modules/` | **0** (was 22) | 0 | ✅ |
-| 7a | | tree | **3** — `libraries/sensor/` | 0 | ⚠️ false zero |
+| 7a | | tree | **0** (was 3, all in the `libraries/sensor/` orphan, deleted under `P3-1`) | 0 | ✅ |
 | 8 | headers defining `RAWFILE` | tree | **1** (was 3) | ≤ 1 | ✅ |
 | 8b | `WIN` / `UNIX` defines | `modules/` | **0** | 0 | ✅ |
-| 8c | | tree | **2** — `libraries/sensor/` | 0 | ⚠️ false zero |
+| 8c | | tree | **0** (was 2, both in the deleted orphan) | 0 | ✅ |
 | 9 | `#include <toffy/viewers/…>` from core | `modules/core` | **1** | 0 | |
 | 10 | `interprocess` primitives | `modules/core` | **2** | 0 | |
 | 11 | `else if (type ==` branches in the factory | `filterfactory.cpp` | **37** | 0 | |
@@ -35,11 +35,12 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 12b | `@todo` markers | `filterThread.hpp` | **10** | 0 | |
 | 13 | `delete` of a `Filter*` | `modules/core` | **4 sites, 3 owners** | 1 owner | |
 | 14 | `MSVC` preprocessor branches | `modules/` | **12** (was 19) | 0 | |
-| 14a | | tree | **16** | 0 | |
+| 14a | | tree | **15** (was 16; one went with the orphan) | 0 | |
 | 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **3** PCL-on / **2** PCL-off | 0, with `-Werror` | |
 | 16 | docs describing a product that does not exist | `docs/`, installed headers | **≥ 3** | 0 | |
 | 17 | installed public headers that do not compile | install tree | **4** | 0 | |
-| 18 | public headers including the CMake-generated `toffy_export.h` | tree | **8** → **0** (`P3-10`) | 0 | |
+| 18 | public headers including the CMake-generated `toffy_export.h` | tree | **7** (was 8; one went with the orphan) — `P3-10` targets 0 | 0 | |
+| 18a | `TOFFY_EXPORT` annotation sites | tree | **17** in 16 headers | 0 | |
 | 19 | CMake `if( ${VAR} )` sites | build | **4** | 0 | |
 | 20 | `system()` on configuration data | `modules/filters` | **1** | 0 | |
 | 21 | config string used as a `printf` format | `modules/filters` | **2** | 0 | |
@@ -94,6 +95,12 @@ printf '#include <toffy/web/common/plugins.hpp>\n' | g++ -std=c++17 -fsyntax-onl
 
 # 18 — the generated export header
 grep -rn "^[[:space:]]*#[[:space:]]*include *[<\"]toffy/toffy_export.h" modules libraries apps
+# 18a — count annotation sites, not mentions: P2-3 left eight "DLLExport is gone,
+#       TOFFY_EXPORT is the real macro" comments behind (raw grep 25, sites 17).
+grep -rn TOFFY_EXPORT modules libraries apps | grep -vE ':[0-9]+:[[:space:]]*(//|\*)' | wc -l
+# 18a — count annotation sites, not mentions: P2-3 left eight "DLLExport is gone,
+#       TOFFY_EXPORT is the real macro" comments behind (raw grep: 25, sites: 17).
+grep -rn TOFFY_EXPORT modules libraries apps | grep -vE ':[0-9]+:[[:space:]]*(//|\*)' | wc -l
 
 # 19 — the CMake bug class that hid the PCL-less build failure
 grep -rn 'if[[:space:]]*([[:space:]]*\${' --include=CMakeLists.txt . \
@@ -101,7 +108,8 @@ grep -rn 'if[[:space:]]*([[:space:]]*\${' --include=CMakeLists.txt . \
 
 # 20, 21
 grep -rn "system(" modules/filters --include=*.cpp
-grep -rn "snprintf(.*_pattern" modules/filters --include=*.cpp
+#     the variables are _depthPattern/_amplPattern, so a "_pattern" grep finds nothing
+grep -rnE "snprintf\([^;]*[Pp]attern" modules libraries --include=*.cpp
 
 # 22, 23 — formatting and size
 grep -rlP '\t' modules/core --include=*.cpp --include=*.hpp | wc -l
