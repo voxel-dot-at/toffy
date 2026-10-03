@@ -32,6 +32,7 @@ This is the plan. What has actually landed is [`status.md`](status.md); item tit
 | **29** | `X2b` (`N9`): include guards, a double-inclusion pass in the installed-header check, and a source-tree residue gate for the tree CI cannot build | 28 | Found while gating `X2`: the check compiled each header once and so could not see a header that breaks on the second inclusion. Tagged with PR 28 as `v1.11.0` |
 | **30** | `X3`: drop `--host/--port/--html` from `toffyRunner` | — | CLI-visible, not API: no library code reads them. Lands after `v1.11.0`, so it rides the next tag |
 | **31** | `X4`: rewrite `use.dox` around `toffyRunner`, delete the three screenshots | — | The page was in the Doxyfile's `EXCLUDE`, so un-excluding it is half the fix. Docs only, no tag needed |
+| **33** | `docs` CI job (counter 30) + `Doxyfile.cfg` hygiene | 31 | The docs target exited 0 through 15 diagnostics; now it is warning-free and gated. Docs only, no tag needed |
 
 PRs **19–22 are off the critical path** and none of them depends on the ownership work, so
 they can run alongside 9–13. 19 and 20 are worth doing before anything else precisely

@@ -47,9 +47,12 @@ honours it. The timestamp is gone on purpose: a docs tree that embeds its genera
 produces a different output for every run, which is the opposite of what a gated docs build
 wants. To put the date back, `TIMESTAMP = YES` (the 1.9.5+ spelling) is one line.
 
-What is still missing is the gate: a CI job that runs the `docs` target and reads its
-warnings, so this cannot rot again — the same lesson as `P3-11` and `P3-12`, that a check
-nobody runs is a check nobody passes.
+The gate now exists: the `docs` job in `.github/workflows/ci.yml` runs the `docs` target and
+fails on any `warning:`/`error:` in its log — the same lesson as `P3-11` and `P3-12`, that a
+check nobody runs is a check nobody passes. It is deliberately a PCL-less, bta-less job:
+measured, that configuration emits the same 22 pages with 0 warnings as the full one, so the
+heavy dependencies buy nothing here. Verified capable of failing by re-adding one obsolete
+`PERL_PATH` line.
 
 **~~The docs misdescribe the buggy functions.~~ FIXED with the code.** `filterbank.hpp` once
 documented `findPos()` as returning "negative if not found", which `size_t` cannot do (A3),

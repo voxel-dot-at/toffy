@@ -232,6 +232,61 @@ jobs:
           fi
           echo 'no controller residue in the tracked code and build files'
 
+  docs:
+    name: doxygen docs build warning-free
+    runs-on: ubuntu-latest
+    # X4 follow-up, counter 30. `cmake --build build --target docs` exited 0 while emitting
+    # 15 diagnostics - 14 obsolete Doxyfile tags, an EXAMPLE_PATH entry that has pointed at
+    # a non-existent directory since 59b6bcf, and an HTML_EXTRA_FILES entry for a file git
+    # has never contained. An exit code that cannot go red is not a gate, so this job reads
+    # the log instead. The tree is warning-free as of this commit, so the gate can hold.
+    #
+    # Scope, stated per DOD 0 rule 9: the Doxygen run only - no library build, and the
+    # generated HTML is not published anywhere. PCL and the bta SDK are deliberately absent:
+    # measured on a -DWITHOUT_PCL=ON / no-bta configuration, the docs target emits the same
+    # 22 pages with 0 warnings as the full configuration, so the heavy dependencies buy
+    # nothing here. graphviz is installed because FindDoxygen's `dot` component changes what
+    # gets generated, and this job is meant to match what a developer sees.
+    #
+    # Verified to be capable of failing: re-adding `PERL_PATH = /usr/bin/perl` to
+    # docs/Doxyfile.cfg turns the step red on the obsolete-tag warning; removing it again
+    # turns it green.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake \
+            build-essential \
+            pkg-config \
+            libboost-all-dev \
+            libopencv-dev \
+            doxygen \
+            graphviz
+
+      - name: Configure
+        run: |
+          set -euxo pipefail
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
+
+      - name: Build the docs and fail on any warning
+        # A fresh build dir means doxygen always runs; in a developer's tree an up-to-date
+        # `docs` target re-runs nothing, prints nothing and would pass for the wrong reason.
+        run: |
+          set -uo pipefail
+          log=$(mktemp)
+          cmake --build build --target docs 2>&1 | tee "$log"
+          hits=$(grep -E 'warning:|error:' "$log" || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"
+            echo '::error::the Doxygen build is not warning-free. See cleanup/findings/documentation.md and counter 30 in cleanup/counters.md.'
+            exit 1
+          fi
+          echo "docs generated warning-free: $(find build/public/html -name '*.html' | wc -l) pages"
+
   cmake-hygiene:
     name: cmake hygiene (if( ${VAR} ) sweep)
     runs-on: ubuntu-latest
