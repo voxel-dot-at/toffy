@@ -34,11 +34,13 @@ using namespace toffy::capturers;
 const std::string CSVSource::id_name = "csvSource";  ///< Filter identifier
 
 CSVSource::CSVSource(): CapturerFilter(CSVSource::id_name, 0),
-     width(160), height(120), 
+     width(160), height(120),
       _amplPattern("data/%05d_a.csv"),
       _depthPattern("data/%05d_d.csv"),
       _out_depth("depth"),
-      _out_ampl("ampl") {
+      _out_ampl("ampl"),
+      // A24: neither had an initialiser, and filter() branches on useSequence.
+      sequence(0), useSequence(false) {
       }
 
 CSVSource::~CSVSource() {}
@@ -55,7 +57,10 @@ int CSVSource::loadConfig(const boost::property_tree::ptree& pt) {
   _out_depth = pt.get<string>("outputs.depth", _out_depth);
   _out_ampl = pt.get<string>("outputs.ampl", _out_ampl);
 
-  sequence = pt.get<bool>("options.sequence", sequence);
+  // A24: this assigned the flag into the *frame counter* (`sequence`) and left
+  // `useSequence` - the member filter() actually branches on - uninitialised.
+  // updateConfig() already read the same key into useSequence.
+  useSequence = pt.get<bool>("options.sequence", useSequence);
 
   std::string pat = pt.get<string>("options.fcs", "");
   if (pat.length() > 0) {
@@ -83,7 +88,9 @@ boost::property_tree::ptree CSVSource::getConfig() const {
     pt.put("outputs.depth", _out_depth);
     pt.put("outputs.ampl", _out_ampl);
 
-    pt.put("options.sequence", sequence);
+    // A24: was `sequence`, the frame counter, so round-tripping a config wrote
+    // the current playback position into the flag that enables playback.
+    pt.put("options.sequence", useSequence);
     // @TODO export int array
     //    pt.put("options.fcs", fcs);
 

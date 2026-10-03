@@ -25,10 +25,11 @@ carried over from the previous round.
 | **21** | `P3-7` `if( ${VAR} )` sweep + CI check | ✅ done | 4 sites → 0; `cmake-hygiene` job added, scoped to the 29 tracked CMake files, verified red on a re-introduced site and green on the fixed tree |
 | **22** | `P3-3` `override` on the four `const`-only filters | ✅ done | counter 25 3 → **0**; `const` deliberately kept (dropping it is warning-free but opens a `const Filter&` → `return false` window on installed headers) — the drop moves into `P2-12`, where the base change closes it again in the same diff |
 | **23** | `P3-11` CI warning report | ✅ done | `tools/warning_report.sh` + a CI step after the build; buckets warnings per area, fails only on `modules/core`. Verified in both directions: exit 1 on a pre-`P3-4` log (4 core warnings), exit 0 on the current tree, and a vacuous-report notice instead of a false zero when the log contains no compilation |
+| **25** | `A24` `CSVSource` frame counter / sequence flag | ✅ done | `loadConfig` assigned `<options/sequence>` into the *counter* and never set `useSequence`; `getConfig` wrote the counter back under the flag's key; neither member was initialised. 4 tests, all 4 failing pre-fix (first frame played was 1; with the flag *off* it advanced 1, 2, 3 on uninitialised memory) |
 | **24** | `P3-9` a test that a filter's body actually ran | ✅ done | `tests/test_filter_overloads.cpp` (ctest target `filter_overloads`, 9 targets): both override shapes asserted through `FilterBank::filter()` on the frame slot, plus a negative control for a `filter()` that overrides nothing. Fence verified by stubbing the base's delegation to `return false` — the two const-only tests fail, the other three stay green — then `filter.hpp` restored byte-identical |
 
-**Thirteen of the eighteen PRs are done** (1, 3, 4, 5, 6, 15, 17, 19, 20, 21, 22, 23, 24),
-and PR 2 is
+**Fourteen of the eighteen PRs are done** (1, 3, 4, 5, 6, 15, 17, 19, 20, 21, 22, 23, 24,
+25), and PR 2 is
 now complete rather than 4-of-5. That is the whole `P0` block, the test/CI fence, the
 build-flag cleanup and core's warning gate: the critical path's first stretch, plus all four
 cheap second-pass items — a false green removed, a class of silent build breakage closed, a

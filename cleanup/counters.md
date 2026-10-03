@@ -51,7 +51,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 21 | config string used as a `printf` format | `modules/filters` | **5** in 2 files — `csv_source.cpp` 2, `exportcsv.cpp` 3 (was recorded as 2, because only `csv_source` had been read) | 0 | |
 | 22 | files containing hard tabs / files in core | `modules/core` | **11 / 20** | 0 / 20 | |
 | 23 | lines of code | `modules/core` | **4 021** | — | |
-| 24 | `ctest` targets | `tests/` | **9** (was 8; `filter_overloads` added by `P3-9`) | ≥ 8 | ✅ |
+| 24 | `ctest` targets | `tests/` | **10** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`) | ≥ 8 | ✅ |
 | 25 | `const`-only `filter()` overrides that do not say `override` | `modules/`, `libraries/` | **0** (was 3, fixed by `P3-3`; 4 sites now carry it) | 0 | ✅ |
 
 ## The commands

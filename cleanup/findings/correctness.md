@@ -152,3 +152,31 @@
     convention is decided. This is why `P0-12` guards the throw but deliberately leaves the
     return value unchecked, and why `A23` must be resolved before config errors can be made
     loud.
+
+24. **~~`CSVSource` conflated its frame counter with its sequence flag.~~ FIXED** — found
+    while implementing `P3-6`, and outside `modules/core`, but the same shape as `P0-1`
+    (copy-paste between two adjacent functions) and `P0-5` (uninitialised members).
+
+    `csv_source.hpp` declares `int sequence` — the index substituted into the file-name
+    pattern — and `bool useSequence` — whether that index advances. Neither had an
+    initialiser, and the three config functions disagreed about which was which:
+
+    | site | did |
+    |---|---|
+    | `loadConfig()` | `sequence = pt.get<bool>("options.sequence", sequence)` — read the *counter* as the default for a *bool* get (reading uninitialised memory), then stored the flag in the counter |
+    | `updateConfig()` | `useSequence = pt.get<bool>("options.sequence", useSequence)` — the correct member |
+    | `getConfig()` | `pt.put("options.sequence", sequence)` — wrote the counter under the flag's key, so a config round-trip moved the playback position into the flag |
+    | `filter()` | `if (useSequence) sequence++` — branched on the member `loadConfig()` never set |
+
+    Net effect on the documented use of the class: with `<options><sequence>true</sequence>`,
+    the first frame played was frame **1**, not 0, and whether playback advanced at all was
+    whatever the heap had left in `useSequence`. Measured before the fix: all four tests of
+    `tests/test_csv_source.cpp` failed, `SequencedPlaybackStartsAtFrameZero` reading frame 1,
+    and `WithoutTheFlagTheSameFrameIsReRead` advancing 1, 2, 3 with the flag off because the
+    uninitialised `useSequence` happened to be true. Pinned by `CsvSourceSequence.*` (ctest
+    target `csv_source`).
+
+    **Not fixed, same file:** `filter()` calls `cv::waitKey(500)` — a GUI event-loop call in
+    a capture filter's read path — and `loadConfig()`/`updateConfig()` append `options/fcs`
+    to `fcs` without clearing it, so a second `updateConfig()` duplicates the list. Both are
+    `P2-3`/`P2-13` sized and neither is a correctness defect of this shape.

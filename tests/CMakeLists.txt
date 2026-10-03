@@ -51,3 +51,14 @@ add_test(NAME logging COMMAND test_logging)
 add_executable(test_filter_overloads test_filter_overloads.cpp)
 target_link_libraries(test_filter_overloads toffy GTest::gtest GTest::gtest_main)
 add_test(NAME filter_overloads COMMAND test_filter_overloads)
+
+# A24: CSVSource's frame counter / sequence flag. The fixture directory is
+# passed as a compile definition rather than argv, because this target links
+# gtest_main and InitGoogleTest would swallow an argument we cannot read from
+# a TEST body. test_cond takes its fixture in argv precisely because it has no
+# gtest_main.
+add_executable(test_csv_source test_csv_source.cpp)
+target_link_libraries(test_csv_source toffy GTest::gtest GTest::gtest_main)
+target_compile_definitions(test_csv_source
+    PRIVATE TOFFY_TEST_CSV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/xml/csv")
+add_test(NAME csv_source COMMAND test_csv_source)
