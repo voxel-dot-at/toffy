@@ -15,6 +15,11 @@
 */
 //Keep for compatibility with old binary .r files.
 
+// No guard here meant the typedef below was a redefinition error in any translation unit
+// that reached this header twice; every build in this repository includes it exactly once,
+// so nothing could see it (cleanup/plan/controller-extraction.md, X2b).
+#pragma once
+
 typedef struct {
 	unsigned int manufacturer;
 	unsigned int device;

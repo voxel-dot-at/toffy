@@ -14,6 +14,8 @@
    limitations under the License.
 */
 
+#pragma once
+
 #include <toffy/common/plugins.hpp>
 #include "toffy/bta/bta.hpp"
 

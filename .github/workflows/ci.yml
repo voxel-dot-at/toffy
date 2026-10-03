@@ -197,13 +197,40 @@ jobs:
           cmake --install build --prefix "$PWD/stage"
           echo "staged $(find stage/include \( -name '*.hpp' -o -name '*.h' \) | wc -l) headers"
 
-      - name: Compile every installed header standalone
+      - name: Compile every installed header standalone and twice
         run: |
           set -euo pipefail
           # pkg-config rather than hardcoded paths: the PCL include directory carries its
           # version (/usr/include/pcl-1.14 today) and that is not ours to track.
           tools/installed_header_check.sh "$PWD/stage/include" \
             $(pkg-config --cflags opencv4 pcl_common)
+
+      - name: No controller residue in the source tree
+        # The compile check above can only reach what the runner can build, and the runner
+        # has no proprietary bta SDK: modules/bta is never configured here, so its 7
+        # installed headers are never staged and never compiled. Two of the four deleted
+        # toffy/web/ headers lived in exactly that tree, and so did every WITH_CONTROL site
+        # - this is the half of the gate the compile check is structurally blind to.
+        #
+        # Scope, stated per DOD 0 rule 9: code and build files only (*.cpp/*.hpp/*.h/*.in/
+        # *CMakeLists.txt/*.cmake/*.dox). The cleanup docs discuss these strings in order to
+        # record that they are gone, and tools/installed_header_check.sh names toffy_web/ in
+        # its own classification comment; a gate that is always red is not a gate.
+        #
+        # Verified to be capable of failing: re-adding one #ifdef WITH_CONTROL line to
+        # modules/bta/src/initPlugin.cpp turns this step red, removing it turns it green.
+        run: |
+          set -uo pipefail
+          hits=$(git ls-files -z '*.cpp' '*.hpp' '*.h' '*.in' '*.txt' '*.cmake' '*.dox' \
+                   | xargs -0 -r grep -nHE 'toffy_web/|toffy/web/|WITH_CONTROL' || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"
+            echo '::error::the web control layer lives in toffy-oatpp, not here.' \
+              'Do not reintroduce toffy/web/ headers or WITH_CONTROL hooks.' \
+              'See cleanup/plan/controller-extraction.md.'
+            exit 1
+          fi
+          echo 'no controller residue in the tracked code and build files'
 
   cmake-hygiene:
     name: cmake hygiene (if( ${VAR} ) sweep)

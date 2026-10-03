@@ -3,7 +3,7 @@
 What has landed, what is in flight, and what the release situation is. Counters are in
 [`counters.md`](counters.md); the order the rest goes in is in [`order.md`](order.md).
 
-State as of `8689d68` plus PR 28 (`P3-2`, `P3-12` — stages `X1`–`X2` of
+State as of `8689d68` plus PRs 28 and 29 (`P3-2`, `P3-12`, `X2b` — stages `X1`–`X2b` of
 [`plan/controller-extraction.md`](plan/controller-extraction.md)), re-checked against the tree
 rather than carried over from the previous round.
 
@@ -31,10 +31,12 @@ rather than carried over from the previous round.
 | **26** | `P3-6` (first half) `csv_source` format strings and `fscanf` | ✅ done | patterns validated at config time, expansions checked for truncation, both `fscanf` loops checked; 5 tests, 4 observed failing pre-fix — one of them a **segfault** on `%s%s`. Warnings 28 → 26. `exportcsv`'s 3 sites stay open under the same item |
 | **27** | `P3-6` (second half) `exportcsv` format strings | ✅ done | `options/pattern` validated at config time, the config-sized VLA replaced by a fixed buffer, all three expansions bounded; the validator and `formatPath` moved to `toffy/filter_helpers.hpp` and `csv_source` switched to them rather than keeping a copy. 5 tests, 2 observed failing pre-fix — one by **segfault**. Warnings unchanged at 26. Counter 21 → **0**, and its command was tightened to match the format position (verified: 2 on each pre-fix file, 0 now). Filed `A25` on the way: `options/skipZeroes` is plumbed through four functions and ignored |
 | **28** | `P3-2` + `P3-12` the controller residue (`X1`, `X2`) | ✅ done | 4 installed `toffy/web/` headers deleted and the `#ifdef WITH_CONTROL` hooks with them (counter 26 5 → **0**); 2 more installed headers *fixed* — `graphs/graph_utils.hpp` and `graphs/contour_utils.hpp` used `cv::line`/`cv::Point` and compiled only behind another header. Counter 17 **0 of 86**, by `tools/installed_header_check.sh`, now a CI job (`installed-headers`, verified red on a re-added `toffy/web/` header and green on the tree). ABI gate measured: exported symbol set **identical**, 2 889 before and after. **API removal — the tag is owed**, see *Release* below |
+| **29** | `X2b` the two holes `X2` left (`N9`) | ✅ done | `X2` compiled each header **once**, which is the shape of `N1` and blind to its complement: `toffy/bta/FrameHeader.hpp`, an installed `typedef struct` with no include guard, compiles once and fails twice (`conflicting declaration`). 3 of 86 installed headers had no guard; all 3 get `#pragma once`. The check gains a `twice` pass (86 × 2 = **172** checks, observed 1 broken before the guard and 0 after), and the CI job gains a `No controller residue in the source tree` step — a grep of tracked code and build files for `toffy_web/`/`toffy/web/`/`WITH_CONTROL`, which is the only residue check that reaches `modules/bta`, whose headers no runner can stage without the SDK. Verified red on a re-added `#ifdef WITH_CONTROL`, green after. ABI unchanged by construction and re-measured: **2 889** symbols, `diff` empty |
 
-**Eighteen PRs are done** (1, 2, 3, 4, 5, 6, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28 —
-the numbering has no gaps, but PR 7 is core-only and the PRs beyond 18 are the second-pass
-work, so "n of 18" stopped being a meaningful fraction once `P3` started landing). PR 2 is
+**Nineteen PRs are done** (1, 2, 3, 4, 5, 6, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+29 — the numbering has no gaps, but PR 7 is core-only and the PRs beyond 18 are the
+second-pass work, so "n of 18" stopped being a meaningful fraction once `P3` started
+landing). PR 2 is
 complete rather than 4-of-5. That is the whole `P0` block, the test/CI fence, the build-flag
 cleanup and core's warning gate: the critical path's first stretch, plus every cheap
 second-pass item — a false green removed, a class of silent build breakage closed, a warning
@@ -80,16 +82,20 @@ do not rehost `initUI` here.
   were broken before this branch: PCL-off on unguarded typedefs and on CMake `if()`
   clauses that expanded to nothing, BTA-off on an unconditional `add_subdirectory(bta)`.
 - **CI builds, tests and reports warnings on every push and PR** — four jobs: the PCL
-  matrix, the sanitizer build, `installed-headers` (`P3-12`) and `cmake-hygiene`; the build
+  matrix, the sanitizer build, `installed-headers` (`P3-12`, two passes since `X2b`, plus the
+  source-tree residue step) and `cmake-hygiene`; the build
   step pipes its log through `tools/warning_report.sh` (`P3-11`). Two limits when citing a
   green run:
   runners cannot have the proprietary bta SDK, so only the **BTA-off** axis is covered
-  automatically, and **nothing builds the Doxygen docs**, so broken `\ref`s and `\todo`
-  drift stay invisible.
+  automatically — `X2b`'s grep step is what covers `modules/bta`'s 7 installed headers in the
+  meantime — and **nothing builds the Doxygen docs**, so broken `\ref`s and `\todo`
+  drift stay invisible (`X4` is where that gets fixed).
 - **`A23` (no consistent error convention) blocks further correctness work** in config
   loading — see [`findings/correctness.md`](findings/correctness.md).
-- **PR 28 removes installed public headers and has no tag yet.** `api_change_report.sh
-  v1.10.0` exits 1, as it must. The ABI evidence is measured rather than asserted: the
+- **PRs 28 and 29 remove installed public headers; `v1.11.0` is the tag that carries them**
+  (see *Release* below). `api_change_report.sh v1.10.0` exits 1, as it must — it is still
+  exit 1 against `v1.10.0` after the tag exists, because the base ref is what you diff
+  against; run it as `api_change_report.sh v1.11.0` from the tagged commit onwards. The ABI evidence is measured rather than asserted: the
   exported dynamic symbol set of `libtoffy.so` is identical before and after (2 889 symbols,
   `diff` empty, Release/PCL-on/BTA-on both sides, base built from `8689d68` in a separate
   tree). Three of the four deleted headers could not be included at all, so no compiling
@@ -109,9 +115,11 @@ do not rehost `initUI` here.
 - `SOVERSION` is the **full** version, not the major alone, so *every* patch bump changes
   the SONAME and forces a downstream relink. Version decisions here are never routine —
   see [`dod/stage-gates.md`](dod/stage-gates.md) §2.4.
-- **PR 28 (`P3-2`) needs the next tag**, and so does `P3-10` if it lands first: both change
-  the installed header surface. `v1.11.0` is the proposed number — it keeps clearing `v1.9.0`
-  on `origin/next`, and a removal plus a header-hygiene release is a minor bump, not a patch,
-  under the reading `v1.10.0` already set for the `Event` deletion. Nothing has been tagged
-  yet: the decision is the release manager's, not this PR's, and `git describe` still says
-  `v1.10.0-20-g8689d68`, so this tree still builds `libtoffy.so.1.10.0`.
+- **`v1.11.0` is the agreed number and it is cut at the PR 29 tip.** `P3-2` changed the
+  installed header surface and `P3-12`/`X2b` changed three more headers, so the tag covers
+  PRs 28 and 29 together; `P3-10` will need the one after it. `1.11.0` rather than `1.8.0`
+  keeps clearing the `v1.9.0` on `origin/next`, and a removal plus a header-hygiene release is
+  a minor bump, not a patch, under the reading `v1.10.0` already set for the `Event`
+  deletion. From the tagged commit `git describe` reports `1.11.0`, so the SONAME stops
+  claiming `1.10.0` while the header surface has already moved. **The tag is local until it
+  is pushed**, like `v1.10.0` before it.

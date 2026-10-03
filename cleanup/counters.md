@@ -2,11 +2,11 @@
 
 **This is the only place a measured number is written down.** Other chapters link here.
 
-Re-measured on `feature/code-cleanup` at `8689d68` with PR 28 (`P3-2`, `P3-12`, the
-controller-extraction stages X1–X2) applied, i.e. after `P3-1`, `P3-3`, `P3-4`, `P3-7`,
-`P3-9`, `P3-11`, `A24`, `P3-6`, `P3-2` and `P3-12`; GCC 13.3, CMake 3.28.3, default
-configuration (PCL on, BTA on). Every command below is copy-pasteable from the repository
-root; run them before quoting a figure.
+Re-measured on `feature/code-cleanup` at `8689d68` with PRs 28 and 29 (`P3-2`, `P3-12`,
+`X2b` — the controller-extraction stages X1–X2b) applied, i.e. after `P3-1`, `P3-3`, `P3-4`,
+`P3-7`, `P3-9`, `P3-11`, `A24`, `P3-6`, `P3-2`, `P3-12` and `X2b`; GCC 13.3, CMake 3.28.3,
+default configuration (PCL on, BTA on). Every command below is copy-pasteable from the
+repository root; run them before quoting a figure.
 
 An earlier revision of this header cited `4739900`, which is not an ancestor of `HEAD` — it
 was the pre-amend version of the README commit and is unreachable from this branch. Cite a
@@ -45,7 +45,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **0** in all four configurations, and `toffy_core` is compiled with `-Werror` (`P3-4`) | 0 | ✅ |
 | 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **26** (was 32; −4 from the `Mux` using-declaration, −2 from `csv_source`'s `fscanf` sites now being checked, `P3-6`) — reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
 | 16 | artefacts describing the removed web control product | tree | **8** (was 12; the 4 installed headers went with `P3-2`) — enumerated below, because "≥ 3" was not a number | 0 | |
-| 17 | installed public headers that do not compile standalone | install tree | **0** (was 4 by hand, 5 once the check was written: 3 deleted by `P3-2`, 2 fixed by `P3-12`) — 86 of 86 pass, 0 skipped, and the `installed-headers` CI job runs the check on every push | 0 | ✅ |
+| 17 | installed public headers that do not compile standalone | install tree | **0** (was 4 by hand, 5 once the check was written: 3 deleted by `P3-2`, 2 fixed by `P3-12`) — 86 of 86 pass, 0 skipped, and the `installed-headers` CI job runs the check on every push. The check is now **two passes**: each header once, and each header twice (`X2b`), so 172 checks | 0 | ✅ |
 | 18 | public headers including the CMake-generated `toffy_export.h` | tree | **7** (was 8; one went with the orphan) — `P3-10` targets 0 | 0 | |
 | 18a | `TOFFY_EXPORT` annotation sites | tree | **17** in 16 headers | 0 | |
 | 19 | CMake `if( ${VAR} )` sites | build | **0** (was 4) — CI now fails on any new one | 0 | ✅ |
@@ -57,6 +57,8 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 25 | `const`-only `filter()` overrides that do not say `override` | `modules/`, `libraries/` | **0** (was 3, fixed by `P3-3`; 4 sites now carry it) | 0 | ✅ |
 | 26 | `WITH_CONTROL` sites — a symbol no build file defines | tree | **0** (was 5: 3 in `initPlugin.cpp`, 2 in `initPlugin.hpp`; `P3-2`) | 0 | ✅ |
 | 27 | `toffyRunner` options describing a server that never starts | `apps/` | **3** (`--host/-h`, `--port/-p`, `--html/-d`; parsed, printed, used by nothing) — `X3` targets 0 | 0 | |
+| 28 | installed headers that cannot be included **twice** | install tree | **0** (was 1: `toffy/bta/FrameHeader.hpp`, a `typedef struct` with no guard; 3 of 86 had no guard at all) — `N9`, fixed by `X2b`, gated by the `twice` pass | 0 | ✅ |
+| 29 | controller residue in tracked code and build files | `*.cpp`/`*.hpp`/`*.h`/`*.in`/`*CMakeLists.txt`/`*.cmake`/`*.dox` | **0** (`toffy_web/`, `toffy/web/`, `WITH_CONTROL`) — the gated superset of counter 26, and the only residue check that reaches `modules/bta`, whose headers CI cannot stage without the SDK | 0 | ✅ |
 
 ## The commands
 
@@ -122,6 +124,24 @@ tools/installed_header_check.sh /tmp/ti/usr/local/include \
 #   today) and bta/ni/openni2 are only on a machine that has the SDK. The CI job stages with
 #   `cmake --install build --prefix $PWD/stage` after building only the `toffy` target, which
 #   is the cheapest tree install() accepts - the apps and tests are not installed.
+
+# 28 — NOT a separate command: it is the second pass of counter 17's script, and the two
+#      counters move together. Every header is also included twice in one translation unit
+#      (86 x 2 = 172 checks); HEADER_CHECK_SINGLE=1 runs the once pass only. A [twice]
+#      failure is a missing include guard, and no build in this repository can produce one:
+#      each of these headers has a single consumer, so every build includes it exactly once.
+#      CI cannot produce one either - the runner has no bta SDK, so modules/bta's 7 headers
+#      are never staged - which is what counter 29 is for.
+#   172 checks, 0 broken. Before X2b: 1 broken (toffy/bta/FrameHeader.hpp).
+grep -c "pragma once" /tmp/ti/usr/local/include/toffy/bta/FrameHeader.hpp \
+                        /tmp/ti/usr/local/include/toffy/bta/initPlugin.hpp   # 1 each
+
+# 29 — the residue gate CI can actually run. Scoped to code and build files: the cleanup
+#      docs and tools/installed_header_check.sh itself name these strings to record that
+#      they are gone, and a gate that is always red is not a gate. Verified capable of
+#      failing: re-adding one `#ifdef WITH_CONTROL` line to modules/bta/src turns it red.
+git ls-files -z '*.cpp' '*.hpp' '*.h' '*.in' '*.txt' '*.cmake' '*.dox' \
+  | xargs -0 -r grep -nHE 'toffy_web/|toffy/web/|WITH_CONTROL' | wc -l
 
 # 16 — artefacts describing the removed web control product. Countable, unlike the "≥ 3"
 #      it replaces: 4 installed headers (P3-2) + use.dox + 3 screenshots + 3 CLI options

@@ -212,6 +212,38 @@ Two things the hand check in this section got wrong, both fixed by
 The residue inventory, the ABI evidence and what `toffy-oatpp` needs from this side is in
 [`../plan/controller-extraction.md`](../plan/controller-extraction.md).
 
+### N9 — an installed header that cannot be included twice — **FIXED (`X2b`)**
+
+`P3-12` gated the wrong shape of the bug. It compiles each installed header as the *only*
+include of a translation unit, which is exactly the N1 failure — and it therefore cannot see
+its complement: a header that compiles once and **not twice**, because it has no include
+guard and contains a definition rather than a declaration.
+
+`modules/bta/include/toffy/bta/FrameHeader.hpp` is one, and it ships:
+
+```sh
+$ printf '#include <toffy/bta/FrameHeader.hpp>\n#include <toffy/bta/FrameHeader.hpp>\n' \
+    | g++ -std=c++17 -fsyntax-only -I<install>/include -x c++ -
+error: conflicting declaration ‘typedef struct FrameHeader FrameHeader’
+```
+
+Three of the 86 installed headers had no guard at all; only this one actually breaks.
+`toffy/bta/initPlugin.hpp` declares functions, and re-declaration is legal. The generated
+`toffy/common/toffy_config.h` is all `#define`s with identical values, so re-inclusion is
+harmless. `FrameHeader.hpp` holds the `typedef struct` for the on-disk `.rw` raw format —
+the *binary* interface — and its only consumer in the whole tree is one `.cpp`, so every
+build this repository can run includes it exactly once and stays green. CI cannot see it
+either: the runners have no proprietary bta SDK, so `modules/bta` is not configured and its
+7 installed headers are never staged (see the scope note on the `installed-headers` job).
+
+**Fix — check the second inclusion too, and gate what CI cannot build** (stage `X2b`; not
+minted as an `S` id, because `S1`–`S9` is the closed second-pass set and `S9` is taken):
+`#pragma once` on all three headers, a `twice` pass in
+`tools/installed_header_check.sh` (86 headers × 2 passes = 172 checks), and a source-tree
+step failing on `toffy_web/` / `WITH_CONTROL` in tracked code and build files — the half of
+the residue gate that does not need the SDK. Measured: 1 broken before, 0 after, exported
+symbol set unchanged (2 889, `diff` empty) since a guard adds no symbols.
+
 ### N6 — ~~the `if( ${VAR} )` bug class is still in the build~~ **FIXED (`P3-7`)**
 
 This document set documents this bug class well: two CMake `if( ${VAR} )` clauses expanded to nothing

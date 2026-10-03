@@ -64,10 +64,34 @@ a release note like any other.
 |---|---|---|---|
 | **X1** | delete the four `toffy/web/` headers and the `WITH_CONTROL` hooks (`P3-2`) | — | ✅ |
 | **X2** | make every installed header compile, and keep it that way (`P3-12`) — 86 of 86 pass, gated by the `installed-headers` CI job | X1 | ✅ |
+| **X2b** | close the two holes `X2` left: include guards + a double-inclusion pass (`N9`), and a source-tree gate for the `modules/bta` tree CI cannot build | X2 | ✅ |
 | **X3** | drop `--host/--port/--html` from `toffyRunner` | — | ❌ |
 | **X4** | rewrite `use.dox` around `toffyRunner`; move the three screenshots to toffy-oatpp | X3 | ❌ |
 | **X5** | the C++ API `toffy-oatpp` binds to, and the fixes it needs first | `A23`, `P2-9`, `P2-7`, `P2-11`, `P2-13` | ❌ |
 | **X6** | the plugin ABI: keep the filter half, do not rehost the controller half | — | decision, below |
+
+### X2b — the two holes X2 left
+
+`X2` compiled every installed header as the only include of a translation unit. That is the
+shape of `N1`, and it is blind to the complementary shape: a header that compiles once and
+not twice. `toffy/bta/FrameHeader.hpp` — the `typedef struct` for the on-disk `.rw` format —
+was exactly that, and it is still installed (`findings/build.md`, `N9`).
+
+The second hole is scope, and `X2` documented it without closing it: the runners have no
+proprietary bta SDK, so `modules/bta` is never configured and its 7 installed headers are
+never staged. Two of the four headers `X1` deleted lived there. `X2b` closes both:
+
+- `#pragma once` on the three installed headers that had no guard (`FrameHeader.hpp`,
+  `bta/initPlugin.hpp`, and the generated `toffy_config.h` template),
+- a `twice` pass in `tools/installed_header_check.sh` — 86 headers × 2 passes = 172 checks,
+  observed red on `FrameHeader.hpp` before the guard and green after,
+- a `No controller residue in the source tree` step in the same CI job, grepping tracked
+  code and build files for `toffy_web/`, `toffy/web/` and `WITH_CONTROL`. It needs no SDK,
+  so it covers the bta tree; it is scoped to code, because the cleanup docs and the check
+  script itself name those strings in order to record that they are gone.
+
+ABI-neutral by construction and measured: a guard adds no symbols. Re-diffed against the
+`8689d68` base after this change — still 2 889 defined symbols, `diff` empty.
 
 X1–X4 are off the critical path and independent of the ownership work. X5 is *not*: it is
 downstream of five open items, and pretending otherwise is how `toffy-oatpp` ends up
