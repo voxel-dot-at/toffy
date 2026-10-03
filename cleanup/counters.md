@@ -2,9 +2,10 @@
 
 **This is the only place a measured number is written down.** Other chapters link here.
 
-Re-measured on `feature/code-cleanup` at `5ec61d7`, i.e. after `P3-1`, `P3-4`, `P3-7` and
-`P3-3` landed; GCC 13.3, CMake 3.28.3, default configuration (PCL on, BTA on). Every command
-below is copy-pasteable from the repository root; run them before quoting a figure.
+Re-measured on `feature/code-cleanup` at `4f98b73` plus the `P3-6` csv_source work, i.e.
+after `P3-1`, `P3-3`, `P3-4`, `P3-7`, `P3-9`, `P3-11` and `A24` landed; GCC 13.3, CMake
+3.28.3, default configuration (PCL on, BTA on). Every command below is copy-pasteable from
+the repository root; run them before quoting a figure.
 
 An earlier revision of this header cited `4739900`, which is not an ancestor of `HEAD` — it
 was the pre-amend version of the README commit and is unreachable from this branch. Cite a
@@ -41,14 +42,14 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 14 | `MSVC` preprocessor branches | `modules/` | **12** (was 19) | 0 | |
 | 14a | | tree | **15** (was 16; one went with the orphan) | 0 | |
 | 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **0** in all four configurations, and `toffy_core` is compiled with `-Werror` (`P3-4`) | 0 | ✅ |
-| 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **28** (was 32; the `Mux` using-declaration also silenced a 4th, in `3d/muxMerge.hpp`) — reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
+| 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **26** (was 32; −4 from the `Mux` using-declaration, −2 from `csv_source`'s `fscanf` sites now being checked, `P3-6`) — reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
 | 16 | docs describing a product that does not exist | `docs/`, installed headers | **≥ 3** | 0 | |
 | 17 | installed public headers that do not compile | install tree | **4** | 0 | |
 | 18 | public headers including the CMake-generated `toffy_export.h` | tree | **7** (was 8; one went with the orphan) — `P3-10` targets 0 | 0 | |
 | 18a | `TOFFY_EXPORT` annotation sites | tree | **17** in 16 headers | 0 | |
 | 19 | CMake `if( ${VAR} )` sites | build | **0** (was 4) — CI now fails on any new one | 0 | ✅ |
 | 20 | `system()` on configuration data | `modules/filters` | **1** | 0 | |
-| 21 | config string used as a `printf` format | `modules/filters` | **5** in 2 files — `csv_source.cpp` 2, `exportcsv.cpp` 3 (was recorded as 2, because only `csv_source` had been read) | 0 | |
+| 21 | config string used as a `printf` format | `modules/filters` | **3** in 1 file — `exportcsv.cpp` 92,100,103. `csv_source`'s 2 are closed (`P3-6`): both patterns are validated at config time and both expansions go through one checked helper | 0 | |
 | 22 | files containing hard tabs / files in core | `modules/core` | **11 / 20** | 0 / 20 | |
 | 23 | lines of code | `modules/core` | **4 021** | — | |
 | 24 | `ctest` targets | `tests/` | **10** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`) | ≥ 8 | ✅ |
@@ -126,7 +127,9 @@ grep -rn "system(" modules/filters --include=*.cpp
 #      _depthPattern/_amplPattern/_filePattern, so the "_pattern" grep this counter used to
 #      carry matched nothing at all, and the figure was being carried on trust.
 grep -rnE "snprintf\([^;]*[Pp]attern" modules libraries --include=*.cpp
-#   5 sites: csv_source.cpp:162,183 and exportcsv.cpp:92,100,103
+#   3 sites: exportcsv.cpp:92,100,103. csv_source's two are gone: its expansion is
+#   centralised in a helper whose parameter is called `fmt`, not `pattern`, which is
+#   what makes the choke point distinguishable from an unvalidated call site.
 
 # 25 — const-only filter() overrides with no override keyword. Each one is a filter
 #      P2-12 would silently turn into a new virtual that overrides nothing: compiles,

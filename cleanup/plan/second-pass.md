@@ -12,20 +12,22 @@ and none of it depends on the ownership work, so it can all run alongside.
 |---|---|---|---|---|---|---|
 | `P3-1` | `S1` | widen the verification scope; delete the orphan | 2 files | none | ✅ | honest counters 7, 8c, 14a |
 | `P3-4` | `S4` | `using Filter::filter;` in `Mux`, then `-Werror` on core | 1 line + CMake | none | ✅ | `DOD 15`, `P2-16`'s last sub-item |
-| `P3-3` | `S3a` | `override` on the four `const`-only filters | 8 sites | none | ❌ | makes `P2-12` compile-checked |
+| `P3-3` | `S3a` | `override` on the four `const`-only filters | 8 sites | none | ✅ | makes `P2-12` compile-checked |
 | `P3-7` | `S7` | `if( ${VAR} )` → `if(VAR)` | 4 lines | none | ✅ | a class of silent build breakage |
-| `P3-6` | `S6` | `csv_source`: check `fscanf`, validate the pattern | ~10 lines | low | ❌ | 2 `-Wunused-result`, silently corrupt frames |
+| `P3-6` | `S6` | config string as `printf` format; check `fscanf` | 2 files | low | 🟡 `csv_source` done, `exportcsv` open | 2 `-Wunused-result`, silently corrupt frames |
 | `P3-5` | `S5` | `objectTrack`: `system()` → `execv`, or delete | 1 function | low | ❌ | the only `system()` in the tree |
-| `P3-9` | `S3` (gate) | a test that a filter's body actually ran | 1 test | none | ❌ | separates "compiles" from "works" |
+| `P3-9` | `S3` (gate) | a test that a filter's body actually ran | 1 test | none | ✅ | separates "compiles" from "works" |
 | `P3-2` | `S2` | delete the dead, installed `toffy/web/` headers | 4 files | API — needs a tag | ❌ | an installed header that cannot compile |
 | `P3-8` | `S8` | `toffy_tracking` layering inversion | CMake | low | ❌ | — |
 | `P3-10` | — | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | none on the shipped ABI | ❌ | `DOD 18`; one less generated header in the public API |
-| `P3-11` | `S9` | CI warning counter, without changing the build | CI | none | ❌ | visibility of the 28 non-core warnings |
+| `P3-11` | `S9` | CI warning counter, without changing the build | CI | none | ✅ | visibility of the 26 non-core warnings |
 
-`P3-1`, `P3-4`, `P3-3` and `P3-7` are together roughly fifteen lines, carry no behaviour
-change, and each one either removes a false green or makes a later change compile-checked.
-They are the part of this document worth doing this week. `P3-2` and `P2-12` are API
-changes and belong with a tag.
+`P3-1`, `P3-4`, `P3-3` and `P3-7` were together roughly fifteen lines, carried no behaviour
+change, and each one either removed a false green or made a later change compile-checked.
+All four are done, as are `P3-9` and `P3-11`. What is left of this document is the two
+`modules/filters` safety items (`P3-6`'s `exportcsv` half and `P3-5`), the mechanical
+`P3-10`, the `P3-8` note, and `P3-2` — which, like `P2-12`, is an API change and belongs
+with a tag.
 
 ---
 
@@ -122,15 +124,40 @@ Replace with `posix_spawn` or `fork`+`execv` on an argv array, or delete the fea
 `objectTrack` is in `modules/filters`, outside the programme's stated scope, but this is a
 one-function change and the only `system()` call in the tree.
 
-## `P3-6` — `csv_source`: check the return values
+## `P3-6` — config strings used as `printf` formats — **csv_source done, exportcsv open**
 
 A config string is used as a `snprintf` format (undefined behaviour if it is not a valid
 format string, and `-Wformat` cannot help because it is not a literal), and two `fscanf`
 calls discard their results so a short or malformed CSV writes uninitialised values into
 the image and reports success. Evidence: [`../findings/security.md`](../findings/security.md).
 
-Validate the pattern once at config time and check the `fscanf` return. Small, local, and
-it turns a silently corrupt frame into a logged error.
+**What landed (`csv_source`).** A file-local validator accepts no conversion, or exactly
+one signed-decimal conversion (`%d`/`%i` with flags and width — the documented `%05d`), and
+rejects everything else with the reason in the log; `loadConfig` and `updateConfig` both
+run it and keep the previously configured pattern on rejection. `loadConfig` returns 0 when
+it rejects something, which is a report and not a halt: `FilterBank::instantiateFilter`
+deliberately does not check `loadConfig`'s return value until `A23` settles what the number
+means. Both expansions now go through one helper that checks `snprintf`'s return for
+truncation, and both `fscanf` loops check for `!= 1`, log the file, the expected count and
+how far they got, and stop writing — the remaining pixels keep the content they already had
+instead of an uninitialised variable.
+
+Five tests, four of them observed failing on the parent commit:
+
+| test | pre-fix behaviour |
+|---|---|
+| `FormatStringThatIsNotAnIntConversionIsRejected` | returned 1 for `%s%s` |
+| `RejectedPatternIsNotUsed` | **segfault** — `%s%s` read a `char*` out of the stack slot holding the frame counter |
+| `ShortFileStopsInsteadOfWritingUninitialisedValues` | pixels 2 and 3 held `8`, the last value that *was* there |
+| `MalformedFirstValueStopsTheRead` | every pixel held `9.1834095e-41`, i.e. an uninitialised float bit pattern |
+| `TruncatedPathIsReportedAndTheFrameIsLeftAlone` | passed before the fix too — a truncated name is also not a readable file, so this one pins behaviour and buys a diagnostic; it is not a fence |
+
+Tree warnings 28 → **26**: the two `-Wunused-result` reports on the `fscanf` calls are gone.
+
+**What is left.** `exportcsv.cpp:92,100,103` — same finding, three sites, plus a
+`char path[_filePattern.length() + 64]` VLA whose size comes from the config file. The
+validator should move to `filter_helpers.hpp` (its stated purpose is helpers for filter
+implementations) and be shared rather than duplicated. Counter 21: 5 → 3, target 0.
 
 ## `P3-7` — `if( ${VAR} )` → `if(VAR)` — **DONE**
 

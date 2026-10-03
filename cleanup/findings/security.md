@@ -20,7 +20,7 @@ trailing `&` is inside the string, so the call also does not wait. GCC already p
 feature. `objectTrack` is in `modules/filters`, outside the programme's stated scope, but this
 one is a one-function change and it is the only `system()` call in the tree.
 
-### N5 — config string used as a `printf` format string
+### N5 — config string used as a `printf` format string — `csv_source` FIXED (`P3-6`)
 
 `modules/filters/src/capture/csv_source.cpp:162,183`:
 
@@ -37,3 +37,20 @@ the image and the filter reports success. Both sites are already flagged by `-Wu
 
 **Suggestion S6 — validate the pattern once at config time, and check the `fscanf` return.**
 Small, local, and it turns a silently-corrupt frame into a logged error.
+
+**Fixed in `csv_source` (`P3-6`), and the UB was not hypothetical.** Both patterns are
+validated at config time (one signed-decimal conversion, or none) and both expansions go
+through a helper that checks for truncation; the `fscanf` loops stop and log at the first
+value that is not there. The pre-fix failures, all observed:
+
+- `"%s%s"` in `<options/depthPattern>` **segfaulted** the test binary — the format read a
+  `const char*` out of the stack slot holding the frame counter. This is the case `-Wformat`
+  cannot see, because the format is not a literal.
+- a 2-value CSV against a 2×2 image wrote `8` (the last value that *was* present) into the
+  two missing pixels;
+- a CSV starting with `abc` wrote `9.1834095e-41` — an uninitialised float bit pattern —
+  into all four pixels, and `filter()` returned `true`.
+
+`exportcsv.cpp:92,100,103` is the same finding and is still open (counter 21: 3 of the
+original 5 sites), together with a `char path[_filePattern.length() + 64]` VLA whose size
+comes from the config file.

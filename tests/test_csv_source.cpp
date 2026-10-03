@@ -34,6 +34,7 @@
 // so a value in the frame identifies which file was read.
 
 #include <string>
+#include <vector>
 
 #include <boost/property_tree/ptree.hpp>
 #include <gtest/gtest.h>
@@ -124,4 +125,155 @@ TEST(CsvSourceSequence, WithoutTheFlagTheSameFrameIsReRead)
         SCOPED_TRACE("pass " + std::to_string(i));
         EXPECT_FLOAT_EQ(0.0f, readDepth(src, frame));
     }
+}
+
+// ---------------------------------------------------------------------------
+// N5 / P3-6: the file-name patterns are printf format strings, and the CSV
+// reads were unchecked.
+//
+// <options/depthPattern> and <options/amplPattern> come from XML and are passed
+// as the *format* argument of snprintf(path, size, pattern, sequence). Anything
+// other than one signed-decimal conversion is undefined behaviour, and a short
+// or malformed CSV used to write the still-uninitialised loop variable into the
+// image while the filter reported success.
+//
+// The fixtures d_short.csv / a_short.csv hold 2 of the 4 values, d_junk.csv
+// starts with a non-number.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+/** Point an already-configured source at another pair of files. */
+void retarget(toffy::capturers::CSVSource& src, const std::string& stem)
+{
+    const std::string dir = TOFFY_TEST_CSV_DIR;
+    boost::property_tree::ptree pt = config(false);
+    pt.put("options.depthPattern", dir + "/" + stem + ".csv");
+    pt.put("options.amplPattern", dir + "/" + stem + ".csv");
+    src.updateConfig(pt);
+}
+
+/** Every depth value in a 2x2 frame. */
+std::vector<float> depthValues(toffy::Frame& frame)
+{
+    const auto d = frame.getMatPtr("depth");
+    return {d->at<float>(0, 0), d->at<float>(0, 1), d->at<float>(1, 0),
+            d->at<float>(1, 1)};
+}
+
+}  // namespace
+
+TEST(CsvSourcePattern, ValidPatternsAreAccepted)
+{
+    toffy::capturers::CSVSource src;
+    boost::property_tree::ptree pt = config(false);
+    EXPECT_EQ(1, src.loadConfig(pt));
+
+    pt.put("options.depthPattern", std::string(TOFFY_TEST_CSV_DIR) + "/d_%d.csv");
+    pt.put("options.amplPattern", std::string(TOFFY_TEST_CSV_DIR) + "/a_%09i.csv");
+    EXPECT_EQ(1, src.loadConfig(pt))
+        << "%d and %i with flags/width are exactly what the pattern is for";
+}
+
+TEST(CsvSourcePattern, FormatStringThatIsNotAnIntConversionIsRejected)
+{
+    toffy::capturers::CSVSource src;
+    ASSERT_EQ(1, src.loadConfig(config(false)));
+
+    // "%s" would take a const char* from a stack slot that holds an int: a
+    // crash or an arbitrary memory read, not a wrong file name.
+    boost::property_tree::ptree pt = config(false);
+    pt.put("options.depthPattern", std::string("%s%s"));
+    EXPECT_EQ(0, src.loadConfig(pt)) << "a two-conversion, wrong-type pattern "
+                                        "must be reported at config time";
+}
+
+TEST(CsvSourcePattern, RejectedPatternIsNotUsed)
+{
+    // The rejection has to be observable in the data, not only in the log: the
+    // previously configured, valid pattern must still be the one in use.
+    toffy::capturers::CSVSource src;
+    ASSERT_EQ(1, src.loadConfig(config(false)));
+
+    boost::property_tree::ptree bad = config(false);
+    bad.put("options.depthPattern", std::string("%s%s"));
+    bad.put("options.amplPattern", std::string("%n"));
+    src.loadConfig(bad);
+
+    toffy::Frame frame;
+    EXPECT_FLOAT_EQ(0.0f, readDepth(src, frame))
+        << "the rejected pattern was used anyway - the frame does not come "
+           "from the file that was accepted";
+}
+
+TEST(CsvSourceRead, ShortFileStopsInsteadOfWritingUninitialisedValues)
+{
+    toffy::capturers::CSVSource src;
+    ASSERT_EQ(1, src.loadConfig(config(false)));
+
+    toffy::Frame frame;
+    ASSERT_TRUE(src.filter(frame, frame));  // complete 2x2 fixture: all 0
+
+    retarget(src, "d_short");  // only 2 of the 4 values exist
+    EXPECT_TRUE(src.filter(frame, frame))
+        << "a short file is an error to report, not a reason to abort the bank";
+
+    const std::vector<float> d = depthValues(frame);
+    EXPECT_FLOAT_EQ(7.0f, d[0]);
+    EXPECT_FLOAT_EQ(8.0f, d[1]);
+    EXPECT_FLOAT_EQ(0.0f, d[2])
+        << "pixel 2 was written from an uninitialised variable: fscanf failed "
+           "and its return value was discarded";
+    EXPECT_FLOAT_EQ(0.0f, d[3])
+        << "pixel 3 was written from an uninitialised variable";
+}
+
+TEST(CsvSourceRead, MalformedFirstValueStopsTheRead)
+{
+    toffy::capturers::CSVSource src;
+    ASSERT_EQ(1, src.loadConfig(config(false)));
+
+    toffy::Frame frame;
+    ASSERT_TRUE(src.filter(frame, frame));  // all 0
+
+    retarget(src, "d_junk");  // "abc;0;0;0;"
+    EXPECT_TRUE(src.filter(frame, frame));
+
+    const std::vector<float> d = depthValues(frame);
+    for (size_t i = 0; i < d.size(); i++)
+    {
+        SCOPED_TRACE("value " + std::to_string(i));
+        EXPECT_FLOAT_EQ(0.0f, d[i])
+            << "the read stopped at the first value, so nothing may change";
+    }
+}
+
+TEST(CsvSourceRead, TruncatedPathIsReportedAndTheFrameIsLeftAlone)
+{
+    toffy::capturers::CSVSource src;
+    ASSERT_EQ(1, src.loadConfig(config(false)));
+
+    // Point at frame 1 first, so "unchanged" is a value we can tell apart from
+    // "read from the truncated path".
+    {
+        const std::string dir = TOFFY_TEST_CSV_DIR;
+        boost::property_tree::ptree pt = config(false);
+        pt.put("options.depthPattern", dir + "/d_00001.csv");
+        pt.put("options.amplPattern", dir + "/a_00001.csv");
+        src.updateConfig(pt);
+    }
+    toffy::Frame frame;
+    ASSERT_TRUE(src.filter(frame, frame));
+    ASSERT_FLOAT_EQ(1.0f, frame.getMatPtr("depth")->at<float>(0, 0));
+
+    // A pattern that is valid but expands past the 1024-byte buffer. Pre-fix
+    // the truncated name was opened as if it were the intended file.
+    boost::property_tree::ptree pt = config(false);
+    pt.put("options.depthPattern",
+           std::string(2000, 'x') + "/d_%d.csv");
+    src.updateConfig(pt);
+    EXPECT_TRUE(src.filter(frame, frame));
+
+    EXPECT_FLOAT_EQ(1.0f, frame.getMatPtr("depth")->at<float>(0, 0))
+        << "a truncated path was used as a file name";
 }
