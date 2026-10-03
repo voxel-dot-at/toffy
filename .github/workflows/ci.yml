@@ -212,16 +212,22 @@ jobs:
         # toffy/web/ headers lived in exactly that tree, and so did every WITH_CONTROL site
         # - this is the half of the gate the compile check is structurally blind to.
         #
-        # Scope, stated per DOD 0 rule 9: code and build files only (*.cpp/*.hpp/*.h/*.in/
-        # *CMakeLists.txt/*.cmake/*.dox). The cleanup docs discuss these strings in order to
-        # record that they are gone, and tools/installed_header_check.sh names toffy_web/ in
-        # its own classification comment; a gate that is always red is not a gate.
+        # Scope, stated per DOD 0 rule 9: compiled code and build files only (*.cpp/*.hpp/
+        # *.h/*.in/*CMakeLists.txt/*.cmake). Prose is out of scope deliberately - the cleanup
+        # docs, this job's own comment, tools/installed_header_check.sh's classification
+        # table and use.dox's "where did the web interface go" section all name these strings
+        # in order to record that they are gone, and a gate that fires on every sentence
+        # describing the removal is a gate that gets deleted. *.dox is prose: it is out for
+        # the same reason *.md is, and nothing is lost, because a WITH_CONTROL hook or a
+        # toffy_web/ include can only ever take effect in something the compiler reads.
+        # (This job listed *.dox until the X4 page tripped it - the gate was wrong, not the
+        # page.)
         #
         # Verified to be capable of failing: re-adding one #ifdef WITH_CONTROL line to
         # modules/bta/src/initPlugin.cpp turns this step red, removing it turns it green.
         run: |
           set -uo pipefail
-          hits=$(git ls-files -z '*.cpp' '*.hpp' '*.h' '*.in' '*.txt' '*.cmake' '*.dox' \
+          hits=$(git ls-files -z '*.cpp' '*.hpp' '*.h' '*.in' '*.txt' '*.cmake' \
                    | xargs -0 -r grep -nHE 'toffy_web/|toffy/web/|WITH_CONTROL' || true)
           if [ -n "$hits" ]; then
             echo "$hits"

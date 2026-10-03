@@ -58,7 +58,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 26 | `WITH_CONTROL` sites — a symbol no build file defines | tree | **0** (was 5: 3 in `initPlugin.cpp`, 2 in `initPlugin.hpp`; `P3-2`) | 0 | ✅ |
 | 27 | `toffyRunner` options describing a server that never starts | `apps/` | **0** (was 3: `--host/-h`, `--port/-p`, `--html/-d` — parsed, printed, used by nothing; `X3`) | 0 | ✅ |
 | 28 | installed headers that cannot be included **twice** | install tree | **0** (was 1: `toffy/bta/FrameHeader.hpp`, a `typedef struct` with no guard; 3 of 86 had no guard at all) — `N9`, fixed by `X2b`, gated by the `twice` pass | 0 | ✅ |
-| 29 | controller residue in tracked code and build files | `*.cpp`/`*.hpp`/`*.h`/`*.in`/`*CMakeLists.txt`/`*.cmake`/`*.dox` | **0** (`toffy_web/`, `toffy/web/`, `WITH_CONTROL`) — the gated superset of counter 26, and the only residue check that reaches `modules/bta`, whose headers CI cannot stage without the SDK | 0 | ✅ |
+| 29 | controller residue in tracked **compiled** code and build files | `*.cpp`/`*.hpp`/`*.h`/`*.in`/`*CMakeLists.txt`/`*.cmake` — prose (`.md`, `.dox`) deliberately out of scope | **0** (`toffy_web/`, `toffy/web/`, `WITH_CONTROL`) — the gated superset of counter 26, and the only residue check that reaches `modules/bta`, whose headers CI cannot stage without the SDK | 0 | ✅ |
 | 30 | doxygen warnings + errors from the `docs` target | `docs/` | **0** (was 15: 14 obsolete `Doxyfile.cfg` tags + 1 unreadable `EXAMPLE_PATH` entry; the `HTML_EXTRA_FILES` error was reported once per run and is counted with them) — CI runs the `docs` job on every push and fails on any warning | 0 | ✅ |
 
 ## The commands
@@ -148,11 +148,14 @@ grep -c "pragma once" /tmp/ti/usr/local/include/toffy/bta/FrameHeader.hpp \
 #      .dox file first, or run it on a fresh build directory (what CI does).
 cmake --build build --target docs 2>&1 | grep -cE 'warning:|error:'
 
-# 29 — the residue gate CI can actually run. Scoped to code and build files: the cleanup
-#      docs and tools/installed_header_check.sh itself name these strings to record that
-#      they are gone, and a gate that is always red is not a gate. Verified capable of
-#      failing: re-adding one `#ifdef WITH_CONTROL` line to modules/bta/src turns it red.
-git ls-files -z '*.cpp' '*.hpp' '*.h' '*.in' '*.txt' '*.cmake' '*.dox' \
+# 29 — the residue gate CI can actually run. Scoped to compiled code and build files.
+#      Prose is out of scope on purpose: the cleanup docs, the check script's own
+#      classification table and use.dox's "where did the web interface go" section all name
+#      these strings to record that they are gone. The first version of this gate included
+#      *.dox and the X4 page tripped it - the gate was wrong, not the page, since a hook can
+#      only take effect in something the compiler reads. Verified capable of failing:
+#      re-adding one `#ifdef WITH_CONTROL` line to modules/bta/src turns it red.
+git ls-files -z '*.cpp' '*.hpp' '*.h' '*.in' '*.txt' '*.cmake' \
   | xargs -0 -r grep -nHE 'toffy_web/|toffy/web/|WITH_CONTROL' | wc -l
 
 # 16 — artefacts describing the removed web control product. Countable, unlike the ">= 3"
