@@ -61,4 +61,12 @@ modules/control/server/uri-grammar/config.log
 *.csv
 *.xslx
 
+# ...but a fixture under tests/ is source, not data. `*.csv` above silently
+# swallows tests/xml/csv/*.csv, so `git add` reports success and commits nothing:
+# the `csv_source` ctest target then reads an uninitialised cv::Mat and 8 of its
+# 10 tests fail - green on the machine that wrote the fixtures, red on every
+# fresh clone. Same trap as a grep scoped to the wrong directory (DOD per-PR 9):
+# a check that only passes where it was written is not a gate.
+!tests/xml/csv/*.csv
+
 .dirstamp
