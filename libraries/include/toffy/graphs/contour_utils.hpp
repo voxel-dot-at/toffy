@@ -18,7 +18,13 @@
  */
 #pragma once
 #include <vector>
+
 #include <boost/math/special_functions/fpclassify.hpp>
+
+// cv::Point/Point2f/Vec2f/Mat/Scalar and line(). This header is installed and used to
+// compile only when some other header happened to pull OpenCV in first.
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
 /**
  * boundary handling utilities
  *

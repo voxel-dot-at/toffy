@@ -143,6 +143,68 @@ jobs:
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0
         run: ctest --test-dir build --output-on-failure
 
+  installed-headers:
+    name: installed headers compile standalone
+    runs-on: ubuntu-latest
+    # P3-12 / finding N1. `make install` ships every file under every */include/ directory,
+    # and nothing in the build ever included most of them: a header whose only consumer was
+    # deleted keeps shipping, keeps rotting, and stays invisible because the library still
+    # builds. Four toffy/web/ headers got that far - one of them includes a file that does not
+    # exist, so no user could ever have included it - and two in libraries/graphs/ compiled
+    # only when some earlier include happened to pull OpenCV in first.
+    #
+    # The check compiles each installed header as the *only* include of a translation unit,
+    # which is what a downstream user does. See tools/installed_header_check.sh for the
+    # failure classification (a missing third-party header is a skip, a missing toffy header
+    # is a finding) and for why a run that tests nothing exits 2.
+    #
+    # Scope, stated per DOD 0 rule 9: the *installed* tree, so it does not matter which of
+    # the four install(DIRECTORY include/) rules put a header there. Two caveats: the runner
+    # has no proprietary bta SDK, so modules/bta's tree is not installed and not tested here;
+    # and a header whose third-party dependency is absent is reported as skipped rather than
+    # as a pass.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake \
+            build-essential \
+            pkg-config \
+            libboost-all-dev \
+            libopencv-dev \
+            libpcl-dev
+
+      - name: Configure
+        # Tests off: nothing under tests/ is installed, and Release because that is the
+        # configuration the counters are quoted against.
+        run: |
+          set -euxo pipefail
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
+
+      - name: Build the library
+        # install() ships libtoffy.so, so `cmake --install` fails without it; the apps and
+        # the tests are not installed, so building only this target is the cheapest tree
+        # that can be staged. The headers themselves are generated at configure time.
+        run: cmake --build build -j "$(nproc)" --target toffy
+
+      - name: Stage the install tree
+        run: |
+          set -euxo pipefail
+          cmake --install build --prefix "$PWD/stage"
+          echo "staged $(find stage/include \( -name '*.hpp' -o -name '*.h' \) | wc -l) headers"
+
+      - name: Compile every installed header standalone
+        run: |
+          set -euo pipefail
+          # pkg-config rather than hardcoded paths: the PCL include directory carries its
+          # version (/usr/include/pcl-1.14 today) and that is not ours to track.
+          tools/installed_header_check.sh "$PWD/stage/include" \
+            $(pkg-config --cflags opencv4 pcl_common)
+
   cmake-hygiene:
     name: cmake hygiene (if( ${VAR} ) sweep)
     runs-on: ubuntu-latest

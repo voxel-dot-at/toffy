@@ -19,6 +19,9 @@
 #pragma once
 #include <vector>
 
+// line(). graph.hpp brings opencv2/core.hpp, which is not the header that declares it.
+#include <opencv2/imgproc.hpp>
+
 #include <toffy/graphs/graph.hpp>
 
 /** find farthest point; ignores segment structure, uses geo information only.
