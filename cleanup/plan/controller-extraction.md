@@ -34,9 +34,9 @@ core cleanup, not extraction.
 | `modules/bta/include/toffy/web/btaGroupController.hpp` | `…BtaGroupController` | as above |
 | `modules/bta/src/initPlugin.cpp`, `include/toffy/bta/initPlugin.hpp` | the `#ifdef WITH_CONTROL` half of the bta plugin entry point | `WITH_CONTROL` is defined by no build file, in any configuration, on any platform — and the `toffy_web/` headers it includes do not exist, so the branch cannot be compiled even if it were defined |
 | ~~`apps/main.cpp`~~ | ~~`--host/-h`, `--port/-p`, `--html/-d` options, parsed and printed~~ **removed (`X3`)** | the values went nowhere. Every run printed `Host: localhost / Port: 9999 / Html path: /opt/toffy/html/`, advertising a server that never starts |
-| `docs/mainpages/public/use.dox` | the whole "Use guide" page | documents `minimal_toffy` (no such binary; the app is `toffyRunner`), `WITH_EXAMPLES` (no such option), the web interface and port 9999 |
-| `docs/extraDocs/images/control_{main,single,capturer}.png` | screenshots of the deleted UI | referenced only from `use.dox` |
-| `Player`'s `@todo` | "Player is still not independent of the web control module… maybe creating a c++ Api that may be also use by the controller" | the design note that started this. The C++ API it asks for is stage **X5** below |
+| ~~`docs/mainpages/public/use.dox`~~ | ~~the whole "Use guide" page~~ **rewritten (`X4`)** | it documented `minimal_toffy` (no such binary), `WITH_EXAMPLES` (no such option) and port 9999 — and was in `EXCLUDE` in `docs/Doxyfile.cfg`, so it never rendered. Now a `toffyRunner` guide, un-excluded, `\page use` added to `page_order.dox`, verified by building the docs |
+| ~~`docs/extraDocs/images/control_{main,single,capturer}.png`~~ | ~~screenshots of the deleted UI~~ **deleted (`X4`)** | referenced only from `use.dox`; outdated, and the UI they show has moved on in toffy-oatpp |
+| ~~`Player`'s `@todo`~~ | ~~"Player is still not independent of the web control module…"~~ **rewritten (`X4`)** | the design note that started this. Its JSON-over-HTTP mechanism went with `Event` (`P2-14`); it now names what a UI still cannot get from `Player`/`Controller`, which is stage **X5** below |
 
 All four headers are *installed* — `install(DIRECTORY "include/" …)` in both
 `libraries/CMakeLists.txt` and `modules/bta/CMakeLists.txt` ships their trees wholesale —
@@ -66,7 +66,7 @@ a release note like any other.
 | **X2** | make every installed header compile, and keep it that way (`P3-12`) — 86 of 86 pass, gated by the `installed-headers` CI job | X1 | ✅ |
 | **X2b** | close the two holes `X2` left: include guards + a double-inclusion pass (`N9`), and a source-tree gate for the `modules/bta` tree CI cannot build | X2 | ✅ |
 | **X3** | drop `--host/--port/--html` from `toffyRunner` | — | ✅ |
-| **X4** | rewrite `use.dox` around `toffyRunner`; move the three screenshots to toffy-oatpp | X3 | ❌ |
+| **X4** | rewrite `use.dox` around `toffyRunner`; delete the three screenshots (outdated — the UI moved on in toffy-oatpp, they are not worth porting) | X3 | ✅ |
 | **X5** | the C++ API `toffy-oatpp` binds to, and the fixes it needs first | `A23`, `P2-9`, `P2-7`, `P2-11`, `P2-13` | ❌ |
 | **X6** | the plugin ABI: keep the filter half, do not rehost the controller half | — | decision, below |
 

@@ -30,10 +30,14 @@ namespace toffy {
  *
  * Adds the application logic to use toffy
  *
- * @todo Player is still not independent of the web control module. For run the
- * filters it uses the controller, sending http request objects with the actions
- * coded in JSON in the content. This should be change, maybe creating a c++ Api
- * that may be also use by the controller.
+ * @todo Player is the C++ API a control layer has to be built on, and it is not
+ * finished as one. The JSON-over-HTTP request objects this note used to complain
+ * about were deleted with `Event` (P2-14), and the browser UI that sent them is a
+ * separate project now (toffy-oatpp), so nothing in here speaks to a UI at all.
+ * What such a layer still cannot get from Player/Controller: why a config was
+ * rejected (A23), a frame snapshot that is safe to read while the pipeline runs,
+ * and thread-safe run state. Stage X5 of
+ * cleanup/plan/controller-extraction.md.
  */
 class TOFFY_EXPORT Player {
 public:

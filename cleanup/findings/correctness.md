@@ -207,3 +207,23 @@
     `j` a purpose — or delete the option and its `getConfig()` line. Not fixed here: `P3-6` is
     the format-string item, this is a behaviour change, and one numbered item per commit is
     [`../dod/per-pr.md`](../dod/per-pr.md) #5.
+
+**A26 — `toffyRunner`'s Ctrl-C handler is compiled and never installed on Linux.** Found
+while writing the stop section of `use.dox` (`X4`), which had to document what actually
+happens rather than what the code appears to do. `apps/main.cpp` defines `my_handler(int)`,
+which clears the `keepRunning` flag so the frame loop can exit cleanly, and then never
+registers it: the `sigaction(SIGINT, &sigIntHandler, NULL)` call is commented out a few lines
+below the `struct sigaction` it would have used. The registration that does exist,
+`SetConsoleCtrlHandler()`, is inside `#ifdef MSVC`. Two consequences, both measured:
+
+- Ctrl-C takes the default disposition, so the process dies mid-frame — no `Stopped...`, no
+  unwinding of the player, whatever the OS does to the OpenCV windows.
+- `sigIntHandler` is `set but not used` and `my_handler`'s parameter is unused. Those are two
+  of the warnings `P3-11` reports per area; the compiler has been describing this defect on
+  every build.
+
+Verified by running the binary under `timeout -s INT` and grepping its output for the
+handler's message and for `Stopped...`: neither appears. Not fixed here — installing the
+handler changes shutdown behaviour (the loop would then exit through `keepRunning`, and the
+player's teardown gets run for the first time in anger), which is a behaviour change with its
+own test, and it sits in the same code as the `#ifdef MSVC` paths that `P2-2` owns.

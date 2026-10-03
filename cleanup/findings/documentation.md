@@ -6,12 +6,37 @@ document was written from the sources.
 **The main pages are stubs.** `docs/mainpages/public/how_to_get.dox` consists of a heading
 and `\todo do`. `modules.dox` ends with `\todo intro` for the entire Viewers section.
 
-**Worse than a stub: `use.dox` documents a removed product.** It is a full page, but it
-tells the reader to run `minimal_toffy` and open a web UI on `localhost:9999` with HTML at
-`/opt/toffy/html`, and `\include`s `examples/config.xml`. No `minimal_toffy` target exists
-anywhere in the repo (`grep -rn minimal_toffy` → no matches; `apps/` contains only
-`toffyRunner` and `tst_pb`), and the web control was dropped in commit `54d9577`. A new
-reader following this page cannot get to a running system.
+**~~Worse than a stub: `use.dox` documents a removed product.~~ FIXED (`X4`).** It was a
+full page telling the reader to run `minimal_toffy` and open a web UI on `localhost:9999`
+with HTML at `/opt/toffy/html`. No `minimal_toffy` target exists anywhere in the repo
+(`apps/` contains `toffyRunner` and `tst_pb`), and the web control was dropped in
+`54d9577`. The page is now a `toffyRunner` guide: real options, the checked-in example
+config, where the configs live, how to stop — and one paragraph for whoever typed
+`localhost:9999` into a search engine to say where that UI went (toffy-oatpp).
+
+**One correction to this finding, and it matters.** The page could not be reached through
+the generated documentation at all: `docs/Doxyfile.cfg` had it in `EXCLUDE` alongside the
+`how_to_get.dox` stub. Measured — a doxygen run read 12 files and `use.dox` was not among
+them, and no `use.html` was emitted. So "a new reader following this page cannot get to a
+running system" was too generous: the page was not a page, it was a source file that looked
+like one. That is why `X4` had to delete it from `EXCLUDE` and add `\page use` to
+`page_order.dox`, not just rewrite the prose — a doc fix that leaves the page excluded fixes
+nothing a reader will notice.
+
+**The docs build is broken in three places and nothing runs it.** `status.md` already
+listed "nothing builds the Doxygen docs" as a CI limit; the cost is that the breakage below
+has been there since the `docs/` reorganisation in `59b6bcf`. Measured with doxygen 1.9.8 on
+the `docs/Doxyfile.cfg` as checked in:
+
+| symptom | cause |
+|---|---|
+| `warning: source '…/descDocs' is not a readable file or directory… skipping.` | `EXAMPLE_PATH` lists `@PROJECT_SOURCE_DIR@/descDocs`; the directory is `docs/descDocs` |
+| `error: Extra file '…/docs/extraDocs/filters/roi_guide.odt' specified in HTML_EXTRA_FILES does not exist!` | the file is not in the repo; that directory holds `roi_extra.dox` |
+| 13 × `warning: Tag '…' has become obsolete.` | the config header still says `# Doxyfile 1.8.12`; `PERL_PATH`, `MSCGEN_PATH`, `HTML_TIMESTAMP`, `RTF_SOURCE_CODE`, `DOT_FONTNAME` … |
+
+None of these stop the build (`docs` exits 0), which is exactly why they are still there.
+The fix is a CI job that runs the `docs` target and reads its warnings — the same lesson as
+`P3-11` and `P3-12`: a check nobody runs is a check nobody passes.
 
 **~~The docs misdescribe the buggy functions.~~ FIXED with the code.** `filterbank.hpp` once
 documented `findPos()` as returning "negative if not found", which `size_t` cannot do (A3),

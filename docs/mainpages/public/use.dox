@@ -1,70 +1,90 @@
 /*! \page use Use guide
 
- \section use_intro Introduction
+\addindex use
+\tableofcontents
 
- This page shows how to use the minimal application example to run toffy and its
-web control interface.
+Running toffy means running one program, `toffyRunner`, over one XML config
+file. Which filters run, in what order and on which data is all in the config;
+the program itself has four options.
 
- You need to have compiled and installed the level distribution. It the cmake
-flag WITH_EXAMPLES is set the example application will minimal_toffy will be installed into your system.
+\section use_build Building
 
- You can also just compile the example application and do whatever modifications you need.
+\code
+cmake -S . -B build
+cmake --build build -j
+\endcode
 
- The example application source is shown here:
+Boost and OpenCV are required. PCL (the 3D and point cloud filters) and the
+proprietary BTA SDK (Bluetechnix cameras) are optional and detected at
+configure time; configure with `-DWITHOUT_PCL=ON` to build without PCL. The
+library is `libtoffy.so` and the example application is
+`build/apps/toffyRunner`.
 
- \include main.cpp
+\section use_run Running
 
- \subsection use_start Start toffy
+\code
+./build/apps/toffyRunner -c config.xml
+\endcode
 
- To easily use toffy we need an user interface providing the base functionality to handle the config file and starting the filtering.
+The complete option list, from `toffyRunner --help`:
 
- Toffy provides a web interface that could be used everywhere, does not matter the platform. We just need a web browser to display it.
+<table>
+<tr><th>Option</th><th>Default</th><th>Meaning</th></tr>
+<tr><td><code>-c [ --config ] arg</code></td><td><code>config.xml</code></td>
+    <td>Path to the config file</td></tr>
+<tr><td><code>-s [ --sleepDelay ] arg</code></td><td><code>30</code></td>
+    <td>Milliseconds to wait between frames. <code>0</code> waits for a
+        keypress in an image window</td></tr>
+<tr><td><code>-f [ --output2File ] arg</code></td><td><code>false</code></td>
+    <td>Write the program output to a file instead of the console</td></tr>
+<tr><td><code>--help</code></td><td></td><td>Print this and exit</td></tr>
+</table>
 
- To start the minimal example application you just need to execute minimal_toffy:
+`toffyRunner` serves nothing. It reads the config, builds the filter bank and
+then runs one frame per iteration of its loop; the only thing it opens is the
+OpenCV windows that the viewer filters ask for.
 
- \code
- ./minimal_toffy
- \endcode
+\section use_config The config file
 
- The default server in:
- -Host: localhost
- -Port 9999
- -Html path: /opt/toffy/html
+The file below is the checked-in example at
+`docs/configDocs/xmls/examples/config.xml`: a Bluetechnix camera as the source,
+an amplitude threshold, and two image views of the depth and amplitude images.
+Every element below `<toffy>` names a filter, and each one takes `name`,
+`inputs`, `outputs` and `options` children — see \ref configuration.
 
- Once the application is started you should see:
+\include examples/config.xml
 
- \code
- Host: localhost
- Port: 9999
- Html path: /opt/toffy/html/
- INIT PLAYER
- Player done
- Started...
- \endcode
+\section use_stop Stopping
 
- This means Toffy is running and the user interface is reachable with your favorite browser in:
+Press <b>q</b> in any OpenCV window. The loop reads a key after every frame and
+ends the run when that key is `q`; any other key — and the `-1` that
+`cv::waitKey()` returns when nothing was pressed — leaves it running. With
+`-s 0` the wait is indefinite, so the pipeline advances one frame per keypress
+instead of one per `sleepDelay` milliseconds.
 
- http://localhost:9999/
+Ctrl-C does **not** stop a run cleanly on Linux. `main.cpp` defines a SIGINT
+handler that would end the loop, but the `sigaction()` call that would install
+it is commented out, so Ctrl-C gets the default disposition and the process
+dies where it stands. (The `SetConsoleCtrlHandler()` path that does work is
+inside `#ifdef MSVC`.)
 
- You will see the toffy control page:
+\section use_examples More configs
 
- \image html control_main.png
+`apps/configs/` holds working configs for the cameras and for threaded and
+merged filter banks (`thread_config.xml`, `merge_config22.xml`, `2d.xml`, the
+`g*_config.xml` set), and `docs/configDocs/xmls/` holds the per-filter
+reference configs that the \ref configuration page documents.
 
- From there you can load the configuration file that contains the filter description.
- We have included the following example for a Bluetechnix ToF camera:
+\section use_web Where did the web interface go?
 
- \include examples/config.xml
-
- Once we load this config file, we will see the list of successfully loaded filter
- in the main page. We can now access to the single configuration of each of them:
-
- \image html control_single.png
-
- This configuration can be for each filter accessed and changed runtime. Now you just need to
-connect the camera in the bta1 filter and run toffy in the controls:
-
- \image html control_capturer.png
-
- Try adding more filter get the desired output or implement new one that fill your computer vision application needs.
+Earlier versions of this page described a browser UI on `localhost:9999`, an
+application called `minimal_toffy`, a `WITH_EXAMPLES` CMake flag and HTML
+installed under `/opt/toffy/html`. None of those are in this repository. The
+web control layer was dropped in `54d9577` and lives on in the separate
+**toffy-oatpp** project; what it left behind — four installed headers, a
+`WITH_CONTROL` hook and three dead command line options — was removed in
+`cleanup/plan/controller-extraction.md`. If you are looking for that UI, look
+there; if you are looking for the pipeline, you are already reading the right
+page.
 
 */

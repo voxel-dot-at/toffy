@@ -44,7 +44,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 14a | | tree | **15** (was 16; one went with the orphan) | 0 | |
 | 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **0** in all four configurations, and `toffy_core` is compiled with `-Werror` (`P3-4`) | 0 | ✅ |
 | 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **26** (was 32; −4 from the `Mux` using-declaration, −2 from `csv_source`'s `fscanf` sites now being checked, `P3-6`) — reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
-| 16 | artefacts describing the removed web control product | tree | **8** (was 12; the 4 installed headers went with `P3-2`) — enumerated below, because "≥ 3" was not a number | 0 | |
+| 16 | artefacts describing the removed web control product | tree | **0** (was 12, then 8: 4 installed headers `P3-2`, 3 screenshots and the `use.dox` page `X4`, 3 CLI options `X3`, 1 `Player` `@todo` `X4`) — enumerated below, because "≥ 3" was not a number | 0 | ✅ |
 | 17 | installed public headers that do not compile standalone | install tree | **0** (was 4 by hand, 5 once the check was written: 3 deleted by `P3-2`, 2 fixed by `P3-12`) — 86 of 86 pass, 0 skipped, and the `installed-headers` CI job runs the check on every push. The check is now **two passes**: each header once, and each header twice (`X2b`), so 172 checks | 0 | ✅ |
 | 18 | public headers including the CMake-generated `toffy_export.h` | tree | **7** (was 8; one went with the orphan) — `P3-10` targets 0 | 0 | |
 | 18a | `TOFFY_EXPORT` annotation sites | tree | **17** in 16 headers | 0 | |
@@ -143,14 +143,21 @@ grep -c "pragma once" /tmp/ti/usr/local/include/toffy/bta/FrameHeader.hpp \
 git ls-files -z '*.cpp' '*.hpp' '*.h' '*.in' '*.txt' '*.cmake' '*.dox' \
   | xargs -0 -r grep -nHE 'toffy_web/|toffy/web/|WITH_CONTROL' | wc -l
 
-# 16 — artefacts describing the removed web control product. Countable, unlike the "≥ 3"
-#      it replaces: 4 installed headers (P3-2) + use.dox + 3 screenshots + 3 CLI options
-#      + 1 Player @todo = 12 before, 8 now.
-grep -rn "toffy/web" modules libraries apps | wc -l                       # 0
-ls docs/mainpages/public/use.dox 2>/dev/null | wc -l                      # 1
-ls docs/extraDocs/images/control_*.png | wc -l                            # 3
-grep -cE '"(host|port|html),[a-z]"' apps/main.cpp                         # 3
-grep -rn "web control" modules/core | wc -l                               # 1
+# 16 — artefacts describing the removed web control product. Countable, unlike the ">= 3"
+#      it replaces: 4 installed headers + use.dox + 3 screenshots + 3 CLI options
+#      + 1 Player @todo = 12 before, 8 after P3-2, 0 after X3/X4.
+grep -rn "toffy/web" modules libraries apps | wc -l                       # 0 (P3-2)
+ls docs/extraDocs/images/control_*.png 2>/dev/null | wc -l                # 0 (X4)
+grep -cE '"(host|port|html),[a-z]"' apps/main.cpp                         # 0 (X3)
+grep -rn "web control" modules/core | wc -l                               # 0 (X4)
+#      use.dox is deliberately NOT in the list above: the file still exists, and it still
+#      contains the strings "minimal_toffy" and "localhost:9999" — in the one paragraph
+#      that tells a reader who typed them in where the UI went. Grepping the page for those
+#      strings counts the redirect as the artefact. The check that means something is that
+#      the page is generated and describes the binary that exists:
+grep -n "use.dox" docs/Doxyfile.cfg                    # only in the comment saying it is
+                                                       # no longer excluded
+grep -c "toffyRunner" docs/mainpages/public/use.dox    # 5 — the page is about the real CLI
 
 # 26 — the build symbol nothing builds. `WITH_CONTROL` was never defined by any CMake file
 #      in any configuration, and the toffy_web/ headers it guarded do not exist, so the
