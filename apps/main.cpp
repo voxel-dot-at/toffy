@@ -64,13 +64,11 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     try {
         po::options_description desc("Allowed options");
+        // No --host/--port/--html: toffyRunner serves nothing. The web control
+        // layer that consumed them left for the toffy-oatpp project in 54d9577,
+        // and until now every run printed a Host/Port/Html-path banner for a
+        // server that was never started (cleanup/plan/controller-extraction.md X3).
         desc.add_options()("help", "produce help message")(
-            "host,h", po::value<std::string>()->default_value("localhost"),
-            "Server host address")(
-            "port,p", po::value<std::string>()->default_value("9999"), "Port")(
-            "html,d",
-            po::value<std::string>()->default_value("/opt/toffy/html/"),
-            "Folder path containg the web interface")(
             "config,c", po::value<std::string>()->default_value("config.xml"),
             "Path to the config file")(
             "sleepDelay,s", po::value<int>()->default_value(30),
@@ -84,14 +82,11 @@ int main(int argc, char* argv[])
         po::notify(vm);
 
         if (vm.count("help")) {
-            cout << "Usage: options_description [options]\n";
+            cout << "Usage: toffyRunner [options]\n";
             cout << desc;
             return 0;
         }
 
-        cout << "Host: " << vm["host"].as<std::string>() << endl;
-        cout << "Port: " << vm["port"].as<std::string>() << endl;
-        cout << "Html path: " << vm["html"].as<std::string>() << endl;
         cout << "Config file: " << vm["config"].as<std::string>() << endl;
         cout << "Sleep delay: " << vm["sleepDelay"].as<int>() << endl;
         cout << "output2File: " << vm["output2File"].as<bool>() << endl;

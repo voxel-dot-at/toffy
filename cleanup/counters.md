@@ -56,7 +56,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 24 | `ctest` targets | `tests/` | **11** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`, `exportcsv` by `P3-6`) | ≥ 8 | ✅ |
 | 25 | `const`-only `filter()` overrides that do not say `override` | `modules/`, `libraries/` | **0** (was 3, fixed by `P3-3`; 4 sites now carry it) | 0 | ✅ |
 | 26 | `WITH_CONTROL` sites — a symbol no build file defines | tree | **0** (was 5: 3 in `initPlugin.cpp`, 2 in `initPlugin.hpp`; `P3-2`) | 0 | ✅ |
-| 27 | `toffyRunner` options describing a server that never starts | `apps/` | **3** (`--host/-h`, `--port/-p`, `--html/-d`; parsed, printed, used by nothing) — `X3` targets 0 | 0 | |
+| 27 | `toffyRunner` options describing a server that never starts | `apps/` | **0** (was 3: `--host/-h`, `--port/-p`, `--html/-d` — parsed, printed, used by nothing; `X3`) | 0 | ✅ |
 | 28 | installed headers that cannot be included **twice** | install tree | **0** (was 1: `toffy/bta/FrameHeader.hpp`, a `typedef struct` with no guard; 3 of 86 had no guard at all) — `N9`, fixed by `X2b`, gated by the `twice` pass | 0 | ✅ |
 | 29 | controller residue in tracked code and build files | `*.cpp`/`*.hpp`/`*.h`/`*.in`/`*CMakeLists.txt`/`*.cmake`/`*.dox` | **0** (`toffy_web/`, `toffy/web/`, `WITH_CONTROL`) — the gated superset of counter 26, and the only residue check that reaches `modules/bta`, whose headers CI cannot stage without the SDK | 0 | ✅ |
 
@@ -159,9 +159,13 @@ grep -rn "WITH_CONTROL" modules libraries apps | wc -l
 
 # 27 — CLI options that advertise a server which never starts. Match the *definition*
 #      sites (`"host,h"`, not the bare word host) and check the uses separately: each of
-#      the three is read exactly once, in the `cout` line that prints it.
-grep -cE '"(host|port|html),[a-z]"' apps/main.cpp     # 3 definitions
-grep -nE 'vm\["(host|port|html)"\]' apps/main.cpp     # 3 uses, all `cout <<`
+#      the three used to be read exactly once, in the `cout` line that printed it.
+#      Both greps now return 0, and `grep -c` exits 1 on no match - that is the pass.
+grep -cE '"(host|port|html),[a-z]"' apps/main.cpp     # 0 definitions (was 3)
+grep -nE 'vm\["(host|port|html)"\]' apps/main.cpp     # 0 uses (was 3)
+#      The check that actually matters is the binary's own help text:
+#      ./build/apps/toffyRunner --help   # --help, -c/--config, -s/--sleepDelay,
+#                                        # -f/--output2File, and nothing else
 
 # 18 — the generated export header
 grep -rn "^[[:space:]]*#[[:space:]]*include *[<\"]toffy/toffy_export.h" modules libraries apps

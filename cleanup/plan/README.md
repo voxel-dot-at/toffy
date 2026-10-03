@@ -100,7 +100,7 @@ what is left of it out of this repository. `X1` is `P3-2` and `X2` is `P3-12`; `
 | `X1` | delete the four `toffy/web/` headers and the `WITH_CONTROL` hooks (= `P3-2`) | ✅ |
 | `X2` | every installed header compiles standalone, and CI keeps it that way (= `P3-12`) | ✅ |
 | `X2b` | guards + a double-inclusion pass (`N9`), and a residue gate for the tree CI cannot build | ✅ |
-| `X3` | drop `--host/--port/--html` from `toffyRunner` | ❌ |
+| `X3` | drop `--host/--port/--html` from `toffyRunner` | ✅ |
 | `X4` | rewrite `use.dox` around `toffyRunner`; screenshots to toffy-oatpp | ❌ |
 | `X5` | the C++ API `toffy-oatpp` binds to, and the five items it waits on | ❌ |
 | `X6` | plugin ABI: keep the filter half, do not rehost the controller half | decision, taken |

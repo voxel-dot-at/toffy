@@ -30,6 +30,7 @@ This is the plan. What has actually landed is [`status.md`](status.md); item tit
 | **23** | `P3-2` delete the dead installed `toffy/web/` headers; `P3-10` drop `TOFFY_EXPORT` | 21 | Both touch installed headers, so both go with the same tag decision |
 | **28** | `P3-2` + `P3-12` (`X1`, `X2` of [`plan/controller-extraction.md`](plan/controller-extraction.md)): delete the controller residue, make every installed header compile standalone, gate it in CI | 21 | Landed as the `P3-2` half of the planned PR 23. `P3-10` is the other half of that row and is still open, so it inherits this tag decision rather than opening a new one |
 | **29** | `X2b` (`N9`): include guards, a double-inclusion pass in the installed-header check, and a source-tree residue gate for the tree CI cannot build | 28 | Found while gating `X2`: the check compiled each header once and so could not see a header that breaks on the second inclusion. Tagged with PR 28 as `v1.11.0` |
+| **30** | `X3`: drop `--host/--port/--html` from `toffyRunner` | — | CLI-visible, not API: no library code reads them. Lands after `v1.11.0`, so it rides the next tag |
 
 PRs **19–22 are off the critical path** and none of them depends on the ownership work, so
 they can run alongside 9–13. 19 and 20 are worth doing before anything else precisely
