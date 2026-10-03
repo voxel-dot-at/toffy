@@ -28,10 +28,17 @@ This is the plan. What has actually landed is [`status.md`](status.md); item tit
 | **21** | `P3-3` `override` on the four `const`-only filters + `P3-9` the test that a body ran | 1 | Must precede PR 16, or `P2-12` becomes a silent behaviour change instead of a compile error |
 | **22** | `P3-7`, `P3-6`, `P3-5`, `P3-8`, `P3-11` — the small build / robustness / CI fixes | — | Independent of everything above; batch them or run them alongside the structural work |
 | **23** | `P3-2` delete the dead installed `toffy/web/` headers; `P3-10` drop `TOFFY_EXPORT` | 21 | Both touch installed headers, so both go with the same tag decision |
+| **28** | `P3-2` + `P3-12` (`X1`, `X2` of [`plan/controller-extraction.md`](plan/controller-extraction.md)): delete the controller residue, make every installed header compile standalone, gate it in CI | 21 | Landed as the `P3-2` half of the planned PR 23. `P3-10` is the other half of that row and is still open, so it inherits this tag decision rather than opening a new one |
 
 PRs **19–22 are off the critical path** and none of them depends on the ownership work, so
 they can run alongside 9–13. 19 and 20 are worth doing before anything else precisely
 because they change how much of a counter can be trusted.
+
+**These PR numbers are the plan's, not the delivery's.** Work arrived out of the order above
+and was numbered as it landed, so `PR 23` in this table (`P3-2` + `P3-10`) is not `PR 23` in
+[`status.md`](status.md) (`P3-11`). [`status.md`](status.md) is authoritative for what
+shipped; this table is only authoritative for what depends on what. Cite items by their `P`
+or `X` id, never by PR number, when the two could be confused.
 
 ## Notes on the ordering
 
@@ -81,6 +88,13 @@ option that is not acceptable. The asymmetry is what makes PR 8 urgent rather th
 `apps/` *does* get `-DMSVC` on a Windows build and the library does not, so the two halves
 of one program disagree about `Frame`'s layout. See
 [`findings/build.md`](findings/build.md).
+
+**The controller residue (PR 28) was deliberately split from `P3-10`.** Both touch installed
+headers, and the plan paired them so that one tag decision covered both. `P3-2` turned out to
+be the start of a stage (`X1`), and doing it exposed two more broken installed headers (`X2`),
+so it landed alone with the new CI gate. `P3-10` still rides the same tag — see
+[`plan/controller-extraction.md`](plan/controller-extraction.md) for why the residue is
+ABI-neutral and what `toffy-oatpp` needs from here.
 
 **PR 16 cannot start before PR 21.** `P2-12` deletes the `const` `filter()` overload; four
 filters outside core implement only that overload, and three of them never said `override`.

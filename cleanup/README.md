@@ -35,6 +35,7 @@ to be read on its own; nothing here is longer than ~200 lines.
 | `P0-n`, `P1-n`, `P2-n`, `P3-n` | numbered work item | [`plan/`](plan/) |
 | `A1`…`A23`, `B`, `C`, `D`, `E`, `F`, `G`, `H`, `I` | finding, by subject | [`findings/`](findings/) |
 | `S1`…`S9` | second-pass suggestion; `P3-n` is its work item | [`plan/second-pass.md`](plan/second-pass.md) |
+| `X1`…`X6` | controller-extraction stage; `X1` = `P3-2`, `X2` = `P3-12` | [`plan/controller-extraction.md`](plan/controller-extraction.md) |
 | `N1`…`N8` | second-pass finding; filed into the subject chapters | [`findings/audit-2024-09.md`](findings/audit-2024-09.md) |
 | `DOD 1.1`, `DOD 2.4`, … | gate | [`dod/`](dod/) |
 | `PR n` | the delivery unit | [`order.md`](order.md) |

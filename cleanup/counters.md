@@ -2,11 +2,11 @@
 
 **This is the only place a measured number is written down.** Other chapters link here.
 
-Re-measured on `feature/code-cleanup` at `84d1b63` plus the second half of `P3-6`
-(`exportcsv`), i.e. after `P3-1`, `P3-3`, `P3-4`, `P3-7`, `P3-9`, `P3-11`, `A24` and the
-`csv_source` half of `P3-6` landed; GCC 13.3, CMake 3.28.3, default configuration (PCL on,
-BTA on). Every command below is copy-pasteable from the repository root; run them before
-quoting a figure.
+Re-measured on `feature/code-cleanup` at `8689d68` with PR 28 (`P3-2`, `P3-12`, the
+controller-extraction stages X1–X2) applied, i.e. after `P3-1`, `P3-3`, `P3-4`, `P3-7`,
+`P3-9`, `P3-11`, `A24`, `P3-6`, `P3-2` and `P3-12`; GCC 13.3, CMake 3.28.3, default
+configuration (PCL on, BTA on). Every command below is copy-pasteable from the repository
+root; run them before quoting a figure.
 
 An earlier revision of this header cited `4739900`, which is not an ancestor of `HEAD` — it
 was the pre-amend version of the README commit and is unreachable from this branch. Cite a
@@ -44,17 +44,19 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 14a | | tree | **15** (was 16; one went with the orphan) | 0 | |
 | 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **0** in all four configurations, and `toffy_core` is compiled with `-Werror` (`P3-4`) | 0 | ✅ |
 | 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **26** (was 32; −4 from the `Mux` using-declaration, −2 from `csv_source`'s `fscanf` sites now being checked, `P3-6`) — reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
-| 16 | docs describing a product that does not exist | `docs/`, installed headers | **≥ 3** | 0 | |
-| 17 | installed public headers that do not compile | install tree | **4** | 0 | |
+| 16 | artefacts describing the removed web control product | tree | **8** (was 12; the 4 installed headers went with `P3-2`) — enumerated below, because "≥ 3" was not a number | 0 | |
+| 17 | installed public headers that do not compile standalone | install tree | **0** (was 4 by hand, 5 once the check was written: 3 deleted by `P3-2`, 2 fixed by `P3-12`) — 86 of 86 pass, 0 skipped, and the `installed-headers` CI job runs the check on every push | 0 | ✅ |
 | 18 | public headers including the CMake-generated `toffy_export.h` | tree | **7** (was 8; one went with the orphan) — `P3-10` targets 0 | 0 | |
 | 18a | `TOFFY_EXPORT` annotation sites | tree | **17** in 16 headers | 0 | |
 | 19 | CMake `if( ${VAR} )` sites | build | **0** (was 4) — CI now fails on any new one | 0 | ✅ |
 | 20 | `system()` on configuration data | `modules/filters` | **1** | 0 | |
 | 21 | config string used as a `printf` format | `modules/filters` | **0** — `csv_source`'s 2 and `exportcsv`'s 2 are closed (`P3-6`); both filters validate their pattern at config time and expand through `toffy::formatPath`, the one place in the tree where snprintf's format argument is a variable | 0 | ✅ |
 | 22 | files containing hard tabs / files in core | `modules/core` | **11 / 20** | 0 / 20 | |
-| 23 | lines of code | `modules/core` | **4 032** (was 4 021; `P3-4`'s `using` line and `P3-6`'s helpers) | — | |
+| 23 | lines of code | `modules/core` | **4 113** (was 4 032 at `84d1b63`; +81 from `filter_helpers.hpp`, which the previous figure claimed to already count — it was measured before that commit landed) | — | |
 | 24 | `ctest` targets | `tests/` | **11** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`, `exportcsv` by `P3-6`) | ≥ 8 | ✅ |
 | 25 | `const`-only `filter()` overrides that do not say `override` | `modules/`, `libraries/` | **0** (was 3, fixed by `P3-3`; 4 sites now carry it) | 0 | ✅ |
+| 26 | `WITH_CONTROL` sites — a symbol no build file defines | tree | **0** (was 5: 3 in `initPlugin.cpp`, 2 in `initPlugin.hpp`; `P3-2`) | 0 | ✅ |
+| 27 | `toffyRunner` options describing a server that never starts | `apps/` | **3** (`--host/-h`, `--port/-p`, `--html/-d`; parsed, printed, used by nothing) — `X3` targets 0 | 0 | |
 
 ## The commands
 
@@ -74,7 +76,9 @@ grep -rnE '(^|[^:a-zA-Z_.])(std::)?cout *<<' $SRC --include=*.cpp --include=*.hp
 # 6, 7, 8 — build noise and vestigial macros. Scope is the TREE, not modules/.
 grep -rn "#warning" modules/ libraries/ apps/ | NC
 grep -rn "DLLExport" modules/ libraries/ apps/ | NC
-grep -rn "define RAWFILE" modules/ libraries/ apps/
+# 8 counts HEADERS, and the one header defines the macro twice (one per branch of an
+# #ifdef), so `grep -n` returns 2 lines for a counter of 1. Use -l.
+grep -rl "define RAWFILE" modules/ libraries/ apps/
 grep -rnE "define (WIN|UNIX)\b" modules/ libraries/ apps/
 
 # 9, 10 — layering and the wrong synchronisation primitive
@@ -104,10 +108,40 @@ cd build && touch ../modules/core/src/*.cpp && make toffy_core 2>&1 | grep -c "w
 #       on a CLEAN build: an up-to-date tree emits nothing and reports 0.
 cmake --build build -j"$(nproc)" 2>&1 | tools/warning_report.sh -
 
-# 17 — installed headers that cannot compile (needs a build dir)
+# 17 — installed headers that cannot compile (needs a build dir).
+# The hand version of this check found 4 and missed 1; the script is the counter now.
+# Scope: the *installed* tree, not the source include dirs - only what `install()` ships
+# is a public header. Third-party include flags are required or every OpenCV/PCL header is
+# reported as "skipped" and the run proves nothing (the script exits 2 if it tested none).
 cmake --build build --target install -- DESTDIR=/tmp/ti >/dev/null
-printf '#include <toffy/web/common/plugins.hpp>\n' | g++ -std=c++17 -fsyntax-only \
-    -I/tmp/ti/usr/local/include -x c++ -
+tools/installed_header_check.sh /tmp/ti/usr/local/include \
+    $(pkg-config --cflags opencv4 pcl_common)
+#   86 total, 86 ok, 0 skipped, 0 broken. Drop the PCL flags for a WITHOUT_PCL build and
+#   the pcl-dependent headers move from "ok" to "skipped", which the run reports.
+#   pkg-config, not hardcoded -I flags: the PCL directory is versioned (/usr/include/pcl-1.14
+#   today) and bta/ni/openni2 are only on a machine that has the SDK. The CI job stages with
+#   `cmake --install build --prefix $PWD/stage` after building only the `toffy` target, which
+#   is the cheapest tree install() accepts - the apps and tests are not installed.
+
+# 16 — artefacts describing the removed web control product. Countable, unlike the "≥ 3"
+#      it replaces: 4 installed headers (P3-2) + use.dox + 3 screenshots + 3 CLI options
+#      + 1 Player @todo = 12 before, 8 now.
+grep -rn "toffy/web" modules libraries apps | wc -l                       # 0
+ls docs/mainpages/public/use.dox 2>/dev/null | wc -l                      # 1
+ls docs/extraDocs/images/control_*.png | wc -l                            # 3
+grep -cE '"(host|port|html),[a-z]"' apps/main.cpp                         # 3
+grep -rn "web control" modules/core | wc -l                               # 1
+
+# 26 — the build symbol nothing builds. `WITH_CONTROL` was never defined by any CMake file
+#      in any configuration, and the toffy_web/ headers it guarded do not exist, so the
+#      branch could not be compiled even by defining it by hand.
+grep -rn "WITH_CONTROL" modules libraries apps | wc -l
+
+# 27 — CLI options that advertise a server which never starts. Match the *definition*
+#      sites (`"host,h"`, not the bare word host) and check the uses separately: each of
+#      the three is read exactly once, in the `cout` line that prints it.
+grep -cE '"(host|port|html),[a-z]"' apps/main.cpp     # 3 definitions
+grep -nE 'vm\["(host|port|html)"\]' apps/main.cpp     # 3 uses, all `cout <<`
 
 # 18 — the generated export header
 grep -rn "^[[:space:]]*#[[:space:]]*include *[<\"]toffy/toffy_export.h" modules libraries apps
@@ -156,7 +190,23 @@ for f in "" "-DWITHOUT_PCL=ON" "-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON" \
 done
 ```
 
-## Notes on three of these numbers
+## Notes on some of these numbers
+
+**17 (0, was 4, was 5).** The hand check that produced the 4 compiled one header and read
+its error. The script compiles all 86 and classifies every failure, and it found a fifth the
+hand check had missed: `libraries/graphs/graph_utils.hpp` uses `cv::line` and
+`contour_utils.hpp` uses `cv::Point`, both of which compiled only when some other header
+happened to pull OpenCV in first. A downstream user including `graph_utils.hpp` alone got an
+undeclared-identifier error, and no build in this repository could ever have noticed, because
+nothing in it includes those two headers without including OpenCV beforehand. Two of the five
+were therefore *fixed* (`P3-12`) and three *deleted* (`P3-2`). The counter is now a CI gate
+rather than a figure: see `tools/installed_header_check.sh` and the `installed-headers` job in
+`.github/workflows/ci.yml`.
+
+**16 (8, was "≥ 3").** "≥ 3" is not a number and it was not reproducible. The artefacts are
+now enumerated one by one in the command block: 4 installed headers, `use.dox`, 3
+screenshots, 3 CLI options, 1 `Player` `@todo`. `P3-2` closed the first four; `X3` and `X4`
+close the rest.
 
 **5 (128 vs 129).** Both figures have been quoted. The strict pattern above gives 128;
 counting `std::cout` (29) and bare `cout` (100) separately gives 129. They differ at
@@ -185,5 +235,6 @@ The tree-wide figure (15a) is **not** gated: 28 warnings remain outside core and
 `modules/core` (`P3-11`). It is a build-log reader, so its scope is whatever the compiler
 was told to compile — and its number is configuration-dependent in a way core's is not:
 the same tree emits **28** (Release, PCL on, BTA on), **25** (Release, PCL off, BTA off)
-and **16** (Debug, PCL on, BTA off — the CI configuration), because `-Wmaybe-uninitialized`,
+and **16** (Debug, PCL on, BTA off — the CI configuration; counter 16 is a different 16),
+because `-Wmaybe-uninitialized`,
 7 of the 28, is only diagnosed with optimisation on. Quote the configuration.

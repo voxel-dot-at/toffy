@@ -17,16 +17,18 @@ and none of it depends on the ownership work, so it can all run alongside.
 | `P3-6` | `S6` | config string as `printf` format; check `fscanf` | 3 files | low | ✅ | 2 `-Wunused-result`, silently corrupt frames, a config-sized VLA |
 | `P3-5` | `S5` | `objectTrack`: `system()` → `execv`, or delete | 1 function | low | ❌ | the only `system()` in the tree |
 | `P3-9` | `S3` (gate) | a test that a filter's body actually ran | 1 test | none | ✅ | separates "compiles" from "works" |
-| `P3-2` | `S2` | delete the dead, installed `toffy/web/` headers | 4 files | API — needs a tag | ❌ | an installed header that cannot compile |
+| `P3-2` | `S2` | delete the dead, installed `toffy/web/` headers | 4 files + 2 sources | API — tag pending | ✅ | counter 17, `X1` of [`controller-extraction.md`](controller-extraction.md) |
+| `P3-12` | `S2` (follow-up) | make every installed header compile, and keep it that way | 2 headers + 1 tool + CI | none | ✅ | counter 17 at 0, gated |
 | `P3-8` | `S8` | `toffy_tracking` layering inversion | CMake | low | ❌ | — |
 | `P3-10` | — | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | none on the shipped ABI | ❌ | `DOD 18`; one less generated header in the public API |
 | `P3-11` | `S9` | CI warning counter, without changing the build | CI | none | ✅ | visibility of the 26 non-core warnings |
 
 `P3-1`, `P3-4`, `P3-3` and `P3-7` were together roughly fifteen lines, carried no behaviour
 change, and each one either removed a false green or made a later change compile-checked.
-All four are done, as are `P3-9`, `P3-11` and `P3-6`. What is left of this document is one
-`modules/filters` safety item (`P3-5`, the `system()` call), the mechanical `P3-10`, the
-`P3-8` note, and `P3-2` — which, like `P2-12`, is an API change and belongs with a tag.
+All four are done, as are `P3-9`, `P3-11`, `P3-6`, `P3-2` and `P3-12`. What is left of this
+document is one `modules/filters` safety item (`P3-5`, the `system()` call), the mechanical
+`P3-10`, and the `P3-8` note. `P3-2` was the last API change in this band and it is merged;
+the tag it needs is still outstanding (see [`status.md`](../status.md)).
 
 ---
 
@@ -50,19 +52,38 @@ Two consequences, both already measured in [`../counters.md`](../counters.md):
 headers, nothing references them. Until then, criteria 7 and 8c report green while the
 pattern they hunt is in the tree.
 
-## `P3-2` — delete the dead `toffy/web/` headers
+## `P3-2` — delete the dead `toffy/web/` headers — **done**
 
-`make install` ships four headers, one of which cannot be included at all:
+`make install` shipped four headers, one of which could not be included at all:
 `libraries/include/toffy/web/common/plugins.hpp` includes
-`toffy/web/controllerFactory.hpp`, which exists nowhere in the repository. They are
-leftovers of the web control UI removed in `54d9577`, and they are *installed*, i.e. part
+`toffy/web/controllerFactory.hpp`, which exists nowhere in the repository. They were
+leftovers of the web control UI removed in `54d9577`, and they were *installed*, i.e. part
 of the shipped public API surface. Evidence and the reproduction:
 [`../findings/build.md`](../findings/build.md).
 
-Deleting them is an API removal, so `../dod/stage-gates.md` §2.4 applies (tag +
-`tools/api_change_report.sh`) even though the risk is close to nil. It also removes the
-need for the `use.dox` rewrite in the same area — the page and the headers describe the
-same dead product.
+Deleted, together with the `#ifdef WITH_CONTROL` hooks in `modules/bta` that were the only
+remaining in-tree references — a symbol no build file has ever defined, guarding includes of
+headers that do not exist. The full inventory, and what `toffy-oatpp` still needs from this
+side: [`controller-extraction.md`](controller-extraction.md).
+
+Measured, not asserted (`DOD 2.4`): the exported dynamic symbol set of `libtoffy.so` is
+**identical** before and after — 2 889 defined symbols on each side, `diff` empty, Release /
+PCL-on / BTA-on on both sides, the base built from an export of `8689d68` and the head from
+the working tree:
+
+```sh
+readelf --dyn-syms -W build/libtoffy.so | awk '$7!="UND"{print $8}' | sort > /tmp/abi.txt
+```
+
+An earlier revision of this paragraph quoted 2 199 symbols for a PCL-off build. The figure is
+configuration-dependent — PCL pulls most of the symbol table — so quote it with its
+configuration or not at all; 2 889 is what the command above returns in the default
+configuration. What matters for the gate is that the two sets are equal, and they are.
+
+`api_change_report.sh v1.10.0` exits 1 as it must, because installed headers changed. **The
+version tag is still owed** and is the one thing standing between this commit and a release:
+`SOVERSION` comes from `git describe`, so until a tag is pushed this tree still advertises
+`libtoffy.so.1.10.0`.
 
 ## `P3-3` — make the four `const`-only filters `override` first — **done**
 
@@ -308,3 +329,43 @@ nothing. Note the last two rows: **the tree-wide count is configuration-dependen
 same tree emits 16 in Debug and 25 in Release (PCL off, BTA off in both), because
 `-Wmaybe-uninitialized` (7 of them, the K3M cluster) is only diagnosed with optimisation
 on. Quote the configuration with 15a.
+
+## `P3-12` — make every installed header compile, and keep it that way — **done**
+
+Found while doing `P3-2`. The hand check that produced counter 17 compiled one header, read
+one error, and reported 4. Writing the loop and running it over all 90 installed headers
+found a fifth:
+
+| header | error | why no build ever saw it |
+|---|---|---|
+| `libraries/graphs/graph_utils.hpp` | `'line' was not declared in this scope` | uses `cv::line`; `graph.hpp` brings `opencv2/core.hpp`, which does not declare it |
+| `libraries/graphs/contour_utils.hpp` | `'cv' was not declared` (as `cv::Point`, `cv::Vec2f`, `cv::Mat`, `cv::Scalar`) | compiled only when a previous include happened to pull OpenCV in |
+
+Both are `static` inline helpers in installed headers, so the defect only appears for a
+downstream user — and only for one who includes that header first, which no file in this
+repository does. That is the class: **the library building is not evidence that the headers
+a user actually includes can be compiled.** It is the same failure mode as `P3-2`, one level
+down, and `P3-2` alone would have left it in place.
+
+**Do:** add the missing includes (`opencv2/imgproc.hpp`, `opencv2/core.hpp`) rather than
+delete, since both headers are used by `libraries/src/graphs`; then automate the check so
+the class cannot return — `tools/installed_header_check.sh`, which compiles every installed
+header as the *only* include of a translation unit, the way a user does.
+
+**Classification is the whole design.** A missing header is a finding only when the missing
+file is ours: `toffy/…` or `toffy_web/…` missing is BROKEN (the `P3-2` bug class), while
+`opencv2/…` or `pcl/…` missing means the dependency is absent from this configuration and
+the header was *not tested* — reported as skipped, not as a failure, and not silently. A run
+that tests nothing exits 2, because a check that reports green on zero cases is how gates
+die.
+
+**Measured:** 90 installed headers before, 86 after `P3-2`; 5 broken before, **0 after**
+(3 deleted, 2 fixed), with 0 skipped — every header tested, in the default configuration.
+Verified in both directions: 86 of 86 installed headers pass on the tree (0 skipped, so the
+run tested everything), and re-adding a `toffy/web/common/plugins.hpp` that includes the
+nonexistent `toffy/web/controllerFactory.hpp` makes the script exit 1 naming that header. The
+gate is the `installed-headers` job in `.github/workflows/ci.yml`, which configures, builds
+only the `toffy` target (the only installed artifact besides the headers — the apps and tests
+are not installed, so this is the cheapest tree `cmake --install` will accept), stages it with
+`--prefix`, and runs the script with `$(pkg-config --cflags opencv4 pcl_common)` so the
+versioned PCL include path is not hardcoded.

@@ -76,7 +76,8 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | Item | Title | Size | State |
 |---|---|---|---|
 | `P3-1` | widen the verification scope; delete the `libraries/sensor/` orphan | 2 files | ✅ |
-| `P3-2` | delete the dead, installed `toffy/web/` headers | 4 files | ❌ API |
+| `P3-2` | delete the dead, installed `toffy/web/` headers | 4 files + 2 sources | ✅ API, tag owed |
+| `P3-12` | make every installed header compile; gate it | 2 headers + tool + CI | ✅ |
 | `P3-3` | make the four `const`-only filters `override` before `P2-12` | 4 sites | ✅ |
 | `P3-4` | `using Filter::filter;` in `Mux`; `-Werror` on core | 1 line | ✅ |
 | `P3-5` | `objectTrack`: `system()` on config data | 1 function | ❌ |
@@ -86,3 +87,19 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P3-9` | a test that a filter's body actually ran | 1 test | ✅ |
 | `P3-10` | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | ❌ |
 | `P3-11` | CI warning counter, without changing the build | CI | ✅ |
+
+### `X` — the controller extraction ([`controller-extraction.md`](controller-extraction.md))
+
+A separate id space, because it is a decision about where a product lives rather than a
+cleanup item: the web control UI is now `toffy-oatpp`'s, and these are the stages of moving
+what is left of it out of this repository. `X1` is `P3-2` and `X2` is `P3-12`; `X3`–`X6`
+have no `P` number because they were only identified while doing those two.
+
+| Stage | Title | State |
+|---|---|---|
+| `X1` | delete the four `toffy/web/` headers and the `WITH_CONTROL` hooks (= `P3-2`) | ✅ |
+| `X2` | every installed header compiles standalone, and CI keeps it that way (= `P3-12`) | ✅ |
+| `X3` | drop `--host/--port/--html` from `toffyRunner` | ❌ |
+| `X4` | rewrite `use.dox` around `toffyRunner`; screenshots to toffy-oatpp | ❌ |
+| `X5` | the C++ API `toffy-oatpp` binds to, and the five items it waits on | ❌ |
+| `X6` | plugin ABI: keep the filter half, do not rehost the controller half | decision, taken |

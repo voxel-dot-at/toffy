@@ -165,7 +165,7 @@ new debug prints in core will at least say `std::cout` and be countable.
 
 Second-pass audit, measured on `e943a37`. The audit record itself — the re-verification table and the scope bug behind the two false zeros — is in [`audit-2024-09.md`](audit-2024-09.md).
 
-### N1 — `make install` ships a public header that does not compile
+### N1 — `make install` ships a public header that does not compile — **FIXED (`P3-2`, `P3-12`)**
 
 `libraries/CMakeLists.txt:11` is `install(DIRECTORY "include/" DESTINATION "include/")`, which
 installs `libraries/include/toffy/web/` wholesale. One of those headers is broken:
@@ -190,11 +190,27 @@ noted that `docs/use.dox` still documents that removed product
 ([`documentation.md`](documentation.md)), but not the headers themselves — and not the fact
 that they are *installed*, i.e. part of the shipped public API surface.
 
-**Suggestion S2 — delete `libraries/include/toffy/web/` and `modules/bta/include/toffy/web/`.**
-This is an API removal, so per `DOD 2.4` it needs a version tag and a run of
-`tools/api_change_report.sh`. It is a removal of headers that cannot compile, so the risk is
-close to nil, but the gate still applies. Doing it also removes the need for the `use.dox`
-rewrite in the same area: the page and the headers describe the same dead product.
+**Suggestion S2 — delete `libraries/include/toffy/web/` and `modules/bta/include/toffy/web/`**
+— **done**, together with the `#ifdef WITH_CONTROL` hooks in `modules/bta` that were the only
+in-tree references, and with the version decision recorded against `DOD 2.4`.
+
+Two things the hand check in this section got wrong, both fixed by
+`tools/installed_header_check.sh` (`P3-12`):
+
+- **4 was really 5.** Compiling *all* 90 installed headers rather than the one named above
+  found `libraries/graphs/graph_utils.hpp` (`'line' was not declared`) and
+  `libraries/include/toffy/graphs/contour_utils.hpp` (`'cv' was not declared`), which
+  compiled only when another header had pulled OpenCV in first. Both are fixed by adding the
+  include, not by deleting: `libraries/src/graphs` uses them.
+- **Two `install(DIRECTORY …)` rules ship that tree, not one.** `libraries/CMakeLists.txt:11`
+  and `modules/bta/CMakeLists.txt:3` both install their `include/` wholesale, which is why
+  the four files appear under two different source directories. The reproduction above listed
+  all four but compiled one of them. The check walks the *installed* tree, so it does not
+  matter which `install()` rule put a header there — that is the scoping bug class of
+  [`audit-2024-09.md`](audit-2024-09.md), one level down.
+
+The residue inventory, the ABI evidence and what `toffy-oatpp` needs from this side is in
+[`../plan/controller-extraction.md`](../plan/controller-extraction.md).
 
 ### N6 — ~~the `if( ${VAR} )` bug class is still in the build~~ **FIXED (`P3-7`)**
 

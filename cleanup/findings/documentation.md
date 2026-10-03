@@ -62,10 +62,17 @@ the mechanism: it is referenced nowhere in the build.)
 `bta.xml` exists **three** times — `docs/configDocs/bta.xml`, `docs/descDocs/bta.xml` and
 `docs/configDocs/xmls/bta.xml` — duplicated reference material that will drift.
 
-**The dead product is installed, not just documented.** `use.dox` is the documentation half
-of the problem; the other half ships. `make install` installs
-`libraries/include/toffy/web/` and `modules/bta/include/toffy/web/` — four headers from the
-web control UI removed in `54d9577`, one of which includes a file that does not exist
-anywhere in the repository, so it cannot be compiled by anyone. Evidence and the
-reproduction: [`build.md`](build.md). `P3-2` deletes them, which closes this finding and
-the `use.dox` page together.
+**~~The dead product is installed, not just documented.~~ Headers FIXED (`P3-2`); the page
+is `X4`.** `use.dox` was the documentation half of the problem; the other half *shipped*.
+`make install` installed `libraries/include/toffy/web/` and `modules/bta/include/toffy/web/`
+— four headers from the web control UI removed in `54d9577`, one of which includes a file
+that does not exist anywhere in the repository, so it cannot be compiled by anyone. Evidence
+and the reproduction: [`build.md`](build.md). `P3-2` deleted them.
+
+That closes the shipping half, and it is the half that mattered: a doc page can be ignored,
+an installed header cannot. What is left of the product in the docs is now counted rather
+than estimated — counter 16 in [`../counters.md`](../counters.md) enumerates `use.dox`, the
+three `control_*.png` screenshots, the three `toffyRunner` options and the `Player` `@todo`.
+`X3` and `X4` in
+[`../plan/controller-extraction.md`](../plan/controller-extraction.md) close them; the
+screenshots belong to `toffy-oatpp`, which is where the UI they show now lives.
