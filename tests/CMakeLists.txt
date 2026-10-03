@@ -62,3 +62,9 @@ target_link_libraries(test_csv_source toffy GTest::gtest GTest::gtest_main)
 target_compile_definitions(test_csv_source
     PRIVATE TOFFY_TEST_CSV_DIR="${CMAKE_CURRENT_SOURCE_DIR}/xml/csv")
 add_test(NAME csv_source COMMAND test_csv_source)
+
+# P3-6 (second half): ExportCSV used options/pattern as a printf format, the
+# same finding N5 defect CSVSource had. Writes into gtest's temp dir only.
+add_executable(test_exportcsv test_exportcsv.cpp)
+target_link_libraries(test_exportcsv toffy GTest::gtest GTest::gtest_main)
+add_test(NAME exportcsv COMMAND test_exportcsv)

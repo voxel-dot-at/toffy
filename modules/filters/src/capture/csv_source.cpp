@@ -13,7 +13,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <cctype>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -29,6 +28,7 @@
 #include <boost/log/trivial.hpp>
 
 #include <opencv2/highgui.hpp>
+#include <toffy/filter_helpers.hpp>
 #include <toffy/io/csv_source.hpp>
 
 using namespace std;
@@ -37,77 +37,13 @@ using namespace toffy::capturers;
 
 const std::string CSVSource::id_name = "csvSource";  ///< Filter identifier
 
-namespace {
-
-/**
- * N5 / P3-6: is this string safe to hand to `snprintf` as a format?
- *
- * `_depthPattern` and `_amplPattern` come straight out of the XML config and are
- * used as the *format* argument of `snprintf(buf, size, fmt, sequence)`.
- * A format string that does not match its single `int` argument is undefined
- * behaviour, and `-Wformat` cannot help because the format is not a literal.
- * Validate once, at config time, instead of trusting every config file in the
- * wild to be a C format-string expert.
- *
- * Accepted: no conversion at all, or exactly one signed-decimal conversion
- * (`%d` or `%i`, with optional flags, field width and precision), plus `%%`
- * literals. That covers the documented usage (`data/%05d_d.csv`) and rejects
- * the dangerous cases (`%s` reads a pointer from a stack that holds an int,
- * `%f`/`%x` misread it, and a second conversion reads past the argument).
+/*
+ * N5 / P3-6: the pattern validator and the checked expansion helper moved to
+ * toffy/filter_helpers.hpp when ExportCSV turned out to have the same defect -
+ * two copies of a security-relevant parser drift. See finding N5, item P3-6.
  */
-bool validSequencePattern(const std::string& pattern, std::string& why) {
-  int conversions = 0;
-  for (std::size_t i = 0; i < pattern.size(); ++i) {
-    if (pattern[i] != '%') continue;
-    ++i;  // skip the '%'
-    if (i >= pattern.size()) {
-      why = "pattern ends in a bare '%'";
-      return false;
-    }
-    if (pattern[i] == '%') continue;  // "%%" is a literal percent
-    while (i < pattern.size() && std::strchr("-+ 0#", pattern[i])) ++i;
-    while (i < pattern.size() &&
-           std::isdigit(static_cast<unsigned char>(pattern[i])))
-      ++i;
-    if (i < pattern.size() && pattern[i] == '.') {
-      ++i;
-      while (i < pattern.size() &&
-             std::isdigit(static_cast<unsigned char>(pattern[i])))
-        ++i;
-    }
-    if (i >= pattern.size()) {
-      why = "pattern ends inside a conversion";
-      return false;
-    }
-    const char conv = pattern[i];
-    if (conv != 'd' && conv != 'i') {
-      why = std::string("'%") + conv +
-            "' is not a signed-decimal conversion; the only argument supplied "
-            "is the frame counter (an int)";
-      return false;
-    }
-    if (++conversions > 1) {
-      why = "more than one conversion; only the frame counter is supplied";
-      return false;
-    }
-  }
-  return true;
-}
-
-/**
- * N5 / P3-6: expand a file-name pattern and report truncation.
- *
- * Returns false when the expansion did not fit in `size`; `buf` then holds the
- * truncated result, which used to be opened as if it were the intended file.
- */
-bool formatPath(char* buf, std::size_t size, const std::string& fmt,
-                int sequence) {
-  const int n = snprintf(buf, size, fmt.c_str(), sequence);
-  return n >= 0 && static_cast<std::size_t>(n) < size;
-}
-
-}  // namespace
-
+using toffy::validSequencePattern;
+using toffy::formatPath;
 CSVSource::CSVSource(): CapturerFilter(CSVSource::id_name, 0),
      width(160), height(120),
       _amplPattern("data/%05d_a.csv"),

@@ -2,10 +2,11 @@
 
 **This is the only place a measured number is written down.** Other chapters link here.
 
-Re-measured on `feature/code-cleanup` at `4f98b73` plus the `P3-6` csv_source work, i.e.
-after `P3-1`, `P3-3`, `P3-4`, `P3-7`, `P3-9`, `P3-11` and `A24` landed; GCC 13.3, CMake
-3.28.3, default configuration (PCL on, BTA on). Every command below is copy-pasteable from
-the repository root; run them before quoting a figure.
+Re-measured on `feature/code-cleanup` at `84d1b63` plus the second half of `P3-6`
+(`exportcsv`), i.e. after `P3-1`, `P3-3`, `P3-4`, `P3-7`, `P3-9`, `P3-11`, `A24` and the
+`csv_source` half of `P3-6` landed; GCC 13.3, CMake 3.28.3, default configuration (PCL on,
+BTA on). Every command below is copy-pasteable from the repository root; run them before
+quoting a figure.
 
 An earlier revision of this header cited `4739900`, which is not an ancestor of `HEAD` — it
 was the pre-amend version of the README commit and is unreachable from this branch. Cite a
@@ -22,7 +23,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 1 | `P0` correctness items closed, each with a regression test | — | **12/12** | 12/12 | ✅ |
 | 2 | `P1`/`P2` plan items closed | 16 items | **4/16** (`P1-1`, `P2-8`, `P2-14`, `P2-16`) | 16/16 | |
 | 3 | CI configures, builds and runs `ctest` on every push | `.github/` | matrix + sanitizers | required | ✅ |
-| 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` configurations | build | **4/4**, 9/9 ctest each | 4/4 | ✅ |
+| 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` configurations | build | **4/4**, 11/11 ctest each | 4/4 | ✅ |
 | 5 | debug prints in library code | `modules/` | **128** | 0 | |
 | 5a | | `modules/core` | **0** | 0 | ✅ |
 | 5b | | `libraries/` | **97** | 0 | ⚠️ never counted |
@@ -49,10 +50,10 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 18a | `TOFFY_EXPORT` annotation sites | tree | **17** in 16 headers | 0 | |
 | 19 | CMake `if( ${VAR} )` sites | build | **0** (was 4) — CI now fails on any new one | 0 | ✅ |
 | 20 | `system()` on configuration data | `modules/filters` | **1** | 0 | |
-| 21 | config string used as a `printf` format | `modules/filters` | **3** in 1 file — `exportcsv.cpp` 92,100,103. `csv_source`'s 2 are closed (`P3-6`): both patterns are validated at config time and both expansions go through one checked helper | 0 | |
+| 21 | config string used as a `printf` format | `modules/filters` | **0** — `csv_source`'s 2 and `exportcsv`'s 2 are closed (`P3-6`); both filters validate their pattern at config time and expand through `toffy::formatPath`, the one place in the tree where snprintf's format argument is a variable | 0 | ✅ |
 | 22 | files containing hard tabs / files in core | `modules/core` | **11 / 20** | 0 / 20 | |
-| 23 | lines of code | `modules/core` | **4 021** | — | |
-| 24 | `ctest` targets | `tests/` | **10** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`) | ≥ 8 | ✅ |
+| 23 | lines of code | `modules/core` | **4 032** (was 4 021; `P3-4`'s `using` line and `P3-6`'s helpers) | — | |
+| 24 | `ctest` targets | `tests/` | **11** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`, `exportcsv` by `P3-6`) | ≥ 8 | ✅ |
 | 25 | `const`-only `filter()` overrides that do not say `override` | `modules/`, `libraries/` | **0** (was 3, fixed by `P3-3`; 4 sites now carry it) | 0 | ✅ |
 
 ## The commands
@@ -125,11 +126,14 @@ git ls-files -z '*.cmake' '*CMakeLists.txt' \
 grep -rn "system(" modules/filters --include=*.cpp
 # 21 — a config string passed as snprintf's format argument. The variables are
 #      _depthPattern/_amplPattern/_filePattern, so the "_pattern" grep this counter used to
-#      carry matched nothing at all, and the figure was being carried on trust.
-grep -rnE "snprintf\([^;]*[Pp]attern" modules libraries --include=*.cpp
-#   3 sites: exportcsv.cpp:92,100,103. csv_source's two are gone: its expansion is
-#   centralised in a helper whose parameter is called `fmt`, not `pattern`, which is
-#   what makes the choke point distinguishable from an unvalidated call site.
+#      carry matched nothing at all, and the figure was being carried on trust. Match on the
+#      *format* position (third argument), not on the string "pattern" appearing anywhere in
+#      the call, or the checked `snprintf(buf, size, "%s", pattern.c_str())` fallback counts
+#      as a finding when it is exactly what the fix asks for.
+grep -rnE 'snprintf\([^,]*,[^,]*,[[:space:]]*_[A-Za-z0-9_]*[Pp]attern\.c_str\(\)' modules libraries --include=*.cpp
+#   0 sites. The one remaining variable-format snprintf is the choke point itself,
+#   toffy::formatPath in filter_helpers.hpp, whose parameter is deliberately called `fmt`;
+#   every caller has validated the pattern before reaching it.
 
 # 25 — const-only filter() overrides with no override keyword. Each one is a filter
 #      P2-12 would silently turn into a new virtual that overrides nothing: compiles,

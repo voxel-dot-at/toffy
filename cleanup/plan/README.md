@@ -80,7 +80,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P3-3` | make the four `const`-only filters `override` before `P2-12` | 4 sites | ✅ |
 | `P3-4` | `using Filter::filter;` in `Mux`; `-Werror` on core | 1 line | ✅ |
 | `P3-5` | `objectTrack`: `system()` on config data | 1 function | ❌ |
-| `P3-6` | `csv_source`: check `fscanf`, validate the pattern | ~10 lines | ❌ |
+| `P3-6` | `csv_source` + `exportcsv`: check `fscanf`, validate the pattern | 3 files | ✅ |
 | `P3-7` | `if( ${VAR} )` → `if(VAR)`, 4 sites | 4 lines | ✅ |
 | `P3-8` | `toffy_tracking` layering inversion | CMake | ❌ |
 | `P3-9` | a test that a filter's body actually ran | 1 test | ✅ |

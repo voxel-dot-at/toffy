@@ -14,7 +14,7 @@ and none of it depends on the ownership work, so it can all run alongside.
 | `P3-4` | `S4` | `using Filter::filter;` in `Mux`, then `-Werror` on core | 1 line + CMake | none | ✅ | `DOD 15`, `P2-16`'s last sub-item |
 | `P3-3` | `S3a` | `override` on the four `const`-only filters | 8 sites | none | ✅ | makes `P2-12` compile-checked |
 | `P3-7` | `S7` | `if( ${VAR} )` → `if(VAR)` | 4 lines | none | ✅ | a class of silent build breakage |
-| `P3-6` | `S6` | config string as `printf` format; check `fscanf` | 2 files | low | 🟡 `csv_source` done, `exportcsv` open | 2 `-Wunused-result`, silently corrupt frames |
+| `P3-6` | `S6` | config string as `printf` format; check `fscanf` | 3 files | low | ✅ | 2 `-Wunused-result`, silently corrupt frames, a config-sized VLA |
 | `P3-5` | `S5` | `objectTrack`: `system()` → `execv`, or delete | 1 function | low | ❌ | the only `system()` in the tree |
 | `P3-9` | `S3` (gate) | a test that a filter's body actually ran | 1 test | none | ✅ | separates "compiles" from "works" |
 | `P3-2` | `S2` | delete the dead, installed `toffy/web/` headers | 4 files | API — needs a tag | ❌ | an installed header that cannot compile |
@@ -24,10 +24,9 @@ and none of it depends on the ownership work, so it can all run alongside.
 
 `P3-1`, `P3-4`, `P3-3` and `P3-7` were together roughly fifteen lines, carried no behaviour
 change, and each one either removed a false green or made a later change compile-checked.
-All four are done, as are `P3-9` and `P3-11`. What is left of this document is the two
-`modules/filters` safety items (`P3-6`'s `exportcsv` half and `P3-5`), the mechanical
-`P3-10`, the `P3-8` note, and `P3-2` — which, like `P2-12`, is an API change and belongs
-with a tag.
+All four are done, as are `P3-9`, `P3-11` and `P3-6`. What is left of this document is one
+`modules/filters` safety item (`P3-5`, the `system()` call), the mechanical `P3-10`, the
+`P3-8` note, and `P3-2` — which, like `P2-12`, is an API change and belongs with a tag.
 
 ---
 
@@ -99,8 +98,10 @@ all four sites fail to compile, which is exactly the outcome the finding asked f
 `const` drop then happens in the same commit as the base change, so the two cannot drift.
 
 **Verified:** full `DOD 1.1` matrix — 4/4 configurations build, 8/8 `ctest` in each, warning
-counts unchanged (28 / 27 / 26 / 25). No test is added by this item, because it changes no
-runtime path — the fence that distinguishes "compiles" from "runs" is `P3-9`, still open.
+counts unchanged (28 / 27 / 26 / 25). No test was added by this item, because it changes no
+runtime path — the fence that distinguishes "compiles" from "runs" is `P3-9`, which has since
+landed as `tests/test_filter_overloads.cpp` and covers both override shapes through
+`FilterBank::filter()`.
 
 ## `P3-4` — `using Filter::filter;` in `Mux`, then `-Werror` on core
 
@@ -124,7 +125,7 @@ Replace with `posix_spawn` or `fork`+`execv` on an argv array, or delete the fea
 `objectTrack` is in `modules/filters`, outside the programme's stated scope, but this is a
 one-function change and the only `system()` call in the tree.
 
-## `P3-6` — config strings used as `printf` formats — **csv_source done, exportcsv open**
+## `P3-6` — config strings used as `printf` formats — **done**
 
 A config string is used as a `snprintf` format (undefined behaviour if it is not a valid
 format string, and `-Wformat` cannot help because it is not a literal), and two `fscanf`
@@ -154,10 +155,40 @@ Five tests, four of them observed failing on the parent commit:
 
 Tree warnings 28 → **26**: the two `-Wunused-result` reports on the `fscanf` calls are gone.
 
-**What is left.** `exportcsv.cpp:92,100,103` — same finding, three sites, plus a
-`char path[_filePattern.length() + 64]` VLA whose size comes from the config file. The
-validator should move to `filter_helpers.hpp` (its stated purpose is helpers for filter
-implementations) and be shared rather than duplicated. Counter 21: 5 → 3, target 0.
+**What landed (`exportcsv`, the second half).** The validator and the checked expansion moved
+to `toffy/filter_helpers.hpp` — `toffy::validSequencePattern` and `toffy::formatPath` — and
+`csv_source` now uses them from there rather than keeping its own copy: two copies of a
+security-relevant parser drift, and the header's stated purpose is helpers for filter
+implementations. `ExportCSV` then got the same treatment: `options/pattern` is validated in
+`updateConfig` (which `loadConfig` calls), rejecting with the reason in the log and keeping
+the pattern that already worked, and all three expansions are bounded — two through
+`formatPath`, and the no-conversion fallback through a literal-`"%s"` `snprintf` whose result
+is checked. The `char path[_filePattern.length() + 64]` VLA, whose size came from the config
+file, is a fixed 4 096.
+
+Five tests (`tests/test_exportcsv.cpp`, ctest target `exportcsv`); two were observed failing
+on the parent commit:
+
+| test | pre-fix behaviour |
+|---|---|
+| `FormatStringThatIsNotAnIntConversionIsRejected` | **segfault** — `updateConfig` installed `"%s%s"` and the next frame read two pointers out of the stack slot holding the counter |
+| `ARejectedPatternIsAlsoRejectedAtLoadTime` | `getConfig()` reported `%f.csv` as the pattern: it had been accepted |
+| `ValidPatternExpandsTheSequenceCounter` | passed before the fix — pins the sequence path the rewrite touches |
+| `PatternUsesTheFrameSlotRatherThanTheInternalCounter` | passed before the fix — pins the `options/fc` path the rewrite touches |
+| `OverlongExpansionWritesNothing` | passed before the fix too — the VLA was sized from the pattern, so the pre-fix code also wrote no file; this is a pin and a diagnostic, not a fence |
+
+Tree warnings **unchanged at 26**: this half removed none (the `fscanf` sites were the
+`csv_source` half's), and it added none. The one warning still in `exportcsv.cpp` is
+`saveMatCSV`'s unused `skipZeroes` parameter — a separate defect, filed as `A25`.
+
+Counter 21: 5 → 3 → **0**, and the command was tightened to match the *format* position rather
+than the string "pattern", so the checked `"%s"` fallback is not counted as a finding. Verified
+capable of failing: 2 on the pre-fix `exportcsv.cpp`, 2 on the pre-fix `csv_source.cpp`, 0 now.
+
+**Not done, deliberately:** a rejected pattern makes `loadConfig` report (0) but not abort, for
+the `A23` reason above; and a truncated expansion logs and returns `true`, because a `false`
+from a filter aborts the whole bank and skips its `ready.post()` — a bigger decision than this
+item, and the same call `csv_source` made.
 
 ## `P3-7` — `if( ${VAR} )` → `if(VAR)` — **DONE**
 

@@ -20,7 +20,7 @@ trailing `&` is inside the string, so the call also does not wait. GCC already p
 feature. `objectTrack` is in `modules/filters`, outside the programme's stated scope, but this
 one is a one-function change and it is the only `system()` call in the tree.
 
-### N5 — config string used as a `printf` format string — `csv_source` FIXED (`P3-6`)
+### N5 — config string used as a `printf` format string — FIXED (`P3-6`)
 
 `modules/filters/src/capture/csv_source.cpp:162,183`:
 
@@ -51,6 +51,27 @@ value that is not there. The pre-fix failures, all observed:
 - a CSV starting with `abc` wrote `9.1834095e-41` — an uninitialised float bit pattern —
   into all four pixels, and `filter()` returned `true`.
 
-`exportcsv.cpp:92,100,103` is the same finding and is still open (counter 21: 3 of the
-original 5 sites), together with a `char path[_filePattern.length() + 64]` VLA whose size
-comes from the config file.
+**Fixed in `exportcsv` too (`P3-6`, second half), closing the finding.** The same two shapes
+were there in `ExportCSV`:
+
+```cpp
+char path[_filePattern.length() + 64];                       // VLA sized from a config string
+snprintf(path, _filePattern.length() + 64, _filePattern.c_str(), _cnt);
+```
+
+`options/pattern` is now validated by the same `toffy::validSequencePattern` the `csv_source`
+half introduced — the validator moved to `toffy/filter_helpers.hpp` rather than being
+duplicated, because two copies of a security-relevant parser drift — and all three expansions
+either go through `toffy::formatPath` or, in the no-conversion branch, are checked against the
+buffer. The VLA is a fixed 4 096 (PATH_MAX on Linux); the only remaining failure is a path
+that is simply too long, and it is reported instead of being opened truncated.
+
+The pre-fix failure, observed: `"%s%s"` installed by `updateConfig()` **segfaulted**
+`tests/test_exportcsv` on the next frame, for the same reason as `csv_source`. Pinned by
+`ExportCsvPattern.*` and `ExportCsvFrameCounter.*` (ctest target `exportcsv`); 2 of the 5
+tests fail on the parent commit, one of them by crashing. The truncation test is a pin, not a
+fence — the VLA it replaces was sized from the pattern, so it also wrote no file, it just
+never said why.
+
+Counter 21 is 0. One warning was *not* removed by this: `saveMatCSV`'s `skipZeroes` parameter
+is unused, which is a separate defect and is filed as `A25`.

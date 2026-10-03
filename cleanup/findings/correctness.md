@@ -180,3 +180,30 @@
     a capture filter's read path — and `loadConfig()`/`updateConfig()` append `options/fcs`
     to `fcs` without clearing it, so a second `updateConfig()` duplicates the list. Both are
     `P2-3`/`P2-13` sized and neither is a correctness defect of this shape.
+
+25. **`ExportCSV`'s `options/skipZeroes` is plumbed through the whole filter and then
+    ignored.** Found while fixing `N5` in the same file, and the compiler has been saying so
+    on every build: `exportcsv.cpp:156` is `saveMatCSV(fileName, mat, bool skipZeroes)` and
+    the body never reads the parameter — `-Wunused-parameter`, one of the 26 warnings the
+    tree emits and `P3-11` reports without gating.
+
+    The value is not lost in one place, it is carried through all of them, which is what makes
+    it a defect rather than an unfinished corner:
+
+    | site | does |
+    |---|---|
+    | `updateConfig()` | `_skip0s = pt.get<bool>("options.skipZeroes", _skip0s)` |
+    | `getConfig()` | writes it back, so a config round-trip preserves it |
+    | `filter()` | `saveMatCSV(std::string(path), *input, _skip0s)` |
+    | `saveMatCSV()` | ignores it; every one of the six `mat.type()` branches writes all pixels |
+
+    The `uint32_t j` that `saveMatCSV` increments once per pixel and never reads is the other
+    half of the same unfinished feature — a counter for values that were meant to be skipped.
+
+    A user setting `<options><skipZeroes>true</skipZeroes>` gets a full CSV and no diagnostic,
+    and `getConfig()` reports the option as configured, so the round-trip looks like success.
+    (`docs/` does not mention the option at all — the only documentation of it is the config
+    reader itself.) Either implement it — skip zero-valued pixels per type, which also gives
+    `j` a purpose — or delete the option and its `getConfig()` line. Not fixed here: `P3-6` is
+    the format-string item, this is a behaviour change, and one numbered item per commit is
+    [`../dod/per-pr.md`](../dod/per-pr.md) #5.
