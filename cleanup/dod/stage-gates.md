@@ -44,8 +44,13 @@ Only the gates matching the PR kind apply.
   silently stop processing frames if `P2-12` were applied as written, because they override
   only the `const` `filter()` overload and never said `override`
   ([`../findings/api.md`](../findings/api.md), N2). So: **a filter that overrides only one
-  `filter()` overload is exercised by a test that asserts its body ran** (`P3-9`). Add the
-  equivalent for any other change whose failure mode is "resolves to the base default".
+  `filter()` overload is exercised by a test that asserts its body ran.** That test exists —
+  `tests/test_filter_overloads.cpp`, ctest target `filter_overloads`, landed with `P3-9`
+  together with the `override` keywords (`P3-3`) that turn the same accident into a compile
+  error. `P2-12` is expected to make `ConstReferenceStillReachesTheConstOverride` stop
+  compiling; that is the notice, not a regression — update it in the same commit and say so
+  in the PR body. Add the equivalent test for any other change whose failure mode is
+  "resolves to the base default".
 - The Doxygen comment for each changed symbol is updated in the same PR (per-PR gate 6).
 - **A change that claims to be ABI-neutral has to prove it.** Snapshot
   `readelf --dyn-syms -W build/libtoffy.so | awk '$7!="UND"{print $8}' | sort` before and

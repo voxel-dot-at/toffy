@@ -154,12 +154,37 @@ time, but the dependency points downwards. Same inversion as `P2-9`, one layer b
 record it as a `P2-9` follow-on.
 [`../findings/build.md`](../findings/build.md).
 
-## `P3-9` — a test that a filter's body actually ran
+## `P3-9` — a test that a filter's body actually ran — **done**
 
-Add to `../dod/stage-gates.md` §2.4: *a filter that overrides only one `filter()` overload
-is exercised by a test that asserts its body ran.* One test, and it is the only thing in
-the gate that distinguishes "compiles" from "works" — the current API gate passes while
-three filters silently stop processing frames.
+The gate already said *a filter that overrides only one `filter()` overload is exercised by
+a test that asserts its body ran* (`../dod/stage-gates.md` §2.4); what was missing was the
+test, so the gate passed while a filter that resolves to the base default would not have.
+
+**What landed:** `tests/test_filter_overloads.cpp`, ctest target `filter_overloads` (9
+targets now). Five tests, all asserting the *body* ran — the filter writes a slot into the
+`Frame`, and the assertion is on the slot, not on a return value the base default also
+supplies:
+
+| test | what it pins |
+|---|---|
+| `ConstOnlyOverrideRunsThroughTheBank` | the `OffSet`/`Transform`/`Merge`/`CloudViewOpenCv` shape: reached through `FilterBank::filter()` via the base's delegation |
+| `NonConstOnlyOverrideRunsThroughTheBank` | the common shape, so the const case cannot pass by accident |
+| `BothShapesRunInOneBank` | a mixed pipeline runs both bodies and does not stop at the const-only filter |
+| `ConstReferenceStillReachesTheConstOverride` | the contract `P2-12` proposes to remove; it stops compiling when `P2-12` lands, which is the point |
+| `NegativeControlDetectsAnOverrideThatOverridesNothing` | a `filter()` that overrides nothing keeps compiling, keeps its place in the bank, and never runs — the bank must report failure and the slot must stay empty |
+
+The negative control is what makes the other four evidence rather than decoration: it is
+the same shape as the `P2-12` accident, and it demonstrates that "compiles and is in the
+pipeline" and "runs" are different claims.
+
+**Verified, in both directions.** With the base's non-`const` delegation replaced by
+`return false` — exactly the `P2-12` hazard — `ConstOnlyOverrideRunsThroughTheBank` and
+`BothShapesRunInOneBank` fail and the other three stay green, because they do not depend on
+the delegation. `filter.hpp` was then restored byte-identical (`git diff --quiet` clean),
+the tree rebuilt warning-free and `ctest` is 9/9. The first attempt at that experiment did
+not compile at all — `-Werror=unused-parameter` on the stubbed-out core — and the stale
+test binary from before it reported 5/5 green: a reminder to check that the build actually
+rebuilt before quoting a test result.
 
 ## `P3-10` — drop `TOFFY_EXPORT`
 

@@ -39,6 +39,14 @@ Also add `override` consistently: `mux.hpp` uses it, `filterbank.hpp` and
 `parallelFilter.hpp` do not. `override` on every reimplementation would have made the
 missing `const` override a compile error.
 
+**Both fences now exist.** `P3-3` put `override` on the four `const`-only filters in
+`modules/filters`, so deleting the base's `const` overload fails to compile at those four
+sites instead of silently dropping them out of the pipeline. `P3-9` added
+`tests/test_filter_overloads.cpp`, which asserts a filter's *body* ran for each override
+shape — including a negative control proving a filter that overrides nothing is detected as
+not running. Expect this to be a compile-error-driven change with a test that has to be
+updated deliberately, not a silent one; run the `DOD 2.4` gate, not just a build.
+
 ### 13 — Unify run state and rename the remaining typos
 
 Two independent state machines model the same thing:

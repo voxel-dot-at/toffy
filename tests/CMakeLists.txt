@@ -45,3 +45,9 @@ add_test(NAME filterbank COMMAND test_filterbank)
 add_executable(test_logging test_logging.cpp)
 target_link_libraries(test_logging toffy GTest::gtest GTest::gtest_main)
 add_test(NAME logging COMMAND test_logging)
+
+# P3-9: asserts that a filter's body actually ran, for both override shapes.
+# The gate P2-12 needs - see the header comment in the source.
+add_executable(test_filter_overloads test_filter_overloads.cpp)
+target_link_libraries(test_filter_overloads toffy GTest::gtest GTest::gtest_main)
+add_test(NAME filter_overloads COMMAND test_filter_overloads)
