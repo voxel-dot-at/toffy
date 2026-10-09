@@ -62,11 +62,13 @@ ends the run when that key is `q`; any other key — and the `-1` that
 `-s 0` the wait is indefinite, so the pipeline advances one frame per keypress
 instead of one per `sleepDelay` milliseconds.
 
-Ctrl-C does **not** stop a run cleanly on Linux. `main.cpp` defines a SIGINT
-handler that would end the loop, but the `sigaction()` call that would install
-it is commented out, so Ctrl-C gets the default disposition and the process
-dies where it stands. (The `SetConsoleCtrlHandler()` path that does work is
-inside `#ifdef MSVC`.)
+Ctrl-C does **not** stop a run cleanly. `main.cpp` defines a SIGINT handler that
+would end the loop, but the `sigaction()` call that would install it is commented
+out, so Ctrl-C gets the default disposition and the process dies where it stands.
+It is the only handler the file has: the `SetConsoleCtrlHandler()` half that used
+to sit next to it behind `#ifdef MSVC` was deleted along with every other Windows
+branch, because toffy builds on POSIX only. Installing this one is a behaviour
+change and is tracked as `A26`.
 
 \section use_examples More configs
 

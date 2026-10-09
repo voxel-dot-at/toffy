@@ -21,14 +21,10 @@
 //
 // RAWFILE stays, and stays only here: bta.cpp is its single consumer. It used to be
 // defined identically in core/filterbank.hpp and capture/capturerFilter.hpp as well.
-// Note the value keys off MSVC, which the library build never defines -- so in
-// practice this has always been ".r". Preserved as-is rather than "fixed", since
-// changing an on-disk file extension is a behaviour change, not a cleanup.
-#if defined(MSVC)
-#define RAWFILE ".rw"
-#else
+// Note the value used to key off MSVC, which the library build never defines -- so in
+// practice this has always been ".r". The branch is now gone (P2-2) and ".r" is the one
+// value, which is what every build of this library has ever written to disk.
 #define RAWFILE ".r"
-#endif
 
 #include <boost/thread.hpp>
 #include <boost/property_tree/ptree.hpp>

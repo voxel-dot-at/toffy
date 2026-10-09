@@ -3,8 +3,7 @@
 What has landed, what is in flight, and what the release situation is. Counters are in
 [`counters.md`](counters.md); the order the rest goes in is in [`order.md`](order.md).
 
-State as of `8689d68` plus PRs 28 and 29 (`P3-2`, `P3-12`, `X2b` — stages `X1`–`X2b` of
-[`plan/controller-extraction.md`](plan/controller-extraction.md)), re-checked against the tree
+State as of `ac1108a` plus PR 34 (`P2-2`, the Windows paths), re-checked against the tree
 rather than carried over from the previous round.
 
 ## Landed
@@ -36,25 +35,27 @@ rather than carried over from the previous round.
 | **31** | `X4` the Use guide, and the screenshots | ✅ done | The three `control_*.png` screenshots deleted (outdated, referenced only from the dead page). `use.dox` rewritten around `toffyRunner` — real options, the checked-in example config, how to stop, and a pointer to toffy-oatpp for whoever is looking for the browser UI. **The part that made it a real fix:** the page was in `EXCLUDE` in `docs/Doxyfile.cfg`, so it never rendered — a doxygen run read 12 files and `use.dox` was not one of them. Un-excluded, added to `page_order.dox`, and verified by building the docs: `use.html` exists, is linked from `pages.html`, the `\include examples/config.xml` resolves, and the only remaining non-obsolete warning is the pre-existing `descDocs` path. Counter 16 8 → **0**, with the `Player` `@todo` that started this whole extraction rewritten to say what a UI still cannot get (→ `X5`). Filed `A26`: the Ctrl-C handler in `main.cpp` is compiled and never installed on Linux |
 | **32** | `docs/Doxyfile.cfg` hygiene (found by `X4`) | ✅ done | The `docs` target went from **15 warnings/errors to 0**: 14 obsolete tags (`Doxyfile.cfg` still declares `# Doxyfile 1.8.12`), an `EXAMPLE_PATH` entry pointing at `<root>/descDocs` when the directory is `docs/descDocs` (deleted, not corrected — correcting it would add a path to the `\include` search that has never been in effect), and an `HTML_EXTRA_FILES` entry for a `roi_guide.odt` that `git log --all` shows was never committed. `docs` exited 0 through all 15, which is why they survived since `59b6bcf`. **One warning lied:** `HTML_TIMESTAMP` is reported obsolete but still controls the footer — removing it changes 22 of 22 generated pages, verified by diffing the whole tree. The timestamp is gone deliberately (reproducible output); `TIMESTAMP = YES` puts it back. Counter 30 added |
 | **33** | `docs` CI job: the gate for counter 30 | ✅ done | A fifth CI job runs the `docs` target and fails on any `warning:`/`error:` in its log — the exit code cannot go red, which is how 15 diagnostics survived since `59b6bcf`. Deliberately PCL-less and bta-less: measured, that configuration generates the same 22 pages with 0 warnings, so `libpcl-dev` buys documentation nothing. Verified red by re-adding one obsolete `PERL_PATH` line, green on the tree; YAML and the step's shell both parse-checked |
+| **34** | `P2-2` the Windows paths — **deleted**, and the platform policy says so | ✅ done | The decision the item asked for, not a grep: toffy is POSIX-only. All **15** `MSVC` branches gone (counters 14/14a → **0**) — the `LoadLibrary`/`GetProcAddress` plug-in loaders in `controller.cpp` and `filterbank.cpp`, the `boost::posix_time` epoch arithmetic in `bta.cpp`/`capturerFilter.cpp`, the `RAWFILE` `".rw"` branch, the `<Windows.h>` include in `cloudviewpcl.cpp`, and the `SetConsoleCtrlHandler` half of `main.cpp` — plus the `-DMSVC` / `-D_WIN32_WINNT` definitions that only ever reached `apps/`, which is the asymmetry that made the two halves of one program disagree. `CMakeLists.txt` now fails a Windows configure with a message naming the reason instead of dying on a missing `<dlfcn.h>`. **Nothing was enabled**: every deleted branch was the one the library never compiled, so the output of every build this tree can produce is unchanged — measured, not asserted: 4 dependency configurations from scratch, 11/11 `ctest` each, warnings 26/25/24/23 exactly as before, the warning *set* identical to a base worktree build (only the two `apps/main.cpp` line numbers move, because lines were deleted above them), and `readelf --dyn-syms` unchanged at **2 889** symbols, `diff` empty. Gate: a second step in the `cmake-hygiene` job fails on any `#if`/`#ifdef`/`#ifndef`/`#elif` naming `MSVC` or `_MSC_VER`, or on `-DMSVC` in the build — verified red on four probe shapes and on a re-added definition, green on the tree, and it does **not** fire on the comments left behind. `RAWFILE` stays `".r"`. The vendored `apps/tst_pb.cpp` keeps the vendor's three `PLAT_WINDOWS` branches (counter **14b**, new), and the now-unreachable MSVC scaffolding in `CMakeLists.txt` is filed as **`P3-13`** |
 
-**Twenty-three PRs are done** (1, 2, 3, 4, 5, 6, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-28, 29, 30, 31, 32, 33 — the numbering has no gaps, but PR 7 is core-only and the PRs beyond
+**Twenty-four PRs are done** (1, 2, 3, 4, 5, 6, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+28, 29, 30, 31, 32, 33, 34 — the numbering has no gaps, but PR 7 is core-only and the PRs beyond
 18 are the second-pass work, so "n of 18" stopped being a meaningful fraction once `P3`
 started landing). PR 2 is
 complete rather than 4-of-5. That is the whole `P0` block, the test/CI fence, the build-flag
 cleanup and core's warning gate: the critical path's first stretch, plus every cheap
 second-pass item — a false green removed, a class of silent build breakage closed, a warning
-gate landed, `P2-12` made compile-checked, both config-as-format-string sites closed, and the
-public header surface proved compilable rather than assumed.
+gate landed, `P2-12` made compile-checked, both config-as-format-string sites closed, the
+public header surface proved compilable rather than assumed, and one long-standing "decide,
+then act" item actually decided.
 
-`P1`/`P2` items closed: **4 of 16** (`P1-1`, `P2-8`, `P2-14`, `P2-16`), with `P2-3`
-core-only. `P2-16` closed when `P3-4` landed the `-Werror` half of it.
+`P1`/`P2` items closed: **5 of 16** (`P1-1`, `P2-2`, `P2-8`, `P2-14`, `P2-16`), with `P2-3`
+core-only. `P2-16` closed when `P3-4` landed the `-Werror` half of it, `P2-2` when the
+Windows branches were deleted rather than enabled.
 
 ## Open
 
 | PR | Item | State |
 |---|---|---|
-| **8** | `P2-2` Windows paths — fix or delete | ❌ 12 `MSVC` branches in `modules/`, 15 tree-wide |
 | **9** | `P2-4` factory → registration | ❌ 37 branches |
 | **10** | `P2-5` one owner per `Filter` | ❌ the keystone |
 | **11** | `P2-6` + `P2-13` run methods, state, typos | ❌ |
@@ -82,12 +83,14 @@ do not rehost `initUI` here.
 
 - **`DOD 1.1` green: all four dependency configurations build and pass.** PCL on/off ×
   BTA on/off, each configured from scratch, built and run — 11/11 in every cell, 26/25/24/23
-  warnings (re-measured on PR 28: 26 default, 25 PCL-off, 24 BTA-off, 23 both off). Both axes
-  were broken before this branch: PCL-off on unguarded typedefs and on CMake `if()`
+  warnings (re-measured on PR 34: 26 default, 25 PCL-off, 24 BTA-off, 23 both off — the same
+  four figures as on PR 28, which is the point: `P2-2` was proved to change no build output).
+  Both axes were broken before this branch: PCL-off on unguarded typedefs and on CMake `if()`
   clauses that expanded to nothing, BTA-off on an unconditional `add_subdirectory(bta)`.
 - **CI builds, tests and reports warnings on every push and PR** — five jobs: the PCL
   matrix, the sanitizer build, `installed-headers` (`P3-12`, two passes since `X2b`, plus the
-  source-tree residue step), `docs` (counter 30) and `cmake-hygiene`; the build
+  source-tree residue step), `docs` (counter 30) and `cmake-hygiene`, which since `P2-2` has
+  two steps: the `if( ${VAR} )` sweep (`P3-7`) and the no-`MSVC`-branches gate. The build
   step pipes its log through `tools/warning_report.sh` (`P3-11`). Two limits when citing a
   green run:
   runners cannot have the proprietary bta SDK, so only the **BTA-off** axis is covered
@@ -129,3 +132,10 @@ do not rehost `initUI` here.
   deletion. From the tagged commit `git describe` reports `1.11.0`, so the SONAME stops
   claiming `1.10.0` while the header surface has already moved. **The tag is local until it
   is pushed**, like `v1.10.0` before it.
+- **PR 34 (`P2-2`) opens no tag decision of its own.** It touches no installed header and no
+  exported symbol — measured against an `ac1108a` worktree: `readelf --dyn-syms` identical,
+  2 889 symbols, `diff` empty — so it rides the next tag after `v1.11.0`, the one `P3-10`
+  and `X3` are already queued for. What it does change is a **configure-time** behaviour: a
+  Windows configure now stops with a message naming the plug-in loader as the reason, instead
+  of reaching the compiler and dying on a missing `<dlfcn.h>`. That is a support-policy
+  statement about a configuration that has never built, not an API change.

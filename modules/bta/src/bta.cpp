@@ -490,15 +490,10 @@ void Bta::save(const bool& save)
     if (save == true) {
         cout << "PATH::: " << getSavePath() << endl;
         long int _saveTimeStamp;
-#if defined(MSVC)
-        using namespace boost::posix_time;
-        ptime pt(second_clock::local_time());
-        static ptime epoch(boost::gregorian::date(1970, 1, 1));
-        time_duration diff(pt - epoch);
-        _saveTimeStamp = diff.ticks() / diff.ticks_per_second();
-#else
+        // POSIX only: toffy has no Windows build (P2-2, cleanup/findings/build.md). The
+        // boost::posix_time half of this was never compiled -- MSVC is not defined for the
+        // library -- and computed the same thing that time() gives.
         time(&_saveTimeStamp);
-#endif
         // if (!getSavePath().empty() && fs::path(getSavePath()).extension() ==
         // ".bltstream") { cout << "PATH::: " << saveFolder() << endl;
         fs::path newPath(getSavePath());

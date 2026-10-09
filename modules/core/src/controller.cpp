@@ -31,11 +31,8 @@
 
 #include <toffy/viewers/imageview.hpp>
 
-#ifdef MSVC
-#include <windows.h>
-#else
+// POSIX only: toffy has no Windows plugin loader (P2-2, cleanup/findings/build.md).
 #include <dlfcn.h>
-#endif
 
 using namespace toffy;
 using namespace std;
@@ -336,25 +333,10 @@ void Controller::loadPlugins(const boost::property_tree::ptree &pt)
 
 void Controller::loadPlugin(std::string lib)
 {
-    /*if(libHandle != NULL) {
-	dlclose(libHandle);
-	libHandle = NULL;
-    }*/
-#ifdef MSVC
-    HINSTANCE hGetProcIDDLL = LoadLibrary(lib.c_str());
-
-    if (hGetProcIDDLL == NULL) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not load library: " << lib.c_str();
-        return;
-    }
-
-    toffy::commons::plugins::init_t init =
-        (toffy::commons::plugins::init_t)GetProcAddress(hGetProcIDDLL, "init");
-    if (init == NULL) {
-        BOOST_LOG_TRIVIAL(warning)
-            << "Could not load plug-in filters from: " << lib.c_str();
-
-#else
+    // POSIX only: toffy has no Windows plugin loader (P2-2, cleanup/findings/build.md).
+    // The LoadLibrary/GetProcAddress half of this function was never compiled, because
+    // MSVC is not defined for the library in any configuration. The dlopen() handles are
+    // pushed onto _loads and never closed -- see the TODO(P2-10) at the top of this file.
     void *libHandle;
     BOOST_LOG_TRIVIAL(debug) << "Loading plug-in from: " << lib;
     libHandle = dlopen(lib.c_str(), RTLD_LAZY);
@@ -374,21 +356,11 @@ void Controller::loadPlugin(std::string lib)
         BOOST_LOG_TRIVIAL(warning)
             << "Could not load plug-in filters from: " << lib << std::endl
             << dlsym_error;
-#endif
     } else {
         BOOST_LOG_TRIVIAL(info) << "Loaded plug-in filters from: " << lib;
         init(FilterFactory::getInstance());
-
-#ifdef MSVC
-        _loads.push_back(hGetProcIDDLL);
-#else
         _loads.push_back(libHandle);
-        libHandle = NULL;
-#endif
     }
-#ifndef MSVC
     // reset errors
     dlerror();
-    //dlclose(libHandle);
-#endif
 }

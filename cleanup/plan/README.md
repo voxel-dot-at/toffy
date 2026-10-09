@@ -55,7 +55,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 
 | Item | Title | File | State |
 |---|---|---|---|
-| `P2-2` | fix or delete the Windows paths | [`build-and-hygiene.md`](build-and-hygiene.md) | ❌ |
+| `P2-2` | fix or delete the Windows paths | [`build-and-hygiene.md`](build-and-hygiene.md) | ✅ deleted — POSIX only |
 | `P2-3` | debug leftovers and dead code | [`build-and-hygiene.md`](build-and-hygiene.md) | 🟡 core done |
 | `P2-4` | `createFilter()` → `registerCreator()` | [`structure.md`](structure.md) | ❌ |
 | `P2-5` | one owner per `Filter` | [`structure.md`](structure.md) | ❌ **keystone** |
@@ -69,7 +69,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P2-13` | unify run state, rename the typos | [`api.md`](api.md) | ❌ |
 | `P2-14` | finish or delete the `Event` stub | [`api.md`](api.md) | ✅ deleted |
 | `P2-15` | enforce formatting | [`build-and-hygiene.md`](build-and-hygiene.md) | ❌ |
-| `P2-16` | build flags | [`build-and-hygiene.md`](build-and-hygiene.md) | 🟡 4 of 5 |
+| `P2-16` | build flags | [`build-and-hygiene.md`](build-and-hygiene.md) | ✅ — the `-Werror` half landed as `P3-4` |
 
 ### `P3` — second pass ([`second-pass.md`](second-pass.md))
 
@@ -87,6 +87,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P3-9` | a test that a filter's body actually ran | 1 test | ✅ |
 | `P3-10` | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | ❌ |
 | `P3-11` | CI warning counter, without changing the build | CI | ✅ |
+| `P3-13` | delete the Windows scaffolding `P2-2` left unreachable in the build | CMake | ❌ |
 
 ### `X` — the controller extraction ([`controller-extraction.md`](controller-extraction.md))
 

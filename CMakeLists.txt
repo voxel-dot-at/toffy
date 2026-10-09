@@ -11,6 +11,28 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ################################################################################
+# Platform policy (P2-2)
+################################################################################
+# toffy builds on POSIX -- Linux and macOS with GCC or Clang. Cygwin is allowed for, since
+# it provides the dlfcn() that modules/core needs. Windows is not supported, and saying so
+# here beats failing later with a wall of errors about a missing <dlfcn.h>.
+#
+# The tree used to carry 15 MSVC-guarded branches, including a LoadLibrary/GetProcAddress
+# plug-in loader in modules/core. Only apps/ consumes the DEFINITIONS list that used to
+# define MSVC, so the library never defined the macro and compiled the dlfcn() half on
+# every platform -- including Windows, where <dlfcn.h> does not exist. Those branches were
+# not untested, they were unreachable: libtoffy could not be built by MSVC at all. Deleting
+# them changes no output of any build this tree has ever produced.
+# cleanup/plan/build-and-hygiene.md P2-2, cleanup/findings/build.md.
+if(WIN32 AND NOT CYGWIN)
+    message(FATAL_ERROR
+        "toffy supports POSIX only. modules/core loads plug-ins with POSIX dlfcn() "
+        "(controller.cpp, filterbank.cpp) and there are no Windows code paths left in the "
+        "tree. Build on Linux or macOS with GCC or Clang; a Windows port needs a platform "
+        "abstraction around the plug-in loader first. See cleanup/plan/build-and-hygiene.md (P2-2).")
+endif()
+
+################################################################################
 # Cmake modules
 ################################################################################
 
@@ -165,11 +187,12 @@ if(MSVC)
        FILE_DESCRIPTION ${toffy_DESCRIPTION}
     )
 
-    #Set MSVC to preprocessor
-    list(APPEND DEFINITIONS -DMSVC)
-
-    #Set windows preprocesor definitions
-    list(APPEND DEFINITIONS -D_WIN32_WINNT=0x0601) #Win10 0501-> Win7
+    # The MSVC preprocessor definition is gone, and so is the _WIN32_WINNT one next to it
+    # (P2-2). Nothing in the tree reads MSVC any more, and this list was only ever handed
+    # to apps/, which is how the application and the library came to disagree about the
+    # platform. Everything else in this if(MSVC) block is unreachable: the platform policy
+    # near the top of this file refuses a Windows configure. Deleting that scaffolding is
+    # P3-13.
 
     #Nedeed?
     # By default, do not warn when built on machines using only VS Express:

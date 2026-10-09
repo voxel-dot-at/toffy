@@ -17,18 +17,16 @@
 #include <map>
 #include <ctime>
 #include <iostream>
-
-#ifdef MSVC
-    #define _USE_MATH_DEFINES
-    #include <cmath>
-#endif
+// M_PI is used by deg2rad() below. It used to be pulled in from an `#ifdef MSVC` block
+// that defined _USE_MATH_DEFINES first, so on every other platform it arrived by transitive
+// luck; <cmath> is what the file actually needs (P2-2, cleanup/findings/build.md).
+#include <cmath>
 
 #include <boost/log/trivial.hpp>
 #include <boost/any.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/range/algorithm_ext/erase.hpp>
 
 #include <Eigen/Core>
@@ -227,15 +225,10 @@ void CapturerFilter::save(const bool &save) {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     if (save == true) {
 	long int _saveTimeStamp;
-	#if defined(MSVC)
-	    using namespace boost::posix_time;
-	    ptime pt(second_clock::local_time());
-	    static ptime epoch(boost::gregorian::date(1970, 1, 1));
-	    time_duration diff(pt - epoch);
-	    _saveTimeStamp= diff.ticks() / diff.ticks_per_second();
-	#else
-	    time(&_saveTimeStamp);
-	#endif
+	// POSIX only: toffy has no Windows build (P2-2, cleanup/findings/build.md). The
+	// boost::posix_time half of this was never compiled -- MSVC is not defined for the
+	// library -- and computed the same thing that time() gives.
+	time(&_saveTimeStamp);
 	fs::path newPath(_savePath);
 	//newPath /= name();
 	//string _strPath = savePath + string("/") + id() + string("/") + boost::lexical_cast<std::string>(_saveTimeStamp);

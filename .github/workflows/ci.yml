@@ -294,7 +294,7 @@ jobs:
           echo "docs generated warning-free: $(find build/public/html -name '*.html' | wc -l) pages"
 
   cmake-hygiene:
-    name: cmake hygiene (if( ${VAR} ) sweep)
+    name: hygiene (cmake style, platform branches)
     runs-on: ubuntu-latest
     # P3-7 / finding N6. This bug class is what hid the PCL-less build for as long
     # as it took: if() takes variable *names*, so an empty variable makes
@@ -326,3 +326,38 @@ jobs:
             exit 1
           fi
           echo 'no if( ${VAR} ) sites in the tracked CMake files'
+
+      - name: No MSVC branches in the sources (P2-2)
+        # toffy is POSIX-only. The 15 `#ifdef MSVC` branches this step replaced were never
+        # compiled in the library - only apps/ consumed the definition of MSVC, so the
+        # dlfcn() half was what every platform built, Windows included, and a Windows build
+        # therefore could not compile libtoffy at all. The platform policy at the top of
+        # CMakeLists.txt now refuses a Windows configure; this step stops the branches
+        # creeping back one at a time, which is how they were written in the first place.
+        # See cleanup/plan/build-and-hygiene.md P2-2 and cleanup/findings/build.md.
+        #
+        # The pattern covers #if / #ifdef / #ifndef / #elif and both spellings of the
+        # macro (MSVC, and _MSC_VER, which the tree never used and which a new branch is
+        # more likely to reach for than the project-local name).
+        #
+        # Scope, stated per DOD 0 rule 9: tracked compiled code (*.cpp/*.hpp/*.h) for the
+        # preprocessor directive, and the tracked CMake files for the definition. Two
+        # deliberate exclusions, both stated rather than discovered by accident:
+        #   - prose (*.md, *.dox) names MSVC in order to record that it is gone;
+        #   - apps/tst_pb.cpp guards on PLAT_WINDOWS/WIN32 and includes <windows.h> behind
+        #     one of those. It is a vendored Becom BTA SDK example whose platform branches
+        #     are the vendor's, PLAT_LINUX is genuinely defined by this build, and CI cannot
+        #     compile it at all (no SDK). Counted separately in counters.md counter 14b.
+        run: |
+          set -uo pipefail
+          hits=$(git ls-files -z '*.cpp' '*.hpp' '*.h' \
+                   | xargs -0 -r grep -nHE '^[[:space:]]*#[[:space:]]*(if|ifdef|ifndef|elif)[[:space:]].*(MSVC|_MSC_VER)' || true)
+          defs=$(git ls-files -z '*CMakeLists.txt' '*.cmake' \
+                   | xargs -0 -r grep -nHE -e '-DMSVC' || true)
+          if [ -n "$hits" ] || [ -n "$defs" ]; then
+            [ -n "$hits" ] && echo "$hits"
+            [ -n "$defs" ] && echo "$defs"
+            echo "::error::toffy is POSIX-only. Do not add MSVC branches or define MSVC: the plug-in loader is dlfcn(), and a Windows port needs a platform abstraction around it first. See cleanup/plan/build-and-hygiene.md (P2-2)."
+            exit 1
+          fi
+          echo 'no MSVC branches in the tracked sources and no MSVC definition in the build'

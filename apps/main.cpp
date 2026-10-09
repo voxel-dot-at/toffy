@@ -12,17 +12,11 @@
 
 #include <toffy/player.hpp>
 
-#ifdef MSVC
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <signal.h>
-
-BOOL WINAPI ConsoleHandler(DWORD);
-#else
-#include <signal.h>
-#endif
+// POSIX only: toffy has no Windows build (P2-2, cleanup/findings/build.md). There used to
+// be a <windows.h> + SetConsoleCtrlHandler half here, and it was the only MSVC branch in
+// the tree that ever compiled -- apps/ is the one target that got -DMSVC, which is exactly
+// how the two halves of this program came to disagree about the platform.
 
 #include <boost/program_options.hpp>
 static bool keepRunning = false;
@@ -30,23 +24,6 @@ using namespace boost;
 namespace po = boost::program_options;
 using namespace std;
 
-#ifdef MSVC
-BOOL WINAPI ConsoleHandler(DWORD dwType)
-{
-    switch (dwType) {
-        case CTRL_C_EVENT:
-        case CTRL_BREAK_EVENT:
-            if (keepRunning)
-                keepRunning = false;
-            else
-                exit(1);
-            break;
-        default:
-            printf("Other event\n");
-    }
-    return TRUE;
-}
-#else
 void my_handler(int s)
 {
     //printf("Caught signal %d\n",s);
@@ -56,7 +33,6 @@ void my_handler(int s)
     else
         exit(1);
 }
-#endif
 
 int main(int argc, char* argv[])
 {
@@ -116,12 +92,12 @@ int main(int argc, char* argv[])
         p.loadConfig(vm["config"].as<std::string>());
         std::cout << "Player done" << std::endl;
 
-#ifdef MSVC
-        SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler, TRUE);
-#else
-
         const int delay = vm["sleepDelay"].as<int>();
 
+        // A26: this handler is prepared and never installed -- the sigaction() call below
+        // is commented out, so Ctrl-C kills the process instead of running it. Left as-is
+        // on purpose: installing it is a behaviour change and belongs to A26, not to the
+        // platform cleanup that only had to stop compiling the Windows half of it.
         struct sigaction sigIntHandler;
 
         sigIntHandler.sa_handler = my_handler;
@@ -129,7 +105,6 @@ int main(int argc, char* argv[])
         //sigIntHandler.sa_flags = 0;
 
 //	sigaction(SIGINT, &sigIntHandler, NULL);
-#endif
         keepRunning = true;
         int c = ' ';
         do {

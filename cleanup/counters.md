@@ -2,10 +2,10 @@
 
 **This is the only place a measured number is written down.** Other chapters link here.
 
-Re-measured on `feature/code-cleanup` at `8689d68` with PRs 28 and 29 (`P3-2`, `P3-12`,
-`X2b` — the controller-extraction stages X1–X2b) applied, i.e. after `P3-1`, `P3-3`, `P3-4`,
-`P3-7`, `P3-9`, `P3-11`, `A24`, `P3-6`, `P3-2`, `P3-12` and `X2b`; GCC 13.3, CMake 3.28.3,
-default configuration (PCL on, BTA on). Every command below is copy-pasteable from the
+Re-measured on `feature/code-cleanup` at `ac1108a` with PR 34 (`P2-2`) applied — i.e. after
+`P3-1`, `P3-3`, `P3-4`, `P3-7`, `P3-9`, `P3-11`, `A24`, `P3-6`, `P3-2`, `P3-12`, `X2b`, `X3`,
+`X4`, the `Doxyfile.cfg` fix and the `docs` gate; GCC 13.3, CMake 3.28.3, default
+configuration (PCL on, BTA on). Every command below is copy-pasteable from the
 repository root; run them before quoting a figure.
 
 An earlier revision of this header cited `4739900`, which is not an ancestor of `HEAD` — it
@@ -21,7 +21,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | # | metric | scope | now | target | |
 |---|---|---|---|---|---|
 | 1 | `P0` correctness items closed, each with a regression test | — | **12/12** | 12/12 | ✅ |
-| 2 | `P1`/`P2` plan items closed | 16 items | **4/16** (`P1-1`, `P2-8`, `P2-14`, `P2-16`) | 16/16 | |
+| 2 | `P1`/`P2` plan items closed | 16 items | **5/16** (`P1-1`, `P2-2`, `P2-8`, `P2-14`, `P2-16`) | 16/16 | |
 | 3 | CI configures, builds and runs `ctest` on every push | `.github/` | matrix + sanitizers | required | ✅ |
 | 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` configurations | build | **4/4**, 11/11 ctest each | 4/4 | ✅ |
 | 5 | debug prints in library code | `modules/` | **128** | 0 | |
@@ -40,8 +40,9 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 12 | `@todo` markers | `modules/core` | **20** | ≤ 5 | |
 | 12b | `@todo` markers | `filterThread.hpp` | **10** | 0 | |
 | 13 | `delete` of a `Filter*` | `modules/core` | **4 sites, 3 owners** | 1 owner | |
-| 14 | `MSVC` preprocessor branches | `modules/` | **12** (was 19) | 0 | |
-| 14a | | tree | **15** (was 16; one went with the orphan) | 0 | |
+| 14 | `MSVC` preprocessor branches | `modules/` | **0** (was 19, then 12 after `P2-3`; `P2-2`) | 0 | ✅ |
+| 14a | | tree | **0** (was 16, then 15 after `P3-1` deleted the orphan; `P2-2`) — the `-DMSVC` definition in `CMakeLists.txt` is gone with them, and a CI step fails on either | 0 | ✅ |
+| 14b | platform branches in the vendored BTA example | `apps/tst_pb.cpp` | **3** (`#ifdef PLAT_WINDOWS` × 2, `#elif defined(PLAT_WINDOWS) \|\| defined(WIN32) \|\| defined(WIN64)`) — the vendor's own code, guarded on macros this build sets (`PLAT_LINUX`) rather than on `MSVC`, and uncompilable by CI (no SDK). Out of `P2-2`'s scope by decision, not by oversight; see the note below | vendor's | ⚠️ not ours |
 | 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **0** in all four configurations, and `toffy_core` is compiled with `-Werror` (`P3-4`) | 0 | ✅ |
 | 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **26** (was 32; −4 from the `Mux` using-declaration, −2 from `csv_source`'s `fscanf` sites now being checked, `P3-6`) — reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
 | 16 | artefacts describing the removed web control product | tree | **0** (was 12, then 8: 4 installed headers `P3-2`, 3 screenshots and the `use.dox` page `X4`, 3 CLI options `X3`, 1 `Player` `@todo` `X4`) — enumerated below, because "≥ 3" was not a number | 0 | ✅ |
@@ -95,10 +96,21 @@ grep -rc "@todo" modules/core | grep -v ":0$"
 # 13 — who deletes a Filter
 grep -rn "delete " modules/core/src | grep -vE ':[0-9]+:[[:space:]]*//'
 
-# 14 — dead Windows branches. Must cover #if, #ifdef AND #ifndef; a pattern
-#      matching only "#if"/"#ifdef" under-counts.
-grep -rnE '^[[:space:]]*#[[:space:]]*if(n?def)?[[:space:]].*MSVC' modules/ | wc -l
-grep -rnE '^[[:space:]]*#[[:space:]]*if(n?def)?[[:space:]].*MSVC' modules/ libraries/ apps/ | wc -l
+# 14, 14a — dead Windows branches. Must cover #if, #ifdef, #ifndef AND #elif, and both
+#      spellings of the macro (MSVC and _MSC_VER); the older two-term pattern under-counts.
+#      Tracked files only, exactly like the CI step, so a build tree cannot skew it.
+#      0 since P2-2. The historical 12/15 were counted with the two-term pattern over
+#      modules/ libraries/ apps/, which is the same scope minus the vendored 14b file.
+git ls-files -z '*.cpp' '*.hpp' '*.h' \
+  | xargs -0 -r grep -nHE '^[[:space:]]*#[[:space:]]*(if|ifdef|ifndef|elif)[[:space:]].*(MSVC|_MSC_VER)' | wc -l
+git ls-files -z '*.cpp' '*.hpp' '*.h' | xargs -0 -r grep -nHE 'MSVC' | wc -l   # 10, all comments
+#      the definition side, which is what made the branches asymmetric in the first place:
+git ls-files -z '*CMakeLists.txt' '*.cmake' | xargs -0 -r grep -nH -- '-DMSVC'   # no output
+
+# 14b — the vendored exception, counted so that "0" in 14a cannot read as "no platform
+#      branches anywhere". apps/tst_pb.cpp is a Becom BTA SDK example; its branches are
+#      guarded on PLAT_WINDOWS/WIN32 and it needs <bta.h>, so CI cannot compile it.
+grep -cE '^[[:space:]]*#[[:space:]]*(if|ifdef|ifndef|elif).*(PLAT_WINDOWS|WIN32|WIN64)' apps/tst_pb.cpp
 
 # 15 — core warnings. 0 since P3-4, and toffy_core now builds -Werror, so a
 #      non-zero answer here is a build failure, not a count.
@@ -253,6 +265,32 @@ rather than a figure: see `tools/installed_header_check.sh` and the `installed-h
 now enumerated one by one in the command block: 4 installed headers, `use.dox`, 3
 screenshots, 3 CLI options, 1 `Player` `@todo`. `P3-2` closed the first four; `X3` and `X4`
 close the rest.
+
+**14 (0, was 12/15).** The zero is a deleted decision, not a grep that stopped matching:
+`P2-2` chose "POSIX only", deleted all 15 branches and the `-DMSVC` definition with them,
+and `CMakeLists.txt` now refuses a Windows configure (`if(WIN32 AND NOT CYGWIN)
+message(FATAL_ERROR …)`) instead of building a library whose plug-in loader includes
+`<dlfcn.h>` on Windows. Two things to keep honest here:
+
+- **The 10 remaining `MSVC` mentions are comments.** They are the notes left where the
+  branches were, and they are why the counter greps for the *directive*, not the word. A
+  comment-stripping `NC` run of the word grep is 0; the raw word grep is 10 and always will
+  be until someone deletes the explanations.
+- **14b is the exception, stated rather than discovered.** `apps/tst_pb.cpp` is a vendored
+  Becom BTA SDK example with three `PLAT_WINDOWS`/`WIN32` branches of the vendor's own
+  making, one of which includes `<windows.h>`. It is guarded on macros this build really
+  sets (`-DPLAT_LINUX`, `CMakeLists.txt`), CI cannot compile it without the SDK, and
+  rewriting a vendor sample is not this programme's call. So the gate does not cover it and
+  this file counts it, which is the difference between an exclusion and a blind spot.
+
+Measured that the deletion changed no output: the four `PCL`×`BTA` configurations build and
+pass 11/11 `ctest` with the same warning counts as the base (`26`/`25`/`24`/`23`), the
+warning *set* is identical to the base build line-for-line except the two `apps/main.cpp`
+line numbers, which moved because lines were deleted above them, and the exported dynamic
+symbol set of `libtoffy.so` is unchanged at **2 889** (`diff` empty, Release/PCL-on/BTA-on,
+base built from `ac1108a` in a separate worktree). `RAWFILE` keeps the value `".r"` — the
+`MSVC` branch that could have made it `".rw"` was never compiled, so the on-disk format has
+not moved.
 
 **5 (128 vs 129).** Both figures have been quoted. The strict pattern above gives 128;
 counting `std::cout` (29) and bare `cout` (100) separately gives 129. They differ at

@@ -26,11 +26,8 @@
 #include <toffy/common/plugins.hpp>
 #include <iostream>
 
-#ifdef MSVC
-#include <windows.h>
-#else
+// POSIX only: toffy has no Windows plugin loader (P2-2, cleanup/findings/build.md).
 #include <dlfcn.h>
-#endif
 
 using namespace toffy;
 using namespace std;
@@ -414,29 +411,10 @@ int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
         BOOST_LOG_TRIVIAL(debug) << "v.first " << v.first;
         BOOST_LOG_TRIVIAL(debug) << "v.second " << v.second.data();
 
-#ifdef MSVC
-        HINSTANCE hGetProcIDDLL = LoadLibrary(v.second.data().c_str());
-
-        if (!hGetProcIDDLL) {
-            BOOST_LOG_TRIVIAL(warning)
-                << "Could not load library: " << v.second.data();
-            continue;
-        }
-
-        toffy::commons::plugins::init_t init =
-            (toffy::commons::plugins::init_t)GetProcAddress(hGetProcIDDLL,
-                                                            "init");
-        if (!init) {
-            BOOST_LOG_TRIVIAL(warning)
-                << "Could not load plug-in filters from: " << v.second.data();
-
-#else
+        // POSIX only: toffy has no Windows plugin loader (P2-2, cleanup/findings/build.md).
+        // The LoadLibrary/GetProcAddress half of this loop was never compiled, because
+        // MSVC is not defined for the library in any configuration.
         void* libHandle;
-        //if(libHandle != NULL) {
-        //    dlclose(libHandle);
-        //    libHandle = NULL;
-        //}
-
         libHandle = dlopen(v.second.data().c_str(), RTLD_LAZY);
         if (!libHandle) {
             BOOST_LOG_TRIVIAL(warning)
@@ -455,17 +433,13 @@ int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
                 << "Could not load plug-in filters from: " << v.second.data()
                 << std::endl
                 << dlerror();
-#endif
         } else {
             BOOST_LOG_TRIVIAL(info)
                 << "Loaded plug-in filters from: " << v.second.data();
             init(FilterFactory::getInstance());
         }
-#ifndef MSVC
         // reset errors
         dlerror();
-        //dlclose(libHandle);
-#endif
     }
     return 1;
 }

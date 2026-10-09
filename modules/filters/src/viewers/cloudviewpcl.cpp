@@ -24,10 +24,6 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/PCLPointCloud2.h>
 
-#if defined(MSVC)
-#  include <Windows.h>
-#endif
-
 #include "toffy/filter_helpers.hpp"
 #include "toffy/viewers/cloudviewpcl.hpp"
 
