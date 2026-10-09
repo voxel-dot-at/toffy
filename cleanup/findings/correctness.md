@@ -227,3 +227,31 @@ handler's message and for `Stopped...`: neither appears. Not fixed here — inst
 handler changes shutdown behaviour (the loop would then exit through `keepRunning`, and the
 player's teardown gets run for the first time in anger), which is a behaviour change with its
 own test, and it sits in the same code as the `#ifdef MSVC` paths that `P2-2` owns.
+
+**A27 — `ObjectTrack` publishes the previous frame's object count.** Found while replacing the
+`system()` call in the same function (`P3-5`), which had to establish what the two arguments
+actually are before it could keep passing them. The end of `filter()` is
+
+```cpp
+if (numObjects != detObjs->size()) publishCount();
+numObjects = detObjs->size();
+```
+
+and `publishCount()` passes the member, not the size it just compared against:
+
+```cpp
+sb << updateScript << " " << cnt << " " << numObjects << "&";
+```
+
+So the script is invoked *because* the count changed and is then told the count from **before**
+the change. With one object in the first frame the helper receives `0`; on the frame where a
+second object appears it receives `1`. The counter `cnt` is not affected — it is incremented
+before its own `publishCount()` call inside the per-object loop — so the two arguments are
+consistent with each other only by accident.
+
+Pinned as it behaves by `ObjectTrackPublishCount.ScriptRunsAndReceivesTheCountAsArguments`
+(asserts `"0 0\n"` for a one-object frame, with a comment saying so), so fixing it turns that
+test red on purpose. Not fixed with `P3-5`: the item is "do not hand configuration to a shell",
+and passing the new count is a behaviour change every consumer of the script would have to
+agree to. Both `cnt` and `numObjects` *are* initialised by the constructor, so this is a stale
+read, not an uninitialised one — the `P0-5` shape does not apply here.

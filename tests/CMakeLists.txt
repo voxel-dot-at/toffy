@@ -68,3 +68,10 @@ add_test(NAME csv_source COMMAND test_csv_source)
 add_executable(test_exportcsv test_exportcsv.cpp)
 target_link_libraries(test_exportcsv toffy GTest::gtest GTest::gtest_main)
 add_test(NAME exportcsv COMMAND test_exportcsv)
+
+# N4 / P3-5: ObjectTrack passed options/script to system(), so a config file
+# could run a shell command. Writes into gtest's temp dir only, and the scripts
+# it installs write there too - nothing is executed from the source tree.
+add_executable(test_objecttrack test_objecttrack.cpp)
+target_link_libraries(test_objecttrack toffy GTest::gtest GTest::gtest_main)
+add_test(NAME objecttrack COMMAND test_objecttrack)

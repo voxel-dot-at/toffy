@@ -2,7 +2,7 @@
 
 From the second-pass audit (`S`/`N` ids in `plan/second-pass.md`).
 
-### N4 — `system()` on a configuration string
+### N4 — `system()` on a configuration string — FIXED (`P3-5`)
 
 `modules/filters/src/detection/objectTrack.cpp:196-204`:
 
@@ -19,6 +19,21 @@ trailing `&` is inside the string, so the call also does not wait. GCC already p
 **Suggestion S5 — replace with `posix_spawn`/`fork`+`execv` on an argv array**, or delete the
 feature. `objectTrack` is in `modules/filters`, outside the programme's stated scope, but this
 one is a one-function change and it is the only `system()` call in the tree.
+
+**Fixed as `P3-5`, by the `execvp` half of the suggestion.** The argv array means a
+metacharacter in `<options/script>` is a character in a program name; the `&` is replaced by a
+double fork, so the script is still fire-and-forget for the frame loop but is reparented to
+init rather than left as a zombie. The pre-fix behaviour is pinned by
+`ObjectTrackPublishCount.ShellMetacharactersInScriptAreNotInterpreted` (ctest target
+`objecttrack`), observed failing on the parent commit for all six payloads tried — `;`, `&&`,
+`|`, `$(…)`, backticks and a newline — creating the marker file each time. The `-Wunused-result`
+warning went with the call: tree warnings 26 → 25, counter 20 → 0.
+
+Two things the fix deliberately did **not** do: it does not validate the script path against a
+whitelist (a configuration file that can name a program can run any program; what it can no
+longer do is run *more than the one it named*, and the trust boundary is the config file, which
+also selects the plug-ins to `dlopen`), and it does not change what is published — the count
+being published is still the previous frame's, filed as `A27`.
 
 ### N5 — config string used as a `printf` format string — FIXED (`P3-6`)
 

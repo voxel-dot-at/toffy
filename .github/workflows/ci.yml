@@ -294,7 +294,7 @@ jobs:
           echo "docs generated warning-free: $(find build/public/html -name '*.html' | wc -l) pages"
 
   cmake-hygiene:
-    name: hygiene (cmake style, platform branches)
+    name: hygiene (cmake style, platform branches, no shell)
     runs-on: ubuntu-latest
     # P3-7 / finding N6. This bug class is what hid the PCL-less build for as long
     # as it took: if() takes variable *names*, so an empty variable makes
@@ -361,3 +361,32 @@ jobs:
             exit 1
           fi
           echo 'no MSVC branches in the tracked sources and no MSVC definition in the build'
+
+      - name: No shell in the pipeline (P3-5)
+        # ObjectTrack used to concatenate options/script — a value read straight out of an XML
+        # config file — with two numbers and a trailing '&', and hand the result to /bin/sh, so
+        # any shell metacharacter in a config file ran with this process's privileges. It runs
+        # execvp() on an argv array now; this step stops the shell creeping back as the short
+        # way to "just run a helper script". See cleanup/findings/security.md N4.
+        #
+        # Scope, stated per DOD 0 rule 9: tracked compiled code (*.cpp/*.hpp/*.h) across the
+        # whole tree, because the claim being gated is "no system() anywhere", not "none in
+        # modules/filters" — the counter's original scope. Comments are stripped: runDetached()'s
+        # doc comment names system() in order to record what it replaced, and a gate that fires
+        # on the sentence describing the fix is a gate that gets deleted (the same lesson X4
+        # learned about *.dox, and counter 20 in counters.md strips comments for the same reason).
+        #
+        # Verified to be capable of failing: re-adding `  system("true");` to
+        # modules/filters/src/detection/objectTrack.cpp turns this step red on exactly one line;
+        # removing it turns it green again.
+        run: |
+          set -uo pipefail
+          hits=$(git ls-files -z '*.cpp' '*.hpp' '*.h' \
+                   | xargs -0 -r grep -nHE '\bsystem[[:space:]]*\(' \
+                   | grep -vE ':[0-9]+:[[:space:]]*(//|\*|/\*)' || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"
+            echo "::error::do not hand configuration data to a shell. Use posix_spawn or fork+execvp with an argv array. See cleanup/findings/security.md N4 and cleanup/plan/second-pass.md P3-5."
+            exit 1
+          fi
+          echo 'no system() call in the tracked sources'

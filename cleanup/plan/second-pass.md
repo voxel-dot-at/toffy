@@ -15,7 +15,7 @@ and none of it depends on the ownership work, so it can all run alongside.
 | `P3-3` | `S3a` | `override` on the four `const`-only filters | 8 sites | none | ✅ | makes `P2-12` compile-checked |
 | `P3-7` | `S7` | `if( ${VAR} )` → `if(VAR)` | 4 lines | none | ✅ | a class of silent build breakage |
 | `P3-6` | `S6` | config string as `printf` format; check `fscanf` | 3 files | low | ✅ | 2 `-Wunused-result`, silently corrupt frames, a config-sized VLA |
-| `P3-5` | `S5` | `objectTrack`: `system()` → `execv`, or delete | 1 function | low | ❌ | the only `system()` in the tree |
+| `P3-5` | `S5` | `objectTrack`: `system()` → `execv`, or delete | 1 function | low | ✅ | the only `system()` in the tree |
 | `P3-9` | `S3` (gate) | a test that a filter's body actually ran | 1 test | none | ✅ | separates "compiles" from "works" |
 | `P3-2` | `S2` | delete the dead, installed `toffy/web/` headers | 4 files + 2 sources | API — tag pending | ✅ | counter 17, `X1` of [`controller-extraction.md`](controller-extraction.md) |
 | `P3-12` | `S2` (follow-up) | make every installed header compile, and keep it that way | 2 headers + 1 tool + CI | none | ✅ | counter 17 at 0, gated |
@@ -25,9 +25,9 @@ and none of it depends on the ownership work, so it can all run alongside.
 
 `P3-1`, `P3-4`, `P3-3` and `P3-7` were together roughly fifteen lines, carried no behaviour
 change, and each one either removed a false green or made a later change compile-checked.
-All four are done, as are `P3-9`, `P3-11`, `P3-6`, `P3-2` and `P3-12`. What is left of this
-document is one `modules/filters` safety item (`P3-5`, the `system()` call), the mechanical
-`P3-10`, and the `P3-8` note. `P3-2` was the last API change in this band and it is merged;
+All four are done, as are `P3-9`, `P3-11`, `P3-6`, `P3-2`, `P3-12` and `P3-5`. What is left of
+this document is the mechanical
+`P3-10` and the `P3-8` note. `P3-2` was the last API change in this band and it is merged;
 the tag it needs is still outstanding (see [`status.md`](../status.md)).
 
 ---
@@ -136,15 +136,52 @@ Land the `using` line on its own, then enable `-Werror` for `modules/core`. This
 API fix stop being one indivisible job, and that the thing which stops the count growing
 becomes available now rather than after four structural PRs.
 
-## `P3-5` — `objectTrack`: stop passing configuration to a shell
+## `P3-5` — `objectTrack`: stop passing configuration to a shell — **done**
 
 `system()` on a string assembled from an XML `<options/script>` value, with a trailing `&`
 inside the string so it does not even wait. Any shell metacharacter in a config file runs
 with the process's privileges. Evidence: [`../findings/security.md`](../findings/security.md).
 
-Replace with `posix_spawn` or `fork`+`execv` on an argv array, or delete the feature.
-`objectTrack` is in `modules/filters`, outside the programme's stated scope, but this is a
-one-function change and the only `system()` call in the tree.
+**What landed: `fork` + `execvp` on an argv array** (`runDetached()`, file-local in
+`objectTrack.cpp`), keeping the feature — the script is the documented way a zone change gets
+published, and deleting it would have been a silent removal of someone's pipeline. The
+configured value is now a program name and its two numbers are arguments, so a metacharacter
+in a configuration file is a character in a file name and nothing more.
+
+Three properties of the old call were load-bearing and are kept:
+
+- **the frame loop does not block on a user script.** The `&` is replaced by a double fork:
+  the intermediate child exits at once, the script is reparented to init and reaped by init
+  instead of becoming a zombie of ours on every zone change.
+- **the script's exit status is nobody's business.** Waiting for the *intermediate* is what
+  stops `publishCount()` leaking a zombie of its own; the wait ends before the script's
+  `exec` has necessarily been reached, so it is as bounded as `system()`'s ever was.
+- **a filter must not fail the bank over a helper script.** An unrunnable program is logged
+  and survived — `filter()` returning `false` aborts the whole bank — which matters because
+  the *default* `options/script` is the relative name `updateCount.sh` that no configuration
+  provides, so this is the path every run without the option takes.
+
+Between `fork` and `exec` only async-signal-safe functions may run, so the child reports
+failure with `write()` and `_exit()`, never with `BOOST_LOG` (whose locks another thread may
+hold at `fork()` time). A path that is not executable is reported by the parent, where there
+is a logger; a bare `$PATH` name that fails is reported by the child on stderr, exactly as the
+shell used to, because duplicating the `execvp` search in order to check it first would be a
+second implementation to keep honest.
+
+Four tests (`tests/test_objecttrack.cpp`, ctest target `objecttrack`). The fence,
+`ShellMetacharactersInScriptAreNotInterpreted`, drives six payloads — `;`, `&&`, `|`,
+`$(…)`, backticks and a newline — and was observed failing on the parent commit on all six:
+the marker file appeared, *and* `count.sh` had been executed with no arguments, which is the
+other half of the finding (the shell split the string, so the count never arrived). The other
+three tests pin the behaviour the rewrite must not lose: the script still runs and still
+receives its two numbers, an unrunnable program is survived, and a stable object count still
+publishes nothing.
+
+Warnings 26 → **25**: `-Wunused-result` on the `system()` call was the compiler describing
+this defect on every build, and it is gone with it. Counter 20 is 0, and its command now
+strips comments — the replacement's doc comment names `system()` to record what it replaced,
+and the un-stripped grep reports those three lines, which is the prose-counting mistake
+`X4`'s gate already made once.
 
 ## `P3-6` — config strings used as `printf` formats — **done**
 

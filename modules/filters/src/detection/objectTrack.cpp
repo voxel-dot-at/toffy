@@ -17,7 +17,15 @@
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/log/trivial.hpp>
-#include <sstream>
+
+// POSIX only, like the rest of toffy (P2-2): the process primitives publishCount
+// needs are fork/execvp/waitpid, and there is no Windows variant to keep in step.
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#include <cerrno>
+#include <cstring>
 
 #include <opencv2/highgui.hpp>
 
@@ -193,12 +201,114 @@ bool ObjectTrack::filter(const Frame& in, Frame& out)
     return true;
 }
 
+namespace {
+
+/**
+ * Run `program a1 a2` in the background, with no shell anywhere in the path.
+ *
+ * This is finding N4 / `P3-5`. publishCount() used to do
+ *
+ *     sb << updateScript << " " << cnt << " " << numObjects << "&";
+ *     system(sb.str().c_str());
+ *
+ * and `updateScript` is `options/script`, read straight out of XML. A config
+ * file containing "count.sh; rm -rf ..." therefore ran the second command with
+ * this process's privileges, and the "&" was inside the string, so /bin/sh
+ * backgrounded the script and exited: system() waited for the shell, never for
+ * the script. tests/test_objecttrack.cpp pinned that before the fix - a config
+ * value containing a ";" created a file it named.
+ *
+ * What was load-bearing about the old call was that the frame loop does not
+ * block on a user script and that the script's exit status is nobody's business.
+ * Both are kept. What is dropped is the parsing: the program and its arguments
+ * go to execvp() as an argv array, so a metacharacter in a configuration file is
+ * a character in a file name and nothing more.
+ *
+ * The double fork is what replaces the "&". The intermediate child exits
+ * immediately, so the script is reparented to init and reaped by init instead of
+ * becoming a zombie of ours on every zone change; waiting for the *intermediate*
+ * is what stops this function leaking a zombie of its own, and it returns as
+ * soon as the intermediate is done, which is before the script's exec has been
+ * reached. The wait is as bounded as system()'s ever was: it can only outlast
+ * this call if the intermediate child is stopped by a debugger or a SIGSTOP.
+ *
+ * Between fork() and exec only async-signal-safe functions may be called, so the
+ * child does exactly one thing and reports failure with write() and _exit() -
+ * not with BOOST_LOG, whose locks another thread may be holding at fork() time.
+ */
+void runDetached(const std::string &program, const std::string &a1,
+                 const std::string &a2)
+{
+    // A clean diagnostic is only possible for a path: a bare name is resolved
+    // against $PATH by execvp(), and duplicating that search here to check it
+    // would be a second implementation to keep honest. A bare name that cannot
+    // be executed is therefore reported by the child, on stderr, exactly as the
+    // shell used to report it.
+    if (program.find('/') != std::string::npos &&
+        access(program.c_str(), X_OK) != 0) {
+        // Reported, not thrown: a filter returning false aborts the whole bank,
+        // and an unrunnable helper is not that. Every configuration that never
+        // set options/script lands here too, because the default is the relative
+        // name "updateCount.sh" - the shell printed the same complaint on stderr
+        // once per call, so this is not a new message, only a filterable one.
+        BOOST_LOG_TRIVIAL(warning)
+            << "publishCount: cannot execute " << program << ": "
+            << strerror(errno);
+        return;
+    }
+
+    char *const argv[] = {const_cast<char *>(program.c_str()),
+                          const_cast<char *>(a1.c_str()),
+                          const_cast<char *>(a2.c_str()), nullptr};
+
+    const pid_t intermediate = fork();
+    if (intermediate < 0) {
+        BOOST_LOG_TRIVIAL(warning)
+            << "publishCount: fork failed: " << strerror(errno);
+        return;
+    }
+
+    if (intermediate == 0) {
+        const pid_t script = fork();
+        if (script > 0) {
+            // The script outlives this child and belongs to init from here on.
+            _exit(0);
+        }
+        if (script == 0) {
+            execvp(program.c_str(), argv);
+            // Only reached if exec failed, which the access() above makes
+            // unlikely for a path: the file can still have gone away since.
+            const std::string msg =
+                "toffy: cannot execute " + program + ": " + strerror(errno) +
+                "\n";
+            const ssize_t ignored =
+                write(STDERR_FILENO, msg.data(), msg.size());
+            (void)ignored;
+            _exit(127);
+        }
+        _exit(127);
+    }
+
+    int status = 0;
+    while (waitpid(intermediate, &status, 0) == -1 && errno == EINTR) {
+        // A signal that interrupted the wait is not a reason to leak the child.
+    }
+}
+
+}  // namespace
+
 void ObjectTrack::publishCount()
 {
-    std::stringstream sb;
-    sb << updateScript << " " << cnt << " " << numObjects << "&";
+    // The two numbers the helper script is given: the zone counter and the
+    // number of objects. numObjects is still the *previous* frame's count here,
+    // because filter() publishes before it updates the member. Pinned as it
+    // behaves by tests/test_objecttrack.cpp and filed as A27; fixing it is a
+    // behaviour change and not this item's.
+    const std::string count = boost::lexical_cast<std::string>(cnt);
+    const std::string objects = boost::lexical_cast<std::string>(numObjects);
 
-    BOOST_LOG_TRIVIAL(debug) << "publ: " << sb.str();
+    BOOST_LOG_TRIVIAL(debug) << "publ: " << updateScript << " " << count << " "
+                             << objects;
 
-    system(sb.str().c_str());
+    runDetached(updateScript, count, objects);
 }

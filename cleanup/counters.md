@@ -2,10 +2,10 @@
 
 **This is the only place a measured number is written down.** Other chapters link here.
 
-Re-measured on `feature/code-cleanup` at `ac1108a` with PR 34 (`P2-2`) applied — i.e. after
+Re-measured on `feature/code-cleanup` with PR 35 (`P3-5`) applied — i.e. after
 `P3-1`, `P3-3`, `P3-4`, `P3-7`, `P3-9`, `P3-11`, `A24`, `P3-6`, `P3-2`, `P3-12`, `X2b`, `X3`,
-`X4`, the `Doxyfile.cfg` fix and the `docs` gate; GCC 13.3, CMake 3.28.3, default
-configuration (PCL on, BTA on). Every command below is copy-pasteable from the
+`X4`, the `Doxyfile.cfg` fix, the `docs` gate, `P2-2` and `P3-5`; GCC 13.3, CMake 3.28.3,
+default configuration (PCL on, BTA on). Every command below is copy-pasteable from the
 repository root; run them before quoting a figure.
 
 An earlier revision of this header cited `4739900`, which is not an ancestor of `HEAD` — it
@@ -44,17 +44,17 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 14a | | tree | **0** (was 16, then 15 after `P3-1` deleted the orphan; `P2-2`) — the `-DMSVC` definition in `CMakeLists.txt` is gone with them, and a CI step fails on either | 0 | ✅ |
 | 14b | platform branches in the vendored BTA example | `apps/tst_pb.cpp` | **3** (`#ifdef PLAT_WINDOWS` × 2, `#elif defined(PLAT_WINDOWS) \|\| defined(WIN32) \|\| defined(WIN64)`) — the vendor's own code, guarded on macros this build sets (`PLAT_LINUX`) rather than on `MSVC`, and uncompilable by CI (no SDK). Out of `P2-2`'s scope by decision, not by oversight; see the note below | vendor's | ⚠️ not ours |
 | 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **0** in all four configurations, and `toffy_core` is compiled with `-Werror` (`P3-4`) | 0 | ✅ |
-| 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **26** (was 32; −4 from the `Mux` using-declaration, −2 from `csv_source`'s `fscanf` sites now being checked, `P3-6`) — reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
+| 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **25** (was 32; −4 from the `Mux` using-declaration, −2 from `csv_source`'s `fscanf` sites now being checked, `P3-6`, −1 from `system()`'s `-Wunused-result` going with `P3-5`) — reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
 | 16 | artefacts describing the removed web control product | tree | **0** (was 12, then 8: 4 installed headers `P3-2`, 3 screenshots and the `use.dox` page `X4`, 3 CLI options `X3`, 1 `Player` `@todo` `X4`) — enumerated below, because "≥ 3" was not a number | 0 | ✅ |
 | 17 | installed public headers that do not compile standalone | install tree | **0** (was 4 by hand, 5 once the check was written: 3 deleted by `P3-2`, 2 fixed by `P3-12`) — 86 of 86 pass, 0 skipped, and the `installed-headers` CI job runs the check on every push. The check is now **two passes**: each header once, and each header twice (`X2b`), so 172 checks | 0 | ✅ |
 | 18 | public headers including the CMake-generated `toffy_export.h` | tree | **7** (was 8; one went with the orphan) — `P3-10` targets 0 | 0 | |
 | 18a | `TOFFY_EXPORT` annotation sites | tree | **17** in 16 headers | 0 | |
 | 19 | CMake `if( ${VAR} )` sites | build | **0** (was 4) — CI now fails on any new one | 0 | ✅ |
-| 20 | `system()` on configuration data | `modules/filters` | **1** | 0 | |
+| 20 | `system()` on configuration data | `modules/filters` | **0** (was 1, `ObjectTrack::publishCount`; `P3-5`) — the whole tree is now free of `system()`, and a third step in the `cmake-hygiene` CI job fails on any new one. The command below strips comments, because the replacement function's doc comment names `system()` in order to record what it replaced | 0 | ✅ |
 | 21 | config string used as a `printf` format | `modules/filters` | **0** — `csv_source`'s 2 and `exportcsv`'s 2 are closed (`P3-6`); both filters validate their pattern at config time and expand through `toffy::formatPath`, the one place in the tree where snprintf's format argument is a variable | 0 | ✅ |
 | 22 | files containing hard tabs / files in core | `modules/core` | **11 / 20** | 0 / 20 | |
 | 23 | lines of code | `modules/core` | **4 113** (was 4 032 at `84d1b63`; +81 from `filter_helpers.hpp`, which the previous figure claimed to already count — it was measured before that commit landed) | — | |
-| 24 | `ctest` targets | `tests/` | **11** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`, `exportcsv` by `P3-6`) | ≥ 8 | ✅ |
+| 24 | `ctest` targets | `tests/` | **12** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`, `exportcsv` by `P3-6`, `objecttrack` by `P3-5`) | ≥ 8 | ✅ |
 | 25 | `const`-only `filter()` overrides that do not say `override` | `modules/`, `libraries/` | **0** (was 3, fixed by `P3-3`; 4 sites now carry it) | 0 | ✅ |
 | 26 | `WITH_CONTROL` sites — a symbol no build file defines | tree | **0** (was 5: 3 in `initPlugin.cpp`, 2 in `initPlugin.hpp`; `P3-2`) | 0 | ✅ |
 | 27 | `toffyRunner` options describing a server that never starts | `apps/` | **0** (was 3: `--host/-h`, `--port/-p`, `--html/-d` — parsed, printed, used by nothing; `X3`) | 0 | ✅ |
@@ -214,8 +214,14 @@ git ls-files -z '*.cmake' '*CMakeLists.txt' \
   | xargs -0 -r grep -HE '(if|elseif|while)[[:space:]]*\([[:space:]]*\$\{' \
   | grep -vE 'MATCHES|STREQUAL'
 
-# 20, 21
-grep -rn "system(" modules/filters --include=*.cpp
+# 20 — the shell in the pipeline. Comments name the call that used to be here (the
+#      replacement documents why it was removed), so strip them or the counter reports the
+#      fix as the finding — the same mistake counter 29's first version made about prose.
+#      Scope: the whole tree, not modules/filters, since "the only system() in the tree" is
+#      the claim being checked.
+git ls-files -z '*.cpp' '*.hpp' '*.h' | xargs -0 -r grep -nHE '\bsystem[[:space:]]*\(' | NC
+#   0 sites. Before P3-5: 1, in objectTrack.cpp. The un-commented grep still returns 3
+#   lines there, all of them the doc comment on runDetached() explaining the replacement.
 # 21 — a config string passed as snprintf's format argument. The variables are
 #      _depthPattern/_amplPattern/_filePattern, so the "_pattern" grep this counter used to
 #      carry matched nothing at all, and the figure was being carried on trust. Match on the

@@ -3,8 +3,8 @@
 What has landed, what is in flight, and what the release situation is. Counters are in
 [`counters.md`](counters.md); the order the rest goes in is in [`order.md`](order.md).
 
-State as of `ac1108a` plus PR 34 (`P2-2`, the Windows paths), re-checked against the tree
-rather than carried over from the previous round.
+State as of PR 35 (`P3-5`, the `system()` call), re-checked against the tree rather than
+carried over from the previous round.
 
 ## Landed
 
@@ -36,9 +36,10 @@ rather than carried over from the previous round.
 | **32** | `docs/Doxyfile.cfg` hygiene (found by `X4`) | ✅ done | The `docs` target went from **15 warnings/errors to 0**: 14 obsolete tags (`Doxyfile.cfg` still declares `# Doxyfile 1.8.12`), an `EXAMPLE_PATH` entry pointing at `<root>/descDocs` when the directory is `docs/descDocs` (deleted, not corrected — correcting it would add a path to the `\include` search that has never been in effect), and an `HTML_EXTRA_FILES` entry for a `roi_guide.odt` that `git log --all` shows was never committed. `docs` exited 0 through all 15, which is why they survived since `59b6bcf`. **One warning lied:** `HTML_TIMESTAMP` is reported obsolete but still controls the footer — removing it changes 22 of 22 generated pages, verified by diffing the whole tree. The timestamp is gone deliberately (reproducible output); `TIMESTAMP = YES` puts it back. Counter 30 added |
 | **33** | `docs` CI job: the gate for counter 30 | ✅ done | A fifth CI job runs the `docs` target and fails on any `warning:`/`error:` in its log — the exit code cannot go red, which is how 15 diagnostics survived since `59b6bcf`. Deliberately PCL-less and bta-less: measured, that configuration generates the same 22 pages with 0 warnings, so `libpcl-dev` buys documentation nothing. Verified red by re-adding one obsolete `PERL_PATH` line, green on the tree; YAML and the step's shell both parse-checked |
 | **34** | `P2-2` the Windows paths — **deleted**, and the platform policy says so | ✅ done | The decision the item asked for, not a grep: toffy is POSIX-only. All **15** `MSVC` branches gone (counters 14/14a → **0**) — the `LoadLibrary`/`GetProcAddress` plug-in loaders in `controller.cpp` and `filterbank.cpp`, the `boost::posix_time` epoch arithmetic in `bta.cpp`/`capturerFilter.cpp`, the `RAWFILE` `".rw"` branch, the `<Windows.h>` include in `cloudviewpcl.cpp`, and the `SetConsoleCtrlHandler` half of `main.cpp` — plus the `-DMSVC` / `-D_WIN32_WINNT` definitions that only ever reached `apps/`, which is the asymmetry that made the two halves of one program disagree. `CMakeLists.txt` now fails a Windows configure with a message naming the reason instead of dying on a missing `<dlfcn.h>`. **Nothing was enabled**: every deleted branch was the one the library never compiled, so the output of every build this tree can produce is unchanged — measured, not asserted: 4 dependency configurations from scratch, 11/11 `ctest` each, warnings 26/25/24/23 exactly as before, the warning *set* identical to a base worktree build (only the two `apps/main.cpp` line numbers move, because lines were deleted above them), and `readelf --dyn-syms` unchanged at **2 889** symbols, `diff` empty. Gate: a second step in the `cmake-hygiene` job fails on any `#if`/`#ifdef`/`#ifndef`/`#elif` naming `MSVC` or `_MSC_VER`, or on `-DMSVC` in the build — verified red on four probe shapes and on a re-added definition, green on the tree, and it does **not** fire on the comments left behind. `RAWFILE` stays `".r"`. The vendored `apps/tst_pb.cpp` keeps the vendor's three `PLAT_WINDOWS` branches (counter **14b**, new), and the now-unreachable MSVC scaffolding in `CMakeLists.txt` is filed as **`P3-13`** |
+| **35** | `P3-5` the `system()` call in `ObjectTrack` — **gone**, so a config file is a program name again | ✅ done | `publishCount()` concatenated `options/script` — read straight out of XML — with two numbers and a trailing `&`, and handed the result to `/bin/sh`. A config file containing `count.sh; rm -rf …` therefore ran the second command with this process's privileges, and because the `&` was *inside* the string, `system()` waited for the shell and never for the script. Replaced with `fork` + `execvp` on an argv array: the configured value is a program name, its arguments are arguments, and no shell is anywhere in the path. The double fork is what replaces the `&` — the script is reparented to init, so a zone change does not leave a script nobody waits for, and the *intermediate* child is waited for, so the function leaks no zombie of its own and still does not block the frame loop. Only async-signal-safe functions run between `fork` and `exec`, so the child reports failure with `write()`/`_exit()` and not with `BOOST_LOG`, whose locks another thread may hold at `fork()` time. An unrunnable script is reported and survived, because a filter returning `false` aborts the whole bank. **4 tests** (`tests/test_objecttrack.cpp`, ctest target `objecttrack`); the fence `ShellMetacharactersInScriptAreNotInterpreted` was observed failing on the parent commit for all six payloads (`;`, `&&`, `\|`, `$(…)`, backticks, newline) — the marker file appeared *and* `count.sh` had been executed with no arguments. Warnings 26 → **25**: `-Wunused-result` on `system()` was the compiler describing this defect on every build. Re-measured in all four configurations from scratch, **12/12** `ctest` each, 25/24/23/22 warnings — exactly one less in every cell, which is the expected shape of removing one call. No installed header and no exported symbol is touched (`runDetached` is in an anonymous namespace): `readelf --dyn-syms | grep -v UND | wc -l` is **2 889** on both sides of a `0262fcd` worktree build and the exported set `diff`s empty, and `api_change_report.sh` exits 0. **The import set does move, and that is worth recording rather than glossing:** `system` is gone and `fork`, `execvp`, `waitpid`, `access`, `write` and `_exit` arrive — six libc symbols in, one out. Not an ABI break (nothing downstream binds to an import of ours), but it is the first time `libtoffy.so` itself depends on `fork`/`execvp`, i.e. the library is now POSIX-only at the *symbol* level too, which is the policy `P2-2` stated. Filed `A27`: the published object count is the *previous* frame's, because `filter()` publishes before it updates `numObjects` — pinned as it behaves, not changed |
 
-**Twenty-four PRs are done** (1, 2, 3, 4, 5, 6, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-28, 29, 30, 31, 32, 33, 34 — the numbering has no gaps, but PR 7 is core-only and the PRs beyond
+**Twenty-five PRs are done** (1, 2, 3, 4, 5, 6, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+28, 29, 30, 31, 32, 33, 34, 35 — the numbering has no gaps, but PR 7 is core-only and the PRs beyond
 18 are the second-pass work, so "n of 18" stopped being a meaningful fraction once `P3`
 started landing). PR 2 is
 complete rather than 4-of-5. That is the whole `P0` block, the test/CI fence, the build-flag
@@ -68,8 +69,8 @@ Windows branches were deleted rather than enabled.
 The second-pass work (`P3-1` … `P3-12`) is listed in
 [`plan/second-pass.md`](plan/second-pass.md). All four of its cheap items are done (`P3-1`,
 `P3-3`, `P3-4`, `P3-7`) and so are `P3-11`, `P3-9` — the latter is the fence `P2-12` cannot
-be merged without — `P3-6` in full, and `P3-2`/`P3-12` (PR 28). What is left there is `P3-5`
-(the `system()` call), the mechanical `P3-10` and the `P3-8` note. `P3-10` and `P2-12` are the
+be merged without — `P3-6` in full, `P3-2`/`P3-12` (PR 28) and `P3-5` (PR 35). What is left
+there is the mechanical `P3-10` and the `P3-8` note. `P3-10` and `P2-12` are the
 remaining API-surface changes and belong with `P3-2`'s tag.
 
 The controller extraction (`X1` … `X6`,
@@ -82,15 +83,19 @@ do not rehost `initUI` here.
 ## Gates
 
 - **`DOD 1.1` green: all four dependency configurations build and pass.** PCL on/off ×
-  BTA on/off, each configured from scratch, built and run — 11/11 in every cell, 26/25/24/23
-  warnings (re-measured on PR 34: 26 default, 25 PCL-off, 24 BTA-off, 23 both off — the same
-  four figures as on PR 28, which is the point: `P2-2` was proved to change no build output).
+  BTA on/off, each configured from scratch, built and run — 12/12 in every cell, 25/24/23/22
+  warnings (re-measured on PR 35: 25 default, 24 PCL-off, 23 BTA-off, 22 both off — one less
+  than the 26/25/24/23 of PR 34 in *every* cell, which is the expected shape of deleting the
+  single `system()` call and its `-Wunused-result`; `P2-2` had already been proved to change
+  no build output).
   Both axes were broken before this branch: PCL-off on unguarded typedefs and on CMake `if()`
   clauses that expanded to nothing, BTA-off on an unconditional `add_subdirectory(bta)`.
 - **CI builds, tests and reports warnings on every push and PR** — five jobs: the PCL
   matrix, the sanitizer build, `installed-headers` (`P3-12`, two passes since `X2b`, plus the
-  source-tree residue step), `docs` (counter 30) and `cmake-hygiene`, which since `P2-2` has
-  two steps: the `if( ${VAR} )` sweep (`P3-7`) and the no-`MSVC`-branches gate. The build
+  source-tree residue step), `docs` (counter 30) and `cmake-hygiene`, which since `P3-5` has
+  three steps: the `if( ${VAR} )` sweep (`P3-7`), the no-`MSVC`-branches gate (`P2-2`) and the
+  no-`system()` gate (counter 20, comment-stripped for the same reason the residue gate skips
+  prose; verified red on a re-added `system("true");` and green on the tree). The build
   step pipes its log through `tools/warning_report.sh` (`P3-11`). Two limits when citing a
   green run:
   runners cannot have the proprietary bta SDK, so only the **BTA-off** axis is covered
