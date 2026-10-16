@@ -27,7 +27,11 @@ FilterThread::~FilterThread()
     inQ.clear();
     outQ.clear(); //TODO: check frames..
 
-    delete f;
+    // `delete f` is gone (P2-5): the lane shares the filter with the FilterBank
+    // that pipelined it, and the object is destroyed when the last FilterPtr
+    // goes. This destructor still runs first for a ParallelFilter -- its lanes
+    // are destroyed before the base FilterBank clears _pipe -- which used to be
+    // the double free; now it is just the thread letting go early.
 }
 
 

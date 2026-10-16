@@ -47,8 +47,13 @@ when reading key from the Frame.
 responsible for executing a group of filters sequentially.
 
  Every filter should be contained in a filterBank, filterbanks also.
-A FilterFactory is will create them, identify them uniquely, and delete when
-are not needed any more.
+A FilterFactory will create them and identify them uniquely, but it does not own
+them: `createFilter()` hands back a `FilterPtr` (a `std::shared_ptr<Filter>`) and
+that is the filter's only strong reference. The filterBank it is added to keeps
+the filter alive, and the filter is destroyed when the last owner lets go — not
+when something asks a process-wide registry to delete it by name. The factory
+keeps an index for `getFilter(name)`, and that index is weak, so it expires
+instead of dangling.
 
  The FilterBank can be treated as an isolated process instance of toffy, which
 allows for example have global configuration for each FilterBank

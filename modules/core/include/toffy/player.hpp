@@ -124,8 +124,13 @@ public:
     /**
      * @brief Getter for the base FilterBank
      * @return Pointer to base Filterbank on success, NULL in failed
+     *
+     * A non-owning observer (P2-5): the Player's Controller owns the bank, so
+     * this pointer is valid for as long as the Player is. The .get() is new
+     * with P2-5 -- Controller::baseFilterBank is a FilterPtr now -- and is the
+     * only change a caller of this function has to make.
      */
-    FilterBank* filterBank() {return _controller.baseFilterBank;}
+    FilterBank* filterBank() {return _controller.baseFilterBank.get();}
 
     Controller * getController() {return &_controller;}
 

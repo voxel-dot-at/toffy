@@ -37,6 +37,7 @@
 // could be passing for the wrong reason, and DOD 1 ("a test that has never been
 // observed to fail is not a regression fence") would not be satisfied.
 
+#include <memory>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -106,16 +107,15 @@ class NotAnOverrideFilter : public toffy::Filter
     }
 };
 
-/** Register a creator and build the filter through the factory, so that
- *  FilterBank::clearBank() can release it - see the ownership note in
- *  dummy_filter.hpp. Without this the bank leaks the filter and the ASan CI job
- *  reports the harness instead of the code under test. */
+/** Register a creator and build the filter through the factory, so the test
+ *  goes the way production does and gets shared ownership of the result back
+ *  (P2-5) - see the ownership note in dummy_filter.hpp. */
 template <typename T>
-T* makeViaFactory(const std::string& type)
+std::shared_ptr<T> makeViaFactory(const std::string& type)
 {
     toffy::FilterFactory::registerCreator(
         type, []() -> toffy::Filter* { return new T(); });
-    return static_cast<T*>(
+    return std::static_pointer_cast<T>(
         toffy::FilterFactory::getInstance()->createFilter(type));
 }
 
@@ -124,7 +124,7 @@ T* makeViaFactory(const std::string& type)
 TEST(FilterOverloadP39, ConstOnlyOverrideRunsThroughTheBank)
 {
     toffy::FilterBank bank;
-    ConstOnlyFilter* f = makeViaFactory<ConstOnlyFilter>("const_only");
+    auto f = makeViaFactory<ConstOnlyFilter>("const_only");
     ASSERT_NE(nullptr, f);
     bank.add(f);
 
@@ -137,7 +137,7 @@ TEST(FilterOverloadP39, ConstOnlyOverrideRunsThroughTheBank)
 TEST(FilterOverloadP39, NonConstOnlyOverrideRunsThroughTheBank)
 {
     toffy::FilterBank bank;
-    NonConstOnlyFilter* f = makeViaFactory<NonConstOnlyFilter>("nonconst_only");
+    auto f = makeViaFactory<NonConstOnlyFilter>("nonconst_only");
     ASSERT_NE(nullptr, f);
     bank.add(f);
 
@@ -184,8 +184,7 @@ TEST(FilterOverloadP39, NegativeControlDetectsAnOverrideThatOverridesNothing)
     // pipeline has become able to reach such a declaration and the three tests
     // above have stopped being evidence of anything.
     toffy::FilterBank bank;
-    NotAnOverrideFilter* f =
-        makeViaFactory<NotAnOverrideFilter>("not_an_override");
+    auto f = makeViaFactory<NotAnOverrideFilter>("not_an_override");
     ASSERT_NE(nullptr, f);
     bank.add(f);
 

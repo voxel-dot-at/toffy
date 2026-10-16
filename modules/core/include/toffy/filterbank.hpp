@@ -16,6 +16,7 @@
 */
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -46,6 +47,19 @@ namespace toffy {
  *
  * It also the start point for toffy. A base FilterBank is defined in Player and
  * is the base for creating the execution structure.
+ *
+ * Ownership (P2-5): the pipeline is a vector of FilterPtr and the bank is what
+ * keeps its filters alive. add() takes shared ownership of the filter it is
+ * given; remove(), clearBank() and the destructor give it up, and the filter is
+ * destroyed when the last owner lets go -- which is this bank unless somebody
+ * else took a FilterPtr first. Nothing calls delete on a Filter.
+ *
+ * That replaces the previous arrangement, where _pipe held raw pointers, the
+ * FilterFactory registry held raw pointers to the same objects, and the bank's
+ * teardown destroyed them by looking each one up *by name* in the factory. A
+ * filter that had been renamed was therefore never released (leak), and a
+ * filter that was in two banks was destroyed twice (double free) -- see
+ * cleanup/findings/ownership.md (C1, A17).
  *
  * It is able to read config files and load all the Filters and information.
  *
@@ -86,24 +100,48 @@ class TOFFY_EXPORT FilterBank : public Filter
     virtual ~FilterBank();
 
     /**
-     * @brief Adds a Filter to the filterBank
-     * @param f Filter
+     * @brief Adds a Filter to the filterBank, sharing ownership of it
+     * @param f FilterPtr; the bank takes a reference to whatever it points at
+     *
+     * The bank keeps a strong reference, so the filter outlives the caller's
+     * own FilterPtr. An empty FilterPtr is refused with a warning instead of
+     * being pipelined: a null in _pipe is a crash several frames later, in a
+     * place with no connection to the call that put it there.
+     *
+     * The raw-pointer overload is gone on purpose, and `add(new X())` does not
+     * compile either: shared_ptr's constructor from a raw pointer is `explicit`
+     * (LWG 2904, and libstdc++ enforces it in every mode this project builds),
+     * so there is no implicit route from a bare `Filter*` into the pipeline.
+     * That is the point. The old signature accepted a borrowed pointer and
+     * silently took a second, independent claim on the object -- which is how a
+     * filter in two banks came to be deleted by the first one. Callers now have
+     * to hand over a FilterPtr, so the ownership is visible at the call site:
+     * `bank.add(factory->createFilter(type))`, or `add(std::make_shared<X>())`
+     * for the rare case of a filter built outside the factory.
      */
-    void add(Filter* f);
+    void add(FilterPtr f);
 
     /**
      * @brief Adds a filter in a determined position of the FilterBank
-     * @param pos int
-     * @param f Filter
+     * @param pos int, 0..size() inclusive (size() appends)
+     * @param f FilterPtr, see add() for the ownership rules
+     * @throws std::out_of_range if pos is negative or greater than size()
+     *
+     * The bounds check is new with P2-5. The old body was
+     * `_pipe.insert(_pipe.begin() + pos, f)` with no check at all, so a
+     * negative or oversized pos was undefined behaviour rather than an error.
+     * An empty FilterPtr is refused the same way add() refuses it, and the
+     * filter the rejected call created is destroyed on the way out.
      */
-    void insert(int pos, Filter* f)
-    {
-        std::vector<Filter*>::iterator it = _pipe.begin();
-        _pipe.insert(it + pos, f);
-    }
+    void insert(int pos, FilterPtr f);
 
     /**
      * @brief Remove all filter from the FilterBank
+     *
+     * Drops the bank's reference to every filter; a filter is destroyed if the
+     * bank was its last owner. No factory round-trip and no name lookup, which
+     * is what made the old version leak renamed filters and double-free filters
+     * that were in two banks (P2-5).
      */
     void clearBank();
 
@@ -123,6 +161,8 @@ class TOFFY_EXPORT FilterBank : public Filter
      * @param i
      * @return Filter
      *
+     * Non-owning observer into _pipe; valid while this bank holds the filter.
+     * Throws std::out_of_range if i is not a position in the pipeline.
      */
     const Filter* getFilter(int i) const;
 
@@ -141,13 +181,18 @@ class TOFFY_EXPORT FilterBank : public Filter
      * @brief getFilter by position
      * @param i
      * @return Filter
+     *
+     * Non-owning observer into _pipe; valid while this bank holds the filter.
+     * Throws std::out_of_range if i is not a position in the pipeline.
      */
     Filter* getFilter(int i);
 
     /**
      * @brief Gets all filter in a FilterBank by type
      * @param type
-     * @param vec
+     * @param vec appended-to; holds non-owning observers, not FilterPtr, so the
+     *        caller cannot accidentally keep a filter alive through a pipeline
+     *        it does not own
      * @return std::vector<Filter *>
      *
      * @todo Move to FilterFactory and reimplement localy
@@ -167,6 +212,10 @@ class TOFFY_EXPORT FilterBank : public Filter
      * @brief Removes a filter from the FilterBank by name
      * @param name Name of the filter to remove
      * @return 1 if a filter was removed, 0 if no filter has that name
+     *
+     * Removes it from *this* pipeline; the filter itself survives as long as
+     * somebody else holds a FilterPtr for it. Since P2-5 the caller can keep
+     * one, and the removed filter is not destroyed under its feet.
      */
     int remove(const std::string& name);
 
@@ -328,20 +377,35 @@ class TOFFY_EXPORT FilterBank : public Filter
     /**
      * @brief Creates a new filter instance based on the iterator contents
      * @param it
-     * @return Filter
+     * @return FilterPtr, empty if the type is unknown
      *
      * it calls loadConfig on the filter and registers it with the
      * filterfactory.
      *
+     * Returns a FilterPtr since P2-5: the caller has to be able to hand the
+     * ownership on to add(), and returning a raw pointer here meant the caller
+     * had to arrange ownership of something it did not create. Derived classes
+     * that override this (and there are none in this repository) change shape
+     * with it.
      */
-    virtual Filter* instantiateFilter(
+    virtual FilterPtr instantiateFilter(
         const boost::property_tree::ptree::const_iterator& it);
 
     int loadPlugins(const boost::property_tree::ptree& pt);
 
    private:
-    FilterFactory* ff = nullptr; ///< Pointer to the FilterFactory
-    std::vector<Filter*> _pipe;  ///< Filter container
+    FilterFactory* ff = nullptr;  ///< Pointer to the FilterFactory (a singleton,
+                                  ///< so a non-owning observer)
+    /**
+     * @brief Filter container; the bank owns what is in it (P2-5).
+     *
+     * Shared pointers, not raw ones: the pipeline used to be a vector of
+     * borrowed pointers while the FilterFactory registry borrowed the same
+     * objects and ~FilterBank destroyed them through the factory by name. Two
+     * borrowers and no owner is how a renamed filter leaked and a filter in two
+     * banks was freed twice.
+     */
+    std::vector<FilterPtr> _pipe;
 
     boost::property_tree::ptree
         _globalConfig;  ///< Ptree to local to FilterBank globals

@@ -75,3 +75,12 @@ add_test(NAME exportcsv COMMAND test_exportcsv)
 add_executable(test_objecttrack test_objecttrack.cpp)
 target_link_libraries(test_objecttrack toffy GTest::gtest GTest::gtest_main)
 add_test(NAME objecttrack COMMAND test_objecttrack)
+
+# P2-5: who owns a Filter. Counts Filter destructors, which is the only way to
+# see the leak (a renamed filter was never released) and the use-after-free (a
+# filter in two banks was destroyed by the first one) that the raw-pointer
+# arrangement produced. The double free and the read-after-free are also visible
+# to the ASan job; the leaks are visible to its leak check.
+add_executable(test_ownership test_ownership.cpp)
+target_link_libraries(test_ownership toffy GTest::gtest GTest::gtest_main)
+add_test(NAME ownership COMMAND test_ownership)

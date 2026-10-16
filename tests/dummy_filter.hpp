@@ -15,19 +15,20 @@
 */
 #pragma once
 
+#include <memory>
+
 #include <toffy/filter.hpp>
 #include <toffy/filterfactory.hpp>
 
 /**
  * @brief Minimal concrete Filter for exercising FilterBank mechanics.
  *
- * Instances must be created through makeDummyFilter(), i.e. via the
- * FilterFactory, so that ownership matches production: FilterBank::clearBank()
- * and FilterBank::remove() release filters by calling
- * FilterFactory::deleteFilter(name), which only knows about filters the
- * factory created. A DummyFilter built with plain new is therefore never
- * released -- that leak is what P2-5 removes, and it would make the ASan gate
- * in DOD.md 2.1 report the harness instead of the code under test.
+ * Ownership (P2-5): a Filter is a FilterPtr, and adding one to a bank shares
+ * ownership of it. The bank no longer releases filters by asking the factory to
+ * `delete` them by name, so a DummyFilter created with plain `new` and added to
+ * a bank is destroyed correctly now -- but make() still goes through the
+ * factory, because that is the path production takes and it is what registers
+ * the type (see makeDummyFilter below).
  */
 class DummyFilter : public toffy::Filter
 {
@@ -56,16 +57,20 @@ inline void registerDummyFilter()
         "dummy", []() -> toffy::Filter* { return new DummyFilter(); });
 }
 
-/// Creates a DummyFilter through the factory so the bank can release it.
+/// Creates a DummyFilter through the factory and hands back shared ownership.
 ///
 /// Registration happens here on purpose. FilterFactory::createFilter() looks
-/// up unknown types with operator[] on the creator map, which inserts a null
-/// creator and then calls it (findings A18/A20), so an unregistered "dummy"
-/// segfaults instead of failing cleanly. Self-registering makes that
-/// unreachable from a test.
-inline DummyFilter* makeDummyFilter()
+/// up unknown types in the creator map, and before P0-10 that lookup used
+/// operator[], which inserted a null creator and then called it (findings
+/// A18/A20), so an unregistered "dummy" segfaulted instead of failing cleanly.
+/// Self-registering makes that unreachable from a test.
+///
+/// Returns shared_ptr<DummyFilter> rather than DummyFilter* (P2-5): the caller
+/// owns the filter, hands it to a bank by sharing it, and can keep a reference
+/// to check what happened to it afterwards.
+inline std::shared_ptr<DummyFilter> makeDummyFilter()
 {
     registerDummyFilter();
-    return static_cast<DummyFilter*>(
+    return std::static_pointer_cast<DummyFilter>(
         toffy::FilterFactory::getInstance()->createFilter("dummy"));
 }

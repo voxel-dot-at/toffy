@@ -38,7 +38,7 @@ TEST(FilterBankSmoke, NewBankIsEmpty)
 TEST(FilterBankStop, StopStopsChildren)
 {
     FilterBank fb;
-    DummyFilter* dummy = makeDummyFilter();
+    auto dummy = makeDummyFilter();
     fb.add(dummy);
 
     fb.init();
@@ -62,7 +62,7 @@ TEST(FilterBankFindPos, MissingNameYieldsNoValue)
     FilterBank fb;
     EXPECT_FALSE(fb.findPos("missing").has_value());
 
-    DummyFilter* d = makeDummyFilter();
+    auto d = makeDummyFilter();
     fb.add(d);
     ASSERT_TRUE(fb.findPos(d->name()).has_value());
     EXPECT_EQ(0, *fb.findPos(d->name()));
@@ -71,8 +71,8 @@ TEST(FilterBankFindPos, MissingNameYieldsNoValue)
 TEST(FilterBankRemove, ByIndexRemovesTheElementAtThatIndex)
 {
     FilterBank fb;
-    DummyFilter* a = makeDummyFilter();
-    DummyFilter* b = makeDummyFilter();
+    auto a = makeDummyFilter();
+    auto b = makeDummyFilter();
     fb.add(a);
     fb.add(b);
     ASSERT_EQ(2u, fb.size());
@@ -80,7 +80,7 @@ TEST(FilterBankRemove, ByIndexRemovesTheElementAtThatIndex)
     EXPECT_EQ(1, fb.remove(std::size_t(0)));
 
     ASSERT_EQ(1u, fb.size());
-    EXPECT_EQ(static_cast<toffy::Filter*>(b), fb.getFilter(0));
+    EXPECT_EQ(b.get(), fb.getFilter(0));
 }
 
 TEST(FilterBankRemove, ByIndexOutOfRangeIsRejected)
@@ -93,11 +93,11 @@ TEST(FilterBankRemove, ByIndexOutOfRangeIsRejected)
 TEST(FilterBankRemove, MissingNameLeavesBankIntact)
 {
     FilterBank fb;
-    DummyFilter* a = makeDummyFilter();
+    auto a = makeDummyFilter();
     fb.add(a);
 
     EXPECT_EQ(0, fb.remove("no-such-filter"));
 
     ASSERT_EQ(1u, fb.size());
-    EXPECT_EQ(static_cast<toffy::Filter*>(a), fb.getFilter(0));
+    EXPECT_EQ(a.get(), fb.getFilter(0));
 }

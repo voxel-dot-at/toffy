@@ -89,7 +89,8 @@ using namespace toffy::filters;
 using namespace std;
 
 FilterFactory* FilterFactory::uniqueFactory;
-boost::container::flat_map<std::string, Filter*> FilterFactory::_filters;
+boost::container::flat_map<std::string, std::weak_ptr<Filter> >
+    FilterFactory::_filters;
 
 FilterFactory::FilterFactory() {}
 
@@ -114,135 +115,163 @@ FilterFactory* FilterFactory::getInstance()
 
 FilterFactory::~FilterFactory()
 {
-    delete uniqueFactory;
-    // TODO do I have to explicitly delete shared_ptr?
+    // `delete uniqueFactory` used to be the first line here. It is a singleton
+    // deleting itself from inside its own destructor: ~FilterFactory would be
+    // entered again, on the same object, forever. Nothing in the tree deletes
+    // the factory, so the function was unreachable -- but "unreachable" is not
+    // "harmless" in the one place the class claims to own memory (P2-5).
+    //
+    // Clearing the index cannot destroy anything either way: the entries are
+    // weak (P2-5), so whatever outlives the factory is owned elsewhere.
     _filters.clear();
 }
 
 int FilterFactory::deleteFilter(std::string name)
 {
-    boost::container::flat_map<std::string, Filter*>::iterator it;
-    it = _filters.find(name);
-    if (it != _filters.end()) {
-        delete it->second;
-        it = _filters.find(name);
-        _filters.erase(it);
-        return 1;
-    }
-    return 0;
+    // Forget the name; do not destroy anything. The filter dies with the last
+    // FilterPtr holding it, which is the FilterBank it is pipelined into
+    // (P2-5). The old version did `delete it->second` here, which is what made
+    // the factory a second owner of every filter in the tree and made
+    // ~FilterBank's delete-by-name teardown unsafe.
+    //
+    // An entry whose owner has already gone is not a filter: it is reported as
+    // not found, like findFilter() reports it, and is erased on the way out so
+    // the index does not accumulate corpses.
+    boost::container::flat_map<std::string, std::weak_ptr<Filter> >::iterator it =
+        _filters.find(name);
+    if (it == _filters.end()) return 0;
+
+    const bool alive = !it->second.expired();
+    _filters.erase(it);
+    return alive ? 1 : 0;
 }
 
 Filter* FilterFactory::getFilter(const std::string& name) const
 {
-    try {
-        return _filters.at(name);
-    } catch (std::out_of_range& e) {
+    boost::container::flat_map<std::string, std::weak_ptr<Filter> >::const_iterator
+        it = _filters.find(name);
+    if (it == _filters.end()) {
         BOOST_LOG_TRIVIAL(warning) << name << " not found.";
         return NULL;
     }
+
+    // lock(), not get(): an expired entry names a filter that no longer exists.
+    // Returning it used to be possible -- the registry kept the pointer after
+    // the object was deleted -- and is the use-after-free this change removes.
+    const FilterPtr f = it->second.lock();
+    if (!f) {
+        BOOST_LOG_TRIVIAL(warning) << name << " not found.";
+        return NULL;
+    }
+    return f.get();
 }
 
 bool FilterFactory::findFilter(std::string name) const
 {
-    return _filters.find(name) == _filters.end() ? false : true;
+    boost::container::flat_map<std::string, std::weak_ptr<Filter> >::const_iterator
+        it = _filters.find(name);
+    return it != _filters.end() && !it->second.expired();
 }
 
-Filter* FilterFactory::createFilter(const std::string& type,
-                                    std::string /* name */)
+FilterPtr FilterFactory::createFilter(const std::string& type,
+                                      std::string /* name */)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-    Filter* f = nullptr;
+    // Raw on purpose, and only until the FilterPtr is built at the bottom of
+    // this function: the chain below is ~35 `new` expressions, and taking
+    // ownership in exactly one place is what makes "the caller owns it" true.
+    Filter* created = nullptr;
     if (type == "filterBank")
-        f = new FilterBank();
+        created = new FilterBank();
     else if (type == "offset")
-        f = new OffSet();
+        created = new OffSet();
     else if (type == "distAmpl")
-        f = new DistAmpl();
+        created = new DistAmpl();
     else if (type == "offsetCorr")
-        f = new OffsetCorr();
+        created = new OffsetCorr();
 
     else if (type == "polar2cart")
-        f = new Polar2Cart();
+        created = new Polar2Cart();
     else if (type == "rectify")
-        f = new Rectify();
+        created = new Rectify();
 
 #ifdef WITH_VISUALIZATION
     else if (type == ReprojectOpenCv::id_name)
-        f = new ReprojectOpenCv();
+        created = new ReprojectOpenCv();
 #endif
     else if (type == "csvSource")
-        f = new capturers::CSVSource();
+        created = new capturers::CSVSource();
 
     else if (type == "amplitudeRange")
-        f = new AmplitudeRange();
+        created = new AmplitudeRange();
     else if (type == "range")
-        f = new Range();
+        created = new Range();
 
     else if (type == "nop")
-        f = new Nop();
+        created = new Nop();
     else if (type == "cond")
-        f = new Cond();
+        created = new Cond();
     else if (type == "bilateral")
-        f = new smoothing::Bilateral();
+        created = new smoothing::Bilateral();
     else if (type == "average")
-        f = new smoothing::Average();
+        created = new smoothing::Average();
 #if OPENCV_TRACKING
     else if (type == toffy::filters::smoothing::KalmanAverage::id_name)
-        f = new smoothing::KalmanAverage();
+        created = new smoothing::KalmanAverage();
 #endif
     else if (type == "objectTrack")
-        f = new detection::ObjectTrack();
+        created = new detection::ObjectTrack();
     else if (type == "blobs")
-        f = new detection::Blobs();
+        created = new detection::Blobs();
     else if (type == detection::BlobsDetector::id_name)
-        f = new detection::BlobsDetector();
+        created = new detection::BlobsDetector();
     else if (type == "focus")
-        f = new Focus();
+        created = new Focus();
     else if (type == "mask")
-        f = new detection::Mask();
+        created = new detection::Mask();
     else if (type == "dataImporter")
-        f = new import::DataImporter();
+        created = new import::DataImporter();
     else if (type == "importYaml")
-        f = new import::ImportYaml();
+        created = new import::ImportYaml();
     else if (type == "roi")
-        f = new Roi();
+        created = new Roi();
     else if (type == BackgroundSubs::id_name)
-        f = new BackgroundSubs();
+        created = new BackgroundSubs();
 
 #if defined(PCL_FOUND)
 #ifdef PCL_VISUALIZATION
     else if (type == "reprojectpcl")
-        f = new ReprojectPCL();
+        created = new ReprojectPCL();
 #endif
     else if (type == "transform")
-        f = new Transform();
+        created = new Transform();
     else if (type == "merge")
-        f = new Merge();
+        created = new Merge();
     else if (type == "xyz2pcl")
-        f = new Xyz2Pcl();
+        created = new Xyz2Pcl();
     else if (type == "split")
-        f = new Split();
+        created = new Split();
     else if (type == "muxMerge")
-        f = new MuxMerge();
+        created = new MuxMerge();
     else if (type == "sampleConsensus")
-        f = new SampleConsensus();
+        created = new SampleConsensus();
     else if (type == "exportcloud")
-        f = new ExportCloud();
+        created = new ExportCloud();
     else if (type == "exportYaml")
-        f = new ExportYaml();
+        created = new ExportYaml();
     else if (type == "groundprojection")
-        f = new GroundProjection();
+        created = new GroundProjection();
     else if (type == "squareDetect")
-        f = new detection::SquareDetect();
+        created = new detection::SquareDetect();
 #endif
     //#if defined(WITH_SENSOR2D)
     //    else if (type == "sensor2d")
-    //	f = new Sensor2();
+    //	created = new Sensor2();
     //    else if (type == "sensorUsb")
-    //	f = new SensorU();
+    //	created = new SensorU();
     //#endif
     else if (type == "parallelFilter")
-        f = new ParallelFilter();
+        created = new ParallelFilter();
 
     else {
         // Look the creator up without inserting. operator[] default-constructs
@@ -254,46 +283,65 @@ Filter* FilterFactory::createFilter(const std::string& type,
             BOOST_LOG_TRIVIAL(error) << "Unknown filter: " << type;
             return nullptr;
         }
-        f = it->second();
+        created = it->second();
         // The creator itself may hand back null; it used to be dereferenced a
         // few lines below when the name was logged.
-        if (!f) {
+        if (!created) {
             BOOST_LOG_TRIVIAL(error)
                 << "Creator for filter type " << type << " returned null";
             return nullptr;
         }
     }
+
+    // The single point where ownership starts (P2-5). From here on there is one
+    // owner -- the caller -- and the registry below holds a weak index entry
+    // next to it, so the index cannot keep the filter alive and cannot dangle.
+    const FilterPtr f(created);
+
     BOOST_LOG_TRIVIAL(debug)
         << "created f->name(): " << f->name() << " id(): " << f->id()
         << "  type(): " << f->type();
 
-    _filters.insert(std::pair<std::string, Filter*>(f->id(), f));
+    _filters.insert(
+        std::pair<std::string, std::weak_ptr<Filter> >(f->id(), f));
 
     return f;
 }
 
-int FilterFactory::renameFilter(Filter* f, const std::string& oldName,
+int FilterFactory::renameFilter(const FilterPtr& f, const std::string& oldName,
                                 const std::string& newName)
 {
-    boost::container::flat_map<std::string, toffy::Filter*>::iterator oldF =
+    // A weak index entry can only be copied from a shared reference, hence the
+    // FilterPtr parameter: with a raw Filter* this function would have had to
+    // build a control block around an object that already has one, which is a
+    // double delete waiting for the second owner to appear.
+    if (!f) return 0;
+
+    boost::container::flat_map<std::string, std::weak_ptr<Filter> >::iterator oldF =
         _filters.find(oldName);
-    boost::container::flat_map<std::string, toffy::Filter*>::iterator newF =
+    boost::container::flat_map<std::string, std::weak_ptr<Filter> >::iterator newF =
         _filters.find(newName);
 
     if (newF != _filters.end()) {
-        // filter with target name exists already!
+        if (!newF->second.expired()) {
+            // filter with target name exists already!
 
-        // if name == id (no name set explicitly), we fall into this case.
-        // BOOST_LOG_TRIVIAL(info) << "FF we already have a filter named "
-        //			   << newName << "! Abort!" <<endl;
-        return 0;
+            // if name == id (no name set explicitly), we fall into this case.
+            // BOOST_LOG_TRIVIAL(info) << "FF we already have a filter named "
+            //			   << newName << "! Abort!" <<endl;
+            return 0;
+        }
+        // The name is free: whatever held it is gone. Reuse the slot rather
+        // than letting an expired entry block the name forever.
+        _filters.erase(newF);
     }
 
     if (oldF != _filters.end()) {
         // remove old instance.
         _filters.erase(oldF);
     }
-    _filters.insert(std::pair<std::string, Filter*>(newName, f));
+    _filters.insert(
+        std::pair<std::string, std::weak_ptr<Filter> >(newName, f));
 
     BOOST_LOG_TRIVIAL(debug) << "FF stored " << newName << endl;
     return 1;
@@ -303,9 +351,9 @@ int FilterFactory::getFiltersByType(const std::string& type,
                                     std::vector<Filter*>& vec)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-    for (boost::container::flat_map<std::string, Filter*>::iterator it =
-             _filters.begin();
-         it < _filters.end(); it++) {
+    for (boost::container::flat_map<std::string, std::weak_ptr<Filter> >::iterator
+             it = _filters.begin();
+         it != _filters.end(); it++) {
         // BOOST_LOG_TRIVIAL(debug) << type;
         // BOOST_LOG_TRIVIAL(debug) << (*it)->id();
         // if ((*it)->type() == "filterBank" ||
@@ -313,7 +361,12 @@ int FilterFactory::getFiltersByType(const std::string& type,
         //{
         //     ((FilterBank *)(*it))->getFiltersByType(type, vec);
         // }
-        if (it->second->type() == type) vec.push_back(it->second);
+        // lock() rather than dereferencing the map value: an expired entry is
+        // not a filter of any type. (`it < _filters.end()` used to be the loop
+        // condition; flat_map iterators are random access, but != is the form
+        // that survives the container being swapped out from under us.)
+        const FilterPtr f = it->second.lock();
+        if (f && f->type() == type) vec.push_back(f.get());
     }
     return vec.size();
 }

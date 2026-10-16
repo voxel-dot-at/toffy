@@ -95,18 +95,23 @@ int FilterBank::handleConfigItem(
 {
     if (it->first == "filterGroup") {
         // recurse into external config file
-        FilterBank* fb = (FilterBank*)ff->createFilter(it->first);
-        if (!fb) {
+        //
+        // static_pointer_cast, not the C-cast that was here: createFilter()
+        // hands back a FilterPtr (P2-5) and the sub-class pointer has to come
+        // out of the same control block, not be re-derived from a raw address.
+        FilterPtr group = ff->createFilter(it->first);
+        if (!group) {
             BOOST_LOG_TRIVIAL(error)
                 << "Error creating FilterBank for filterGroup in: "
                 << configFile;
             return -1;
         }
-        //FilterBank* fb = new FilterBank();
+        FilterBank* fb = static_cast<FilterBank*>(group.get());
         BOOST_LOG_TRIVIAL(debug) << "FG RECURSE NEW FB #" << it->second.size()
                                  << " " << it->second.data();
         fb->loadFileConfig(it->second.data());
-        add(fb);
+        // add() shares; `group` going out of scope here does not destroy it.
+        add(std::move(group));
         // Ignore comments and global options
     } else if (it->first == "<xmlcomment>" || it->first == "globals" ||
                it->first == "plugins") {
@@ -115,9 +120,9 @@ int FilterBank::handleConfigItem(
         BOOST_LOG_TRIVIAL(debug)
             << "FB LOAD FILTER:: " << it->first << " || " << it->second.size();
         // instantiate new filter instance, configure and add it.
-        Filter* f = instantiateFilter(it);
+        FilterPtr f = instantiateFilter(it);
         if (f) {
-            add(f);
+            add(std::move(f));
         } else {
             return 0;
         }
@@ -125,11 +130,14 @@ int FilterBank::handleConfigItem(
     return 1;
 }
 
-Filter* FilterBank::instantiateFilter(
+FilterPtr FilterBank::instantiateFilter(
     const boost::property_tree::ptree::const_iterator& it)
 {
     BOOST_LOG_TRIVIAL(debug) << "FB INSTANTIATE FILTER:: " << it->first << endl;
-    Filter* f = ff->createFilter(it->first);
+    // The FilterPtr created by the factory is passed straight through: this
+    // function configures a filter somebody else has already given ownership of
+    // (to the caller, which is normally handleConfigItem() -> add()).
+    FilterPtr f = ff->createFilter(it->first);
     if (f) {
         boost::property_tree::ptree pnode;
         pnode.add_child(it->first, it->second);
@@ -178,10 +186,36 @@ int FilterBank::loadConfig(
     return 1;
 }
 
-void FilterBank::add(Filter* f)
+void FilterBank::add(FilterPtr f)
 {
-    _pipe.push_back(f);
+    if (!f) {
+        // Refused rather than pipelined: the next filter() would dereference it
+        // with nothing left in the log to say where it came from.
+        BOOST_LOG_TRIVIAL(warning) << id() << "::add: ignoring null filter";
+        return;
+    }
+    _pipe.push_back(std::move(f));
     //_filters.insert(std::pair<std::string, Filter*>(f->name(),f));
+}
+
+void FilterBank::insert(int pos, FilterPtr f)
+{
+    if (!f) {
+        BOOST_LOG_TRIVIAL(warning) << id() << "::insert: ignoring null filter";
+        return;
+    }
+    // pos == size() is a legal insert position (append); anything outside
+    // [0, size()] used to be undefined behaviour, because the old body did
+    // `_pipe.insert(_pipe.begin() + pos, f)` unchecked.
+    if (pos < 0 || static_cast<size_t>(pos) > _pipe.size()) {
+        BOOST_LOG_TRIVIAL(error)
+            << id() << "::insert: position " << pos << " out of range 0.."
+            << _pipe.size();
+        throw std::out_of_range("FilterBank::insert: position " +
+                                std::to_string(pos) + " out of range 0.." +
+                                std::to_string(_pipe.size()));
+    }
+    _pipe.insert(_pipe.begin() + pos, std::move(f));
 }
 
 int FilterBank::loadConfig(const boost::property_tree::ptree& pt,
@@ -234,28 +268,30 @@ const Filter* FilterBank::getFilter(const std::string& name) const
     return ff->getFilter(name);
 }
 
-const Filter* FilterBank::getFilter(int i) const { return _pipe.at(i); }
+const Filter* FilterBank::getFilter(int i) const
+{
+    return _pipe.at(i).get();
+}
 
 Filter* FilterBank::getFilter(const std::string& name)
 {
     return ff->getFilter(name);
 }
 
-Filter* FilterBank::getFilter(int i) { return _pipe.at(i); }
+Filter* FilterBank::getFilter(int i) { return _pipe.at(i).get(); }
 
 int FilterBank::getFiltersByType(const std::string& type,
                                  std::vector<Filter*>& vec)
 {
-    for (std::vector<Filter *>::iterator it=_pipe.begin();
-         it < _pipe.end(); it++)
-    {
+    for (std::vector<FilterPtr>::iterator it = _pipe.begin(); it != _pipe.end();
+         it++) {
         //BOOST_LOG_TRIVIAL(debug) << type;
         //BOOST_LOG_TRIVIAL(debug) << (*it)->id();
         if ((*it)->type() == "filterBank" ||
             (*it)->type() == "parallelFilter") {
-            ((FilterBank*)(*it))->getFiltersByType(type, vec);
+            static_cast<FilterBank*>(it->get())->getFiltersByType(type, vec);
         }
-        if ((*it)->type() == type) vec.push_back((*it));
+        if ((*it)->type() == type) vec.push_back(it->get());
     }
     return vec.size();
 }
@@ -264,13 +300,13 @@ int FilterBank::countFiltersByType(const std::string& type)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     int cnt = 0;
-    for (std::vector<Filter*>::iterator it = _pipe.begin(); it < _pipe.end();
+    for (std::vector<FilterPtr>::iterator it = _pipe.begin(); it != _pipe.end();
          it++) {
         //BOOST_LOG_TRIVIAL(debug) << type;
         //BOOST_LOG_TRIVIAL(debug) << (*it)->id();
         if ((*it)->type() == "filterBank" ||
             (*it)->type() == "parallelFilter") {
-            cnt += ((FilterBank*)(*it))->countFiltersByType(type);
+            cnt += static_cast<FilterBank*>(it->get())->countFiltersByType(type);
         }
         if ((*it)->type() == type) cnt++;
     }
@@ -293,10 +329,12 @@ int FilterBank::remove(const std::string& name)
             << id() << "::remove: no filter named " << name;
         return 0;
     }
-    // Erase from the pipeline before the factory deletes the filter, so that
-    // _pipe never holds a dangling pointer between the two operations.
+    // Erasing the entry is the whole operation now (P2-5). The old version
+    // erased and then called ff->deleteFilter(name), which destroyed the object
+    // through the factory's registry: any caller holding a pointer to it was
+    // left holding freed memory, and a filter whose name had been changed was
+    // not found by that lookup at all, so it was never released.
     _pipe.erase(_pipe.begin() + *pos);
-    ff->deleteFilter(name);
     return 1;
 }
 
@@ -306,28 +344,19 @@ int FilterBank::remove(size_t i)
         BOOST_LOG_TRIVIAL(warning) << "Position i: " << i << " out of bounds.";
         return 0;
     }
-    const string name = _pipe[i]->name();
     _pipe.erase(_pipe.begin() + i);
-    ff->deleteFilter(name);
     return 1;
 }
 
 void FilterBank::clearBank()
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-    for (size_t i = 0; i < _pipe.size(); i++) {
-        string n = _pipe[i]->name();
-        try {
-            ff->deleteFilter(_pipe[i]->name());
-        } catch (std::exception& e) {
-            // The shouty `cout << "AU!!!! ..."` that used to follow this carried
-            // e.what(), which the log line above did not -- so fold it in here
-            // rather than losing the only copy of the diagnostic.
-            BOOST_LOG_TRIVIAL(warning)
-                << name() << "::clearBank failed at " << i << " " << n
-                << " : " << e.what();
-        }
-    }
+    // Used to walk _pipe calling ff->deleteFilter(_pipe[i]->name()) so the
+    // factory would `delete` each child, and swallow the exceptions when the
+    // name lookup failed -- which it did for every renamed filter, leaking it.
+    // Dropping the bank's references does the job instead: a filter is
+    // destroyed when the last FilterPtr goes, and one that is still referenced
+    // somewhere else survives instead of being freed under it.
     _pipe.clear();
 }
 

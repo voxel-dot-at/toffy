@@ -18,6 +18,13 @@
 //#include <string>
 //#include <list>
 
+// <memory> for the FilterPtr member, and <list> for the two queues: the list
+// include has been commented out since forever and the file compiles only
+// because boost/thread pulls it in. Restoring it is P2-7's, not this PR's;
+// <memory> is here because this PR introduces the FilterPtr.
+#include <memory>
+#include <utility>
+
 #include <boost/thread/thread.hpp>
 
 #include "toffy/filter.hpp"
@@ -35,11 +42,27 @@ namespace toffy
 class FilterThread {
 public:
     /**
-	 * @brief Constructor: the filter passed is from then owned by FT and
-	 * will be deleted in the destructor.
+	 * @brief Constructor: the FilterThread shares ownership of the filter.
 	 * @param filter
+	 *
+	 * The doc comment used to say the filter "is from then owned by FT and will
+	 * be deleted in the destructor", and the destructor did `delete f` -- while
+	 * the FilterBank that had created the same filter also held it in its
+	 * pipeline and released it through the factory. Two owners, and
+	 * ~ParallelFilter then ran the thread's delete before the bank's
+	 * (cleanup/findings/ownership.md, C1).
+	 *
+	 * It now holds a FilterPtr: the lane keeps the filter alive for as long as
+	 * the thread exists, which is the property the old code wanted, and the
+	 * object dies when the last of the holders lets go. A lane whose filter is
+	 * in no bank (ParallelFilter's `new FilterBank()` threads) still gets it
+	 * destroyed, because the FilterThread is then the only owner.
+	 *
+	 * explicit: an implicit Filter* -> FilterPtr conversion here would hand this
+	 * class ownership of a pointer it did not create, which is the bug class
+	 * P2-5 is removing.
 	 */
-    FilterThread(Filter* filter) : f(filter) {}
+    explicit FilterThread(FilterPtr filter) : f(std::move(filter)) {}
 
     /**
 	 * @brief ~FilterThread
@@ -49,6 +72,11 @@ public:
     /**
 	 * @brief FilterThread
 	 * @param ft
+	 *
+	 * Still declared, still uncompilable (boost::thread and boost::mutex are not
+	 * copyable), and still the wrong idea: it copied the owned filter, giving
+	 * two FilterThreads the same one. Deleting it is P2-7's; what changed here is
+	 * that the copy it describes would now share instead of double-owning.
 	 */
     FilterThread( const FilterThread& ft): f(ft.f) {}
 
@@ -80,7 +108,11 @@ public:
     void enqueue(Frame*);
 
 private:
-    Filter* f; ///< @todo document
+    /**
+     * @brief The filter this lane runs, shared with whoever else holds it
+     * (normally the FilterBank it is pipelined into). P2-5.
+     */
+    FilterPtr f;
 
     bool keepRunning; ///< @todo document
 

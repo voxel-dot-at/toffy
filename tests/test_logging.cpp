@@ -181,7 +181,7 @@ TEST(LoggingPolicy, RunningABankDoesNotRelaxTheGlobalLevel)
     Filter::setGlobalLogLevel(logging::trivial::info);
 
     // A child filter that wants everything.
-    DummyFilter* dummy = makeDummyFilter();
+    auto dummy = makeDummyFilter();
     dummy->updateConfig(levelTree("loglvl", logging::trivial::trace));
     ASSERT_TRUE(dummy->dbg);
 

@@ -3,8 +3,8 @@
 What has landed, what is in flight, and what the release situation is. Counters are in
 [`counters.md`](counters.md); the order the rest goes in is in [`order.md`](order.md).
 
-State as of PR 35 (`P3-5`, the `system()` call), re-checked against the tree rather than
-carried over from the previous round.
+State as of PR 36 (`P2-5`, one owner per `Filter` — the keystone), re-checked against the
+tree rather than carried over from the previous round.
 
 ## Landed
 
@@ -37,20 +37,22 @@ carried over from the previous round.
 | **33** | `docs` CI job: the gate for counter 30 | ✅ done | A fifth CI job runs the `docs` target and fails on any `warning:`/`error:` in its log — the exit code cannot go red, which is how 15 diagnostics survived since `59b6bcf`. Deliberately PCL-less and bta-less: measured, that configuration generates the same 22 pages with 0 warnings, so `libpcl-dev` buys documentation nothing. Verified red by re-adding one obsolete `PERL_PATH` line, green on the tree; YAML and the step's shell both parse-checked |
 | **34** | `P2-2` the Windows paths — **deleted**, and the platform policy says so | ✅ done | The decision the item asked for, not a grep: toffy is POSIX-only. All **15** `MSVC` branches gone (counters 14/14a → **0**) — the `LoadLibrary`/`GetProcAddress` plug-in loaders in `controller.cpp` and `filterbank.cpp`, the `boost::posix_time` epoch arithmetic in `bta.cpp`/`capturerFilter.cpp`, the `RAWFILE` `".rw"` branch, the `<Windows.h>` include in `cloudviewpcl.cpp`, and the `SetConsoleCtrlHandler` half of `main.cpp` — plus the `-DMSVC` / `-D_WIN32_WINNT` definitions that only ever reached `apps/`, which is the asymmetry that made the two halves of one program disagree. `CMakeLists.txt` now fails a Windows configure with a message naming the reason instead of dying on a missing `<dlfcn.h>`. **Nothing was enabled**: every deleted branch was the one the library never compiled, so the output of every build this tree can produce is unchanged — measured, not asserted: 4 dependency configurations from scratch, 11/11 `ctest` each, warnings 26/25/24/23 exactly as before, the warning *set* identical to a base worktree build (only the two `apps/main.cpp` line numbers move, because lines were deleted above them), and `readelf --dyn-syms` unchanged at **2 889** symbols, `diff` empty. Gate: a second step in the `cmake-hygiene` job fails on any `#if`/`#ifdef`/`#ifndef`/`#elif` naming `MSVC` or `_MSC_VER`, or on `-DMSVC` in the build — verified red on four probe shapes and on a re-added definition, green on the tree, and it does **not** fire on the comments left behind. `RAWFILE` stays `".r"`. The vendored `apps/tst_pb.cpp` keeps the vendor's three `PLAT_WINDOWS` branches (counter **14b**, new), and the now-unreachable MSVC scaffolding in `CMakeLists.txt` is filed as **`P3-13`** |
 | **35** | `P3-5` the `system()` call in `ObjectTrack` — **gone**, so a config file is a program name again | ✅ done | `publishCount()` concatenated `options/script` — read straight out of XML — with two numbers and a trailing `&`, and handed the result to `/bin/sh`. A config file containing `count.sh; rm -rf …` therefore ran the second command with this process's privileges, and because the `&` was *inside* the string, `system()` waited for the shell and never for the script. Replaced with `fork` + `execvp` on an argv array: the configured value is a program name, its arguments are arguments, and no shell is anywhere in the path. The double fork is what replaces the `&` — the script is reparented to init, so a zone change does not leave a script nobody waits for, and the *intermediate* child is waited for, so the function leaks no zombie of its own and still does not block the frame loop. Only async-signal-safe functions run between `fork` and `exec`, so the child reports failure with `write()`/`_exit()` and not with `BOOST_LOG`, whose locks another thread may hold at `fork()` time. An unrunnable script is reported and survived, because a filter returning `false` aborts the whole bank. **4 tests** (`tests/test_objecttrack.cpp`, ctest target `objecttrack`); the fence `ShellMetacharactersInScriptAreNotInterpreted` was observed failing on the parent commit for all six payloads (`;`, `&&`, `\|`, `$(…)`, backticks, newline) — the marker file appeared *and* `count.sh` had been executed with no arguments. Warnings 26 → **25**: `-Wunused-result` on `system()` was the compiler describing this defect on every build. Re-measured in all four configurations from scratch, **12/12** `ctest` each, 25/24/23/22 warnings — exactly one less in every cell, which is the expected shape of removing one call. No installed header and no exported symbol is touched (`runDetached` is in an anonymous namespace): `readelf --dyn-syms | grep -v UND | wc -l` is **2 889** on both sides of a `0262fcd` worktree build and the exported set `diff`s empty, and `api_change_report.sh` exits 0. **The import set does move, and that is worth recording rather than glossing:** `system` is gone and `fork`, `execvp`, `waitpid`, `access`, `write` and `_exit` arrive — six libc symbols in, one out. Not an ABI break (nothing downstream binds to an import of ours), but it is the first time `libtoffy.so` itself depends on `fork`/`execvp`, i.e. the library is now POSIX-only at the *symbol* level too, which is the policy `P2-2` stated. Filed `A27`: the published object count is the *previous* frame's, because `filter()` publishes before it updates `numObjects` — pinned as it behaves, not changed |
+| **36** | `P2-5` one owner per `Filter` — **the keystone**, and the reason `v2.0.0` exists | ✅ done | `FilterBank::_pipe` is a `std::vector<FilterPtr>`, `FilterFactory::createFilter()` returns the filter's **only** strong reference, and the factory's registry holds `std::weak_ptr` — it *indexes*, it does not own. `add()`/`insert()` take a `FilterPtr` (the raw-pointer overload is gone, and `add(new X())` does not compile: `shared_ptr`'s raw-pointer constructor is `explicit`), `instantiateFilter()` returns a `FilterPtr`, `FilterThread` shares its filter instead of deleting it, `Controller::baseFilterBank` is a `FilterPtr`, and `~Controller` releases it by letting it go. **The name-keyed teardown is gone**: `clearBank()`, `remove()` and `~Controller` no longer ask the factory to `delete` a filter by name (counter 13a 4 → **0**), so a renamed filter is no longer leaked and a filter reachable from two banks is no longer destroyed by the first one to go. `deleteFilter()` survives as "forget this name" and destroys nothing. `insert()` also gained the bounds check it never had (counter 13's neighbour: `_pipe.insert(_pipe.begin() + pos, f)` unchecked). `CreateFilterFn` is **deliberately still `Filter* (*)(void)`** — that is the plug-in ABI (`init(FilterFactory*)` + `registerCreator`), and `X6` decided to keep it; `createFilter()` wraps what a creator returns, and the header now says the creator must hand ownership over. **9 tests** (`tests/test_ownership.cpp`, ctest target `ownership`) count Filter destructors, because "was this destroyed, and exactly how many times" is otherwise invisible: **8 of the 9 fail on the parent commit**, five of them with a sanitizer report: heap-use-after-free reading through the second bank, heap-use-after-free reading the filter `remove()` had just deleted, `SEGV` inside `FilterBank::clearBank()` once a null entered `_pipe`, a heap-buffer-overflow in the vector backing `_pipe` from the unchecked `insert()`, and a **direct leak of 184 bytes** out of the full `Player` session — real XML file, real config path, frames run, `Player` destroyed — and pre-fix it reports exactly one filter alive afterwards: the one renamed by its own `<name>`, which is `C1` reached through a config file. `BankReleasesWhatItHolds` passes on both sides and stays as the pin that a release *does* happen, just not through the bank. Measured: **13/13 `ctest` in all four dependency configurations** from scratch, warnings **25/24/23/22** — identical to PR 35, so nothing was added; ASan + UBSan + LSan (`detect_leaks=1`) **13/13 with zero reports**; installed headers **172 checks, 0 broken**; `docs` **0 warnings** after `introduction.dox` stopped telling readers the factory deletes filters. Counters: 13 → **0**, 13a → **0**, 24 12 → **13**. **This is an ABI break, and the interesting part is that `readelf` cannot see all of it** — see *Release* below. |
 
-**Twenty-five PRs are done** (1, 2, 3, 4, 5, 6, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-28, 29, 30, 31, 32, 33, 34, 35 — the numbering has no gaps, but PR 7 is core-only and the PRs beyond
-18 are the second-pass work, so "n of 18" stopped being a meaningful fraction once `P3`
-started landing). PR 2 is
+**Twenty-six PRs are done** (1, 2, 3, 4, 5, 6, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+28, 29, 30, 31, 32, 33, 34, 35, 36 — the numbering has no gaps, but PR 7 is core-only and the
+PRs beyond 18 are the second-pass work, so "n of 18" stopped being a meaningful fraction once
+`P3` started landing). PR 2 is
 complete rather than 4-of-5. That is the whole `P0` block, the test/CI fence, the build-flag
 cleanup and core's warning gate: the critical path's first stretch, plus every cheap
 second-pass item — a false green removed, a class of silent build breakage closed, a warning
 gate landed, `P2-12` made compile-checked, both config-as-format-string sites closed, the
-public header surface proved compilable rather than assumed, and one long-standing "decide,
-then act" item actually decided.
+public header surface proved compilable rather than assumed, one long-standing "decide,
+then act" item actually decided, and the ownership model the rest of the structural work was
+blocked on.
 
-`P1`/`P2` items closed: **5 of 16** (`P1-1`, `P2-2`, `P2-8`, `P2-14`, `P2-16`), with `P2-3`
-core-only. `P2-16` closed when `P3-4` landed the `-Werror` half of it, `P2-2` when the
+`P1`/`P2` items closed: **6 of 16** (`P1-1`, `P2-2`, `P2-5`, `P2-8`, `P2-14`, `P2-16`), with
+`P2-3` core-only. `P2-16` closed when `P3-4` landed the `-Werror` half of it, `P2-2` when the
 Windows branches were deleted rather than enabled.
 
 ## Open
@@ -58,10 +60,10 @@ Windows branches were deleted rather than enabled.
 | PR | Item | State |
 |---|---|---|
 | **9** | `P2-4` factory → registration | ❌ 37 branches |
-| **10** | `P2-5` one owner per `Filter` | ❌ the keystone |
-| **11** | `P2-6` + `P2-13` run methods, state, typos | ❌ |
-| **12** | `P2-7` threading | ❌ `bool keepRunning`, 2 `interprocess` uses |
-| **13** | `P2-9` module layering | ❌ `imageview.hpp` still included by `controller.cpp` |
+| ~~**10**~~ | ~~`P2-5` one owner per `Filter`~~ | ✅ **landed as PR 36** — the keystone, so 11, 12 and 13 are no longer blocked on it |
+| **11** | `P2-6` + `P2-13` run methods, state, typos | ❌ unblocked by `P2-5` |
+| **12** | `P2-7` threading | ❌ `bool keepRunning`, 2 `interprocess` uses. `FilterThread`'s ownership half is **done** (`P2-5` made it share a `FilterPtr`); what is left is the atomic flag, the semaphore and the copy ctor, and `delete lanes[i]` — the last `delete` in core |
+| **13** | `P2-9` module layering | ❌ `imageview.hpp` still included by `controller.cpp`. `getFilter(name)` can now be reimplemented against `_pipe`, which is what `P2-5` was waiting on |
 | **14** | `P2-10` three plugin loaders | ❌ all three still exist |
 | **16** | `P2-11` + `P2-12` `Frame` API, `filter()` overload | ❌ see `P3-9` before touching `P2-12` |
 | **18** | `P2-15` formatting | ❌ 11 of 20 core files have hard tabs; clang-format 18.1.3 **is** installed |
@@ -75,21 +77,35 @@ remaining API-surface changes and belong with `P3-2`'s tag.
 
 The controller extraction (`X1` … `X6`,
 [`plan/controller-extraction.md`](plan/controller-extraction.md)) is the other half of PR 28:
-the web control UI is `toffy-oatpp`'s now, and `X1`–`X2` are done. `X3` (three dead CLI
-options), `X4` (`use.dox` and its three screenshots) and `X5` (the C++ API oatpp binds to,
-blocked on five open items) are open; `X6` is a taken decision — keep the filter plugin ABI,
-do not rehost `initUI` here.
+the web control UI is `toffy-oatpp`'s now, and `X1`–`X4` are done (`X3` the three dead CLI
+options, PR 30; `X4` the `use.dox` rewrite and its screenshots, PR 31). `X5` (the C++ API
+oatpp binds to, blocked on five open items) is the only open stage; `X6` is a taken decision —
+keep the filter plugin ABI, do not rehost `initUI` here. `P2-5` honoured that decision:
+`CreateFilterFn` and `init(FilterFactory*)` are unchanged, so a filter plug-in built against
+an older `libtoffy` still registers. What it does *not* honour is anything a plug-in did with
+the bank's pipeline — see counter 31.
 
 ## Gates
 
 - **`DOD 1.1` green: all four dependency configurations build and pass.** PCL on/off ×
-  BTA on/off, each configured from scratch, built and run — 12/12 in every cell, 25/24/23/22
-  warnings (re-measured on PR 35: 25 default, 24 PCL-off, 23 BTA-off, 22 both off — one less
-  than the 26/25/24/23 of PR 34 in *every* cell, which is the expected shape of deleting the
-  single `system()` call and its `-Wunused-result`; `P2-2` had already been proved to change
-  no build output).
+  BTA on/off, each configured from scratch, built and run — **13/13** in every cell, 25/24/23/22
+  warnings (re-measured on PR 36: 25 default, 24 PCL-off, 23 BTA-off, 22 both off —
+  *identical* to PR 35 cell for cell, which is the expected shape of an ownership change that
+  adds no code the compiler can complain about; `P3-5` had already been measured to take
+  exactly one warning out of every cell, and `P2-2` to change no build output at all).
   Both axes were broken before this branch: PCL-off on unguarded typedefs and on CMake `if()`
   clauses that expanded to nothing, BTA-off on an unconditional `add_subdirectory(bta)`.
+- **`DOD 2.3`, the ownership gate, is now automated rather than hand-run.** It asked for "a
+  full session, including shutdown", zero leaks and zero double-frees, no `delete` of a
+  `Filter` in core, no name-based teardown, and `FilterPtr` used consistently. The first two
+  are `FilterOwnership.PlayerSessionReleasesEverythingOnShutdown` — a real XML file through
+  `Player::loadConfig`, frames run, `Player` destroyed, destructor counter back to zero — and
+  it runs inside the `sanitizers` job on every push, which is strictly better than the
+  one-off `toffyRunner` run it replaces (that was also done: a 6-second session against
+  `tests/xml/cond_main.xml` under ASan/UBSan, zero reports; `toffyRunner` cannot be made to
+  exit cleanly headless because of `A26`, which is why the *test* is the gate and the
+  hand-run is not). The other three are counters 13, 13a and the `_pipe`/registry types.
+  Measured on this tree: ASan + UBSan + LSan `detect_leaks=1`, **13/13, zero reports**.
 - **CI builds, tests and reports warnings on every push and PR** — five jobs: the PCL
   matrix, the sanitizer build, `installed-headers` (`P3-12`, two passes since `X2b`, plus the
   source-tree residue step), `docs` (counter 30) and `cmake-hygiene`, which since `P3-5` has
@@ -106,15 +122,20 @@ do not rehost `initUI` here.
   bta-less, which was measured to produce the same 22 pages.
 - **`A23` (no consistent error convention) blocks further correctness work** in config
   loading — see [`findings/correctness.md`](findings/correctness.md).
-- **PRs 28 and 29 remove installed public headers; `v1.11.0` is the tag that carries them**
-  (see *Release* below). `api_change_report.sh v1.10.0` exits 1, as it must — it is still
-  exit 1 against `v1.10.0` after the tag exists, because the base ref is what you diff
-  against; run it as `api_change_report.sh v1.11.0` from the tagged commit onwards. The ABI evidence is measured rather than asserted: the
-  exported dynamic symbol set of `libtoffy.so` is identical before and after (2 889 symbols,
-  `diff` empty, Release/PCL-on/BTA-on both sides, base built from `8689d68` in a separate
-  tree). Three of the four deleted headers could not be included at all, so no compiling
-  program can break; `toffy/web/actions/action.hpp` could, and its removal is the one real —
-  if improbable — API break. See [`dod/stage-gates.md`](dod/stage-gates.md) §2.4.
+- **PR 36 (`P2-5`) is an ABI break and `v2.0.0` is the tag that carries it** (see *Release*
+  below). `tools/api_change_report.sh v1.11.0` exits **1** and lists the changed declarations
+  in six installed headers; that is the gate working, not a failure to fix.
+- **PRs 28 and 29 removed installed public headers, and `v1.11.0` carries them** (tagged at
+  the PR 29 tip; see *Release* below). `api_change_report.sh v1.10.0` exits 1, as it must — it
+  stays exit 1 against `v1.10.0` after the tag exists, because the base ref is what you diff
+  against; run it as `api_change_report.sh v1.11.0` from the tagged commit onwards.
+  For those two PRs the ABI evidence was measured rather than asserted: the exported dynamic
+  symbol set of `libtoffy.so` was identical before and after (2 889 symbols, `diff` empty,
+  Release/PCL-on/BTA-on both sides, base built from `8689d68` in a separate tree). Three of
+  the four deleted headers could not be included at all, so no compiling program can break;
+  `toffy/web/actions/action.hpp` could, and its removal was the one real — if improbable — API
+  break of that pair. **That measurement no longer holds across `P2-5`** — see counter 31 and
+  the `v2.0.0` bullet below. See [`dod/stage-gates.md`](dod/stage-gates.md) §2.4.
 
 ## Release / tag situation
 
@@ -129,18 +150,50 @@ do not rehost `initUI` here.
 - `SOVERSION` is the **full** version, not the major alone, so *every* patch bump changes
   the SONAME and forces a downstream relink. Version decisions here are never routine —
   see [`dod/stage-gates.md`](dod/stage-gates.md) §2.4.
+- **`v2.0.0` is the number for the tree from PR 36 onwards, and `P2-5` is why it is a major
+  and not the next minor.** The decision, in the order the evidence arrived:
+  1. Three **strong** exported symbols change name (`counters.md` 31): `FilterBank::add
+     (Filter*)` and `FilterFactory::renameFilter(Filter*, …)` are gone, replaced by their
+     `FilterPtr` forms, and `FilterBank::insert(int, FilterPtr)` moved out-of-line. Those
+     alone make an old binary fail at load time, which is the *loud* kind of break and the
+     kind `v1.10.0` already set the precedent for.
+  2. A fourth change is invisible to `readelf`, and that is the one that forces the major.
+     `FilterFactory::createFilter()` returns `FilterPtr` **by value** now. Under the Itanium
+     ABI a by-value class return prepends a hidden `sret` pointer to the argument list, and
+     the mangled name does **not** encode the return type — verified on this toolchain, where
+     `T f(int)` returning a class holding a `shared_ptr` and `int h(int)` both mangle to a
+     name carrying only `(int)`. `readelf --dyn-syms` shows `createFilter` with a
+     byte-identical name before and after this PR. A binary linked against `v1.11.0` therefore
+     resolves the symbol, loads, and calls it with every argument one register off. No SONAME
+     check catches that; only a version that downstream can read as "not compatible" does.
+  3. `SOVERSION` is the full version (`CMakeLists.txt`, `set_property(... SOVERSION
+     ${PROJECT_VERSION})`), so the SONAME moves on every release regardless. The major number
+     is not what forces the relink here — it is what tells a downstream maintainer *why*.
+  A minor bump (`1.12.0`) would keep the reading that `1.x` releases are compatible with each
+  other, which after `P2-5` is false in a way a linker will not detect. `v1.7.0` — "breaking
+  API change in FilterBank", the last time this class of thing moved — is the precedent for
+  treating a `FilterBank` signature change as a release boundary; this one is larger.
+  **What is deliberately *not* broken:** the filter plug-in ABI. `CreateFilterFn` is still
+  `Filter* (*)(void)`, `init(FilterFactory*)` is unchanged, and `registerCreator()` keeps its
+  symbol, so a `.so` built against `v1.11.0` still loads and registers (the `X6` decision).
+  A plug-in that touched a bank's pipeline — `add()`, `instantiateFilter()` — must be rebuilt.
 - **`v1.11.0` is the agreed number and it is cut at the PR 29 tip.** `P3-2` changed the
   installed header surface and `P3-12`/`X2b` changed three more headers, so the tag covers
-  PRs 28 and 29 together; `P3-10` will need the one after it. `1.11.0` rather than `1.8.0`
+  PRs 28 and 29 together. `P3-10` was still queued for "the one after it"; that one is now
+  `v2.0.0`, so `P3-10` no longer needs a tag of its own. `1.11.0` rather than `1.8.0`
   keeps clearing the `v1.9.0` on `origin/next`, and a removal plus a header-hygiene release is
   a minor bump, not a patch, under the reading `v1.10.0` already set for the `Event`
   deletion. From the tagged commit `git describe` reports `1.11.0`, so the SONAME stops
   claiming `1.10.0` while the header surface has already moved. **The tag is local until it
   is pushed**, like `v1.10.0` before it.
+- **`v2.0.0` carries everything after `v1.11.0`:** PRs 30 (`X3`), 31 (`X4`), 32/33 (the
+  `Doxyfile.cfg` fix and the `docs` gate), 34 (`P2-2`, POSIX-only), 35 (`P3-5`) and 36
+  (`P2-5`). Of those, only 36 forces the major; the rest were riding "the next tag" and are
+  now riding this one. `P3-10` (dropping `TOFFY_EXPORT`) is still open and will need `v2.1.0`
+  or be folded in before this tag is cut — it changes no exported symbol, so either is safe.
 - **PR 34 (`P2-2`) opens no tag decision of its own.** It touches no installed header and no
   exported symbol — measured against an `ac1108a` worktree: `readelf --dyn-syms` identical,
-  2 889 symbols, `diff` empty — so it rides the next tag after `v1.11.0`, the one `P3-10`
-  and `X3` are already queued for. What it does change is a **configure-time** behaviour: a
+  2 889 symbols, `diff` empty — so it rides `v2.0.0`. What it does change is a **configure-time** behaviour: a
   Windows configure now stops with a message naming the plug-in loader as the reason, instead
   of reaching the compiler and dying on a missing `<dlfcn.h>`. That is a support-policy
   statement about a configuration that has never built, not an API change.

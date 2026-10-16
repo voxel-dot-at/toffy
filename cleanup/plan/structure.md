@@ -22,7 +22,38 @@ Steps:
 This deletes the largest function in core and makes the "unknown filter" path a single
 log line instead of a fall-through `else`.
 
-### 5 — One owner per `Filter`
+### 5 — One owner per `Filter` — **DONE** (`P2-5`, PR 36)
+
+The recommended shape below is what landed, with two differences worth naming:
+
+- **The factory registry is `weak_ptr`, not `shared_ptr`.** The plan implied the factory
+  could keep holding filters; it now indexes them. That is what makes "one owner" literally
+  true — the caller of `createFilter()` holds the only strong reference — and it is what lets
+  `getFilter(name)` answer "no such filter" instead of returning freed memory once the owner
+  has gone. A `shared_ptr` registry would have kept the old leak and given it a GC feel.
+- **`clearCreators()` is still called by `~Controller`.** The paragraph below says it "no
+  longer has to exist as a teardown step", and since `P2-5` that is exactly true: it has
+  nothing to do with ownership any more. It is kept because removing it is a behaviour change
+  (a second `Controller` would start retaining the plug-ins the first registered) and it
+  belongs with `P2-10`, which owns the `dlopen`/`dlclose` lifetime that makes it tempting.
+  Finding `C3` stays open for that half; `C1` and `A17` are closed.
+
+Everything else went as written: `_pipe` is `std::vector<FilterPtr>`, `createFilter()` returns
+`FilterPtr`, `remove()` is an `erase` with no factory round-trip, `insert()` gained its bounds
+check, `FilterThread` shares instead of deleting, and nothing in `modules/core` calls `delete`
+on a `Filter` (counter 13). `CreateFilterFn` deliberately did **not** change — it is the
+plug-in ABI (`X6`). The cost is an ABI break, recorded in [`../status.md`](../status.md) and
+counter 31: `createFilter()` returns by value, which changes the calling convention without
+changing the mangled name, so this is the release that has to be `v2.0.0`.
+
+Evidence: `tests/test_ownership.cpp` (9 tests, ctest target `ownership`) counts destructors;
+8 of the 9 fail on the parent commit, five of them with an ASan report, and one of those is a
+full `Player` session whose shutdown leaks exactly the one filter that had been renamed by
+its own config.
+
+---
+
+*Original item text, kept because `C1`/`A17`/`C3` cite it:*
 
 Today `FilterFactory::_filters` (a global static map) and `FilterBank::_pipe` both hold raw
 `Filter*`, `add()` takes a raw pointer, and destruction goes through the factory *by name*
@@ -42,7 +73,8 @@ FilterPtr createFilter(const std::string& type, const std::string& name = "");
 ```
 
 Then `remove()` is `_pipe.erase(begin() + pos)` with no factory round-trip, `~Controller`
-needs no `deleteFilter`, and `clearCreators()` no longer has to exist as a teardown step.
+needs no `deleteFilter` (done), and `clearCreators()` no longer has to exist as a teardown
+step (true, and now true for the right reason — but still called; see the note above).
 
 If `shared_ptr` is judged too invasive, the alternative is to make the factory a pure
 creator (no registry at all) and let banks own `std::unique_ptr<Filter>` — but then

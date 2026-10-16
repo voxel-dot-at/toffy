@@ -17,6 +17,8 @@
 #ifndef __toffy_CONTROLLER_HPP__
 #define __toffy_CONTROLLER_HPP__
 
+#include <memory>
+
 #include <boost/thread.hpp>
 
 #include <toffy/filterbank.hpp>
@@ -60,7 +62,22 @@ public:
         CERROR = 0xff
     };
 
-    FilterBank * baseFilterBank; ///< keeps instance of the root FilterBank
+    /**
+     * @brief keeps instance of the root FilterBank
+     *
+     * A shared_ptr since P2-5, because the Controller really is the owner: the
+     * root bank is created here and nobody else is ever handed it. ~Controller
+     * used to release it with FilterFactory::deleteFilter(baseFilterBank->id()),
+     * i.e. by asking a process-wide registry to `delete` an object this object
+     * owned -- which released it only while the registry still knew the name,
+     * and destroyed it while any other holder of the pointer was still using
+     * it. Letting the FilterPtr go is now the teardown, and the bank's own
+     * children go with it.
+     *
+     * `->`, `== nullptr` and `.get()` all behave as they did with the raw
+     * member. Code that assigned the member to a `FilterBank*` needs `.get()`.
+     */
+    std::shared_ptr<FilterBank> baseFilterBank;
     Frame f; ///< base and unique object container
 
     Controller();

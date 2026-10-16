@@ -50,28 +50,54 @@ int ParallelFilter::handleConfigItem(
         return loadConfig(confFile, it->second.begin(), it->second.end());
     } else if (it->first == "thread") {
         BOOST_LOG_TRIVIAL(debug) << "PF::thread node";
-        Filter* f;
+        // FilterPtr, not Filter* (P2-5): this filter ends up owned by two
+        // places -- the FilterThread that runs it and this bank's pipeline --
+        // and that is exactly what shared ownership is for. With raw pointers
+        // it was a double free: ~ParallelFilter deleted the lanes (each lane
+        // deleting its filter) and then ~FilterBank cleared _pipe through the
+        // factory, which deleted the same object again.
+        FilterPtr f;
         if (it->second.size() > 1) {
             // instantiate a filterbank
-            FilterBank* fb = new FilterBank();
+            //
+            // Held as a shared_ptr<FilterBank> rather than a raw FilterBank*
+            // and moved into `f` at the end: the loadConfig() below can throw,
+            // and a raw local meant the lane's bank leaked out of that
+            // exception. It stays typed as a FilterBank rather than as the
+            // FilterPtr `f`, because loadConfig()/loadFileConfig() on a bank
+            // are the protected virtuals that FilterBank redeclares.
+            std::shared_ptr<FilterBank> fb = std::make_shared<FilterBank>();
 
+            // bank(NULL), not bank(this): FilterBank's own constructor sets the
+            // self-reference, and getBaseFilterbank() walks it, so leaving it
+            // pointed at the ParallelFilter would recurse through the
+            // ParallelFilter's own self-reference. Unchanged behaviour.
             fb->bank(NULL);
             fb->loadConfig(it->second);
 
-            f = fb;
+            f = std::move(fb);
         } else if (it->second.begin()->first == "filterGroup") {
             // instantiate a filterbank
-            FilterBank* fb = new FilterBank();
+            std::shared_ptr<FilterBank> fb = std::make_shared<FilterBank>();
             const boost::property_tree::ptree pt = it->second.begin()->second;
 
             BOOST_LOG_TRIVIAL(debug) << "PF::filterGroup file " << pt.data();
-            fb->bank(NULL);
+            fb->bank(NULL);  // see the note above
             fb->loadFileConfig(pt.data());
 
-            f = fb;
+            f = std::move(fb);
         } else {
             const boost::property_tree::ptree pt = it->second;
             f = instantiateFilter(pt.begin());
+        }
+
+        if (!f) {
+            // instantiateFilter() returns empty for an unknown type; the lane
+            // would then dereference it in its own thread.
+            BOOST_LOG_TRIVIAL(error)
+                << name() << "::" << __FUNCTION__
+                << " could not create the filter for this thread node";
+            return 0;
         }
 
         FilterThread* ft = new FilterThread(f);
@@ -83,11 +109,21 @@ int ParallelFilter::handleConfigItem(
         boost::property_tree::ptree::const_iterator child = it->second.begin();
         BOOST_LOG_TRIVIAL(debug) << "PF::barrier node " << child->first;
 
-        Filter* f = instantiateFilter(child);
+        FilterPtr f = instantiateFilter(child);
+        if (!f) {
+            BOOST_LOG_TRIVIAL(error)
+                << name() << "::" << __FUNCTION__
+                << " could not create the barrier filter";
+            return 0;
+        }
 
         f->loadConfig(it->second);
 
-        this->mux = (Mux*)f;
+        // Observer into _pipe: the mux is owned by the pipeline, and `mux` is a
+        // raw member on purpose -- making it a FilterPtr would give the bank a
+        // second reference to a filter it already has and no way to tell them
+        // apart when one is removed.
+        this->mux = static_cast<Mux*>(f.get());
 
         add(f);  // book-keeping
 

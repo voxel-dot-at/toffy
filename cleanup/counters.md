@@ -2,11 +2,11 @@
 
 **This is the only place a measured number is written down.** Other chapters link here.
 
-Re-measured on `feature/code-cleanup` with PR 35 (`P3-5`) applied — i.e. after
-`P3-1`, `P3-3`, `P3-4`, `P3-7`, `P3-9`, `P3-11`, `A24`, `P3-6`, `P3-2`, `P3-12`, `X2b`, `X3`,
-`X4`, the `Doxyfile.cfg` fix, the `docs` gate, `P2-2` and `P3-5`; GCC 13.3, CMake 3.28.3,
-default configuration (PCL on, BTA on). Every command below is copy-pasteable from the
-repository root; run them before quoting a figure.
+Re-measured on `feature/code-cleanup` with PR 36 (`P2-5`, one owner per `Filter`) applied —
+i.e. after `P3-1`, `P3-3`, `P3-4`, `P3-7`, `P3-9`, `P3-11`, `A24`, `P3-6`, `P3-2`, `P3-12`,
+`X2b`, `X3`, `X4`, the `Doxyfile.cfg` fix, the `docs` gate, `P2-2`, `P3-5` and `P2-5`; GCC
+13.3, CMake 3.28.3, default configuration (PCL on, BTA on). Every command below is
+copy-pasteable from the repository root; run them before quoting a figure.
 
 An earlier revision of this header cited `4739900`, which is not an ancestor of `HEAD` — it
 was the pre-amend version of the README commit and is unreachable from this branch. Cite a
@@ -21,7 +21,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | # | metric | scope | now | target | |
 |---|---|---|---|---|---|
 | 1 | `P0` correctness items closed, each with a regression test | — | **12/12** | 12/12 | ✅ |
-| 2 | `P1`/`P2` plan items closed | 16 items | **5/16** (`P1-1`, `P2-2`, `P2-8`, `P2-14`, `P2-16`) | 16/16 | |
+| 2 | `P1`/`P2` plan items closed | 16 items | **6/16** (`P1-1`, `P2-2`, `P2-5`, `P2-8`, `P2-14`, `P2-16`) | 16/16 | |
 | 3 | CI configures, builds and runs `ctest` on every push | `.github/` | matrix + sanitizers | required | ✅ |
 | 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` configurations | build | **4/4**, 11/11 ctest each | 4/4 | ✅ |
 | 5 | debug prints in library code | `modules/` | **128** | 0 | |
@@ -39,12 +39,13 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 11 | `else if (type ==` branches in the factory | `filterfactory.cpp` | **37** | 0 | |
 | 12 | `@todo` markers | `modules/core` | **20** | ≤ 5 | |
 | 12b | `@todo` markers | `filterThread.hpp` | **10** | 0 | |
-| 13 | `delete` of a `Filter*` | `modules/core` | **4 sites, 3 owners** | 1 owner | |
+| 13 | `delete` of a `Filter` | `modules/core` | **0** (was 4 sites in 3 owners: the factory's `deleteFilter`, `~FilterThread`, `~ParallelFilter` through its lanes, and `~Controller` via the factory; `P2-5`). The only `delete` left in `modules/core/src` is `delete lanes[i]`, a `FilterThread`, which is `P2-7`'s. The gate is not this grep — it is `tests/test_ownership.cpp` under the `sanitizers` job, where 8 of the 9 tests fail on the pre-`P2-5` tree and five of those produce a sanitizer report (two heap-use-after-free, a `SEGV` in `clearBank()`, a heap-buffer-overflow in `_pipe`, and a 184-byte direct leak from the `Player` session) | 0 | ✅ |
+| 13a | name-keyed teardown: call sites of `FilterFactory::deleteFilter()` | `modules/core` | **0** (was 4: `clearBank()`, `remove(string)`, `remove(size_t)`, `~Controller`; `P2-5`) — the command below strips comments, because the replacement code names `deleteFilter()` in order to record what it replaced | 0 | ✅ |
 | 14 | `MSVC` preprocessor branches | `modules/` | **0** (was 19, then 12 after `P2-3`; `P2-2`) | 0 | ✅ |
 | 14a | | tree | **0** (was 16, then 15 after `P3-1` deleted the orphan; `P2-2`) — the `-DMSVC` definition in `CMakeLists.txt` is gone with them, and a CI step fails on either | 0 | ✅ |
 | 14b | platform branches in the vendored BTA example | `apps/tst_pb.cpp` | **3** (`#ifdef PLAT_WINDOWS` × 2, `#elif defined(PLAT_WINDOWS) \|\| defined(WIN32) \|\| defined(WIN64)`) — the vendor's own code, guarded on macros this build sets (`PLAT_LINUX`) rather than on `MSVC`, and uncompilable by CI (no SDK). Out of `P2-2`'s scope by decision, not by oversight; see the note below | vendor's | ⚠️ not ours |
 | 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **0** in all four configurations, and `toffy_core` is compiled with `-Werror` (`P3-4`) | 0 | ✅ |
-| 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **25** (was 32; −4 from the `Mux` using-declaration, −2 from `csv_source`'s `fscanf` sites now being checked, `P3-6`, −1 from `system()`'s `-Wunused-result` going with `P3-5`) — reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
+| 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **25** (was 32; −4 from the `Mux` using-declaration, −2 from `csv_source`'s `fscanf` sites now being checked, `P3-6`, −1 from `system()`'s `-Wunused-result` going with `P3-5`) — unchanged by `P2-5`, re-measured in all four configurations (25/24/23/22). Reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
 | 16 | artefacts describing the removed web control product | tree | **0** (was 12, then 8: 4 installed headers `P3-2`, 3 screenshots and the `use.dox` page `X4`, 3 CLI options `X3`, 1 `Player` `@todo` `X4`) — enumerated below, because "≥ 3" was not a number | 0 | ✅ |
 | 17 | installed public headers that do not compile standalone | install tree | **0** (was 4 by hand, 5 once the check was written: 3 deleted by `P3-2`, 2 fixed by `P3-12`) — 86 of 86 pass, 0 skipped, and the `installed-headers` CI job runs the check on every push. The check is now **two passes**: each header once, and each header twice (`X2b`), so 172 checks | 0 | ✅ |
 | 18 | public headers including the CMake-generated `toffy_export.h` | tree | **7** (was 8; one went with the orphan) — `P3-10` targets 0 | 0 | |
@@ -54,13 +55,14 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 21 | config string used as a `printf` format | `modules/filters` | **0** — `csv_source`'s 2 and `exportcsv`'s 2 are closed (`P3-6`); both filters validate their pattern at config time and expand through `toffy::formatPath`, the one place in the tree where snprintf's format argument is a variable | 0 | ✅ |
 | 22 | files containing hard tabs / files in core | `modules/core` | **11 / 20** | 0 / 20 | |
 | 23 | lines of code | `modules/core` | **4 113** (was 4 032 at `84d1b63`; +81 from `filter_helpers.hpp`, which the previous figure claimed to already count — it was measured before that commit landed) | — | |
-| 24 | `ctest` targets | `tests/` | **12** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`, `exportcsv` by `P3-6`, `objecttrack` by `P3-5`) | ≥ 8 | ✅ |
+| 24 | `ctest` targets | `tests/` | **13** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`, `exportcsv` by `P3-6`, `objecttrack` by `P3-5`, `ownership` by `P2-5`) | ≥ 8 | ✅ |
 | 25 | `const`-only `filter()` overrides that do not say `override` | `modules/`, `libraries/` | **0** (was 3, fixed by `P3-3`; 4 sites now carry it) | 0 | ✅ |
 | 26 | `WITH_CONTROL` sites — a symbol no build file defines | tree | **0** (was 5: 3 in `initPlugin.cpp`, 2 in `initPlugin.hpp`; `P3-2`) | 0 | ✅ |
 | 27 | `toffyRunner` options describing a server that never starts | `apps/` | **0** (was 3: `--host/-h`, `--port/-p`, `--html/-d` — parsed, printed, used by nothing; `X3`) | 0 | ✅ |
 | 28 | installed headers that cannot be included **twice** | install tree | **0** (was 1: `toffy/bta/FrameHeader.hpp`, a `typedef struct` with no guard; 3 of 86 had no guard at all) — `N9`, fixed by `X2b`, gated by the `twice` pass | 0 | ✅ |
 | 29 | controller residue in tracked **compiled** code and build files | `*.cpp`/`*.hpp`/`*.h`/`*.in`/`*CMakeLists.txt`/`*.cmake` — prose (`.md`, `.dox`) deliberately out of scope | **0** (`toffy_web/`, `toffy/web/`, `WITH_CONTROL`) — the gated superset of counter 26, and the only residue check that reaches `modules/bta`, whose headers CI cannot stage without the SDK | 0 | ✅ |
-| 30 | doxygen warnings + errors from the `docs` target | `docs/` | **0** (was 15: 14 obsolete `Doxyfile.cfg` tags + 1 unreadable `EXAMPLE_PATH` entry; the `HTML_EXTRA_FILES` error was reported once per run and is counted with them) — CI runs the `docs` job on every push and fails on any warning | 0 | ✅ |
+| 30 | doxygen warnings + errors from the `docs` target | `docs/` | **0** (was 15: 14 obsolete `Doxyfile.cfg` tags + 1 unreadable `EXAMPLE_PATH` entry; the `HTML_EXTRA_FILES` error was reported once per run and is counted with them) — CI runs the `docs` job on every push and fails on any warning. Re-measured after `P2-5` rewrote the ownership paragraph of `introduction.dox`: still 0 | 0 | ✅ |
+| 31 | exported symbols that changed **name** between `v1.11.0` and this tree | `libtoffy.so` | **3 strong symbols**: `FilterBank::add(Filter*)` → `add(FilterPtr)`, `FilterFactory::renameFilter(Filter*, …)` → `renameFilter(const FilterPtr&, …)`, and `FilterBank::insert(int, FilterPtr)` moving out-of-line. Plus **one that keeps its name and changes its calling convention** — see the note under the commands. Total exported set 2 889 → 2 913, the rest of the diff weak inline/template symbols that come and go with inlining | n/a | ⚠️ **ABI break: `v2.0.0`** |
 
 ## The commands
 
@@ -93,8 +95,32 @@ grep -rn "interprocess" modules/core
 grep -c "else if (type ==" modules/core/src/filterfactory.cpp
 grep -rc "@todo" modules/core | grep -v ":0$"
 
-# 13 — who deletes a Filter
+# 13 — who deletes a Filter. 0 since P2-5; the one line this returns is
+#      `delete lanes[i]`, a FilterThread, which is P2-7's to own.
 grep -rn "delete " modules/core/src | grep -vE ':[0-9]+:[[:space:]]*//'
+
+# 13a — the name-keyed teardown must not come back. Comments stripped: the code that
+#       replaced it names deleteFilter() in order to explain what it replaced, so the
+#       naive grep reports 7 and means 0. Only the declaration/definition is left.
+git ls-files -z 'modules/core/*' | xargs -0 -r grep -nHE 'deleteFilter[[:space:]]*\(' \
+  | grep -vE ':[0-9]+:[[:space:]]*(//|\*|/\*)' | grep -v 'int deleteFilter'
+
+# 31 — the ABI surface, and why an identical symbol COUNT proves nothing here.
+#      Strong symbols only: weak ones are inline/template instantiations and appear or
+#      disappear with the inliner's mood (P2-5 lost two MuxMerge ctors that way).
+cmake --build build -j"$(nproc)" >/dev/null
+readelf --dyn-syms -W build/libtoffy.so | grep -v 'UND '
+#      then keep GLOBAL/DEFAULT non-WEAK names and diff against the base tree:
+#        base: git worktree add /tmp/base <parent> && cmake --build /tmp/base
+#      P2-5 moves exactly three strong names. The fourth change is the one to know about:
+#      FilterFactory::createFilter() now returns FilterPtr *by value*, which under the
+#      Itanium ABI prepends a hidden sret pointer to the argument list WITHOUT encoding
+#      the return type in the mangled name. Verified on this toolchain: `T f(int)`
+#      returning a class with a shared_ptr member and `int h(int)` both mangle to a name
+#      carrying only `(int)`. So createFilter's exported name is byte-identical before
+#      and after, an old caller resolves it happily, and then passes its arguments one
+#      register off. That is why this is a major bump and not a minor one.
+readelf --dyn-syms -W build/libtoffy.so | grep 12createFilter   # same string on both sides
 
 # 14, 14a — dead Windows branches. Must cover #if, #ifdef, #ifndef AND #elif, and both
 #      spellings of the macro (MSVC and _MSC_VER); the older two-term pattern under-counts.

@@ -13,8 +13,8 @@ This is the plan. What has actually landed is [`status.md`](status.md); item tit
 | **6** | `P0-10`, `P0-11`, `P0-12` — `creators.find()`, `Player::stop()`, guarded `get_child` | 1 | Small leftovers; finish P0 so the label stays meaningful. |
 | **7** | `P2-3` debug leftovers and dead code | 3–6 | Removes code that would otherwise be copied into the structural PRs. Must come *after* P0 so the P0 diffs stay small and reviewable. |
 | **8** | `P2-2` Windows paths — fix or delete | 7 | Deleting dead `#ifdef MSVC` branches shrinks `loadPlugin()` before `P2-10` consolidates it. |
-| **9** | `P2-4` `createFilter()` → `registerCreator()` | 7 | Mechanical and independent. Do it before `P2-5` so the ownership change touches one map lookup instead of ~30 branches. |
-| **10** | `P2-5` one owner per `Filter` (`FilterPtr`) | 9 | The keystone. `P2-9`'s `getFilter` fix and `P2-7`'s `FilterThread` ownership both fall out of this decision, so it must land before them. |
+| **9** | `P2-4` `createFilter()` → `registerCreator()` | 7 | Mechanical and independent. Do it before `P2-5` so the ownership change touches one map lookup instead of ~30 branches. **Not done, and `P2-5` landed without it** — the ordering was a preference, not a dependency, and the ~35 branches came through the ownership change unchanged. `P2-4` is now the smaller job it was always going to be: each branch becomes a `registerCreator` call returning a `Filter*` for a creator that `createFilter()` wraps. |
+| ~~**10**~~ | ~~`P2-5` one owner per `Filter` (`FilterPtr`)~~ | 9 | **Landed as PR 36**, out of order (before `P2-4`) and deliberately without `clearCreators()`'s removal. The keystone: `P2-9`'s `getFilter` fix and `P2-7`'s `FilterThread` ownership both fall out of it, and both are unblocked now. |
 | **11** | `P2-6` + `P2-13` collapse the four run methods, unify state, rename typos | 10 | Tightly coupled — the run methods are where `Controller::state` is read and where banks are manipulated. One PR, no renames mixed with behaviour (plan ground rule). |
 | **12** | `P2-7` threading: `atomic<bool>`, replace `interprocess_semaphore`, `FilterThread` ownership | 10 | Needs the ownership model settled. Run this PR under TSan/ASan (see Definition of done). |
 | **13** | `P2-9` module layering: drop the `imageview.hpp` dependency, move `btaFrame.hpp`, `getFilter` against `_pipe`, private `Controller` members | 10 | `getFilter` can only be reimplemented against `_pipe` once `_pipe` owns. |
@@ -47,10 +47,16 @@ or `X` id, never by PR number, when the two could be confused.
 ## Notes on the ordering
 
 **The critical path is `1 → 7 → 9 → 10 → {11,12,13} → 16 → 17 → 18`.** Everything else
-hangs off it. PR 10 (one owner per `Filter`) is the keystone: `P2-9`'s `getFilter`
-reimplementation, `P2-7`'s `FilterThread` ownership and the deletion of the name-based
-`clearBank()` teardown all fall out of that one decision, so attempting any of them first
-means doing it twice.
+hangs off it. PR 10 (one owner per `Filter`) was the keystone and **has landed** (PR 36,
+ahead of `P2-4`); `P2-9`'s `getFilter` reimplementation, `P2-7`'s `FilterThread` ownership and
+the deletion of the name-based `clearBank()` teardown have all fallen out of it, so the path
+from here is `{11,12,13} → 16 → 17 → 18` with `9` (`P2-4`) still open alongside.
+
+One consequence worth stating before anyone starts on PR 12: `P2-5` settled the *ownership*
+half of `FilterThread` (it holds a `FilterPtr` and no longer deletes), so what is left of
+`P2-7` is the `atomic<bool>`, the semaphore, the copy ctor and `delete lanes[i]` — the last
+`delete` in `modules/core`. TSan is still the gate on that remainder, and `P2-5` does not
+change it: the ownership change was checked with ASan/UBSan/LSan, which do not find data races.
 
 **PR 1 was a hard gate, and it has landed.** The row above is the original rationale; it no
 longer describes the tree. `enable_testing()`, **8** `add_test()` targets and a CI workflow

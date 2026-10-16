@@ -50,7 +50,7 @@ Controller * Controller::getInstance() {
 Controller::Controller() : baseFilterBank(NULL), _state(Controller::IDLE)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-    baseFilterBank = static_cast<FilterBank *>(
+    baseFilterBank = std::static_pointer_cast<FilterBank>(
         toffy::FilterFactory::getInstance()->createFilter("filterBank",
                                                           "baseController"));
     // createFilter() returns null for a type it cannot resolve, and ->bank(NULL)
@@ -68,14 +68,32 @@ Controller::~Controller()
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     _state = Controller::IDLE;
-    // Defensive: the constructor now guarantees a non-null bank (it throws
-    // otherwise), so this guards against future construction paths rather than a
-    // reachable fault today. ->id() through null here would fault while the
-    // owning object is being torn down, which is a poor failure to debug.
-    if (baseFilterBank) {
-        toffy::FilterFactory::getInstance()->deleteFilter(baseFilterBank->id());
-        baseFilterBank = NULL;
-    }
+    // Releasing the root bank is now just letting the FilterPtr go (P2-5): the
+    // bank and everything pipelined into it are destroyed here, by this object,
+    // which is what has always owned them. The line that used to do this was
+    //
+    //     FilterFactory::getInstance()->deleteFilter(baseFilterBank->id());
+    //
+    // i.e. a request to a process-wide registry to `delete` an object owned
+    // per-Controller. It destroyed the bank through a name, so it also
+    // invalidated every other pointer to it -- and it was the reason
+    // ~FilterBank::clearBank() had to race the factory on the way out.
+    //
+    // reset() is explicit rather than leaving the member to destruct after this
+    // body, because clearCreators() below and any future teardown step want the
+    // pipeline to be gone *before* they run: ~FilterBank can call into filters
+    // (it calls their destructors), and those run while the factory is still
+    // intact only if the bank dies first.
+    baseFilterBank.reset();
+    // clearCreators() is still here, and it is still wrong for a different
+    // reason. It wipes the *process-wide* creator registry, so destroying one
+    // Controller throws away every plug-in and Player::loadFilter() creator in
+    // the process (finding C3). What changed with P2-5 is that it no longer has
+    // anything to do with ownership: the bank above is released by this object,
+    // and nothing in the factory needs emptying to keep that safe. Removing the
+    // call is a behaviour change -- a second Controller would start keeping the
+    // plug-ins the first one registered -- and it belongs with P2-10, which is
+    // where the dlopen/dlclose lifetime that makes it tempting lives.
     toffy::FilterFactory::getInstance()->clearCreators();
     // TODO(P2-10): _loads is never drained, so dlopen() handles leak for the
     // lifetime of the process. The dlclose() loop that used to sit here was

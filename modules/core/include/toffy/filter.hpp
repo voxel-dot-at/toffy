@@ -16,6 +16,10 @@
 */
 #pragma once
 
+// <memory> for std::shared_ptr: FilterPtr below is the ownership type of the
+// whole filter tree (P2-5), and this header is installed, so it has to compile on
+// its own rather than by the luck of what frame.hpp pulled in first.
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -46,6 +50,27 @@ namespace toffy {
 
 class Filter;
 
+/**
+ * @brief Shared ownership of a Filter (P2-5).
+ *
+ * This is the ownership type of the filter tree. A Filter is created by
+ * FilterFactory::createFilter(), which hands back a FilterPtr, and every
+ * container that keeps filters alive holds a FilterPtr: FilterBank::_pipe,
+ * FilterThread and the factory's own registry. No code in the tree calls
+ * `delete` on a Filter any more, so a filter that is reachable from two places
+ * is destroyed once, when the last of them lets go, and a filter that is still
+ * referenced cannot be freed under the code holding it.
+ *
+ * Raw Filter* still appears, but only as a *non-owning observer*: the getters
+ * (Filter::bank(), FilterBank::getFilter(), FilterFactory::getFilter()) and the
+ * output vector of getFiltersByType(). An observer is valid for as long as some
+ * FilterPtr is, which is the same contract the raw pointers always claimed and
+ * previously did not keep.
+ *
+ * The type itself is not new -- it was declared here and used for filter-in-filter
+ * composition (BackgroundSubs, KalmanAverage) long before the containers agreed
+ * to use it.
+ */
 typedef std::shared_ptr<toffy::Filter> FilterPtr;
 
 /**
@@ -107,6 +132,9 @@ class TOFFY_EXPORT Filter
         _name,        ///< id alias @deprecated Is the same as id
         _type;        ///< Type id of the filter
 
+    // Non-owning observer of the containing bank, and deliberately not a
+    // FilterPtr: the bank owns the child, so a shared pointer back would be a
+    // cycle and every pipeline would leak.
     Filter* _bank = nullptr;  ///< reference to the filter bank whre the filter resides
     // static std::size_t _filter_counter;
 
