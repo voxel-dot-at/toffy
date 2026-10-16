@@ -23,7 +23,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 1 | `P0` correctness items closed, each with a regression test | — | **12/12** | 12/12 | ✅ |
 | 2 | `P1`/`P2` plan items closed | 16 items | **6/16** (`P1-1`, `P2-2`, `P2-5`, `P2-8`, `P2-14`, `P2-16`) | 16/16 | |
 | 3 | CI configures, builds and runs `ctest` on every push | `.github/` | matrix + sanitizers | required | ✅ |
-| 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` configurations | build | **4/4**, 11/11 ctest each | 4/4 | ✅ |
+| 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` configurations | build | **4/4**, 13/13 ctest each (re-measured on `P2-5`/PR 36 from four scratch configurations; the per-cell warning figures are counter 15a) | 4/4 | ✅ |
 | 5 | debug prints in library code | `modules/` | **128** | 0 | |
 | 5a | | `modules/core` | **0** | 0 | ✅ |
 | 5b | | `libraries/` | **97** | 0 | ⚠️ never counted |
@@ -99,11 +99,13 @@ grep -rc "@todo" modules/core | grep -v ":0$"
 #      `delete lanes[i]`, a FilterThread, which is P2-7's to own.
 grep -rn "delete " modules/core/src | grep -vE ':[0-9]+:[[:space:]]*//'
 
-# 13a — the name-keyed teardown must not come back. Comments stripped: the code that
-#       replaced it names deleteFilter() in order to explain what it replaced, so the
-#       naive grep reports 7 and means 0. Only the declaration/definition is left.
-git ls-files -z 'modules/core/*' | xargs -0 -r grep -nHE 'deleteFilter[[:space:]]*\(' \
-  | grep -vE ':[0-9]+:[[:space:]]*(//|\*|/\*)' | grep -v 'int deleteFilter'
+# 13a — the name-keyed teardown must not come back. Match the CALL form (`->deleteFilter(`),
+#      not the bare name: the declaration `int FilterFactory::deleteFilter(...)` is not a call
+#      and survives. Comments stripped, because the code that replaced the calls names them in
+#      order to explain what it replaced — without the comment filter this reports 7 and means
+#      0. Verified capable of failing: 4 on the pre-P2-5 tree, 0 now.
+git ls-files -z 'modules/core/*' | xargs -0 -r grep -nHE '(->|\.)[[:space:]]*deleteFilter[[:space:]]*\(' \
+  | grep -vE ':[0-9]+:[[:space:]]*(//|\*|/\*)'
 
 # 31 — the ABI surface, and why an identical symbol COUNT proves nothing here.
 #      Strong symbols only: weak ones are inline/template instantiations and appear or

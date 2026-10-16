@@ -25,14 +25,32 @@ Only the gates matching the PR kind apply.
   the `keepRunning` race and the `join()`-on-non-joinable-thread bug are both timing-dependent.
 - No `boost::thread` object is ever assigned while joinable.
 
-### 2.3 Ownership PR (PR 10, the keystone)
+### 2.3 Ownership PR (PR 10, the keystone) — **met by `P2-5` / PR 36**
 
 - A full `toffyRunner` session under ASan/valgrind reports **zero leaks and zero
-  double-frees**, including shutdown.
-- `grep -rn "delete " modules/core/src` returns no `delete` of a `Filter`.
+  double-frees**, including shutdown. — **Done, and automated.** The bullet as written could
+  not actually be satisfied headless: `toffyRunner`'s loop only ends when `cv::waitKey`
+  returns `q`, and the Ctrl-C handler that would shut it down cleanly is never installed
+  (`A26`), so the process has to be killed and LeakSanitizer never runs. The gate is now
+  `FilterOwnership.PlayerSessionReleasesEverythingOnShutdown` — a real XML file through
+  `Player::loadConfig`, frames run, `Player` destroyed, destructor counter asserted back to
+  zero — inside the `sanitizers` job on every push. The hand-run was done too: a 6-second
+  `toffyRunner` session against `tests/xml/cond_main.xml` under ASan/UBSan, zero reports.
+- `grep -rn "delete " modules/core/src` returns no `delete` of a `Filter`. — **0** (counter
+  13). The one line the grep returns is `delete lanes[i]`, a `FilterThread`, which is
+  `P2-7`'s to own.
 - The name-based teardown is gone: no `deleteFilter(name())` call remains in
-  `clearBank()` or `~Controller`.
+  `clearBank()` or `~Controller`. — **0 call sites in `modules/core`** (counter 13a, command
+  comment-stripped because the replacement code names the function to record what it
+  replaced). `deleteFilter()` survives as "forget this name" and destroys nothing.
 - `FilterPtr` is used consistently — the factory and `_pipe` no longer hold raw `Filter*`.
+  — `_pipe` is `std::vector<FilterPtr>`; the factory registry is `weak_ptr`, so it neither
+  owns nor dangles. Raw `Filter*` survives only where a header says *non-owning observer*
+  (`getFilter`, `Filter::bank()`, the `getFiltersByType` out-vector).
+
+What this gate does **not** cover, and should not be read as covering: it is an ownership
+gate, not a concurrency one. `P2-5` was checked with ASan/UBSan/LSan, which do not find data
+races, so `P2-7`'s TSan requirement stands on its own.
 
 ### 2.4 API-changing PRs (PRs 2, 16, 17, and `P3-2`, `P3-10`)
 
@@ -56,6 +74,17 @@ Only the gates matching the PR kind apply.
   `readelf --dyn-syms -W build/libtoffy.so | awk '$7!="UND"{print $8}' | sort` before and
   after and diff. That is how `P3-10` (deleting `TOFFY_EXPORT`) is shown to ship an
   identical exported symbol set rather than asserted to.
+
+  **And the converse: an unchanged symbol name is not proof of an unchanged ABI.** `P2-5`
+  changed `FilterFactory::createFilter()` to return `FilterPtr` by value. Under the Itanium
+  ABI a by-value class return prepends a hidden `sret` pointer to the argument list and the
+  mangled name encodes no return type, so the exported symbol is byte-identical across the
+  change while every argument sits one register off — a stale binary resolves it, loads, and
+  mis-calls it. Two rules follow, both learned the expensive way (counter 31):
+  1. diff the **strong** symbols and read the *declarations*, not just the counts — weak
+     inline/template symbols appear and vanish with the inliner and will bury the real diff;
+  2. any change to a **return type** is an ABI change even when `readelf` says it is not, and
+     is therefore a major-version change. That is what makes `v2.0.0` a major.
 - **A new version tag is pushed.** This is not ceremony: the library version *and*
   `SOVERSION` are derived from `git_describe` (`CMakeLists.txt:31`, parsed at `:35-39`;
   `SOVERSION` set at `:388`). An

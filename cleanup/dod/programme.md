@@ -61,7 +61,9 @@ macro checks need, because the tree's comments name the macros that were removed
 # 3 — tests exist and pass
 ctest --test-dir build --output-on-failure
 
-# 4 — all four dependency configurations build and pass. Each must print 8/8.
+# 4 — all four dependency configurations build and pass. Each must print "100% tests
+#     passed"; the number of targets is counter 24, deliberately not hardcoded here —
+#     this line said "8/8" for three rounds after the suite stopped being 8.
 for f in "" "-DWITHOUT_PCL=ON" "-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON" \
          "-DWITHOUT_PCL=ON -DCMAKE_DISABLE_FIND_PACKAGE_bta=ON"; do
   d=$(mktemp -d); cmake -S . -B "$d" $f >/dev/null 2>&1 \

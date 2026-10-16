@@ -33,6 +33,9 @@ This is the plan. What has actually landed is [`status.md`](status.md); item tit
 | **30** | `X3`: drop `--host/--port/--html` from `toffyRunner` | — | CLI-visible, not API: no library code reads them. Lands after `v1.11.0`, so it rides the next tag |
 | **31** | `X4`: rewrite `use.dox` around `toffyRunner`, delete the three screenshots | — | The page was in the Doxyfile's `EXCLUDE`, so un-excluding it is half the fix. Docs only, no tag needed |
 | **33** | `docs` CI job (counter 30) + `Doxyfile.cfg` hygiene | 31 | The docs target exited 0 through 15 diagnostics; now it is warning-free and gated. Docs only, no tag needed |
+| **34** | `P2-2` the Windows paths — deleted, POSIX-only | 7 | The "decide, then act" item, decided. Configure-time behaviour changes; no installed header and no exported symbol moves, so it needs no tag of its own and rides `v2.0.0` |
+| **35** | `P3-5` the `system()` call in `ObjectTrack` | — | Independent of the ownership chain; the last `system()` in the tree. No API/ABI change, rides `v2.0.0` |
+| **36** | `P2-5` one owner per `Filter` (`FilterPtr`) | 9 (not 9's dependency — see row 9) | **Landed out of order, before `P2-4`.** The keystone, and the reason `v2.0.0` exists: `createFilter()` returning by value changes the calling convention without changing the mangled name, which no SONAME check can see. Rows 11, 12 and 13 were blocked on it and are not any more |
 
 PRs **19–22 are off the critical path** and none of them depends on the ownership work, so
 they can run alongside 9–13. 19 and 20 are worth doing before anything else precisely

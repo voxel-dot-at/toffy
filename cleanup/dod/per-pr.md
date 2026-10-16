@@ -3,12 +3,16 @@
 1. **Builds in all four dependency configurations**, not just the developer's. This gate is
    now **green in all four cells**, which it was not when this document was written:
 
+   The count of `ctest` targets and the warning figures per cell are not restated here —
+   they are counters [4 and 24](../counters.md), and restating them is how this document
+   ended up saying `8/8` for three rounds after the suite grew past it.
+
    | `PCL_FOUND` | `HAS_BTA` | status | how to reproduce |
    |---|---|---|---|
-   | on | on | ✅ builds, 8/8 ctest | default (needs the bta SDK) |
-   | on | off | ✅ builds, 8/8 ctest | `-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON` |
-   | off | on | ✅ builds, 8/8 ctest | `-DWITHOUT_PCL=ON` |
-   | off | off | ✅ builds, 8/8 ctest | both flags |
+   | on | on | ✅ builds, `ctest` green | default (needs the bta SDK) |
+   | on | off | ✅ builds, `ctest` green | `-DCMAKE_DISABLE_FIND_PACKAGE_bta=ON` |
+   | off | on | ✅ builds, `ctest` green | `-DWITHOUT_PCL=ON` |
+   | off | off | ✅ builds, `ctest` green | both flags |
 
    The original note blamed only the unguarded PCL typedefs in `frame.hpp`. That was the
    first blocker of several, and the interesting part is that the typedefs had never been
@@ -42,7 +46,8 @@
 
 4. **No new compiler warnings** under the existing `-Wall -Wextra`
    (`CMakeLists.txt:207`) in any file the PR touches. Do not enable `-Werror` globally — the
-   28 warnings outside `modules/core` would fail the build — but do not add to them either.
+   warnings outside `modules/core` (counter 15a) would fail the build — but do not add to
+   them either.
    `modules/core` is the exception and `P3-4` has landed: `toffy_core` compiles with
    `-Werror` (`option(CORE_WERROR ON)`, GNU/Clang only, `target_compile_options` PRIVATE so
    it cannot leak), so a new warning in core is a build break, not a review comment. If a

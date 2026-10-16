@@ -150,8 +150,16 @@ the bank's pipeline — see counter 31.
 - `SOVERSION` is the **full** version, not the major alone, so *every* patch bump changes
   the SONAME and forces a downstream relink. Version decisions here are never routine —
   see [`dod/stage-gates.md`](dod/stage-gates.md) §2.4.
-- **`v2.0.0` is the number for the tree from PR 36 onwards, and `P2-5` is why it is a major
-  and not the next minor.** The decision, in the order the evidence arrived:
+- **`v2.0.0` is cut at the `P2-5` commit (`47e4cd4`), and `P2-5` is why it is a major and not
+  the next minor.** Like the two before it the tag is **local until it is pushed**. A fresh
+  configure from the tag reports `version: v2.0.0-0-g47e4cd4` and builds
+  `libtoffy.so.2.0.0` (`readelf -d` → `SONAME libtoffy.so.2.0.0`), and a consumer asking for
+  `find_package(toffy 1.11)` is now rejected — *"considered but not accepted:
+  toffyConfig.cmake, version: 2.0.0"* — while `find_package(toffy 2.0)` resolves. Both
+  measured, not inferred from the `SameMajorVersion` line. Doc corrections landed after the
+  tag (the tag marks the code, and `git describe` from them still reports `2.0.0`, so the
+  SONAME does not move); they are not a reason to re-cut it. The decision, in the order the
+  evidence arrived:
   1. Three **strong** exported symbols change name (`counters.md` 31): `FilterBank::add
      (Filter*)` and `FilterFactory::renameFilter(Filter*, …)` are gone, replaced by their
      `FilterPtr` forms, and `FilterBank::insert(int, FilterPtr)` moved out-of-line. Those
@@ -179,8 +187,9 @@ the bank's pipeline — see counter 31.
   A plug-in that touched a bank's pipeline — `add()`, `instantiateFilter()` — must be rebuilt.
 - **`v1.11.0` is the agreed number and it is cut at the PR 29 tip.** `P3-2` changed the
   installed header surface and `P3-12`/`X2b` changed three more headers, so the tag covers
-  PRs 28 and 29 together. `P3-10` was still queued for "the one after it"; that one is now
-  `v2.0.0`, so `P3-10` no longer needs a tag of its own. `1.11.0` rather than `1.8.0`
+  PRs 28 and 29 together. `P3-10` was queued for "the one after it" — which is now `v2.0.0`,
+  but `P3-10` had not landed when that was cut, so it waits for `v2.1.0` rather than
+  retro-attaching itself to a tag that does not contain it. `1.11.0` rather than `1.8.0`
   keeps clearing the `v1.9.0` on `origin/next`, and a removal plus a header-hygiene release is
   a minor bump, not a patch, under the reading `v1.10.0` already set for the `Event`
   deletion. From the tagged commit `git describe` reports `1.11.0`, so the SONAME stops
@@ -189,8 +198,10 @@ the bank's pipeline — see counter 31.
 - **`v2.0.0` carries everything after `v1.11.0`:** PRs 30 (`X3`), 31 (`X4`), 32/33 (the
   `Doxyfile.cfg` fix and the `docs` gate), 34 (`P2-2`, POSIX-only), 35 (`P3-5`) and 36
   (`P2-5`). Of those, only 36 forces the major; the rest were riding "the next tag" and are
-  now riding this one. `P3-10` (dropping `TOFFY_EXPORT`) is still open and will need `v2.1.0`
-  or be folded in before this tag is cut — it changes no exported symbol, so either is safe.
+  now riding this one. `P3-10` (dropping `TOFFY_EXPORT`) is still open, so it needs the next
+  tag: it changes no exported symbol, which by the rule in `dod/stage-gates.md` §2.4 makes it
+  a minor (`v2.1.0`) — a change to a *return type* would not be, and that is now written down
+  where the next person will read it before making one.
 - **PR 34 (`P2-2`) opens no tag decision of its own.** It touches no installed header and no
   exported symbol — measured against an `ac1108a` worktree: `readelf --dyn-syms` identical,
   2 889 symbols, `diff` empty — so it rides `v2.0.0`. What it does change is a **configure-time** behaviour: a
