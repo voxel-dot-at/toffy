@@ -16,7 +16,9 @@
 */
 #pragma once
 
+#include <memory>
 #include <vector>
+
 #include <boost/container/flat_set.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -86,7 +88,26 @@ protected:
 
 private:
     static std::size_t _filter_counter; ///< Internal Filter counter
-    std::vector<FilterThread*> lanes; ///< Container for all parallel filter threads
-    Mux* mux; ///< To synchronize all Filter outputs
+
+    /**
+     * @brief Container for all parallel filter threads.
+     *
+     * unique_ptr, not raw pointers (P2-7): the bank owns the lanes, and the
+     * vector used to be emptied by a loop of `delete lanes[i]` -- the last raw
+     * delete in modules/core (cleanup/counters.md counter 13). ~ParallelFilter
+     * still calls stop() on every lane before they are destroyed.
+     */
+    std::vector<std::unique_ptr<FilterThread>> lanes;
+
+    /**
+     * @brief To synchronize all Filter outputs; null when the config has no
+     * barrier node.
+     *
+     * The `= nullptr` is not decoration: the constructor never initialised this,
+     * so a ParallelFilter configured without a <barrier> read an indeterminate
+     * pointer in filter()'s `if (mux)` and could call through it. Same defect
+     * class as P0-5 (uninitialised members), found while reading for P2-7.
+     */
+    Mux* mux = nullptr;
 };
 }

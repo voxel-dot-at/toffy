@@ -16,13 +16,14 @@
 */
 #pragma once
 
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <vector>
 
 #include <boost/container/flat_set.hpp>
 #include <boost/property_tree/ptree.hpp>
-#include <boost/interprocess/sync/interprocess_semaphore.hpp>
 
 #include "toffy/filterfactory.hpp"
 
@@ -76,7 +77,7 @@ class TOFFY_EXPORT FilterBank : public Filter
      * @brief FilterBank
      *
      */
-    FilterBank() : Filter(id_name, _filter_counter), ready(0)
+    FilterBank() : Filter(id_name, _filter_counter)
     {
         ff = FilterFactory::getInstance();
         this->bank(this);
@@ -88,7 +89,7 @@ class TOFFY_EXPORT FilterBank : public Filter
      * @param counter
      */
     FilterBank(std::string type, std::size_t counter)
-        : Filter(type, counter), ready(0)
+        : Filter(type, counter)
     {
         ff = FilterFactory::getInstance();
         this->bank(this);
@@ -320,15 +321,35 @@ class TOFFY_EXPORT FilterBank : public Filter
     virtual boost::property_tree::ptree getConfig() const;
 
     /**
-     * @brief wait
+     * @brief Block until the next filter() pass has completed on this bank.
+     *
+     * P2-7: this is an in-process condition variable now, not a
+     * boost::interprocess::interprocess_semaphore. The semantics changed in one
+     * respect, and it is the fix rather than the cost: the semaphore *counted*
+     * every pass, nothing in toffy ever called wait(), so a consumer that turned
+     * up after 1000 frames got 1000 immediate returns -- "a frame went by at
+     * some point", not "a frame has gone by since you last looked". One flag is
+     * set by a pass and cleared by whoever reads it.
      */
-    virtual void wait() { ready.wait(); }
+    virtual void wait()
+    {
+        std::unique_lock<std::mutex> lock(readyMtx);
+        readyCv.wait(lock, [this] { return _ready; });
+        _ready = false;
+    }
 
     /**
-     * @brief try_wait
-     * @return
+     * @brief The non-blocking counterpart of wait().
+     * @return true if a filter() pass has completed since the last wait() or
+     * try_wait(), and consumes that signal.
      */
-    virtual bool try_wait() { return ready.try_wait(); }
+    virtual bool try_wait()
+    {
+        std::lock_guard<std::mutex> lock(readyMtx);
+        if (!_ready) return false;
+        _ready = false;
+        return true;
+    }
 
     virtual void init();
     virtual void start();
@@ -410,7 +431,33 @@ class TOFFY_EXPORT FilterBank : public Filter
     boost::property_tree::ptree
         _globalConfig;  ///< Ptree to local to FilterBank globals
 
-    boost::interprocess::interprocess_semaphore ready;  ///< TODO
+    /**
+     * @brief Frame-arrival signal: set by filter(), consumed by wait() /
+     * try_wait().
+     *
+     * Guards _ready; readyCv wakes wait(). Three members doing what one
+     * boost::interprocess::interprocess_semaphore used to do -- a kernel
+     * semaphore object per FilterBank, in a public header, for a signal that
+     * never leaves the process (P2-7, cleanup/findings/correctness.md "D").
+     */
+    std::mutex readyMtx;
+    std::condition_variable readyCv;
+    bool _ready = false;
+
+    /**
+     * @brief Record that a filter() pass has completed and wake anyone in wait().
+     *
+     * The flag is set under the mutex the waiter tests, so the notification
+     * cannot be lost between the test and the wait.
+     */
+    void signalReady()
+    {
+        {
+            std::lock_guard<std::mutex> lock(readyMtx);
+            _ready = true;
+        }
+        readyCv.notify_all();
+    }
 
     static std::size_t _filter_counter;  ///< Internal Filter counter
 

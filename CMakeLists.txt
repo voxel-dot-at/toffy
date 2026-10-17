@@ -263,9 +263,25 @@ endif()
 
 
 # Boost
+#
+# P2-7: no `thread` component. The tree used boost::thread, boost::mutex and
+# boost::condition_variable in four classes -- two of them in installed headers,
+# where they also forced the headers on every consumer -- and they are
+# std::thread, std::mutex and std::condition_variable now.
+#
+# Measured, so that nobody reads more into this than it says: dropping the
+# component changes *nothing* in today's build. `Boost::log_setup`'s imported
+# target requires `Boost::thread`, so it stays on the link line and in
+# `readelf -d libtoffy.so`'s NEEDED list either way -- diffing the generated
+# link command with and without the component gives the same twelve Boost
+# libraries. It is dropped because it is no longer ours to ask for, and because
+# the logging core is next: the moment Boost.Log goes, an explicit `thread`
+# entry would be the only thing keeping a library nobody calls in the link.
+# `chrono` stays for now -- boost::date_time, which several filters use for
+# timestamps, is a separate library and still needed.
 find_package(Boost
     COMPONENTS log log_setup program_options system
-        filesystem date_time serialization chrono thread
+        filesystem date_time serialization chrono
     REQUIRED)
 #include_directories(${Boost_INCLUDE_DIRS})
 list(APPEND LIBS ${Boost_LIBRARIES})

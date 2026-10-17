@@ -84,3 +84,13 @@ add_test(NAME objecttrack COMMAND test_objecttrack)
 add_executable(test_ownership test_ownership.cpp)
 target_link_libraries(test_ownership toffy GTest::gtest GTest::gtest_main)
 add_test(NAME ownership COMMAND test_ownership)
+
+# P2-7: the threading. FilterThread's start/stop/join states, the lane queue's
+# condition variables, ParallelFilter's lanes without a barrier, and the
+# frame-arrival signal on FilterBank. Several of these hang rather than fail on
+# the code they replace, so each blocking wait in the file is bounded and reports
+# instead of wedging the suite; the frame leak is a LeakSanitizer subject and is
+# checked by the sanitizers job.
+add_executable(test_filterthread test_filterthread.cpp)
+target_link_libraries(test_filterthread toffy GTest::gtest GTest::gtest_main)
+add_test(NAME filterthread COMMAND test_filterthread)

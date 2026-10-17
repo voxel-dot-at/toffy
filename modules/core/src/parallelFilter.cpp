@@ -30,10 +30,13 @@ const std::string ParallelFilter::id_name = "parallelFilter";
 
 ParallelFilter::~ParallelFilter()
 {
-    for (size_t i = 0; i < lanes.size(); i++) {
-        lanes[i]->stop();
-        delete lanes[i];
-    }
+    // Stop every lane before any of them is destroyed: ~FilterThread joins its
+    // worker, and a lane whose filter is still in the bank's pipeline should
+    // stop touching it before the bank lets go, not during the teardown.
+    // The `delete lanes[i]` that used to follow each stop() is gone with the raw
+    // pointers (P2-7); the vector owns the lanes now.
+    for (auto& lane : lanes) lane->stop();
+    lanes.clear();
 }
 
 int ParallelFilter::handleConfigItem(
@@ -100,8 +103,9 @@ int ParallelFilter::handleConfigItem(
             return 0;
         }
 
-        FilterThread* ft = new FilterThread(f);
-        lanes.push_back(ft);
+        // The lane and the pipeline share the filter; the bank owns the lane
+        // itself (unique_ptr, P2-7).
+        lanes.push_back(std::make_unique<FilterThread>(f));
 
         add(f);  // book-keeping
 
@@ -142,6 +146,18 @@ bool ParallelFilter::filter(const Frame& /*in*/, Frame& out)
     for (i = 0; i < lanes.size(); i++) {
         BOOST_LOG_TRIVIAL(trace) << name() << "::filter dequeuing lane " << i;
         res[i] = lanes[i]->dequeue();
+        if (!res[i]) {
+            // dequeue() returns null only when the lane was stopped while this
+            // call was waiting. There is nothing to mux, and handing a null to
+            // the barrier -- or back to the lane, which would put it in front of
+            // its worker -- is worse than reporting that this pass produced
+            // nothing. Give back the frames already taken, and leave.
+            BOOST_LOG_TRIVIAL(info) << name() << "::" << __FUNCTION__
+                                    << " lane " << i
+                                    << " is stopped; no frame this pass";
+            for (size_t j = 0; j < i; j++) lanes[j]->enqueue(res[j]);
+            return false;
+        }
     }
     BOOST_LOG_TRIVIAL(trace) << name() << "::filter all lanes dequeued";
 

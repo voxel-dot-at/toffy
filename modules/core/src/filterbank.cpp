@@ -74,7 +74,9 @@ bool FilterBank::filter(const Frame& in, Frame& out)
         //    << id() << "::filter" << i << "\t" << _pipe[i]->name() << "\t done"
         //    << "\t duration: " << diff.total_microseconds() << " us";
     }
-    ready.post();
+    // One arrival signal per completed pass (P2-7: a mutex + condition_variable
+    // in this process, not an interprocess semaphore).
+    signalReady();
     return true;
 }
 

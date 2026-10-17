@@ -16,9 +16,9 @@
 */
 #pragma once
 
+#include <atomic>
+#include <thread>
 #include <vector>
-
-#include <boost/thread.hpp>
 
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
 
@@ -64,7 +64,29 @@ public:
 private:
 
     std::string _in_cloud;
-    boost::thread _thread;
+
+    /**
+     * @brief The viewer thread (P2-7: std::thread, was boost::thread).
+     *
+     * Joinable from the first filter() that started the viewer until the next
+     * join(); ~CloudViewPCL and the restart path in filter() both ask joinable()
+     * first, because std::thread throws on joining nothing and terminates on an
+     * assignment over a joinable thread, where boost::thread at
+     * BOOST_THREAD_VERSION 2 did neither.
+     */
+    std::thread _thread;
+
+    /**
+     * @brief True while loopViewer() is alive; set by the caller before the
+     * thread is created, cleared when the loop returns.
+     *
+     * Without it there is no way to tell "the viewer was closed" from "the
+     * viewer is still up and signal(0) has not taken effect yet", and the
+     * difference decides whether joining would block or the thread can be
+     * collected.
+     */
+    std::atomic<bool> _viewerRunning{false};
+
     volatile int _signal; ///< Interthread flag. Used for check the thread status
     double _coordSize;
 

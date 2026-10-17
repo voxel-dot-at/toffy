@@ -1,0 +1,20 @@
+# ThreadSanitizer suppressions for the `thread-sanitizer` CI job (P2-7).
+#
+# Scope, stated per DOD 0 rule 9: this file exists for one third-party library
+# that toffy does not build and cannot fix. It is not a way to make the gate
+# quiet -- the check that it is a scope and not an off switch is to run it against
+# the pre-P2-7 tree, where it still reports
+#
+#   data race  modules/core/src/filterThread.cpp:58 in toffy::FilterThread::stop()
+#   data race  modules/core/src/filterThread.cpp:96 in toffy::FilterThread::loop()
+#
+# for the plain-bool run flag, with this file in place.
+#
+# mutex:libOpenNI2.so.0
+#   PCL's I/O pulls libOpenNI2 in, and it is not compiled with TSan. At shutdown
+#   it unlocks a mutex from a thread other than the one that locked it -- three
+#   reports per test binary, in every configuration, unrelated to what toffy does
+#   with it. A report whose top frame is inside that shared object is the only
+#   thing this matches; a toffy mutex misused the same way is reported in toffy
+#   frames and still fails the job.
+mutex:libOpenNI2.so.0

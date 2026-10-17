@@ -26,7 +26,9 @@
 // value, which is what every build of this library has ever written to disk.
 #define RAWFILE ".r"
 
-#include <boost/thread.hpp>
+#include <condition_variable>
+#include <mutex>
+
 #include <boost/property_tree/ptree.hpp>
 
 #include <bta.h>
@@ -166,8 +168,19 @@ class TOFFY_EXPORT BtaWrapper : public ImageSensor
 
     bool async;  //< set to true if frameArrived* callbacks are used.
 
-    boost::mutex frameMutex, fillFrameMutex;
-    boost::condition_variable newFrameCond;
+    // P2-7: the standard primitives, from <mutex>/<condition_variable> rather
+    // than <boost/thread.hpp>.
+    //
+    // One thing the swap does *not* fix, and is left visible rather than hidden:
+    // `hasBeenUpdated`, the predicate newFrameCond is waited on, is written under
+    // fillFrameMutex (updateFrame) and read under frameMutex
+    // (waitForNextFrame). A condition variable needs its predicate guarded by the
+    // mutex it is waited with, so this can lose the wakeup -- it is a property of
+    // the two-mutex design, identical under boost and std, and untangling it
+    // needs a camera to test against. Filed as A29 in
+    // cleanup/findings/correctness.md.
+    std::mutex frameMutex, fillFrameMutex;
+    std::condition_variable newFrameCond;
 
     BTA_Frame *frames
         [3];  //< array of frames, one is filled by bta lib, the other in use

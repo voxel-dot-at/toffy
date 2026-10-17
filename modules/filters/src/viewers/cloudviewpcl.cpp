@@ -16,6 +16,9 @@
 */
 #include <opencv2/core.hpp>
 
+#include <system_error>
+#include <thread>
+
 #include <boost/any.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/log/trivial.hpp>
@@ -44,7 +47,11 @@ CloudViewPCL::~CloudViewPCL()
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
     _signal = 0;
-    _thread.join();
+    // A viewer that was configured but never ran has no thread to join.
+    // std::thread::join() throws std::system_error in that case -- out of a
+    // destructor, so std::terminate; boost::thread ignored the call. Same guard
+    // as FilterThread's, for the same reason (P2-7).
+    if (_thread.joinable()) _thread.join();
     // Vtk does not close the windows in linux :-(
 
 }
@@ -173,6 +180,9 @@ void CloudViewPCL::loopViewer()
     viewer.removeAllPointClouds();
     viewer.spinOnce(100,true);
     viewer.close();
+    // Last thing the thread does with the object: filter() and ~CloudViewPCL
+    // read this to decide whether the thread can be joined or collected.
+    _viewerRunning = false;
 
     _signal = 0;
     BOOST_LOG_TRIVIAL(debug) << "Thread " << __FUNCTION__ << " ends";
@@ -219,8 +229,27 @@ bool CloudViewPCL::filter(const Frame &in, Frame& out)
     }
     */
     if (_signal == 0) {
+        if (_viewerRunning) {
+            // A viewer is still up: signal(0) asked it to close and it has not
+            // come back yet. Starting another one would mean assigning over a
+            // joinable std::thread, which is std::terminate(); boost::thread at
+            // BOOST_THREAD_VERSION 2 detached the old worker instead, which is
+            // how a second window used to appear. Keep the one we have.
+            _signal = 1;
+            return true;
+        }
+        // The previous viewer has returned: collect it before reusing the
+        // member. Joining a finished thread does not block.
+        if (_thread.joinable()) _thread.join();
 	_signal = 1;
-	_thread = boost::thread(boost::bind(&CloudViewPCL::loopViewer,this));
+        _viewerRunning = true;
+        try {
+            _thread = std::thread(&CloudViewPCL::loopViewer, this);
+        } catch (const std::system_error &e) {
+            _viewerRunning = false;
+            _signal = 0;
+            BOOST_LOG_TRIVIAL(error) << "Could not start the viewer thread: " << e.what();
+        }
     }
 
     return true;

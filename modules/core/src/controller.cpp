@@ -16,6 +16,8 @@
 */
 #include <iostream>
 #include <stdexcept>
+#include <system_error>
+#include <thread>
 
 #include <boost/log/trivial.hpp>
 
@@ -111,12 +113,20 @@ bool Controller::forward()
             ((ParallelFilter *)vec[i])->start();
         }
         _state = Controller::FORWARD;
-        _thread = boost::thread(boost::bind(&Controller::loopFilters, this));
-        if (!_thread.joinable()) {
+        // Collect a previous run before starting a new one: loopFilters() puts
+        // the state back to IDLE itself when the bank is empty, so arriving here
+        // with a finished but still joinable thread is normal. Assigning over it
+        // calls std::terminate(); boost::thread at BOOST_THREAD_VERSION 2 turned
+        // the same assignment into a detached worker nobody owned.
+        if (_thread.joinable()) _thread.join();
+        try {
+            _thread = std::thread(&Controller::loopFilters, this);
+        } catch (const std::system_error &e) {
+            // std::thread reports a failed launch by throwing. The
+            // `if (!_thread.joinable())` check that used to follow the
+            // assignment could never fire: boost::thread threw as well.
             _state = Controller::IDLE;
-            //check thread or the state changed inside
-            //SOMETHING WRONG HAPPEND
-            //TODO
+            BOOST_LOG_TRIVIAL(error) << "Could not start the filter thread: " << e.what();
             return false;
         }
     } else {
@@ -136,12 +146,14 @@ bool Controller::backward()
             ((ParallelFilter *)vec[i])->start();
         }
         _state = Controller::BACKWARD;
-        _thread = boost::thread(boost::bind(&Controller::loopFilters, this));
-        if (!_thread.joinable()) {
+        // See forward(): join a finished previous run before assigning, and
+        // report a launch that threw rather than testing joinable() after.
+        if (_thread.joinable()) _thread.join();
+        try {
+            _thread = std::thread(&Controller::loopFilters, this);
+        } catch (const std::system_error &e) {
             _state = Controller::IDLE;
-            //check thread or the state changed inside
-            //SOMETHING WRONG HAPPEND
-            //TODO
+            BOOST_LOG_TRIVIAL(error) << "Could not start the filter thread: " << e.what();
             return false;
         }
     } else {
@@ -160,16 +172,10 @@ bool Controller::stepForward()
             ((ParallelFilter *)vec[i])->init();
             ((ParallelFilter *)vec[i])->start();
         }
-        /*_state = Controller::FORWARD;
-	_thread = boost::thread( boost::bind(&Controller::loopFiltersOnce, this));
-	if (!_thread.joinable()) {
-	    _state = Controller::IDLE;
-	    //check thread or the state changed inside
-	    //SOMETHING WRONG HAPPEND
-	    //TODO
-	    return false;
-	}
-	_thread.join();*/
+        // A single step runs the bank on the calling thread. The commented-out
+        // launch of loopFiltersOnce() that used to sit here went with the
+        // boost::thread it named; P2-6 collapses these four methods and decides
+        // whether the threaded variant comes back at all.
         baseFilterBank->filter(f, f);
         for (size_t i = 0; i < vec.size(); i++) {
             ((ParallelFilter *)vec[i])->stop();
@@ -190,15 +196,8 @@ bool Controller::stepBackward()
             ((ParallelFilter *)vec[i])->init();
             ((ParallelFilter *)vec[i])->start();
         }
-        /*_state = Controller::BACKWARD;
-	_thread = boost::thread( boost::bind(&Controller::loopFiltersOnce, this));
-	if (!_thread.joinable()) {
-	    _state = Controller::IDLE;
-	    //check thread or the state changed inside
-	    //SOMETHING WRONG HAPPEND
-	    //TODO
-	    return false;
-	}*/
+        // See stepForward(): the commented-out threaded variant went with the
+        // boost::thread it named.
         f.addData("backward", true);
         baseFilterBank->filter(f, f);
         f.removeData("backward");
@@ -218,10 +217,11 @@ bool Controller::stop()
     _state = Controller::IDLE;
     // Join only a thread that was actually started. _thread becomes joinable in
     // forward()/backward()/stepForward()/stepBackward(); joining it unconditionally
-    // made stop() throw boost::thread_resource_error whenever it ran before any of
-    // them (finding A12). The rest of A12 -- the four duplicated run methods and
-    // the _thread = boost::thread(...) assignments, which call std::terminate if a
-    // previous thread is still joinable -- is left to P2-6/P2-7.
+    // made stop() throw whenever it ran before any of them (finding A12). The rest
+    // of A12 -- the four duplicated run methods -- is left to P2-6. The
+    // assignments P2-7 worried about are guarded at the point of assignment now:
+    // forward() and backward() join a finished run before starting a new one,
+    // which is what std::terminate() would otherwise be waiting for.
     if (_thread.joinable())
         _thread.join();
     std::vector<Filter *> vec;

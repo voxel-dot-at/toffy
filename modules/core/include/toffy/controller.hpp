@@ -17,9 +17,10 @@
 #ifndef __toffy_CONTROLLER_HPP__
 #define __toffy_CONTROLLER_HPP__
 
+// P2-7: the run thread is a std::thread. <boost/thread.hpp> is gone, and with
+// it the requirement that anything including this header link Boost.Thread.
 #include <memory>
-
-#include <boost/thread.hpp>
+#include <thread>
 
 #include <toffy/filterbank.hpp>
 #include <toffy/frame.hpp>
@@ -161,7 +162,17 @@ public:
     Frame& getFrame() { return f; }
 
 private:
-    boost::thread _thread; ///< thread to run the toffy filtering
+    /**
+     * @brief thread to run the toffy filtering
+     *
+     * Joinable between a forward()/backward() that started it and the next
+     * stop() -- or, when loopFilters() ended the run itself by putting the state
+     * back to IDLE, between that and whatever comes next. The run methods join it
+     * before starting a new one: assigning over a joinable std::thread calls
+     * std::terminate(), where boost::thread at BOOST_THREAD_VERSION 2 silently
+     * detached the old worker.
+     */
+    std::thread _thread;
     state _state; ///< running state of toffy.
     std::vector<void *> _loads;
 

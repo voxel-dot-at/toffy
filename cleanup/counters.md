@@ -2,11 +2,11 @@
 
 **This is the only place a measured number is written down.** Other chapters link here.
 
-Re-measured on `feature/code-cleanup` with PR 36 (`P2-5`, one owner per `Filter`) applied —
+Re-measured on `feature/code-cleanup` with PR 37 (`P2-7`, the threading) applied —
 i.e. after `P3-1`, `P3-3`, `P3-4`, `P3-7`, `P3-9`, `P3-11`, `A24`, `P3-6`, `P3-2`, `P3-12`,
-`X2b`, `X3`, `X4`, the `Doxyfile.cfg` fix, the `docs` gate, `P2-2`, `P3-5` and `P2-5`; GCC
-13.3, CMake 3.28.3, default configuration (PCL on, BTA on). Every command below is
-copy-pasteable from the repository root; run them before quoting a figure.
+`X2b`, `X3`, `X4`, the `Doxyfile.cfg` fix, the `docs` gate, `P2-2`, `P3-5`, `P2-5` and
+`P2-7`; GCC 13.3, CMake 3.28.3, default configuration (PCL on, BTA on). Every command below
+is copy-pasteable from the repository root; run them before quoting a figure.
 
 An earlier revision of this header cited `4739900`, which is not an ancestor of `HEAD` — it
 was the pre-amend version of the README commit and is unreachable from this branch. Cite a
@@ -21,9 +21,9 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | # | metric | scope | now | target | |
 |---|---|---|---|---|---|
 | 1 | `P0` correctness items closed, each with a regression test | — | **12/12** | 12/12 | ✅ |
-| 2 | `P1`/`P2` plan items closed | 16 items | **6/16** (`P1-1`, `P2-2`, `P2-5`, `P2-8`, `P2-14`, `P2-16`) | 16/16 | |
+| 2 | `P1`/`P2` plan items closed | 16 items | **7/16** (`P1-1`, `P2-2`, `P2-5`, `P2-7`, `P2-8`, `P2-14`, `P2-16`) | 16/16 | |
 | 3 | CI configures, builds and runs `ctest` on every push | `.github/` | matrix + sanitizers | required | ✅ |
-| 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` configurations | build | **4/4**, 13/13 ctest each (re-measured on `P2-5`/PR 36 from four scratch configurations; the per-cell warning figures are counter 15a) | 4/4 | ✅ |
+| 4 | Builds in all four `PCL_FOUND`/`HAS_BTA` configurations | build | **4/4**, **14/14** ctest each (re-measured on `P2-7`/PR 37 from four scratch configurations; the per-cell warning figures are counter 15a) | 4/4 | ✅ |
 | 5 | debug prints in library code | `modules/` | **128** | 0 | |
 | 5a | | `modules/core` | **0** | 0 | ✅ |
 | 5b | | `libraries/` | **97** | 0 | ⚠️ never counted |
@@ -35,11 +35,11 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 8b | `WIN` / `UNIX` defines | `modules/` | **0** | 0 | ✅ |
 | 8c | | tree | **0** (was 2, both in the deleted orphan) | 0 | ✅ |
 | 9 | `#include <toffy/viewers/…>` from core | `modules/core` | **1** | 0 | |
-| 10 | `interprocess` primitives | `modules/core` | **2** | 0 | |
+| 10 | `interprocess` primitives | `modules/core` | **0** (was 2: the `#include <boost/interprocess/sync/interprocess_semaphore.hpp>` in `filterbank.hpp` and the `ready` member it declared; `P2-7`). `FilterBank::wait()`/`try_wait()` survive on a `std::mutex` + `std::condition_variable` + one flag. The finding predicted `post()` past the maximum would throw — **measured, that is not reachable**: `interprocess_semaphore` is `sem_init` on Linux and `SEM_VALUE_MAX` is `INT_MAX`, so 40 000 posts are accepted and the count just climbs. What was actually wrong is that nothing ever called `wait()`, so the count was a lagging tally and `wait()` could not mean "a frame has arrived since you last looked" — it meant "N frames have gone by at some point". See [`findings/correctness.md`](findings/correctness.md) D | 0 | ✅ |
 | 11 | `else if (type ==` branches in the factory | `filterfactory.cpp` | **37** | 0 | |
-| 12 | `@todo` markers | `modules/core` | **20** | ≤ 5 | |
-| 12b | `@todo` markers | `filterThread.hpp` | **10** | 0 | |
-| 13 | `delete` of a `Filter` | `modules/core` | **0** (was 4 sites in 3 owners: the factory's `deleteFilter`, `~FilterThread`, `~ParallelFilter` through its lanes, and `~Controller` via the factory; `P2-5`). The only `delete` left in `modules/core/src` is `delete lanes[i]`, a `FilterThread`, which is `P2-7`'s. The gate is not this grep — it is `tests/test_ownership.cpp` under the `sanitizers` job, where 8 of the 9 tests fail on the pre-`P2-5` tree and five of those produce a sanitizer report (two heap-use-after-free, a `SEGV` in `clearBank()`, a heap-buffer-overflow in `_pipe`, and a 184-byte direct leak from the `Player` session) | 0 | ✅ |
+| 12 | `@todo` markers | `modules/core` | **10** (was 20; all 10 that went were `filterThread.hpp`'s, documented in place by `P2-7`) | ≤ 5 | |
+| 12b | `@todo` markers | `filterThread.hpp` | **0** (was 10 — every member of the class was `///< @todo document`, including the two mutexes and the two condition variables whose semantics were the bug; `P2-7` wrote the documentation instead) | 0 | ✅ |
+| 13 | `delete` of a `Filter` | `modules/core` | **0** (was 4 sites in 3 owners: the factory's `deleteFilter`, `~FilterThread`, `~ParallelFilter` through its lanes, and `~Controller` via the factory; `P2-5`). `delete lanes[i]` — the `FilterThread` delete `P2-5` left behind — is gone with `P2-7`: `ParallelFilter::lanes` is a `vector<unique_ptr<FilterThread>>`. What `delete`s remain in `modules/core/src` are the two loops in `~FilterThread` freeing the `Frame`s the lane created and nobody else could reach, which is the leak `tests/test_filterthread.cpp` `LaneWork.ReleasesTheFramesItCreated` reports under LSan (measured on the parent commit: `Direct leak of 240 byte(s) in 3 object(s)` for `init(3)`). The gate is not this grep — it is `tests/test_ownership.cpp` under the `sanitizers` job, where 8 of the 9 tests fail on the pre-`P2-5` tree and five of those produce a sanitizer report (two heap-use-after-free, a `SEGV` in `clearBank()`, a heap-buffer-overflow in `_pipe`, and a 184-byte direct leak from the `Player` session) | 0 | ✅ |
 | 13a | name-keyed teardown: call sites of `FilterFactory::deleteFilter()` | `modules/core` | **0** (was 4: `clearBank()`, `remove(string)`, `remove(size_t)`, `~Controller`; `P2-5`) — the command below strips comments, because the replacement code names `deleteFilter()` in order to record what it replaced | 0 | ✅ |
 | 14 | `MSVC` preprocessor branches | `modules/` | **0** (was 19, then 12 after `P2-3`; `P2-2`) | 0 | ✅ |
 | 14a | | tree | **0** (was 16, then 15 after `P3-1` deleted the orphan; `P2-2`) — the `-DMSVC` definition in `CMakeLists.txt` is gone with them, and a CI step fails on either | 0 | ✅ |
@@ -53,9 +53,9 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 19 | CMake `if( ${VAR} )` sites | build | **0** (was 4) — CI now fails on any new one | 0 | ✅ |
 | 20 | `system()` on configuration data | `modules/filters` | **0** (was 1, `ObjectTrack::publishCount`; `P3-5`) — the whole tree is now free of `system()`, and a third step in the `cmake-hygiene` CI job fails on any new one. The command below strips comments, because the replacement function's doc comment names `system()` in order to record what it replaced | 0 | ✅ |
 | 21 | config string used as a `printf` format | `modules/filters` | **0** — `csv_source`'s 2 and `exportcsv`'s 2 are closed (`P3-6`); both filters validate their pattern at config time and expand through `toffy::formatPath`, the one place in the tree where snprintf's format argument is a variable | 0 | ✅ |
-| 22 | files containing hard tabs / files in core | `modules/core` | **11 / 20** | 0 / 20 | |
-| 23 | lines of code | `modules/core` | **4 113** (was 4 032 at `84d1b63`; +81 from `filter_helpers.hpp`, which the previous figure claimed to already count — it was measured before that commit landed) | — | |
-| 24 | `ctest` targets | `tests/` | **13** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`, `exportcsv` by `P3-6`, `objecttrack` by `P3-5`, `ownership` by `P2-5`) | ≥ 8 | ✅ |
+| 22 | files containing hard tabs / files in core | `modules/core` | **9 / 20** (was 11; `filterThread.hpp`, `filterThread.cpp` were among them and were rewritten by `P2-7`. `P2-15` is still the item that formats the whole tree, not this one) | 0 / 20 | |
+| 23 | lines of code | `modules/core` | **4 619** (was 4 113; `P2-7` is +506, of which the large majority is comment: the lane's wait/stop/join contract, the Boost-v2 detach semantics and the reason each guard exists. The executable content of the change is much smaller than the diff) | — | |
+| 24 | `ctest` targets | `tests/` | **14** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`, `exportcsv` by `P3-6`, `objecttrack` by `P3-5`, `ownership` by `P2-5`, `filterthread` by `P2-7`) | ≥ 8 | ✅ |
 | 25 | `const`-only `filter()` overrides that do not say `override` | `modules/`, `libraries/` | **0** (was 3, fixed by `P3-3`; 4 sites now carry it) | 0 | ✅ |
 | 26 | `WITH_CONTROL` sites — a symbol no build file defines | tree | **0** (was 5: 3 in `initPlugin.cpp`, 2 in `initPlugin.hpp`; `P3-2`) | 0 | ✅ |
 | 27 | `toffyRunner` options describing a server that never starts | `apps/` | **0** (was 3: `--host/-h`, `--port/-p`, `--html/-d` — parsed, printed, used by nothing; `X3`) | 0 | ✅ |

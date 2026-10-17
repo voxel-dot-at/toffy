@@ -143,6 +143,89 @@ jobs:
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0
         run: ctest --test-dir build --output-on-failure
 
+  thread-sanitizer:
+    name: build & test (ThreadSanitizer)
+    runs-on: ubuntu-latest
+    # P2-7. The job above cannot answer a question about data races: AddressSanitizer
+    # and ThreadSanitizer cannot be built together, and every defect the threading
+    # work fixed is invisible to ASan -- the plain-bool run flag, the wait on a mutex
+    # no other thread held, the queue read outside its lock. This is the job that
+    # answers it, and it is the one cleanup/order.md asked for when it said "a green
+    # ctest is weak evidence for a data race; a green TSan run is not".
+    #
+    # Verified capable of failing: on the pre-P2-7 tree this reports, with the
+    # suppressions file in place,
+    #
+    #   data race  modules/core/src/filterThread.cpp:58 in toffy::FilterThread::stop()
+    #   data race  modules/core/src/filterThread.cpp:96 in toffy::FilterThread::loop()
+    #
+    # which is the `bool keepRunning` written by one thread and read by another,
+    # found by running this job against the parent commit.
+    #
+    # Two things that are not obvious from the steps:
+    #   - `setarch -R` is load-bearing. TSan reserves a large shadow map and refuses
+    #     to start at all -- "FATAL: ThreadSanitizer: unexpected memory mapping" --
+    #     when the kernel places the binary outside it, so ASLR has to be off for
+    #     the run. Without it every test dies at exec and the job is green on an
+    #     empty log.
+    #   - tools/tsan_suppressions.txt silences exactly one third-party module
+    #     (libOpenNI2, pulled in by PCL's I/O, which unlocks a mutex from a thread
+    #     other than its owner at shutdown). It is scoped by module, so a toffy
+    #     mutex misused the same way is still reported in toffy frames.
+    #
+    # Scope: PCL on, BTA off, like every other job -- the bta SDK is proprietary and
+    # cannot exist on a runner, so modules/bta's threading (std::mutex and a
+    # std::condition_variable in BtaWrapper) is not covered here. See A29 for what
+    # that leaves open.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          # util-linux for setarch; it is in the base image, and named anyway
+          # because the job does not run without it.
+          sudo apt-get install -y --no-install-recommends \
+            cmake build-essential pkg-config util-linux \
+            libboost-all-dev libopencv-dev libgtest-dev libpcl-dev
+
+      - name: Configure
+        run: |
+          set -euxo pipefail
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=thread"
+
+      - name: Build
+        run: cmake --build build -j "$(nproc)"
+
+      - name: Test, and fail on any race TSan reports
+        # Both halves matter: a red ctest is a failure, and so is a race in a test
+        # that went on to pass (TSan reports to stderr and does not fail the
+        # process by default, so a plain `ctest` here would be green on a log full
+        # of races -- the same trap the docs job hit with doxygen's exit code).
+        run: |
+          set -uo pipefail
+          log=$(mktemp)
+          TSAN_OPTIONS="halt_on_error=0:suppressions=$PWD/tools/tsan_suppressions.txt" \
+            setarch "$(uname -m)" -R \
+            ctest --test-dir build --output-on-failure 2>&1 | tee "$log"
+          rc=${PIPESTATUS[0]}
+          hits=$(grep -E 'WARNING: ThreadSanitizer' "$log" || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"
+            echo '::error::ThreadSanitizer reported a data race. See cleanup/findings/correctness.md ("D") and tests/test_filterthread.cpp for what the threading contract is.'
+            exit 1
+          fi
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::ctest failed under ThreadSanitizer (exit $rc)"
+            exit "$rc"
+          fi
+          echo "no ThreadSanitizer reports; ctest exit 0"
+
   installed-headers:
     name: installed headers compile standalone
     runs-on: ubuntu-latest
@@ -390,3 +473,41 @@ jobs:
             exit 1
           fi
           echo 'no system() call in the tracked sources'
+
+      - name: No Boost threading primitives in the sources (P2-7)
+        # The threading is the standard library's: std::thread, std::mutex,
+        # std::condition_variable, std::atomic<bool>. It used to be boost::thread in
+        # four classes -- two of them (FilterThread, Controller) in *installed*
+        # headers, so a consumer of libtoffy inherited both <boost/thread.hpp> and
+        # the Boost.Thread link dependency -- plus boost::mutex/condition_variable in
+        # BtaWrapper and boost::interprocess::interprocess_semaphore in FilterBank.
+        #
+        # Why this is worth a gate and not just a grep in a commit message: Boost
+        # .Thread at BOOST_THREAD_VERSION 2 -- the version this tree selects by
+        # default -- detaches a joinable thread on destruction and on move-assignment
+        # instead of failing, where std::thread calls std::terminate. Code that grew
+        # around the forgiving semantics is broken code; a second boost::thread
+        # creeping in would put the silent thread leak back where the guards are not.
+        #
+        # Scope, stated per DOD 0 rule 9: tracked compiled code (*.cpp/*.hpp/*.h),
+        # comments stripped -- the replacement code names boost::thread in order to
+        # record what it replaced and what that version did, and prose that describes
+        # a removal is not a use of it (the same rule the system() gate and counter 20
+        # use). boost::date_time, boost::property_tree and Boost.Log are not in the
+        # pattern: they are not threading primitives, and the logging core is a
+        # separate item that is about to move.
+        #
+        # Verified to be capable of failing: re-adding `boost::mutex m;` to
+        # modules/core/src/filterThread.cpp turns this step red on exactly one line;
+        # removing it turns it green again.
+        run: |
+          set -uo pipefail
+          hits=$(git ls-files -z '*.cpp' '*.hpp' '*.h' \
+                   | xargs -0 -r grep -nHE 'boost::(thread|mutex|recursive_mutex|shared_mutex|condition_variable|unique_lock|lock_guard|shared_lock|thread_group|this_thread|barrier|once)|boost::bind|boost/thread|interprocess' \
+                   | grep -vE ':[0-9]+:[[:space:]]*(//|\*|/\*)' || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"
+            echo "::error::threading is std::thread/std::mutex/std::condition_variable here. Boost.Thread detaches a joinable thread where the standard terminates, and Boost.Interprocess is a cross-process primitive used inside one process. See cleanup/plan/structure.md P2-7 and cleanup/findings/correctness.md."
+            exit 1
+          fi
+          echo 'no Boost threading primitives in the tracked sources'
