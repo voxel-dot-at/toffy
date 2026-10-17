@@ -181,7 +181,7 @@ bool Controller::stepForward()
     return true;
 }
 
-bool Controller::stedBackward()
+bool Controller::stepBackward()
 {
     if (_state == Controller::IDLE) {
         std::vector<Filter *> vec;
@@ -217,7 +217,7 @@ bool Controller::stop()
 {
     _state = Controller::IDLE;
     // Join only a thread that was actually started. _thread becomes joinable in
-    // forward()/backward()/stepForward()/stedBackward(); joining it unconditionally
+    // forward()/backward()/stepForward()/stepBackward(); joining it unconditionally
     // made stop() throw boost::thread_resource_error whenever it ran before any of
     // them (finding A12). The rest of A12 -- the four duplicated run methods and
     // the _thread = boost::thread(...) assignments, which call std::terminate if a

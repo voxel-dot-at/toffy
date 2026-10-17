@@ -111,7 +111,7 @@ public:
      *
      * @todo
      */
-    bool stedBackward();
+    bool stepBackward();
 
     /**
      * @brief Just stop filtering if running in thread
