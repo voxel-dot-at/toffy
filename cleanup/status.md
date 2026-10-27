@@ -155,7 +155,10 @@ that is no longer true and the section was rewritten rather than annotated.
 | `v1.9.0` | `bc921ab` | ☐ | **deliberately not pushed** — see below |
 
 Heads on `origin`: `main` and `stable-1.x` (both `b6d7665`, the C++14 1.x line) and
-`feature/code-cleanup` (`b9e3032`, the 2.0 line, `git describe` → `v2.0.0-3-gb9e3032`).
+`feature/code-cleanup` (the 2.0 line — `b9e3032` when the tags went up, `90449ee` — docs only —
+as of this re-check, `git describe` → `v2.0.0-4-g90449ee`). The branch tip moves and the tags do
+not: **pin a tag, never a branch**, and name the branch explicitly when a job has to clone
+(`origin/HEAD` is `main`, the 1.6 line — P0-3 in the consumer-side upgrade notes).
 **`next` is gone**: `git fetch --prune` reports `[deleted] (none) -> origin/next`.
 
 Gate, measured on the fresh clone: `git ls-remote --tags origin | grep -E
