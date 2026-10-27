@@ -103,9 +103,20 @@ races, so `P2-7`'s TSan requirement stands on its own.
     is `libtoffy.so.1.10.0` and a stale binary refuses to load.
 
   Numbering note: `1.10.0` rather than the convention-implied `1.8.0`, so the number does
-  not sort below `v1.9.0`, which exists on `origin/next`. That branch diverged from
-  `b6d7665` and is not an ancestor of the cleanup line, so the two schemes still need
-  reconciling when they meet.
+  not sort below `v1.9.0`, which existed on `origin/next`. That branch diverged from
+  `b6d7665` and is not an ancestor of the cleanup line.
+
+  Reconciled 2026-10-27, by deletion rather than by merge: `origin/next` is gone, and `v1.9.0`
+  — lightweight, never annotated, never built as a release, never consumed — is **not**
+  published. `1.8` and `1.9` are therefore **burned numbers**: never cut a release with either,
+  so anything a machine has cached from the `next` era keeps meaning one thing. The published
+  sequence is `1.7.1 → 1.10.0 → 1.11.0 → 2.0.0`, and the gap is documented, not an accident to
+  be filled in. See `cleanup/status.md` *Release / tag situation* for the measurements.
+
+  The rule this settles, and the one to apply to every future bump: **a published tag is never
+  moved or re-cut.** If a tag points at the wrong commit, the wrong commit is a release and the
+  fix is the next number. `v1.10.0` staying at `7fea594` instead of its branch tip is the
+  worked example.
 
   Also worth knowing before the next bump: `SOVERSION` is set to the **full** version, not
   the major alone, so every patch bump changes the SONAME and forces a downstream relink.

@@ -4,7 +4,9 @@ What has landed, what is in flight, and what the release situation is. Counters 
 [`counters.md`](counters.md); the order the rest goes in is in [`order.md`](order.md).
 
 State as of PR 36 (`P2-5`, one owner per `Filter` — the keystone), re-checked against the
-tree rather than carried over from the previous round.
+tree rather than carried over from the previous round. The *Release / tag situation* section
+was re-checked against `origin` separately on 2026-10-27, after the tags were pushed and
+`origin/next` was deleted; the code state above it is `feature/code-cleanup`.
 
 ## Landed
 
@@ -19,7 +21,7 @@ tree rather than carried over from the previous round.
 | **7** | debug leftovers, `modules/core` | ✅ core done | 0 prints, 0 `#warning` in core. **128 remain in `modules/filters`/`modules/bta`, 97 more in `libraries/`** |
 | **7a** | dead macros | ✅ done | 22 `DLLExport` deleted, `WIN`/`UNIX` gone, `RAWFILE` 3 headers → 1. Side effect: 7 of the 19 `MSVC` branches went with them |
 | **15** | logging policy | ✅ done | `setLoggingLvl()` is data-only; 3 hot-path calls removed; `Filter::setGlobalLogLevel()` added; `~Player` no longer kills process logging. 7 new tests, 4 of them failing pre-fix |
-| **17** | delete `Event` | ✅ done | `event.hpp`/`event.cpp` gone; tagged `v1.10.0` — **local only, not pushed**, and it points at `7fea594`, not the branch tip |
+| **17** | delete `Event` | ✅ done | `event.hpp`/`event.cpp` gone; tagged `v1.10.0` (annotated, **on `origin`**), at `7fea594` rather than the branch tip — see *Release / tag situation* |
 | **19** | `P3-1` verification scope + `libraries/sensor/` orphan | ✅ done | 2 unreferenced headers deleted; counters 7a 3→0, 8c 2→0, 14a 16→15, 18 8→7. Counter 21's command was also broken (grepped `_pattern`, the variables are `_depthPattern`/`_amplPattern`) |
 | **20** | `P3-4` `using Filter::filter;` + `-Werror` on core | ✅ done | core 3 → **0** warnings in all four configurations; `toffy_core` builds `-Werror`; gate proven by injecting an unused variable into `filter.cpp` and watching the build stop; tree 32 → 28 warnings |
 | **21** | `P3-7` `if( ${VAR} )` sweep + CI check | ✅ done | 4 sites → 0; `cmake-hygiene` job added, scoped to the 29 tracked CMake files, verified red on a re-introduced site and green on the fixed tree |
@@ -139,20 +141,70 @@ the bank's pipeline — see counter 31.
 
 ## Release / tag situation
 
+**Published state, re-checked against `origin` on 2026-10-27** with `git ls-remote` and a fresh
+clone into a scratch directory. Everything below this table used to say the tags were local;
+that is no longer true and the section was rewritten rather than annotated.
+
+| tag | points at | on `origin` | note |
+|---|---|---|---|
+| `v1.5.1` … `v1.6.0` | lightweight | ☑ | the old line |
+| `v1.7.0`, `v1.7.1` | annotated | ☑ | |
+| `v1.10.0` | `7fea594` | ☑ | pushed; not a branch tip, and it stays there — see below |
+| `v1.11.0` | `5fbb65a` | ☑ | pushed |
+| `v2.0.0` | `47e4cd4` | ☑ | pushed 2026-10-27, the last of the three to go |
+| `v1.9.0` | `bc921ab` | ☐ | **deliberately not pushed** — see below |
+
+Heads on `origin`: `main` and `stable-1.x` (both `b6d7665`, the C++14 1.x line) and
+`feature/code-cleanup` (`b9e3032`, the 2.0 line, `git describe` → `v2.0.0-3-gb9e3032`).
+**`next` is gone**: `git fetch --prune` reports `[deleted] (none) -> origin/next`.
+
+Gate, measured on the fresh clone: `git ls-remote --tags origin | grep -E
+'v1\.10\.0|v1\.11\.0|v2\.0\.0'` returns three; checked out at `v2.0.0`, `git describe --tags`
+is `v2.0.0` and a fresh configure reports `version: v2.0.0-0-g47e4cd4`. The
+`-128-NOTFOUND`-style version failure that consumers hit is gone for toffy.
+
+**What the gate does *not* close:** `origin/HEAD` is still `main`, where `git describe --tags`
+says `v1.6.0-1-gb6d7665`. The tags are published; the **default branch** is still the 1.6 line,
+so "clone toffy and you get 2.0" is not true yet, and `stable-1.x` parked at the same commit
+reads as an intent to keep the 1.x line open. Moving `main` onto the 2.0 line is a decision for
+the base project, not a side effect of a tag push; it is carried as **P0-3** in the
+consumer-side upgrade notes.
+
 - `v1.10.0` is tagged (annotated) for the `Event` removal and the vtable change it caused.
   Before it this tree built `libtoffy.so.1.7.1` while exporting none of 1.7.1's symbols —
   the SONAME advertised a compatibility it did not have.
-- The tag is **local; it has not been pushed**, and it points at `7fea594` rather than the
-  branch tip. Anything shipped from here needs the tag moved or re-cut.
+- **`v1.10.0` stays at `7fea594` — decision, 2026-10-27.** It was cut mid-branch, and this
+  file used to say "anything shipped from here needs the tag moved or re-cut". That was true
+  while the tag was local and became false the moment it was published: moving a published
+  annotated tag means two clones of one tag name build two different `libtoffy`s, which is
+  precisely the failure the "one clean rebuild of everything" rule exists to prevent. Nothing
+  ships from `v1.10.0`; `v1.11.0` and `v2.0.0` carry the later tips and are what anyone should
+  pin. Rule for the future: **a published tag is never moved — cut a new number instead.**
 - It is `1.10.0` rather than the convention-implied `1.8.0` so that it does not sort below
-  the `v1.9.0` that exists on `origin/next`. Those two numbering lines still need
-  reconciling when the branches meet.
+  the `v1.9.0` that existed on `origin/next`.
+- **`v1.9.0` stays unpublished — decision, 2026-10-27.** It is a **lightweight** tag on
+  `bc921ab` ("Next (#23)", the old `next` tip). That commit diverged from `b6d7665` and is not
+  an ancestor of `v1.10.0`, `v1.11.0` or `v2.0.0` (`git merge-base --is-ancestor v1.9.0
+  feature/code-cleanup` → false; `git log feature/code-cleanup..v1.9.0` → two commits,
+  `bc921ab` and the `Feature/cxx 17 (#22)` commit under it — both single-parent squash merges,
+  so there is no merge base to recover from either). With `next` deleted it is the only
+  ref to that line anywhere. It is not published because it was never annotated, never built as
+  a release and never consumed, and because a published tag is a pin: `find_package(toffy 1.9)`
+  or `git checkout v1.9.0` would name a tree that predates every fix in the cleanup line while
+  sorting *below* the releases that supersede it — the "history sorts wrong forever" failure
+  this item was supposed to close, published. Its one purpose, the move to C++17, is already in
+  the 2.0 line on its own terms (`1f4921c`, "… move to C++17"; `main` is still
+  `CMAKE_CXX_STANDARD 14`). Two consequences worth writing down: **keep the local tag** —
+  `bc921ab` is reachable from no ref on `origin` (`refs/pull/23/head` is `6f2cda2`, not
+  `bc921ab`), so deleting it destroys the only copy of that commit; and **`1.8` and `1.9` are
+  burned** — never reuse either number, so that anything cached from the `next` era keeps
+  meaning exactly one thing.
 - `SOVERSION` is the **full** version, not the major alone, so *every* patch bump changes
   the SONAME and forces a downstream relink. Version decisions here are never routine —
   see [`dod/stage-gates.md`](dod/stage-gates.md) §2.4.
 - **`v2.0.0` is cut at the `P2-5` commit (`47e4cd4`), and `P2-5` is why it is a major and not
-  the next minor.** Like the two before it the tag is **local until it is pushed**. A fresh
-  configure from the tag reports `version: v2.0.0-0-g47e4cd4` and builds
+  the next minor.** It is on `origin` as of 2026-10-27. A fresh configure from the tag reports
+  `version: v2.0.0-0-g47e4cd4` and builds
   `libtoffy.so.2.0.0` (`readelf -d` → `SONAME libtoffy.so.2.0.0`), and a consumer asking for
   `find_package(toffy 1.11)` is now rejected — *"considered but not accepted:
   toffyConfig.cmake, version: 2.0.0"* — while `find_package(toffy 2.0)` resolves. Both
@@ -190,11 +242,12 @@ the bank's pipeline — see counter 31.
   PRs 28 and 29 together. `P3-10` was queued for "the one after it" — which is now `v2.0.0`,
   but `P3-10` had not landed when that was cut, so it waits for `v2.1.0` rather than
   retro-attaching itself to a tag that does not contain it. `1.11.0` rather than `1.8.0`
-  keeps clearing the `v1.9.0` on `origin/next`, and a removal plus a header-hygiene release is
-  a minor bump, not a patch, under the reading `v1.10.0` already set for the `Event`
+  keeps clearing the `v1.9.0` that existed on the since-deleted `origin/next` (see the `v1.9.0`
+  decision above), and a removal plus a header-hygiene release is a minor bump, not a patch,
+  under the reading `v1.10.0` already set for the `Event`
   deletion. From the tagged commit `git describe` reports `1.11.0`, so the SONAME stops
-  claiming `1.10.0` while the header surface has already moved. **The tag is local until it
-  is pushed**, like `v1.10.0` before it.
+  claiming `1.10.0` while the header surface has already moved. **On `origin`**, like
+  `v1.10.0` and `v2.0.0`.
 - **`v2.0.0` carries everything after `v1.11.0`:** PRs 30 (`X3`), 31 (`X4`), 32/33 (the
   `Doxyfile.cfg` fix and the `docs` gate), 34 (`P2-2`, POSIX-only), 35 (`P3-5`) and 36
   (`P2-5`). Of those, only 36 forces the major; the rest were riding "the next tag" and are
