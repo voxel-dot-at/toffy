@@ -77,10 +77,33 @@ jobs:
         # Release, matching the recipe in the consumer upgrade notes
         # (UPGRADE_PROGRESS.md §Reproducing this). The consumers are then built
         # in both configurations against this one install — see the matrix.
+        #
+        # The configure is wrapped, and not for tidiness: a failed step on GitHub
+        # annotates as "Process completed with exit code 1" and nothing else, and
+        # the log behind it needs a logged-in browser. That is not a diagnosable
+        # red, and a red nobody can diagnose is a red people learn to ignore. So
+        # the tail of the CMake output is emitted as annotations — the last lines
+        # are where CMake states what it could not find.
         run: |
-          set -euxo pipefail
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          set -uo pipefail
+          cfg=/tmp/toffy-configure.log
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release >"$cfg" 2>&1
+          rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::toffy configure failed (rc $rc) — last lines below, full log attached"
+            tail -n 25 "$cfg" | while IFS= read -r l; do echo "::error::$l"; done
+            exit "$rc"
+          fi
+          grep -E 'version:|PCL|HAS_BTA|CXX_STANDARD' "$cfg" | head -12 || true
           cmake --build build -j "$(nproc)"
+
+      - name: Upload the configure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: toffy-configure-log
+          path: /tmp/toffy-configure.log
+          if-no-files-found: ignore
 
       - name: Install to a staging prefix
         run: |
