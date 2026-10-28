@@ -215,13 +215,13 @@ jobs:
         # nothing to do with the toffy commit under test — a false red, which is
         # how jobs like this get disabled.
         #
-        # If a next-based ref ever enters the matrix (P1-12), that line also asks
-        # for find_package(oatpp-websocket 1.4.0 REQUIRED) and
-        # find_package(oatpp-socketio) — install both here first, in the same
-        # pinned style, or the cell goes red on a missing dependency and the job
-        # has become the thing it exists to prevent. Measured against
-        # origin/next@3a97d1b; the two packages are not needed by main or by
-        # feature/toffy-upgrade, which is why they are not installed today.
+        # toffy-oatpp's dropped `next` line (P1-12, 2026-10-28) also asked for
+        # find_package(oatpp-websocket 1.4.0 REQUIRED) and find_package(oatpp-socketio).
+        # Neither is needed by `main` or `feature/toffy-upgrade`, so neither is installed
+        # today. If that line is ever revived from its archive tag, install both here
+        # first, in the same pinned style — otherwise the new cell goes red on a missing
+        # dependency and the job becomes the thing it exists to prevent. Measured against
+        # origin/next@3a97d1b.
         run: |
           set -euxo pipefail
           git clone --depth 1 --branch 1.4.0 https://github.com/oatpp/oatpp.git /tmp/oatpp
