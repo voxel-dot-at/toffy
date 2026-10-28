@@ -146,6 +146,14 @@ jobs:
         # unpinned oatpp on main would make this job fail for reasons that have
         # nothing to do with the toffy commit under test — a false red, which is
         # how jobs like this get disabled.
+        #
+        # If a next-based ref ever enters the matrix (P1-12), that line also asks
+        # for find_package(oatpp-websocket 1.4.0 REQUIRED) and
+        # find_package(oatpp-socketio) — install both here first, in the same
+        # pinned style, or the cell goes red on a missing dependency and the job
+        # has become the thing it exists to prevent. Measured against
+        # origin/next@3a97d1b; the two packages are not needed by main or by
+        # feature/toffy-upgrade, which is why they are not installed today.
         run: |
           set -euxo pipefail
           git clone --depth 1 --branch 1.4.0 https://github.com/oatpp/oatpp.git /tmp/oatpp
