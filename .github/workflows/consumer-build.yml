@@ -108,7 +108,15 @@ jobs:
             || rc=${PIPESTATUS[0]}
           if [ "$rc" -ne 0 ]; then
             printf '::error::toffy CONFIGURE failed (rc %s)\n' "$rc"
-            tail -n 30 /tmp/toffy-configure.log | sed 's/^/::error::/'
+            # The error, not the tail. GitHub keeps ~10 annotations per check
+            # run, and a 30-line tail spends them on the noise around the failure
+            # — the second round of this read "CMP0167 …" nine times and never
+            # showed the CMake Error, because the error is *after* the warning and
+            # the cap kept the earlier lines. Grep for the error and its context.
+            grep -E 'CMake Error' -A 10 /tmp/toffy-configure.log | head -25 \
+              | sed 's/^/::error::/'
+            grep -E 'Could not find|By not providing|CMake Error' /tmp/toffy-configure.log \
+              | head -6 | sed 's/^/::error::/'
             exit "$rc"
           fi
           grep -E 'version:|PCL_|HAS_BTA|CXX_STANDARD|OpenNI|VTK' /tmp/toffy-configure.log \

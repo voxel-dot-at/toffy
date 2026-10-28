@@ -279,6 +279,20 @@ endif()
 # entry would be the only thing keeping a library nobody calls in the link.
 # `chrono` stays for now -- boost::date_time, which several filters use for
 # timestamps, is a separate library and still needed.
+#
+# CMP0167: CMake 3.30 deprecated the FindBoost module and CMake 4 removed it.
+# Where the running CMake knows the policy, ask for Boost's own package files --
+# Ubuntu has shipped them alongside libboost since 1.71, and every other project
+# in this chain already resolves to them. Older CMake (this file still supports
+# 3.10) has no such policy and keeps using FindBoost exactly as before, so the
+# change is a no-op there. Without it, a CMake 4 runner dies at this line with
+# "The FindBoost module is removed", which is what happened to this project's CI
+# when the runner image moved -- see .github/actions/setup-cmake3 for the
+# measurement and the temporary floor that keeps the pin in place until this is
+# verified on a 4.x runner and the pin is deleted.
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
 find_package(Boost
     COMPONENTS log log_setup program_options system
         filesystem date_time serialization chrono
