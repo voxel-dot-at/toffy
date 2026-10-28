@@ -154,11 +154,14 @@ that is no longer true and the section was rewritten rather than annotated.
 | `v2.0.0` | `47e4cd4` | ☑ | pushed 2026-10-27, the last of the three to go |
 | `v1.9.0` | `bc921ab` | ☐ | **deliberately not pushed** — see below |
 
-Heads on `origin`: `main` and `stable-1.x` (both `b6d7665`, the C++14 1.x line) and
-`feature/code-cleanup` (the 2.0 line — `b9e3032` when the tags went up, `90449ee` — docs only —
-as of this re-check, `git describe` → `v2.0.0-4-g90449ee`). The branch tip moves and the tags do
-not: **pin a tag, never a branch**, and name the branch explicitly when a job has to clone
-(`origin/HEAD` is `main`, the 1.6 line — P0-3 in the consumer-side upgrade notes).
+Heads on `origin`, re-checked 2026-10-27 **after `main` was moved onto the 2.0 line**:
+`main` and `feature/code-cleanup` are both `2a8bf19` (`git describe` → `v2.0.0-5-g2a8bf19`),
+and `stable-1.x` is `b6d7665` — the C++14 1.x line, parked exactly where `main` was, which is
+now that line's home rather than a branch waiting to be reconciled. The move was a
+**fast-forward**: `main` was a strict ancestor of `feature/code-cleanup` (59 commits behind,
+nothing of its own), so there is no merge commit and nothing was dropped. `origin/HEAD` is
+`main`, and a fresh clone of it describes as `v2.0.0-5-g2a8bf19` and configures as
+`version: v2.0.0-5-g2a8bf19`.
 **`next` is gone**: `git fetch --prune` reports `[deleted] (none) -> origin/next`.
 
 Gate, measured on the fresh clone: `git ls-remote --tags origin | grep -E
@@ -166,12 +169,16 @@ Gate, measured on the fresh clone: `git ls-remote --tags origin | grep -E
 is `v2.0.0` and a fresh configure reports `version: v2.0.0-0-g47e4cd4`. The
 `-128-NOTFOUND`-style version failure that consumers hit is gone for toffy.
 
-**What the gate does *not* close:** `origin/HEAD` is still `main`, where `git describe --tags`
-says `v1.6.0-1-gb6d7665`. The tags are published; the **default branch** is still the 1.6 line,
-so "clone toffy and you get 2.0" is not true yet, and `stable-1.x` parked at the same commit
-reads as an intent to keep the 1.x line open. Moving `main` onto the 2.0 line is a decision for
-the base project, not a side effect of a tag push; it is carried as **P0-3** in the
-consumer-side upgrade notes.
+**What the gate found, and what closed it.** The first pass of this re-check showed
+`origin/HEAD` pointing at a `main` that described as `v1.6.0-1-gb6d7665`: tags published, the
+default checkout still 1.6, and `stable-1.x` parked on the same commit. Carried as **P0-3** in
+the consumer-side upgrade notes and **closed the same day** — `main` is the 2.0 line, the 1.x
+line has `stable-1.x`, and a clone that names no branch now gets 2.0.
+
+What that does *not* change is the rule the tag push exists to enforce: **pin a tag, never a
+branch.** `main` moves — it just did — and `v2.0.0` does not. The difference after P0-3 is only
+that a consumer who ignores the rule now gets a 2.0 tree instead of a 1.6 one, which is a
+better accident but the same accident.
 
 - `v1.10.0` is tagged (annotated) for the `Event` removal and the vtable change it caused.
   Before it this tree built `libtoffy.so.1.7.1` while exporting none of 1.7.1's symbols —
