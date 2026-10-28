@@ -1,0 +1,37 @@
+# Expected consumer failures — the P0-2 allowlist.
+#
+# Read this file as a list of bugs, not as a list of permissions. Every entry is
+# a consumer that does not build against toffy 2.0, and the job is green only
+# while the consumer fails with *exactly* these errors and nothing else. New
+# error → red. Consumer fixed while its entry is still here → also red, with a
+# request to delete the entry: the list is the progress metric of this whole
+# upgrade, and a metric nobody deletes is not a metric.
+#
+# Format:  <consumer@ref glob>|<substring of a normalised error line>
+#
+#   * The glob matches `name@ref` as passed to tools/consumer_build.sh, e.g.
+#     `toffy-oatpp@main` or `toffy-oatpp@*`.
+#   * The substring is matched against the *normalised* error line: the
+#     compiler's `file:line:col:` prefix is stripped and whitespace collapsed,
+#     so entries never name a line number and never go stale because something
+#     above them moved. Copy the string from the job's "NOT on the allowlist"
+#     report — that report prints exactly this form.
+#   * Entries are matched case-sensitively, one per line. `#` starts a comment.
+#
+# Each entry must say *why* it exists and *what deletes it*. An entry without a
+# reason is an entry nobody dares remove.
+
+# ---------------------------------------------------------------------------
+# toffy-oatpp @ main — the un-upgraded line. Recorded so that "toffy-oatpp is
+# broken" is an executable fact rather than a claim in a markdown file, and so
+# that the day Phase 1 merges to main this job goes red demanding these two
+# entries be deleted. That red is the success condition, not a failure.
+# Deleted by: merging feature/toffy-upgrade into main (P1-12 decides when).
+#
+# Note the shape of this list: a configure failure masks every compile error
+# behind it, so main reports exactly one line today and will reveal the FilterPtr
+# error (P1-2) only once this one is gone. The allowlist is therefore a queue,
+# not a census — it is complete about *this* layer, and silent about the next one
+# until you are standing in front of it. That is the same reason the upgrade
+# notes list failures "in order".
+toffy-oatpp@main|Could not find a configuration file for package "toffy" that is compatible

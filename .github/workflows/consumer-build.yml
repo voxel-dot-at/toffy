@@ -1,0 +1,187 @@
+name: Consumer build
+
+# P0-2 — build a consumer against this repository, from this commit.
+#
+# Why a second workflow instead of a job in ci.yml: it needs a dependency stack
+# ci.yml has never needed (oatpp, oatpp-swagger) and a staging prefix, and the
+# two fail for entirely unrelated reasons. Keeping it separate also means a
+# consumer breakage cannot be confused with a toffy build breakage in the
+# Actions list, which matters when the consumer side is the thing that is
+# deliberately red (see the allowlist below).
+#
+# What this job is for. toffy's own CI compiles toffy against toffy's own
+# headers, from the source tree. That has never once caught a consumer breakage:
+# every error in the upgrade notes (the `FilterPtr` return, the version gate, the
+# `${toffy__DEFINITIONS}` typo) was introduced in a toffy commit and surfaced
+# three repositories away, weeks later. This is the edge that was missing.
+#
+# What it is NOT: a clone of toffy. The job lives in toffy, so toffy is the
+# workspace — installing the workspace to a prefix and pointing the consumer at
+# that tests *this commit*. Checking out a second copy of toffy would test some
+# other commit and report it as this one, which is the exact shape of false
+# green this job exists to avoid. (Until 2026-10-27 the note here said "clone
+# with -b feature/code-cleanup", because origin/HEAD was the 1.6 line; P0-3
+# closed that, and P1-11 with it.)
+#
+# Red/green semantics live in tools/consumer_build.sh and are worth reading
+# before changing anything here:
+#   * green  = the consumer built, linked, and uses no toffy symbol it did not
+#     use before, OR it failed with exactly the errors recorded in
+#     ci/consumer-expected-failures.txt and nothing else ("KNOWN BROKEN");
+#   * red    = an error that is not on that list, or a build that passed while
+#     its entries were still in the file, or new link coupling;
+#   * rc 2   = the check could not run at all, which is red too — a gate that
+#     fails open is worse than no gate because it gets cited as evidence.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: consumer-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Stage toffy once. Four consumer cells would otherwise each rebuild the same
+  # library, and this job's whole purpose is to be cheap enough that nobody is
+  # tempted to turn it off.
+  # --------------------------------------------------------------------------
+  stage-toffy:
+    name: stage toffy (this commit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        # Deliberately the same list as ci.yml's build-test job. If the two
+        # drift, the consumer job starts testing a toffy that no toffy job
+        # builds — so keep them together by keeping them identical.
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake \
+            build-essential \
+            pkg-config \
+            libboost-all-dev \
+            libopencv-dev \
+            libgtest-dev \
+            libpcl-dev
+
+      - name: Configure and build
+        # Release, matching the recipe in the consumer upgrade notes
+        # (UPGRADE_PROGRESS.md §Reproducing this). The consumers are then built
+        # in both configurations against this one install — see the matrix.
+        run: |
+          set -euxo pipefail
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j "$(nproc)"
+
+      - name: Install to a staging prefix
+        run: |
+          set -euxo pipefail
+          cmake --install build --prefix "$RUNNER_TEMP/stage"
+          # Fail here, not four cells later, if the prefix is not what a
+          # consumer needs. tools/consumer_build.sh checks too; this check is
+          # cheaper and names the real problem.
+          test -d "$RUNNER_TEMP/stage/lib/cmake/toffy"
+          ls "$RUNNER_TEMP/stage"/lib/libtoffy.so.*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: toffy-stage
+          path: ${{ runner.temp }}/stage
+          retention-days: 3
+          if-no-files-found: error
+
+  # --------------------------------------------------------------------------
+  # The consumers. Two refs on purpose:
+  #
+  #   feature/toffy-upgrade — the line that is supposed to work. This is the
+  #       gate: if a toffy commit breaks it, this cell goes red.
+  #   main — the un-upgraded line, which is *expected* to fail. Recording that
+  #       as an executable fact (rather than as a sentence in a markdown file)
+  #       is what makes "toffy-oatpp main is still on 1.6" impossible to lose
+  #       track of, and the day Phase 1 merges, this cell goes red demanding the
+  #       allowlist entry be deleted. That red is the success condition.
+  #
+  # Both configurations, per the phase notes: the consumers add -Wall -ggdb -O0
+  # unconditionally and -O2 again in Release, so Debug is the configuration where
+  # the compiler still has something to say.
+  # --------------------------------------------------------------------------
+  toffy-oatpp:
+    name: toffy-oatpp (${{ matrix.ref }}, ${{ matrix.build_type }})
+    needs: stage-toffy
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        ref: [feature/toffy-upgrade, main]
+    steps:
+      - uses: actions/checkout@v4
+        # Only for tools/ and ci/ — the toffy *code* comes from the artifact.
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: toffy-stage
+          path: ${{ runner.temp }}/stage
+
+      - name: Install dependencies
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake build-essential pkg-config git \
+            libboost-all-dev libopencv-dev libgtest-dev libpcl-dev \
+            libeigen3-dev libflann-dev libusb-1.0-0-dev libopenni2-dev
+
+      - name: Install oatpp and oatpp-swagger
+        # Pinned. toffy-oatpp asks for 1.4.0 in its find_package, and an
+        # unpinned oatpp on main would make this job fail for reasons that have
+        # nothing to do with the toffy commit under test — a false red, which is
+        # how jobs like this get disabled.
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 --branch 1.4.0 https://github.com/oatpp/oatpp.git /tmp/oatpp
+          cmake -S /tmp/oatpp -B /tmp/oatpp/build -DCMAKE_BUILD_TYPE=Release \
+            -DOATPP_BUILD_TESTS=OFF
+          sudo cmake --install /tmp/oatpp/build
+          git clone --depth 1 --branch 1.4.0 https://github.com/oatpp/oatpp-swagger.git /tmp/oatpp-swagger
+          cmake -S /tmp/oatpp-swagger -B /tmp/oatpp-swagger/build -DCMAKE_BUILD_TYPE=Release
+          sudo cmake --install /tmp/oatpp-swagger/build
+
+      - name: Consumer build
+        # The token is optional: toffy-oatpp is readable anonymously today. If
+        # it ever goes private, set CONSUMER_TOKEN (a fine-grained PAT with
+        # read-only access to that one repository) and this step wires it in.
+        env:
+          CONSUMER_TOKEN: ${{ secrets.CONSUMER_TOKEN }}
+        run: |
+          set -euxo pipefail
+          if [ -n "${CONSUMER_TOKEN:-}" ]; then
+            git config --global url."https://x-access-token:${CONSUMER_TOKEN}@github.com/".insteadOf "https://github.com/"
+            REPO="https://github.com/voxel-dot-at/toffy-oatpp.git"
+          else
+            REPO="git@github.com:voxel-dot-at/toffy-oatpp.git"
+          fi
+          tools/consumer_build.sh \
+            --toffy-prefix "$RUNNER_TEMP/stage" \
+            --repo "$REPO" \
+            --ref "${{ matrix.ref }}" \
+            --build-type "${{ matrix.build_type }}" \
+            --allowlist ci/consumer-expected-failures.txt \
+            --link-surface ci/consumer-link-surface.txt
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consumer-logs-toffy-oatpp-${{ matrix.ref }}-${{ matrix.build_type }}
+          path: /tmp/consumer-build-*
+          if-no-files-found: ignore

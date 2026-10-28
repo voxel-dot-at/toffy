@@ -1,0 +1,120 @@
+name: Consumer build — boxes (self-hosted)
+
+# P0-2, the half that cannot run on a GitHub-hosted runner.
+#
+# `becom-knapp-wurthbox` needs the proprietary Becom bta SDK and protobuf, so no
+# GitHub runner can configure it — the same reason toffy's own BTA-on build axis
+# is covered "by construction" in ci.yml and never actually compiled. The phase
+# notes are explicit that this must not become an excuse to gate nothing, so the
+# toffy-oatpp half runs on every push in consumer-build.yml and this file is the
+# boxes half: nightly, and on demand, on a runner that has the SDK.
+#
+# It is a separate workflow on purpose. A job whose runner does not exist does
+# not fail fast — it queues, and a queued job holds the whole run open. Keeping
+# it out of the per-push workflow means a missing self-hosted runner can never
+# block or redden the signal that developers actually wait for.
+#
+# STATUS: informational (`continue-on-error: true`). That is not laziness, it is
+# the honest state of the measurement. The expected-failure list for boxes is
+# empty because nobody has run this on a machine with the SDK yet, and the
+# errors it will produce — `webApiInit()` vs `webApiStart()`, the
+# `addSwaggerServerUrl()` call that has never existed in toffy-oatpp, the
+# `find_package(toffy 1.6)` gate, the `WBox` ownership change — are recorded in
+# the upgrade notes as *prose*, not as signatures. Writing them into
+# ci/consumer-expected-failures.txt from prose would put unmeasured strings into
+# a file whose entire authority is that every line in it came off a build.
+#
+# First run on a real runner, in this order:
+#   1. run it as-is; the job prints every error in the exact normalised form the
+#      allowlist wants;
+#   2. paste the ones that are the known Phase 2 / pre-existing drift into
+#      ci/consumer-expected-failures.txt as `becom-knapp-wurthbox@<ref>|…`, each
+#      with a line saying which change deletes it;
+#   3. anything left over is new — fix it or file it before continuing;
+#   4. flip `continue-on-error` below to false. Until then this job reports and
+#      does not gate, and that is stated in the job, not buried in a YAML diff.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Nightly. A consumer that only breaks on a toffy commit nobody pushed today
+    # (a dependency bump, a toolchain update on the self-hosted machine) is
+    # exactly what a per-push job cannot see.
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: consumer-build-boxes
+  cancel-in-progress: false
+
+jobs:
+  boxes:
+    name: boxes (${{ matrix.ref }}, ${{ matrix.build_type }})
+    # Runner label is a claim about a machine that has: the bta SDK, protobuf
+    # (compiler + dev headers, not just the runtime), PCL, OpenCV, Boost, oatpp.
+    # Until such a runner is registered with this repository the job will not
+    # start — which is visible here, and is the open item.
+    runs-on: [self-hosted, toffy-consumer]
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        # master is the line boxes ships from; feature/toffy-upgrade is the
+        # branch cut for this work (no commits yet as of 2026-10-27, which is
+        # itself worth seeing in a job rather than in a note).
+        ref: [feature/toffy-upgrade, master]
+
+    steps:
+      - uses: actions/checkout@v4
+        # toffy is the workspace: build and install *this* commit, never a clone
+        # of some other one (see the note in consumer-build.yml).
+
+      - name: Install toffy dependencies
+        run: |
+          set -euxo pipefail
+          # Self-hosted runners are expected to be prepared once, not per run —
+          # apt on a shared machine is somebody else's business. This step
+          # reports what it needs and fails loudly if it is missing, rather than
+          # installing silently.
+          for pkg in cmake g++ pkg-config; do
+            command -v "$pkg" >/dev/null || { echo "::error::$pkg missing on the runner"; exit 1; }
+          done
+          pkg-config --exists libprotobuf || \
+            { echo '::error::libprotobuf-dev missing — boxes generates and compiles protobuf API stubs'; exit 1; }
+          pkg-config --exists opencv4 || \
+            { echo '::error::libopencv-dev missing'; exit 1; }
+
+      - name: Configure, build and stage toffy
+        run: |
+          set -euxo pipefail
+          # BTA off, like every other CI configuration: the SDK is proprietary,
+          # and even on a machine that has it, toffy's BTA-on path is not what
+          # this job is testing — the consumer's binding to libtoffy is.
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DWITHOUT_PCL=OFF
+          cmake --build build -j "$(nproc)"
+          cmake --install build --prefix "$RUNNER_TEMP/toffy-stage"
+          test -d "$RUNNER_TEMP/toffy-stage/lib/cmake/toffy"
+
+      - name: Consumer build
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          tools/consumer_build.sh \
+            --toffy-prefix "$RUNNER_TEMP/toffy-stage" \
+            --repo git@repo.voxel.at:becom-knapp-wurthbox \
+            --ref "${{ matrix.ref }}" \
+            --build-type "${{ matrix.build_type }}" \
+            --allowlist ci/consumer-expected-failures.txt \
+            --link-surface ci/consumer-link-surface.txt
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consumer-logs-boxes-${{ matrix.ref }}-${{ matrix.build_type }}
+          path: /tmp/consumer-build-*
+          if-no-files-found: ignore
+          retention-days: 14

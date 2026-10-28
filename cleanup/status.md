@@ -108,9 +108,10 @@ the bank's pipeline — see counter 31.
   exit cleanly headless because of `A26`, which is why the *test* is the gate and the
   hand-run is not). The other three are counters 13, 13a and the `_pipe`/registry types.
   Measured on this tree: ASan + UBSan + LSan `detect_leaks=1`, **13/13, zero reports**.
-- **CI builds, tests and reports warnings on every push and PR** — five jobs: the PCL
-  matrix, the sanitizer build, `installed-headers` (`P3-12`, two passes since `X2b`, plus the
-  source-tree residue step), `docs` (counter 30) and `cmake-hygiene`, which since `P3-5` has
+- **CI builds, tests and reports warnings on every push and PR** — five jobs in
+  `ci.yml`: the PCL matrix, the sanitizer build, `installed-headers` (`P3-12`, two passes since
+  `X2b`, plus the source-tree residue step), `docs` (counter 30) and `cmake-hygiene`, which since
+  `P3-5` has
   three steps: the `if( ${VAR} )` sweep (`P3-7`), the no-`MSVC`-branches gate (`P2-2`) and the
   no-`system()` gate (counter 20, comment-stripped for the same reason the residue gate skips
   prose; verified red on a re-added `system("true");` and green on the tree). The build
@@ -122,6 +123,21 @@ the bank's pipeline — see counter 31.
   does not exist is a warning doxygen does emit, but a page that is simply wrong, like the
   `use.dox` of `X4`'s before-state, has always been silent. It also runs PCL-less and
   bta-less, which was measured to produce the same 22 pages.
+- **CI builds a consumer against this tree** — counter 32, `consumer-build.yml`, added for the
+  consumer upgrade (P0-2). Every job above compiles toffy against toffy's own headers from the
+  source tree, which has never once caught a consumer breakage: the `FilterPtr` return, the
+  version gate and the `${toffy__DEFINITIONS}` typo were all found three repositories away. This
+  one installs *this commit* to a prefix and configures `toffy-oatpp` against the install, in
+  Release and Debug, on two refs — the upgrade branch (the gate) and `main` (recorded broken).
+  The judgement is in `tools/consumer_build.sh`, not in YAML, so that it can be run before it is
+  trusted; it was, six ways, including the three that must fail (new link coupling, a stale
+  expected-failure entry, and a prefix that is not an installed toffy). Red/green semantics are
+  unusual and are documented at the top of both files: a consumer that fails with exactly the
+  errors in `ci/consumer-expected-failures.txt` is **green** ("KNOWN BROKEN"), and a consumer
+  that builds while its entry is still in that file is **red**. `boxes` cannot run on a GitHub
+  runner — no bta SDK — so it is a nightly/dispatch workflow on a self-hosted runner that does
+  not exist yet, `continue-on-error` until its failure signatures have been measured off a real
+  build rather than transcribed from prose.
 - **`A23` (no consistent error convention) blocks further correctness work** in config
   loading — see [`findings/correctness.md`](findings/correctness.md).
 - **PR 36 (`P2-5`) is an ABI break and `v2.0.0` is the tag that carries it** (see *Release*

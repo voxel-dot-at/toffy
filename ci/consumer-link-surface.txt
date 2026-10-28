@@ -1,0 +1,44 @@
+# Recorded link surface — the "no new coupling" half of P0-2.
+#
+# Every line is one toffy symbol a consumer links against, demangled, measured
+# with `nm -D --undefined-only` on a built consumer. tools/consumer_build.sh
+# diffs the current surface against this file and fails on **additions**: a
+# consumer quietly starting to use another part of toffy is invisible to a green
+# build, invisible to the test suite, and load-bearing the first time someone
+# splits a release. Removals are reported and allowed — dropping coupling is the
+# direction we want.
+#
+# Format:  <consumer>[@ref] <demangled symbol>
+#
+# Regenerate (do not hand-edit; the strings are the compiler's, not ours):
+#
+#   nm -D --undefined-only <consumer>.so | awk '$1=="U"{print $2}' \
+#     | c++filt | grep 'toffy::' | sed 's/std::__cxx11::/std::/g' \
+#     | sort -u | sed 's/^/toffy-oatpp /'
+#
+# std::__cxx11:: is normalised out because it is libstdc++'s ABI tag, not
+# toffy's, and a toolchain upgrade would otherwise report the whole surface as
+# new.
+#
+# Baseline: toffy-oatpp @ feature/toffy-upgrade (21e8ecb) against toffy
+# v2.0.0-5-g2a8bf19, Release, gcc 13 / aarch64-linux-gnu, 2026-10-28. Measured,
+# and it reproduces the 16 recorded in the upgrade notes for the pre-upgrade
+# probe: the set of *what is used* did not change across Phase 1 — only
+# FilterBank::add's signature did, from Filter* to std::shared_ptr<Filter>,
+# which is the one line here that a v1.11 binary cannot resolve.
+toffy-oatpp toffy::FilterBank::add(std::shared_ptr<toffy::Filter>)
+toffy-oatpp toffy::FilterBank::getFiltersByType(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<toffy::Filter*, std::allocator<toffy::Filter*> >&)
+toffy-oatpp toffy::FilterFactory::getInstance()
+toffy-oatpp toffy::FilterFactory::registerCreator(std::basic_string<char, std::char_traits<char>, std::allocator<char> >, toffy::Filter* (*)())
+toffy-oatpp toffy::Filter::~Filter()
+toffy-oatpp toffy::Filter::Filter(std::basic_string<char, std::char_traits<char>, std::allocator<char> >, unsigned long)
+toffy-oatpp toffy::Filter::getConfig[abi:cxx11]() const
+toffy-oatpp toffy::Filter::loadConfig(boost::property_tree::basic_ptree<std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)
+toffy-oatpp toffy::Filter::loadFileConfig(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+toffy-oatpp toffy::Filter::setState(toffy::filterState)
+toffy-oatpp toffy::Filter::updateConfig(boost::property_tree::basic_ptree<std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)
+toffy-oatpp toffy::Frame::addData(std::basic_string<char, std::char_traits<char>, std::allocator<char> >, boost::any, toffy::Frame::SlotDataType)
+toffy-oatpp toffy::Frame::getData(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const
+toffy-oatpp toffy::Frame::hasKey(std::basic_string<char, std::char_traits<char>, std::allocator<char> >) const
+toffy-oatpp toffy::Frame::info(std::vector<toffy::Frame::SlotInfo, std::allocator<toffy::Frame::SlotInfo> >&) const
+toffy-oatpp typeinfo for toffy::Filter
