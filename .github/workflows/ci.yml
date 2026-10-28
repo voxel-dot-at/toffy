@@ -63,6 +63,9 @@ jobs:
             build-essential \
             pkg-config \
             libboost-all-dev \
+            libboost-system-dev libboost-filesystem-dev libboost-log-dev \
+            libboost-program-options-dev libboost-date-time-dev \
+            libboost-serialization-dev libboost-chrono-dev \
             libopencv-dev \
             libgtest-dev \
             libpcl-dev
@@ -133,7 +136,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake build-essential pkg-config \
-            libboost-all-dev libopencv-dev libgtest-dev libpcl-dev
+            libboost-all-dev libboost-system-dev libboost-filesystem-dev libboost-log-dev libboost-program-options-dev libboost-date-time-dev libboost-serialization-dev libboost-chrono-dev libopencv-dev libgtest-dev libpcl-dev
 
       - name: Configure
         run: |
@@ -203,7 +206,7 @@ jobs:
           # because the job does not run without it.
           sudo apt-get install -y --no-install-recommends \
             cmake build-essential pkg-config util-linux \
-            libboost-all-dev libopencv-dev libgtest-dev libpcl-dev
+            libboost-all-dev libboost-system-dev libboost-filesystem-dev libboost-log-dev libboost-program-options-dev libboost-date-time-dev libboost-serialization-dev libboost-chrono-dev libopencv-dev libgtest-dev libpcl-dev
 
       - name: Configure
         run: |
@@ -278,6 +281,9 @@ jobs:
             build-essential \
             pkg-config \
             libboost-all-dev \
+            libboost-system-dev libboost-filesystem-dev libboost-log-dev \
+            libboost-program-options-dev libboost-date-time-dev \
+            libboost-serialization-dev libboost-chrono-dev \
             libopencv-dev \
             libpcl-dev
 
@@ -377,6 +383,9 @@ jobs:
             build-essential \
             pkg-config \
             libboost-all-dev \
+            libboost-system-dev libboost-filesystem-dev libboost-log-dev \
+            libboost-program-options-dev libboost-date-time-dev \
+            libboost-serialization-dev libboost-chrono-dev \
             libopencv-dev \
             doxygen \
             graphviz

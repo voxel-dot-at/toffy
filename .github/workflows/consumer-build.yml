@@ -72,6 +72,9 @@ jobs:
             build-essential \
             pkg-config \
             libboost-all-dev \
+            libboost-system-dev libboost-filesystem-dev libboost-log-dev \
+            libboost-program-options-dev libboost-date-time-dev \
+            libboost-serialization-dev libboost-chrono-dev \
             libopencv-dev \
             libgtest-dev \
             libpcl-dev
@@ -203,7 +206,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake build-essential pkg-config git \
-            libboost-all-dev libopencv-dev libgtest-dev libpcl-dev \
+            libboost-all-dev libboost-system-dev libboost-filesystem-dev libboost-log-dev libboost-program-options-dev libboost-date-time-dev libboost-serialization-dev libboost-chrono-dev libopencv-dev libgtest-dev libpcl-dev \
             libeigen3-dev libflann-dev libusb-1.0-0-dev libopenni2-dev
 
       - name: Install oatpp and oatpp-swagger
