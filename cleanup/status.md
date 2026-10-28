@@ -155,13 +155,19 @@ that is no longer true and the section was rewritten rather than annotated.
 | `v1.9.0` | `bc921ab` | ☐ | **deliberately not pushed** — see below |
 
 Heads on `origin`, re-checked 2026-10-27 **after `main` was moved onto the 2.0 line**:
-`main` and `feature/code-cleanup` are both `2a8bf19` (`git describe` → `v2.0.0-5-g2a8bf19`),
-and `stable-1.x` is `b6d7665` — the C++14 1.x line, parked exactly where `main` was, which is
-now that line's home rather than a branch waiting to be reconciled. The move was a
-**fast-forward**: `main` was a strict ancestor of `feature/code-cleanup` (59 commits behind,
-nothing of its own), so there is no merge commit and nothing was dropped. `origin/HEAD` is
-`main`, and a fresh clone of it describes as `v2.0.0-5-g2a8bf19` and configures as
-`version: v2.0.0-5-g2a8bf19`.
+`main` and `feature/code-cleanup` carry the same code — the move was a **fast-forward**, because
+`main` was a strict ancestor of the cleanup line (59 commits behind, `git log
+feature/code-cleanup..main` empty), so there is no merge commit and nothing was dropped. The two
+heads are kept identical; read that as "the same code", not as a SHA, because a SHA in this
+sentence went stale twice in one day and that is the whole reason for the rule below.
+`stable-1.x` is `b6d7665` — the C++14 1.x line, parked exactly where `main` was, which is now
+that line's home rather than a branch waiting to be reconciled. `origin/HEAD` is `main`, and a
+fresh clone of it describes as `v2.0.0-5-g2a8bf19` and configures as
+`version: v2.0.0-5-g2a8bf19` (`git describe` at the moment of the check; it moves with the tip).
+
+`feature/code-cleanup` is where the 2.0 work happened; **`main` is where it lives now**, and new
+work goes there. The branch stays for the moment because the PR history in these documents
+references it.
 **`next` is gone**: `git fetch --prune` reports `[deleted] (none) -> origin/next`.
 
 Gate, measured on the fresh clone: `git ls-remote --tags origin | grep -E
@@ -176,9 +182,9 @@ the consumer-side upgrade notes and **closed the same day** — `main` is the 2.
 line has `stable-1.x`, and a clone that names no branch now gets 2.0.
 
 What that does *not* change is the rule the tag push exists to enforce: **pin a tag, never a
-branch.** `main` moves — it just did — and `v2.0.0` does not. The difference after P0-3 is only
-that a consumer who ignores the rule now gets a 2.0 tree instead of a 1.6 one, which is a
-better accident but the same accident.
+branch.** `main` moves — it just did, twice, one of them under a sentence describing it — and
+`v2.0.0` does not. The difference after P0-3 is only that a consumer who ignores the rule now
+gets a 2.0 tree instead of a 1.6 one, which is a better accident but the same accident.
 
 - `v1.10.0` is tagged (annotated) for the `Event` removal and the vtable change it caused.
   Before it this tree built `libtoffy.so.1.7.1` while exporting none of 1.7.1's symbols —
