@@ -32,6 +32,15 @@ name: Consumer build
 #     its entries were still in the file, or new link coupling;
 #   * rc 2   = the check could not run at all, which is red too — a gate that
 #     fails open is worse than no gate because it gets cited as evidence.
+#
+# Toolchain: same contract as ci.yml, and the same measurement behind it. toffy
+# ships on embedded systems with CMake 3 and nothing else, so every job here is
+# `ubuntu-24.04` (a pinned image, not the moving one) and installs CMake 3.31.6
+# via .github/actions/setup-cmake3. This workflow is the one place where a
+# toolchain drift is most expensive: it stages toffy and hands the prefix to the
+# consumer, so a CMake 4 configure here produces a staged tree the embedded
+# build could never reproduce, and the consumer cell would then be measuring the
+# wrong artifact while reporting green.
 
 on:
   push:
@@ -53,7 +62,7 @@ jobs:
   # --------------------------------------------------------------------------
   stage-toffy:
     name: stage toffy (this commit)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned, not -latest — see the toolchain note in this file's header
     steps:
       - uses: actions/checkout@v4
 
@@ -181,7 +190,7 @@ jobs:
   toffy-oatpp:
     name: toffy-oatpp (${{ matrix.ref }}, ${{ matrix.build_type }})
     needs: stage-toffy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned, not -latest — see the toolchain note in this file's header
     strategy:
       fail-fast: false
       matrix:

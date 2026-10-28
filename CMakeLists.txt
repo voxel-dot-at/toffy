@@ -281,17 +281,56 @@ endif()
 # timestamps, is a separate library and still needed.
 #
 # CMP0167: CMake 3.30 deprecated the FindBoost module and CMake 4 removed it.
-# Where the running CMake knows the policy, ask for Boost's own package files --
-# Ubuntu has shipped them alongside libboost since 1.71, and every other project
-# in this chain already resolves to them. Older CMake (this file still supports
-# 3.10) has no such policy and keeps using FindBoost exactly as before, so the
-# change is a no-op there. Without it, a CMake 4 runner dies at this line with
-# "The FindBoost module is removed", which is what happened to this project's CI
-# when the runner image moved -- see .github/actions/setup-cmake3 for the
-# measurement and the temporary floor that keeps the pin in place until this is
-# verified on a 4.x runner and the pin is deleted.
-if(POLICY CMP0167)
-    cmake_policy(SET CMP0167 NEW)
+#
+# The contract is CMake 3.x. toffy is deployed on embedded systems whose
+# toolchains ship CMake 3 and nothing else, so CMake 3 is what CI is pinned to
+# (.github/actions/setup-cmake3) and what this file is written against. Under
+# that contract the FindBoost module is not a legacy shim to opt out of: it is
+# the lookup that works against a Boost with no CMake package files at all,
+# which is the normal shape of a cross-compilation sysroot.
+#
+# This block used to set CMP0167 to NEW wherever the policy was known, on the
+# reasoning that Ubuntu ships Boost's own package files and every other project
+# in the chain resolves to them. That is the opposite of the contract, and it
+# kept CI red on a *pinned* CMake 3.31.6: NEW forces config mode, config mode
+# needs Boost's per-component package files, and the runner's Boost 1.90 does
+# not ship them (its BoostConfig.cmake:141 asks for boost_system-config.cmake
+# and finds none). Measured 2026-10-28 with cmake 3.31.6 on a machine that has
+# those files: with NEW, Boost resolves through
+# /usr/lib/aarch64-linux-gnu/cmake/Boost-1.83.0/BoostConfig.cmake; with OLD it
+# resolves through FindBoost. Both succeed here, which is exactly why the
+# difference was invisible until it was a red pipeline -- the local build cannot
+# see the runner's packaging, and the policy chose the path that depends on it.
+#
+# So: OLD under CMake 3, explicitly, which silences the 3.30 deprecation rather
+# than ignoring it and keeps the lookup independent of how Boost was packaged.
+# And if someone does build with CMake 4 -- where the module is gone and config
+# mode is the only possibility -- say so once, in words, instead of dying on
+# "The FindBoost module is removed".
+# One more thing, and it is the part that actually decides the runner case:
+# FindBoost itself looks for BoostConfig.cmake and, if it finds one, loads it and
+# returns — module mode is not a refusal to use the package file, it is a fallback
+# if the package file is absent (FindBoost.cmake:584-648 in 3.31). So the policy
+# alone still routes a CMake 3 build into whatever BoostConfig the image happens
+# to ship, which is the packaging dependency we are trying to get out of. Boost_NO_BOOST_CMAKE
+# turns that lookup off and leaves the module to find headers and libraries, the
+# same way a sysroot with no CMake package files at all forces it to.
+if(CMAKE_VERSION VERSION_LESS 4)
+    if(POLICY CMP0167)
+        cmake_policy(SET CMP0167 OLD)
+    endif()
+    set(Boost_NO_BOOST_CMAKE ON
+        CACHE BOOL "toffy builds against Boost the way an embedded sysroot provides it: headers and libraries, no CMake package files")
+else()
+    message(WARNING
+        "toffy is built and tested against CMake 3.x, the toolchain the embedded "
+        "targets ship (see .github/actions/setup-cmake3). CMake ${CMAKE_VERSION} "
+        "has no FindBoost module, so Boost must provide its own package files -- "
+        "BoostConfig.cmake plus one per component. If the lookup below fails, the "
+        "toolchain is the problem, not this file.")
+    if(POLICY CMP0167)
+        cmake_policy(SET CMP0167 NEW)
+    endif()
 endif()
 find_package(Boost
     COMPONENTS log log_setup program_options system

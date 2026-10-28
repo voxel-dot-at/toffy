@@ -8,6 +8,26 @@ name: CI
 # Triggers on pushes to any branch, not just main, because the cleanup work
 # happens on feature branches and a gate that only runs after merge is not a
 # gate. Concurrency cancels superseded runs so this stays cheap.
+#
+# Toolchain: pinned, deliberately. toffy ships on embedded systems whose
+# toolchains provide CMake 3 and nothing else, so CMake 3 is the contract — not
+# a floor to escape from. Two things follow, and both are here because the
+# alternative was measured: CI was red for 15 consecutive runs (2026-10-03 →
+# 2026-10-28, across two releases) because `ubuntu-latest` rolled forward under
+# the jobs and brought CMake 4 plus a Boost 1.90 that ships no per-component
+# CMake package files. No commit in the repository changed, and nothing local
+# could see any of it.
+#
+#   * `runs-on: ubuntu-24.04`, never `ubuntu-latest`. A moving image is not a
+#     build environment; if the pipeline is going to be cited as evidence, the
+#     environment has to be a number.
+#   * `.github/actions/setup-cmake3` installs CMake 3.31.6 in every job that
+#     configures toffy, and verifies the pin took.
+#
+# A CMake 4 build is not a supported configuration and now says so in one
+# sentence (CMakeLists.txt, the CMP0167 block) instead of dying inside Boost's
+# package files. If CMake 4 ever becomes a requirement, that is a version
+# decision with a deployment consequence — not a CI fix.
 
 on:
   push:
@@ -24,7 +44,7 @@ concurrency:
 jobs:
   build-test:
     name: build & test (${{ matrix.label }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned, not -latest — see the toolchain note in this file's header
     strategy:
       # Both configurations must be reported. With fail-fast the second cell
       # would be cancelled when the first fails, and the two fail for unrelated
@@ -119,7 +139,7 @@ jobs:
 
   sanitizers:
     name: build & test (ASan + UBSan)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned, not -latest — see the toolchain note in this file's header
     # A green ctest is weak evidence for a memory error; the sanitizers are the
     # stage gate DOD 2 puts on the threading and ownership work (P2-7, P2-5).
     steps:
@@ -158,7 +178,7 @@ jobs:
 
   thread-sanitizer:
     name: build & test (ThreadSanitizer)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned, not -latest — see the toolchain note in this file's header
     # P2-7. The job above cannot answer a question about data races: AddressSanitizer
     # and ThreadSanitizer cannot be built together, and every defect the threading
     # work fixed is invisible to ASan -- the plain-bool run flag, the wait on a mutex
@@ -246,7 +266,7 @@ jobs:
 
   installed-headers:
     name: installed headers compile standalone
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned, not -latest — see the toolchain note in this file's header
     # P3-12 / finding N1. `make install` ships every file under every */include/ directory,
     # and nothing in the build ever included most of them: a header whose only consumer was
     # deleted keeps shipping, keeps rotting, and stays invisible because the library still
@@ -349,7 +369,7 @@ jobs:
 
   docs:
     name: doxygen docs build warning-free
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned, not -latest — see the toolchain note in this file's header
     # X4 follow-up, counter 30. `cmake --build build --target docs` exited 0 while emitting
     # 15 diagnostics - 14 obsolete Doxyfile tags, an EXAMPLE_PATH entry that has pointed at
     # a non-existent directory since 59b6bcf, and an HTML_EXTRA_FILES entry for a file git
@@ -412,7 +432,7 @@ jobs:
 
   cmake-hygiene:
     name: hygiene (cmake style, platform branches, no shell)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned, not -latest — see the toolchain note in this file's header
     # P3-7 / finding N6. This bug class is what hid the PCL-less build for as long
     # as it took: if() takes variable *names*, so an empty variable makes
     #   if( ${V} )          silently false, and

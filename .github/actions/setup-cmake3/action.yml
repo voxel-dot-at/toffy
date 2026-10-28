@@ -1,38 +1,55 @@
 name: 'Set up CMake 3'
 description: >
-  Pin the runner to the last CMake 3.x release. Temporary, and the reason is
-  recorded here rather than in a commit message: the ubuntu-latest image moved
-  to CMake 4, CMake 4 removed the FindBoost config module (policy CMP0167), and
-  toffy's find_package(Boost COMPONENTS … REQUIRED) at CMakeLists.txt:282 has no
-  config-mode fallback wired up. Every job that configures toffy goes red at
-  that line — which is what happened to this repository's CI on 2026-10-03, in
-  silence, for three and a half weeks.
+  Install the CMake that toffy is actually built with. Not a workaround with a
+  expiry date: toffy ships on embedded systems whose toolchains provide CMake 3
+  and nothing else, so CMake 3 is the supported contract, and a pipeline running
+  on anything else is measuring something nobody deploys.
 
 # ---------------------------------------------------------------------------
-# Why a pin and not a fix
+# Why the pipeline pins CMake 3, and what would have to change for that to end
 # ---------------------------------------------------------------------------
-# The fix is real and it is small: set CMP0167 to NEW and let Boost's own CMake
-# package files (shipped by Ubuntu since 1.71, and what every other project in
-# this chain already resolves to) do the work. It is not done here because it
-# cannot be verified from a machine running CMake 3.28 — the failure does not
-# reproduce locally at all, which is precisely why it went unnoticed — and
-# because changing how a dependency is found, on a base library with a
-# full-version SOVERSION, is a version decision, not a CI fix.
+# The deployment target decides. toffy is built into embedded systems that ship
+# a CMake 3 toolchain, so CMake 3 is the contract. "Does it configure on the
+# newest CMake" is not a question this project is obliged to answer, and
+# answering it by opting into CMake 4 behaviour would be answering a question
+# nobody asked — at the cost of the configuration that actually ships.
 #
-# So this action buys a known-good floor and nothing else: it does not make
-# toffy CMake 4-ready, it makes CI measurable again while that decision is made.
-# Delete it in the same commit that sets the policy, and check by removing it
-# and watching what the runner's own cmake does.
+# What this repository was doing before is the cautionary tale, and it is why
+# the pin is written up here rather than left as a one-line step. CI ran
+# `ubuntu-latest` with the image's own CMake. On 2026-10-03 that image moved to
+# CMake 4, which removed the FindBoost module (policy CMP0167), and every job
+# that configures toffy went red at `find_package(Boost … REQUIRED)`. It stayed
+# red for 15 consecutive runs across two releases — docs-only commits included —
+# because no commit in the repository had changed and no local build could
+# reproduce it. An environment that moves under the pipeline cannot be cited as
+# evidence, and this project had just spent three weeks citing it.
 #
-# Measured on 2026-10-28: local cmake 3.28.3 configures a fresh clone of main
-# cleanly (including a shallow, tagless clone), so the breakage is the runner's
-# toolchain, not the tree. The failing site is visible in the annotations of any
-# red run: "Policy CMP0167 is not set: The FindBoost module is removed" at
-# CMakeLists.txt:282, then configure rc 1.
+# The companion change is in CMakeLists.txt: under CMake 3 the policy is set OLD
+# and `Boost_NO_BOOST_CMAKE` is ON, so Boost is found the way a sysroot provides
+# it — headers and libraries, no CMake package files. Setting CMP0167 to NEW
+# instead, which an earlier commit here did, forces config mode and lands on the
+# image's Boost 1.90, whose BoostConfig.cmake asks for per-component package
+# files the image does not ship. Same failure, one level down: that is why
+# "just support CMake 4" was never the fix, and why a CMake 4 build now gets one
+# explicit sentence instead of a Boost internals stack trace.
+#
+# So the deletion condition is *not* "when CMake 4 works". It is: when the
+# deployment targets move to CMake 4, change this version, the policy block in
+# CMakeLists.txt and the documented contract in one commit — and re-verify every
+# consumer in the chain, because a toolchain change here is a toolchain change
+# for toffy-oatpp and boxes as well.
+#
+# Measured 2026-10-28, on cmake 3.31.6 and 3.28.3 against the same Boost: with
+# CMP0167 NEW, Boost resolves through
+# /usr/lib/aarch64-linux-gnu/cmake/Boost-1.83.0/BoostConfig.cmake (config mode —
+# packaging-dependent); with the policy OLD and Boost_NO_BOOST_CMAKE ON it
+# resolves through FindBoost to /usr/include (module mode — packaging-
+# independent). Both configure and build clean here, which is exactly why the
+# difference was invisible until it was a red pipeline.
 
 inputs:
   version:
-    description: 'CMake version to pin (last 3.x by default)'
+    description: 'CMake 3.x version to install'
     default: '3.31.6'
     required: false
 
@@ -46,7 +63,7 @@ runs:
         ver="${{ inputs.version }}"
         case "$ver" in
           3.*) : ;;
-          *) echo "::error::this action exists to pin CMake 3; got '$ver'. Fix the real problem instead." ; exit 1 ;;
+          *) echo "::error::toffy's contract is CMake 3 (embedded toolchains); got '$ver'. If the deployment targets have moved, change the contract in CMakeLists.txt too — do not just bump this." ; exit 1 ;;
         esac
         # Official Kitware build: no PPA, no pip (Ubuntu 26 marks the system
         # Python externally managed, and a --break-system-packages in CI is its
