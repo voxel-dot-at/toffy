@@ -43,6 +43,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      # CMake 4 removed the FindBoost module (policy CMP0167) and toffy's
+      # find_package(Boost …) at CMakeLists.txt:282 has no config-mode fallback
+      # yet, so every configure here dies at that line on the runner. The pin is
+      # a floor, not a fix — the action says what the fix is and when to delete it.
+      - uses: ./github/actions/setup-cmake3
 
       - name: Install dependencies
         run: |
@@ -116,6 +121,11 @@ jobs:
     # stage gate DOD 2 puts on the threading and ownership work (P2-7, P2-5).
     steps:
       - uses: actions/checkout@v4
+      # CMake 4 removed the FindBoost module (policy CMP0167) and toffy's
+      # find_package(Boost …) at CMakeLists.txt:282 has no config-mode fallback
+      # yet, so every configure here dies at that line on the runner. The pin is
+      # a floor, not a fix — the action says what the fix is and when to delete it.
+      - uses: ./github/actions/setup-cmake3
 
       - name: Install dependencies
         run: |
@@ -179,6 +189,11 @@ jobs:
     # that leaves open.
     steps:
       - uses: actions/checkout@v4
+      # CMake 4 removed the FindBoost module (policy CMP0167) and toffy's
+      # find_package(Boost …) at CMakeLists.txt:282 has no config-mode fallback
+      # yet, so every configure here dies at that line on the runner. The pin is
+      # a floor, not a fix — the action says what the fix is and when to delete it.
+      - uses: ./github/actions/setup-cmake3
 
       - name: Install dependencies
         run: |
@@ -248,6 +263,11 @@ jobs:
     # as a pass.
     steps:
       - uses: actions/checkout@v4
+      # CMake 4 removed the FindBoost module (policy CMP0167) and toffy's
+      # find_package(Boost …) at CMakeLists.txt:282 has no config-mode fallback
+      # yet, so every configure here dies at that line on the runner. The pin is
+      # a floor, not a fix — the action says what the fix is and when to delete it.
+      - uses: ./github/actions/setup-cmake3
 
       - name: Install dependencies
         run: |
@@ -342,6 +362,11 @@ jobs:
     # turns it green.
     steps:
       - uses: actions/checkout@v4
+      # CMake 4 removed the FindBoost module (policy CMP0167) and toffy's
+      # find_package(Boost …) at CMakeLists.txt:282 has no config-mode fallback
+      # yet, so every configure here dies at that line on the runner. The pin is
+      # a floor, not a fix — the action says what the fix is and when to delete it.
+      - uses: ./github/actions/setup-cmake3
 
       - name: Install dependencies
         run: |

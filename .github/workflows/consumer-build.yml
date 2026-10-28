@@ -57,6 +57,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # CMake 4 removed FindBoost (CMP0167); see .github/actions/setup-cmake3.
+      - uses: ./github/actions/setup-cmake3
+
       - name: Install dependencies
         # Deliberately the same list as ci.yml's build-test job. If the two
         # drift, the consumer job starts testing a toffy that no toffy job
@@ -176,6 +179,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         # Only for tools/ and ci/ — the toffy *code* comes from the artifact.
+
+      # toffy-oatpp calls find_package(Boost …) too, so the consumer needs the
+      # same floor as the library it is consuming.
+      - uses: ./github/actions/setup-cmake3
 
       - uses: actions/download-artifact@v4
         with:

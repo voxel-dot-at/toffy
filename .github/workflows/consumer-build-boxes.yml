@@ -82,6 +82,18 @@ jobs:
           for pkg in cmake g++ pkg-config; do
             command -v "$pkg" >/dev/null || { echo "::error::$pkg missing on the runner"; exit 1; }
           done
+          # Reported, not pinned: a self-hosted runner is operator-managed, and
+          # silently replacing its toolchain is not this job's business. But
+          # CMake 4 removed FindBoost (CMP0167) and neither toffy nor
+          # toffy-oatpp has a config-mode fallback yet, so a 4.x here will fail
+          # the configure — say so before the confusing error, not after.
+          cv=$(cmake --version | head -1); echo "runner cmake: $cv"
+          case "$cv" in
+            "cmake version 4."*)
+              echo "::warning::runner cmake is 4.x — FindBoost is gone (CMP0167) and "
+                       "toffy's find_package(Boost) has no config-mode fallback yet. "
+                       "Use .github/actions/setup-cmake3 or install cmake 3.x." ;;
+          esac
           pkg-config --exists libprotobuf || \
             { echo '::error::libprotobuf-dev missing — boxes generates and compiles protobuf API stubs'; exit 1; }
           pkg-config --exists opencv4 || \

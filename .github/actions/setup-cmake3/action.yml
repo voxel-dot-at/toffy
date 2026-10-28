@@ -1,0 +1,71 @@
+name: 'Set up CMake 3'
+description: >
+  Pin the runner to the last CMake 3.x release. Temporary, and the reason is
+  recorded here rather than in a commit message: the ubuntu-latest image moved
+  to CMake 4, CMake 4 removed the FindBoost config module (policy CMP0167), and
+  toffy's find_package(Boost COMPONENTS … REQUIRED) at CMakeLists.txt:282 has no
+  config-mode fallback wired up. Every job that configures toffy goes red at
+  that line — which is what happened to this repository's CI on 2026-10-03, in
+  silence, for three and a half weeks.
+
+# ---------------------------------------------------------------------------
+# Why a pin and not a fix
+# ---------------------------------------------------------------------------
+# The fix is real and it is small: set CMP0167 to NEW and let Boost's own CMake
+# package files (shipped by Ubuntu since 1.71, and what every other project in
+# this chain already resolves to) do the work. It is not done here because it
+# cannot be verified from a machine running CMake 3.28 — the failure does not
+# reproduce locally at all, which is precisely why it went unnoticed — and
+# because changing how a dependency is found, on a base library with a
+# full-version SOVERSION, is a version decision, not a CI fix.
+#
+# So this action buys a known-good floor and nothing else: it does not make
+# toffy CMake 4-ready, it makes CI measurable again while that decision is made.
+# Delete it in the same commit that sets the policy, and check by removing it
+# and watching what the runner's own cmake does.
+#
+# Measured on 2026-10-28: local cmake 3.28.3 configures a fresh clone of main
+# cleanly (including a shallow, tagless clone), so the breakage is the runner's
+# toolchain, not the tree. The failing site is visible in the annotations of any
+# red run: "Policy CMP0167 is not set: The FindBoost module is removed" at
+# CMakeLists.txt:282, then configure rc 1.
+
+inputs:
+  version:
+    description: 'CMake version to pin (last 3.x by default)'
+    default: '3.31.6'
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Install CMake ${{ inputs.version }}
+      shell: bash
+      run: |
+        set -euxo pipefail
+        ver="${{ inputs.version }}"
+        case "$ver" in
+          3.*) : ;;
+          *) echo "::error::this action exists to pin CMake 3; got '$ver'. Fix the real problem instead." ; exit 1 ;;
+        esac
+        # Official Kitware build: no PPA, no pip (Ubuntu 26 marks the system
+        # Python externally managed, and a --break-system-packages in CI is its
+        # own future incident), no auth. Public release asset, ~50 MB.
+        url="https://github.com/Kitware/CMake/releases/download/v${ver}/cmake-${ver}-linux-$(uname -m).tar.gz"
+        dest="${RUNNER_TEMP:-/tmp}/cmake-${ver}"
+        mkdir -p "$dest"
+        curl -fsSL "$url" | tar -xz --strip-components=1 -C "$dest"
+        echo "$dest/bin" >> "$GITHUB_PATH"
+    - name: Verify the pin actually took
+      # Not decoration. If PATH ordering ever stops working, this action becomes
+      # a silent no-op and every job goes back to the CMake 4 failure with a
+      # commit that says "pinned cmake". Check the claim, in the job, every run.
+      shell: bash
+      run: |
+        set -euo pipefail
+        v="$(cmake --version | head -1)"
+        echo "cmake: $v  ($(command -v cmake))"
+        case "$v" in
+          "cmake version 3."*) : ;;
+          *) echo "::error::cmake is not 3.x despite the pin: $v"; exit 1 ;;
+        esac
