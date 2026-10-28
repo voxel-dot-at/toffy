@@ -123,6 +123,29 @@ the bank's pipeline — see counter 31.
   does not exist is a warning doxygen does emit, but a page that is simply wrong, like the
   `use.dox` of `X4`'s before-state, has always been silent. It also runs PCL-less and
   bta-less, which was measured to produce the same 22 pages.
+- **CI was red for 15 consecutive runs and nobody noticed** — 2026-10-03 → 2026-10-28, every
+  job, every commit, including docs-only ones; last green run #4 on `7fea594` (v1.10.0). Found
+  only because the consumer job needed the Actions API to check its own first run. Cause chain,
+  each link measured rather than assumed:
+
+  1. the runner image moved to **CMake 4**, which removed the FindBoost module (policy
+     **CMP0167**) — `CMakeLists.txt:282` is the site, and it has no config-mode fallback;
+  2. asking for config mode properly (`if(POLICY CMP0167) cmake_policy(SET CMP0167 NEW)`, added)
+     moves the failure to the runner's **Boost 1.90**: `BoostConfig.cmake:141` then asks per
+     component for `boost_system-config.cmake`, and the runner has no per-component Boost config
+     files installed — installing the seven component `-dev` packages by name did **not** fix
+     it, so the distro image is the problem, not the manifest;
+  3. a fresh clone configures and builds cleanly on cmake 3.28.3 with Boost 1.83, including from
+     a shallow tagless clone — which is why nothing local ever saw any of this.
+
+  Fixed so far: the policy (correct regardless, and required for any CMake 4 build), a pinned
+  CMake 3.31.6 floor in `.github/actions/setup-cmake3`, and — the part that actually paid for
+  itself — failures now *report themselves*: workflow steps emit the CMake Error as annotations,
+  because GitHub's default is the string "Process completed with exit code 1" behind a logged-in
+  browser, and that is how a red run becomes wallpaper for three and a half weeks. Still open:
+  the Boost component configs on the runner image, which is an environment decision (pin the
+  image, install a Boost that ships them, or stop using Boost's CMake package files) and not a
+  reason to leave the tree un-buildable on a modern toolchain.
 - **CI builds a consumer against this tree** — counter 32, `consumer-build.yml`, added for the
   consumer upgrade (P0-2). Every job above compiles toffy against toffy's own headers from the
   source tree, which has never once caught a consumer breakage: the `FilterPtr` return, the
