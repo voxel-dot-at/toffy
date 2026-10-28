@@ -73,36 +73,53 @@ jobs:
             libgtest-dev \
             libpcl-dev
 
-      - name: Configure and build
+      - name: Configure
         # Release, matching the recipe in the consumer upgrade notes
         # (UPGRADE_PROGRESS.md §Reproducing this). The consumers are then built
         # in both configurations against this one install — see the matrix.
         #
-        # The configure is wrapped, and not for tidiness: a failed step on GitHub
-        # annotates as "Process completed with exit code 1" and nothing else, and
-        # the log behind it needs a logged-in browser. That is not a diagnosable
-        # red, and a red nobody can diagnose is a red people learn to ignore. So
-        # the tail of the CMake output is emitted as annotations — the last lines
-        # are where CMake states what it could not find.
+        # Two steps, not one, and both self-reporting. The first version of this
+        # job combined them and could not say which half failed: a failed step on
+        # GitHub annotates as "Process completed with exit code 1" and nothing
+        # else, and the log behind it needs a logged-in browser. A red nobody can
+        # diagnose is a red people learn to ignore, so the tail of the output goes
+        # out as annotations — for CMake, the last lines are where it states what
+        # it could not find.
+        # could not say which half failed — the annotations showed only the
+        # generic "exit code 1", because the branch that emits them was around
+        # the configure and the failure was somewhere else. Diagnosing a red run
+        # should not require a logged-in browser: the log behind these annotations
+        # is exactly that, and it is also an artifact.
         run: |
           set -uo pipefail
-          cfg=/tmp/toffy-configure.log
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release >"$cfg" 2>&1
-          rc=$?
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release 2>&1 | tee /tmp/toffy-configure.log
+          rc=${PIPESTATUS[0]}
           if [ "$rc" -ne 0 ]; then
-            echo "::error::toffy configure failed (rc $rc) — last lines below, full log attached"
-            tail -n 25 "$cfg" | while IFS= read -r l; do echo "::error::$l"; done
+            printf '::error::toffy CONFIGURE failed (rc %s)\n' "$rc"
+            tail -n 30 /tmp/toffy-configure.log | sed 's/^/::error::/'
             exit "$rc"
           fi
-          grep -E 'version:|PCL|HAS_BTA|CXX_STANDARD' "$cfg" | head -12 || true
-          cmake --build build -j "$(nproc)"
+          grep -E 'version:|PCL_|HAS_BTA|CXX_STANDARD|OpenNI|VTK' /tmp/toffy-configure.log \
+            | head -10 || true
 
-      - name: Upload the configure log
+      - name: Build
+        run: |
+          set -uo pipefail
+          cmake --build build -j "$(nproc)" 2>&1 | tee /tmp/toffy-build.log
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            printf '::error::toffy BUILD failed (rc %s) — first error lines below\n' "$rc"
+            grep -m 15 -E 'error:|Error [0-9]' /tmp/toffy-build.log | sed 's/^/::error::/'
+            tail -n 15 /tmp/toffy-build.log | sed 's/^/::error::/'
+            exit "$rc"
+          fi
+
+      - name: Upload the logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: toffy-configure-log
-          path: /tmp/toffy-configure.log
+          name: toffy-stage-logs
+          path: /tmp/toffy-*.log
           if-no-files-found: ignore
 
       - name: Install to a staging prefix
