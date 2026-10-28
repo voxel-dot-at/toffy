@@ -90,10 +90,19 @@ jobs:
         # the configure and the failure was somewhere else. Diagnosing a red run
         # should not require a logged-in browser: the log behind these annotations
         # is exactly that, and it is also an artifact.
+        # The `|| rc=${PIPESTATUS[0]}` shape is not stylistic. Actions runs each
+        # step under `bash -e`, so a failing pipeline ends the step on its own
+        # line — and the second version of this step died exactly there, printing
+        # none of the annotations it was written to print, leaving the generic
+        # "exit code 1" again. `cmd | tee log || rc=...` keeps -e from firing and
+        # still captures the real status. Verified locally under `bash -e -o
+        # pipefail` before pushing, which is the rule this repository already has
+        # for checks: prove the check can fail, then prove it reports.
         run: |
           set -uo pipefail
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release 2>&1 | tee /tmp/toffy-configure.log
-          rc=${PIPESTATUS[0]}
+          rc=0
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release 2>&1 | tee /tmp/toffy-configure.log \
+            || rc=${PIPESTATUS[0]}
           if [ "$rc" -ne 0 ]; then
             printf '::error::toffy CONFIGURE failed (rc %s)\n' "$rc"
             tail -n 30 /tmp/toffy-configure.log | sed 's/^/::error::/'
@@ -105,8 +114,9 @@ jobs:
       - name: Build
         run: |
           set -uo pipefail
-          cmake --build build -j "$(nproc)" 2>&1 | tee /tmp/toffy-build.log
-          rc=${PIPESTATUS[0]}
+          rc=0
+          cmake --build build -j "$(nproc)" 2>&1 | tee /tmp/toffy-build.log \
+            || rc=${PIPESTATUS[0]}
           if [ "$rc" -ne 0 ]; then
             printf '::error::toffy BUILD failed (rc %s) — first error lines below\n' "$rc"
             grep -m 15 -E 'error:|Error [0-9]' /tmp/toffy-build.log | sed 's/^/::error::/'
@@ -218,13 +228,24 @@ jobs:
           else
             REPO="git@github.com:voxel-dot-at/toffy-oatpp.git"
           fi
+          rc=0
           tools/consumer_build.sh \
             --toffy-prefix "$RUNNER_TEMP/stage" \
             --repo "$REPO" \
             --ref "${{ matrix.ref }}" \
             --build-type "${{ matrix.build_type }}" \
             --allowlist ci/consumer-expected-failures.txt \
-            --link-surface ci/consumer-link-surface.txt
+            --link-surface ci/consumer-link-surface.txt 2>&1 | tee /tmp/consumer.log \
+            || rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            # The script's own verdict lines are the diagnosis; lift them into the
+            # annotations so the run page says *which* case it is — new breakage,
+            # stale allowlist, or new coupling — without opening the log.
+            printf '::error::consumer check failed (rc %s) for %s\n' "$rc" "${{ matrix.ref }}"
+            grep -E 'NOT on the allowlist|still claims|new toffy coupling|could not|Could not' \
+              /tmp/consumer.log | head -12 | sed 's/^[[:space:]]*/::error::/'
+            exit "$rc"
+          fi
 
       - name: Upload logs on failure
         if: failure()
