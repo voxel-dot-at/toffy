@@ -139,6 +139,23 @@ if [ "${broken}" -gt 0 ]; then
     echo "A [twice] failure means the header has no include guard: it compiles for the one"
     echo "translation unit that happens to include it once and breaks for the next one."
     echo "See cleanup/plan/controller-extraction.md (X2, X2b) and cleanup/findings/build.md N1."
+
+    # Report it where a failure can actually be read. A GitHub step failure annotates as
+    # "Process completed with exit code 1" and the log behind it needs a logged-in browser,
+    # so a red run of this check — the one check that speaks about other people's builds —
+    # arrives as a shrug. The annotation is the only channel that reaches the checks tab,
+    # and this script is the thing that knows which header broke. One annotation per
+    # header, carrying its first compiler error, so the reader does not have to open the
+    # log at all; the log stays for everything after the first error.
+    awk '
+        function flush() {
+            if (hdr != "") printf "::error::installed header %s — %s\n", hdr,
+                (err == "" ? "see the log for the compiler error" : err)
+        }
+        /^  [^ ]/ { flush(); hdr = $0; sub(/^ +/, "", hdr); err = ""; next }
+        /error:/  { if (err == "") { e = $0; sub(/^ +/, "", e); err = e } }
+        END       { flush() }
+    ' "${tmpdir}/broken"
     exit 1
 fi
 

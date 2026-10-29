@@ -395,6 +395,13 @@ jobs:
       - uses: ./.github/actions/setup-cmake3
 
       - name: Install dependencies
+        # libeigen3-dev is the one that matters here, and it is recent: this was the only
+        # job installing neither libpcl-dev nor libeigen3-dev, while CMakeLists.txt wants
+        # Eigen unconditionally on POSIX — `pkg_search_module(Eigen3 REQUIRED eigen3)`,
+        # outside any WITHOUT_PCL guard. Every other job got Eigen as a dependency of
+        # libpcl-dev and never noticed. So the docs job's configure died on a missing
+        # Eigen: not a docs problem at all, a dependency list written against the machine
+        # that already had it, and invisible until the Boost failure stopped hiding it.
         run: |
           set -euxo pipefail
           sudo apt-get update
@@ -407,13 +414,30 @@ jobs:
             libboost-program-options-dev libboost-date-time-dev \
             libboost-serialization-dev libboost-chrono-dev \
             libopencv-dev \
+            libeigen3-dev \
             doxygen \
             graphviz
 
       - name: Configure
+        # -DWITHOUT_PCL=ON states the job's intent instead of relying on the auto-disable
+        # (`if(NOT PCL_FOUND) set(WITHOUT_PCL 1)`), so the job keeps working whether or not
+        # PCL happens to be installed: the docs target emits the same pages without it.
+        #
+        # And the failure is reported, not just raised: a bare non-zero exit annotates as
+        # "Process completed with exit code 1" and the CMake Error is behind a logged-in
+        # browser, which is how this job stayed opaque.
         run: |
-          set -euxo pipefail
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF
+          set -uo pipefail
+          log=$(mktemp)
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF \
+               -DWITHOUT_PCL=ON 2>&1 | tee "$log"
+          rc=${PIPESTATUS[0]}
+          if [ "${rc}" -ne 0 ]; then
+            grep -A12 'CMake Error' "$log" || tail -25 "$log"
+            echo "::error::configure failed (exit ${rc}); the first CMake Error is above"
+            exit "${rc}"
+          fi
+          grep -E 'WITHOUT_PCL|Doxygen|version:' "$log" || true
 
       - name: Build the docs and fail on any warning
         # A fresh build dir means doxygen always runs; in a developer's tree an up-to-date
