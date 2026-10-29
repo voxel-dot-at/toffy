@@ -1,3 +1,4 @@
+
 add_subdirectory(core)
 
 # The bta module was added unconditionally, so it compiled even when
@@ -8,6 +9,9 @@ add_subdirectory(core)
 if (HAS_BTA)
     add_subdirectory(bta)
 endif()
+
+## common camera data types and transforms
+add_subdirectory(camera)
 
 add_subdirectory(filters)
 

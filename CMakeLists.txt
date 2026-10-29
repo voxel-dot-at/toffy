@@ -163,6 +163,7 @@ include_directories(
         "${CMAKE_CURRENT_SOURCE_DIR}/libraries/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/core/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/"
+        "${CMAKE_CURRENT_SOURCE_DIR}/modules/camera/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/filters/include/"
         "${CMAKE_CURRENT_BINARY_DIR}/generated/"        
         )
