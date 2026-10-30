@@ -332,8 +332,14 @@ jobs:
             # annotations so the run page says *which* case it is — new breakage,
             # stale allowlist, or new coupling — without opening the log.
             printf '::error::consumer check failed (rc %s) for %s\n' "$rc" "${{ matrix.ref }}"
-            grep -E 'NOT on the allowlist|still claims|new toffy coupling|could not|Could not' \
-              /tmp/consumer.log | head -12 | sed 's/^[[:space:]]*/::error::/'
+            # Lift the *verdict block*, not just its first line. The script prints
+            # the offending errors as bullets under the verdict, and the first
+            # version of this grep matched only the heading — so run 41105063856
+            # said "1 error(s) NOT on the allowlist" and never said which, which
+            # is precisely the red-nobody-can-read this file has already been
+            # rewritten twice over. -A 8 carries the bullets into the annotations.
+            grep -E -A 8 'NOT on the allowlist|the build is GREEN, and the allowlist|new toffy coupling|could not|Could not' \
+              /tmp/consumer.log | head -14 | sed 's/^[[:space:]]*/::error::/'
             exit "$rc"
           fi
 
