@@ -22,16 +22,26 @@
 # reason is an entry nobody dares remove.
 
 # ---------------------------------------------------------------------------
-# toffy-oatpp @ main — the un-upgraded line. Recorded so that "toffy-oatpp is
-# broken" is an executable fact rather than a claim in a markdown file, and so
-# that the day Phase 1 merges to main this job goes red demanding these two
-# entries be deleted. That red is the success condition, not a failure.
-# Deleted by: merging feature/toffy-upgrade into main (P1-12 decides when).
+# (entry deleted 2026-10-30) toffy-oatpp@main — 'Could not find a configuration
+# file for package "toffy" that is compatible'.
 #
-# Note the shape of this list: a configure failure masks every compile error
-# behind it, so main reports exactly one line today and will reveal the FilterPtr
-# error (P1-2) only once this one is gone. The allowlist is therefore a queue,
-# not a census — it is complete about *this* layer, and silent about the next one
-# until you are standing in front of it. That is the same reason the upgrade
-# notes list failures "in order".
-toffy-oatpp@main|Could not find a configuration file for package "toffy" that is compatible
+# This is the file working as designed, so the deletion is recorded rather than
+# silent. The entry said toffy-oatpp's `main` was still on toffy 1.6 and that the
+# day Phase 1 merged, this entry would have to go. Phase 1 merged on 2026-10-30:
+# `feature/toffy-upgrade` fast-forwarded onto `main` and `v0.1.0` was cut there
+# (P1-4), so the error above can no longer be produced and the job would go red
+# demanding the entry be deleted. It is deleted, with its reason, and the list
+# shrinking is the metric this job exists to report.
+#
+# Worth keeping the shape of the old entry in mind: a configure failure masks
+# every compile error behind it, so `main` reported exactly one line while the
+# `FilterPtr` break (P1-2) sat underneath it, unmeasurable. The allowlist is a
+# queue, not a census — complete about the layer you are standing in, silent
+# about the next one.
+#
+# The list is now empty for toffy-oatpp. A green cell with an empty allowlist is
+# the state this whole upgrade is for; a red one from here on is new breakage,
+# and the fix belongs in the consumer or in toffy — not in this file. `boxes`
+# entries will appear here when its nightly (consumer-build-boxes.yml) runs on a
+# self-hosted runner with the bta SDK, and those will need the same discipline:
+# a reason, an owner, and a deleting condition.

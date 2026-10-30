@@ -151,7 +151,22 @@ the bank's pipeline — see counter 31.
   source tree, which has never once caught a consumer breakage: the `FilterPtr` return, the
   version gate and the `${toffy__DEFINITIONS}` typo were all found three repositories away. This
   one installs *this commit* to a prefix and configures `toffy-oatpp` against the install, in
-  Release and Debug, on two refs — the upgrade branch (the gate) and `main` (recorded broken).
+  Release and Debug, on `main` — the line toffy-oatpp has carried since Phase 1 landed on
+  2026-10-30 (**P1-4**, `v0.1.0`), which is also what deleted the `main` entry from the
+  allowlist. It was two refs while the upgrade lived on a branch; two cells testing one line is
+  noise, not coverage.
+- **The consumer job ran red four times before it ran at all** (2026-10-29, run 40960528367):
+  every cell died in *Install oatpp and oatpp-swagger* in under a second, so no consumer cell
+  had ever executed — the 16-symbol match in counter 32 is a local measurement, and the file
+  now says so rather than implying the runner made it. Two bugs in one step. It pinned
+  `--branch 1.4.0`, and **oatpp has no `1.4.0` tag**: newest upstream is `1.3.1` in both oatpp
+  and oatpp-swagger (measured via `api.github.com/repos/oatpp/oatpp/tags`), and the `1.4.0` that
+  `find_package(oatpp 1.4.0 REQUIRED)` resolves against is a string in `Environment.hpp` on
+  `master`. And it ran `cmake --install` with no `cmake --build` in between, which fails copying
+  a library that was never compiled — verified locally, rc 1. The second bug was hidden by the
+  first, which is the lesson: **red is not a diagnosis**, and a step that dies in one second
+  hides everything after it. Now pinned by SHA with the version strings asserted, and the fetch,
+  both asserts and the build-plus-install of both packages are verified locally.
   The judgement is in `tools/consumer_build.sh`, not in YAML, so that it can be run before it is
   trusted; it was, six ways, including the three that must fail (new link coupling, a stale
   expected-failure entry, and a prefix that is not an installed toffy). Red/green semantics are

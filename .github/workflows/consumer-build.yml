@@ -173,19 +173,26 @@ jobs:
           if-no-files-found: error
 
   # --------------------------------------------------------------------------
-  # The consumers. Two refs on purpose:
+  # The consumers. One ref now, and that is the success condition arriving.
   #
-  #   feature/toffy-upgrade — the line that is supposed to work. This is the
-  #       gate: if a toffy commit breaks it, this cell goes red.
-  #   main — the un-upgraded line, which is *expected* to fail. Recording that
-  #       as an executable fact (rather than as a sentence in a markdown file)
-  #       is what makes "toffy-oatpp main is still on 1.6" impossible to lose
-  #       track of, and the day Phase 1 merges, this cell goes red demanding the
-  #       allowlist entry be deleted. That red is the success condition.
+  # This matrix used to have two: `feature/toffy-upgrade`, the line that was
+  # supposed to work, and `main`, the un-upgraded line, recorded as an expected
+  # failure so that "toffy-oatpp main is still on 1.6" could not be lost track
+  # of. The allowlist said the day Phase 1 merged, the `main` cell would go red
+  # demanding its entries be deleted, and that red was the point.
   #
-  # Both configurations, per the phase notes: the consumers add -Wall -ggdb -O0
-  # unconditionally and -O2 again in Release, so Debug is the configuration where
-  # the compiler still has something to say.
+  # Phase 1 merged on 2026-10-30: `feature/toffy-upgrade` fast-forwarded onto
+  # `main` and `v0.1.0` was cut there (P1-4). Two cells testing one line is not
+  # coverage, it is noise, so the branch cell is gone and the `main` entry in
+  # ci/consumer-expected-failures.txt is deleted — the shrinking of the list is
+  # the progress this job exists to show. If a future toffy commit breaks the
+  # consumer, the correct response is a red cell and a fix, not a new allowlist
+  # entry: entries are for known-broken consumers with a named owner and a
+  # deleting condition, not for surprises.
+  #
+  # Both configurations stay, per the phase notes: the consumers add
+  # -Wall -ggdb -O0 unconditionally and -O2 again in Release, so Debug is the
+  # configuration where the compiler still has something to say.
   # --------------------------------------------------------------------------
   toffy-oatpp:
     name: toffy-oatpp (${{ matrix.ref }}, ${{ matrix.build_type }})
@@ -195,7 +202,7 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Debug, Release]
-        ref: [feature/toffy-upgrade, main]
+        ref: [main]
     steps:
       - uses: actions/checkout@v4
         # Only for tools/ and ci/ — the toffy *code* comes from the artifact.
@@ -219,26 +226,60 @@ jobs:
             libeigen3-dev libflann-dev libusb-1.0-0-dev libopenni2-dev
 
       - name: Install oatpp and oatpp-swagger
-        # Pinned. toffy-oatpp asks for 1.4.0 in its find_package, and an
-        # unpinned oatpp on main would make this job fail for reasons that have
-        # nothing to do with the toffy commit under test — a false red, which is
-        # how jobs like this get disabled.
+        # Pinned — by commit, because there is no tag to pin to, and that is not
+        # a style choice. The first version of this step said `--branch 1.4.0`
+        # and died in under a second in all four cells (run 40960528367, all of
+        # 2026-10-29): no consumer cell ever ran, and the run said only
+        # "Process completed with exit code 1".
+        #
+        # Measured 2026-10-30: the newest tag upstream is `1.3.1` in both
+        # repositories (api.github.com/repos/oatpp/oatpp/tags → 19 tags, newest
+        # numeric 1.3.1; oatpp-swagger the same). The `1.4.0` that
+        # toffy-oatpp's `find_package(oatpp 1.4.0 REQUIRED)` asks for exists
+        # only as `master`, where it is a string in a header
+        # (`src/oatpp/Environment.hpp`: `#define OATPP_VERSION "1.4.0"`) and a
+        # line in CMakeLists (`OATPP_THIS_MODULE_VERSION "1.4.0"`). So: pin the
+        # SHA, and assert the version string rather than trusting the pin — if
+        # upstream tags 1.4.0 properly one day, or moves master, this step says
+        # so in one line instead of the consumer drifting onto a different oatpp.
+        # Both SHAs below are the master tips that the local oatpp 1.4.0 install
+        # — the one every measurement in the upgrade notes was taken against —
+        # was built from, and the fetch-by-SHA + both asserts are verified
+        # locally, as is the build and install of both packages.
+        #
+        # The `cmake --build` is the second bug in the same step: it configured
+        # and then installed, which fails copying a library that was never
+        # compiled. Invisible until now, because the clone killed the step first
+        # — the reason a step that fails early hides every bug after it, and why
+        # "the job is red" is not a diagnosis.
         #
         # toffy-oatpp's dropped `next` line (P1-12, 2026-10-28) also asked for
         # find_package(oatpp-websocket 1.4.0 REQUIRED) and find_package(oatpp-socketio).
-        # Neither is needed by `main` or `feature/toffy-upgrade`, so neither is installed
-        # today. If that line is ever revived from its archive tag, install both here
-        # first, in the same pinned style — otherwise the new cell goes red on a missing
-        # dependency and the job becomes the thing it exists to prevent. Measured against
-        # origin/next@3a97d1b.
+        # Neither is needed by `main`, so neither is installed today. If that line
+        # is ever revived from its archive tag, install both here first, in the
+        # same pinned-and-asserted style — otherwise the new cell goes red on a
+        # missing dependency and the job becomes the thing it exists to prevent.
+        # Measured against origin/next@3a97d1b (archived as
+        # `archive/next-2025-04-25`, recoverable from the bundle).
         run: |
           set -euxo pipefail
-          git clone --depth 1 --branch 1.4.0 https://github.com/oatpp/oatpp.git /tmp/oatpp
+          OATPP_SHA=f83d648fd82dc222ef88aabbafb68efbd7d7bf50
+          OATPP_SWAGGER_SHA=8cb460b546e84b06939a12897c85a6d863c1c53e
+          fetch_pinned() {   # url sha dir — GitHub serves arbitrary SHAs, and
+            git init -q "$3" # here a tag is not available to fetch by
+            git -C "$3" fetch -q --depth 1 "$1" "$2"
+            git -C "$3" checkout -q FETCH_HEAD
+          }
+          fetch_pinned https://github.com/oatpp/oatpp.git "$OATPP_SHA" /tmp/oatpp
+          grep -q '#define OATPP_VERSION "1.4.0"' /tmp/oatpp/src/oatpp/Environment.hpp
           cmake -S /tmp/oatpp -B /tmp/oatpp/build -DCMAKE_BUILD_TYPE=Release \
             -DOATPP_BUILD_TESTS=OFF
+          cmake --build /tmp/oatpp/build -j "$(nproc)"
           sudo cmake --install /tmp/oatpp/build
-          git clone --depth 1 --branch 1.4.0 https://github.com/oatpp/oatpp-swagger.git /tmp/oatpp-swagger
+          fetch_pinned https://github.com/oatpp/oatpp-swagger.git "$OATPP_SWAGGER_SHA" /tmp/oatpp-swagger
+          grep -q 'set(OATPP_THIS_MODULE_VERSION "1.4.0")' /tmp/oatpp-swagger/CMakeLists.txt
           cmake -S /tmp/oatpp-swagger -B /tmp/oatpp-swagger/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/oatpp-swagger/build -j "$(nproc)"
           sudo cmake --install /tmp/oatpp-swagger/build
 
       - name: Consumer build
