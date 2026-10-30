@@ -69,6 +69,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Tags required — this job builds and installs toffy, and its version
+          # comes from git_describe. See the longer note in consumer-build.yml;
+          # on a self-hosted runner it is worse, because the checkout is reused
+          # between runs and a stale or shallow one keeps producing a version
+          # nobody can pin.
+          fetch-depth: 0
         # toffy is the workspace: build and install *this* commit, never a clone
         # of some other one (see the note in consumer-build.yml).
 

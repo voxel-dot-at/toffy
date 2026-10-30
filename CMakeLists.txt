@@ -51,7 +51,44 @@ include(CMakePackageConfigHelpers)
 
 # Make a version file containing the current version from git.
 include(GetGitRevisionDescription)
-git_describe(VERSION --tag --long)
+
+# An explicit version always wins: -DTOFFY_VERSION=2.1.0 is the supported way to
+# build from a tarball, a shallow checkout, or anywhere git_describe cannot work.
+if(TOFFY_VERSION)
+  # The parsers below expect describe's `v` prefix, so accept either spelling
+  # here rather than producing `2.0.0.2.0.0.2.0.02.0.0` from a well-meant
+  # -DTOFFY_VERSION=2.0.0. (Measured; that is what the unprefixed form used to
+  # yield — a footgun added by this very guard, and caught by testing it.)
+  if(TOFFY_VERSION MATCHES "^v[0-9]")
+    set(VERSION "${TOFFY_VERSION}")
+  else()
+    set(VERSION "v${TOFFY_VERSION}")
+  endif()
+else()
+  git_describe(VERSION --tag --long)
+endif()
+
+# A version that does not parse is not a cosmetic failure, and this tree used to
+# discover that the hard way: git_describe yields "-GIT-NOTFOUND"/"-128-NOTFOUND"
+# when there are no tags — which is exactly what a shallow `actions/checkout` gives
+# you — and every regex below then leaves the literal NOTFOUND string in place.
+# That string becomes the library VERSION and SOVERSION, and the installed
+# toffyConfigVersion.cmake, so `find_package(toffy 2.0)` from a consumer is
+# refused by a library that is 2.0.0 — with no error anywhere in the build that
+# produced it. This is the bug that made the CI consumer job report a consumer
+# breakage on 2026-10-30 when the staging job was the thing that was broken.
+# Fail loudly here instead; the two fixes are `fetch-depth: 0` on the checkout or
+# -DTOFFY_VERSION=<ver>.
+if(NOT VERSION MATCHES "^v[0-9]+\\.[0-9]+\\.[0-9]+")
+  message(WARNING
+    "toffy version is '${VERSION}' — not a vX.Y.Z tag description.\n"
+    "  git_describe found no reachable tag (a shallow clone, or a tree without "
+    "git history). The build will continue, but VERSION, SOVERSION and the "
+    "installed toffyConfigVersion.cmake will all carry this string, and a "
+    "consumer's find_package(toffy <version>) will reject this install.\n"
+    "  Fix the checkout (fetch tags / fetch-depth: 0) or configure with "
+    "-DTOFFY_VERSION=<X.Y.Z>.")
+endif()
 
 ##parse the version information into pieces.
 string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" PROJECT_VERSION_MAJOR "${VERSION}")

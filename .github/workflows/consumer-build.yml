@@ -65,6 +65,19 @@ jobs:
     runs-on: ubuntu-24.04  # pinned, not -latest — see the toolchain note in this file's header
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history with tags. This is the job whose install the consumers
+          # are pointed at, and toffy's version comes from `git_describe`
+          # (CMakeLists.txt:54): the default depth-1 checkout has no tags, so
+          # describe fails, and the staged tree configures as
+          # `version: -128-NOTFOUND` — which becomes the SONAME and the installed
+          # toffyConfigVersion.cmake. The consumer then fails
+          # `find_package(toffy 2.0)` with "not compatible" and the diagnosis
+          # points at the consumer, not at the staging. Measured: a depth-1 clone
+          # of this repository configures as `-128-NOTFOUND`; the CI cell on
+          # c3c819a failed exactly that way. CMakeLists now also warns, so this
+          # cannot degrade silently again.
+          fetch-depth: 0
 
       # CMake 4 removed FindBoost (CMP0167); see .github/actions/setup-cmake3.
       - uses: ./.github/actions/setup-cmake3
