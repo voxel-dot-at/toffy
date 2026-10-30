@@ -283,19 +283,28 @@ jobs:
           sudo cmake --install /tmp/oatpp-swagger/build
 
       - name: Consumer build
-        # The token is optional: toffy-oatpp is readable anonymously today. If
-        # it ever goes private, set CONSUMER_TOKEN (a fine-grained PAT with
-        # read-only access to that one repository) and this step wires it in.
+        # Anonymous HTTPS, always. The token is optional and only layers
+        # credentials onto that same URL: set CONSUMER_TOKEN (a fine-grained PAT
+        # with read-only access to that one repository) if toffy-oatpp ever goes
+        # private. What this step used to do was fall back to the **SSH** URL on
+        # the grounds that "toffy-oatpp is readable anonymously" — and that is
+        # true (measured 2026-10-30: the API reports `private: false`, and
+        # `git ls-remote https://github.com/voxel-dot-at/toffy-oatpp.git` works
+        # with no credentials at all). But SSH is not anonymous: a hosted runner
+        # has no key for someone else's repository, so both cells died with
+        # "Could not read from remote repository" and rc 2 — the third bug in
+        # this job, and the second time the same sentence ("readable
+        # anonymously", "1.4.0 is a tag") was load-bearing and untested. The
+        # only thing that worked correctly here is the script's rc 2: it refused
+        # to call "could not run" a pass.
         env:
           CONSUMER_TOKEN: ${{ secrets.CONSUMER_TOKEN }}
         run: |
           set -euxo pipefail
           if [ -n "${CONSUMER_TOKEN:-}" ]; then
             git config --global url."https://x-access-token:${CONSUMER_TOKEN}@github.com/".insteadOf "https://github.com/"
-            REPO="https://github.com/voxel-dot-at/toffy-oatpp.git"
-          else
-            REPO="git@github.com:voxel-dot-at/toffy-oatpp.git"
           fi
+          REPO="https://github.com/voxel-dot-at/toffy-oatpp.git"
           rc=0
           tools/consumer_build.sh \
             --toffy-prefix "$RUNNER_TEMP/stage" \

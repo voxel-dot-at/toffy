@@ -5,8 +5,13 @@
 #
 #   tools/consumer_build.sh \
 #     --toffy-prefix /path/to/toffy-install \
-#     --repo git@github.com:voxel-dot-at/toffy-oatpp.git \
-#     --ref  feature/toffy-upgrade \
+#     --repo https://github.com/voxel-dot-at/toffy-oatpp.git \
+#     --ref  main \
+#     # HTTPS, not SSH: the CI runner clones anonymously and has no key. This
+#     # example used the SSH URL and the workflow copied it, which is how both
+#     # cells died with rc 2 ("could not clone") on 2026-10-30 — the third bug in
+#     # that job. --repo is passed straight to git, so it must be a URL the
+#     # machine running this can actually read.
 #     --build-type Release \
 #     [--work /tmp/consumer] [--allowlist ci/consumer-expected-failures.txt] \
 #     [--link-surface ci/consumer-link-surface.txt] [--name toffy-oatpp]
