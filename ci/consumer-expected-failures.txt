@@ -71,11 +71,14 @@
 #
 # The consequence for this file is the reason it matters: with the entry gone the
 # cells build, and the link-surface check — which runs only on a *successful*
-# consumer build — executes on a runner for the first time. The baseline in
-# `consumer-link-surface.txt` was recorded against a BTA-on toffy, so a BTA-less
-# cell will report the two `BtaWrapper` / `capturers::Bta` references as removed.
-# Removals report, additions fail; if a future cell shows them as additions, a
-# consumer has reached for BTA again and that is exactly what the check is for.
+# consumer build — executes on a runner for the first time. Measured against both
+# stages before landing (tools/consumer_build.sh, toffy-oatpp@1c00dcc): BTA-on Debug
+# = **16 symbols, exactly this baseline**; BTA-off Release = **15**, the single
+# removal `toffy::FilterBank::getFiltersByType(…)` — the web layer's only caller of
+# that API was the BTA capturer lookup, so a BTA-less consumer binds to strictly
+# less of toffy. (`BtaWrapper`'s own symbols come from `libbta`, not `libtoffy`, so
+# they were never in this surface — the guess that they would be is precisely what
+# measuring instead of assuming is for.) Removals report, additions fail.
 #
 # And the wrinkle this entry carried settles with it: on any machine that has the
 # SDK, the stale-entry check reports the entry as stale, because there the build
