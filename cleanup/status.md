@@ -138,14 +138,29 @@ the bank's pipeline — see counter 31.
   3. a fresh clone configures and builds cleanly on cmake 3.28.3 with Boost 1.83, including from
      a shallow tagless clone — which is why nothing local ever saw any of this.
 
-  Fixed so far: the policy (correct regardless, and required for any CMake 4 build), a pinned
+  Fixed: the policy (correct regardless, and required for any CMake 4 build), a pinned
   CMake 3.31.6 floor in `.github/actions/setup-cmake3`, and — the part that actually paid for
   itself — failures now *report themselves*: workflow steps emit the CMake Error as annotations,
   because GitHub's default is the string "Process completed with exit code 1" behind a logged-in
-  browser, and that is how a red run becomes wallpaper for three and a half weeks. Still open:
-  the Boost component configs on the runner image, which is an environment decision (pin the
-  image, install a Boost that ships them, or stop using Boost's CMake package files) and not a
-  reason to leave the tree un-buildable on a modern toolchain.
+  browser, and that is how a red run becomes wallpaper for three and a half weeks.
+
+  **Closed 2026-10-28 by a decision (`7eab354`), not by fixing the image.** The open question
+  above — what to do about the Boost component configs the runner does not ship — dissolves with
+  its premise: **CMake 3 is the supported contract**, because toffy is built into deployment
+  toolchains that ship CMake 3 and nothing else, so a pipeline running on CMake 4 measures
+  something nobody deploys. `CMP0167` OLD plus `Boost_NO_BOOST_CMAKE` keeps the lookup on
+  FindBoost and out of the image's packaging (the policy alone was not enough — `NEW` opts a
+  CMake 3 build *into* CMake 4 behaviour, which is what needed the missing package files), and
+  `ubuntu-latest` became `ubuntu-24.04` in every build job, because an environment that moves
+  cannot be cited as evidence. A CMake 4 configure is unsupported and now says so in one
+  sentence rather than dying inside Boost.
+
+  Observed through the Actions API, which is the only way any of this is checkable without a
+  logged-in browser: **7/7 jobs green on `c6219b3` (run 40960528397, 2026-10-29) — the first
+  green CI since `7fea594` (v1.10.0) — and green on every push since, six runs through
+  `3ee1ebb` (2026-10-30)**. The two jobs that stayed red after the Boost chain died were queued
+  behind it, not caused by it: `docs` wanted `libeigen3-dev`, and `installed-headers` turned out
+  to be a real bug in the install tree, carried and fixed separately.
 - **CI builds a consumer against this tree** — counter 32, `consumer-build.yml`, added for the
   consumer upgrade (P0-2). Every job above compiles toffy against toffy's own headers from the
   source tree, which has never once caught a consumer breakage: the `FilterPtr` return, the
@@ -176,6 +191,25 @@ the bank's pipeline — see counter 31.
   runner — no bta SDK — so it is a nightly/dispatch workflow on a self-hosted runner that does
   not exist yet, `continue-on-error` until its failure signatures have been measured off a real
   build rather than transcribed from prose.
+- **First green consumer run: 2026-10-30, run 41114309292 on `3ee1ebb`** — `stage toffy (this
+  commit)`, `toffy-oatpp (main, Debug)`, `toffy-oatpp (main, Release)`: three jobs, all
+  `success`. Green here is the job's own rule, not "it compiled": the consumer failed with
+  exactly the errors on the allowlist and nothing else, which today is the one recorded coupling
+  (**P1-13** — `toffy-oatpp` cannot build against a toffy installed **without** BTA:
+  `toffy/bta/bta.hpp` reaches two of its translation units through an installed header, and
+  `modules/bta` is only added `if (HAS_BTA)`, which no hosted runner can satisfy). Between the
+  four reds above and this green came four more setup fixes — `889997c`, `c3c819a`, `52014a2` (a
+  depth-1 checkout has no tags, so the staged toffy had no version: the `-128-NOTFOUND` failure,
+  in CI, of all places — and toffy now warns when the version it derives does not parse) and
+  `67b0520`, so the job names what it catches. The consumer logic was wrong in none of them: rc 2
+  when it could not run, a real error when the staging was broken. That is the argument for
+  keeping the judgement in `tools/consumer_build.sh` rather than in YAML — it could be re-run
+  against a broken environment and still say which half was broken.
+  `boxes` stays the uncovered half, and that is now measured rather than assumed: its scheduled
+  runs queue and are eventually cancelled (observed 2026-10-31 — run 41190065045 `queued`, the
+  one before it `cancelled`). That is the separation working as designed: a job whose runner does
+  not exist is kept out of the per-push workflow precisely so a missing self-hosted machine
+  cannot hold open, or redden, the signal developers wait for.
 - **`A23` (no consistent error convention) blocks further correctness work** in config
   loading — see [`findings/correctness.md`](findings/correctness.md).
 - **PR 36 (`P2-5`) is an ABI break and `v2.0.0` is the tag that carries it** (see *Release*
