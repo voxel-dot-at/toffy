@@ -19,6 +19,25 @@ include("${CMAKE_CURRENT_LIST_DIR}/@targets_export_name@.cmake")
 set(@PROJECT_NAME@_DEFINITIONS @DEFINITIONS@)
 #add_definitions( ${@PROJECT_NAME@_DEFINITIONS} )
 
+#####################################################################################
+# Feature flags this library was built with.
+#####################################################################################
+# Always substituted, 0 or 1 — never left undefined. A package-config variable that
+# is absent reads as false to `if()` and as unknown to everything else, so a
+# consumer cannot tell "built without this feature" from "built before the flag
+# existed", and the silent form of that mistake is a web API that stops exposing
+# endpoints for hardware the build does have. See the bta block in CMakeLists.txt
+# and P1-13 in the consumer upgrade notes.
+set(@PROJECT_NAME@_WITH_BTA @TOFFY_WITH_BTA@)
+
+# The same answer in the form CMake's component machinery understands, so a
+# consumer that *needs* BTA can say so and fail at configure with CMake's own
+# message instead of at compile with "toffy/bta/bta.hpp: No such file or
+# directory":  find_package(toffy 2.0 REQUIRED COMPONENTS BTA)
+set(@PROJECT_NAME@_BTA_FOUND @TOFFY_WITH_BTA@)
+
+message(STATUS "Found @PROJECT_NAME@ ${@PROJECT_NAME@_VERSION}: BTA support ${@PROJECT_NAME@_WITH_BTA}")
+
 ################################################################################
 # Include directories to add to the user project:
 ################################################################################

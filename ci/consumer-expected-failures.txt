@@ -47,36 +47,41 @@
 # fix is a design decision, not a typo.
 
 # ---------------------------------------------------------------------------
-# toffy-oatpp @ main — the web layer binds directly to toffy's BTA sensor API,
-# so it cannot be built against a toffy installed without BTA. `modules/bta` is
-# added only `if (HAS_BTA)` (toffy/modules/CMakeLists.txt:9), so a BTA-less
-# install ships no `toffy/bta/*.hpp` at all, and three translation units of
-# toffy-oatpp include them: `src/globals.cpp:21`, and through
-# `webapi/controller/btaAdapterController.hpp` the TU
-# `src/webapi/controllers/btaAdapterController.cpp` plus `src/webapi/webApi.cpp`.
+# (entry deleted 2026-10-31) toffy-oatpp@main — 'fatal error: toffy/bta/bta.hpp:
+# No such file or directory'  [P1-13]
 #
-# This is not a regression and not a CI artefact: it has been true the whole
-# time, and invisible because every local build had the proprietary bta SDK
-# installed (measured 2026-10-30: a stage copy with `include/toffy/bta` removed
-# reproduces exactly this one error; the same stage with the headers passes).
-# GitHub-hosted runners cannot stage the SDK, so this is the honest ceiling of
-# what CI can say about toffy-oatpp until the coupling is gated.
+# What it was: the web layer bound directly to toffy's BTA sensor API, so it could
+# not be built against a toffy installed without BTA. `modules/bta` is added only
+# `if (HAS_BTA)` (modules/CMakeLists.txt), so a BTA-less install ships no
+# `toffy/bta/*.hpp`, and three translation units included them —
+# `src/globals.cpp`, and through `webapi/controller/btaAdapterController.hpp` the
+# controller TU and `src/webapi/webApi.cpp`. It had been true the whole time and
+# was invisible because every local build had the proprietary SDK; the consumer
+# job found it on a hosted runner, which cannot (measured 2026-10-30: a stage copy
+# with `include/toffy/bta` removed reproduces exactly this line).
 #
-# Deleted by: **P1-13** — gate the BTA endpoints behind a feature check in
-# toffy-oatpp (auto-detect `toffy/bta/bta.hpp`, exclude the controller TU and its
-# two registration sites — `globals.cpp:50-53`, `webApi.cpp:129-133` — when it is
-# absent), so the library builds against any toffy and the BTA endpoints appear
-# only when there is a BTA to talk to. That is a product decision (does an API
-# advertising a sensor it cannot reach belong in a BTA-less build?), which is why
-# it is an item and not a patch in a CI commit.
-toffy-oatpp@main|fatal error: toffy/bta/bta.hpp: No such file or directory
+# What deleted it, from this repository's side: `TOFFY_WITH_BTA`, exported by
+# toffyConfig.cmake and on the imported target, so the answer comes from the
+# package rather than from whatever the build machine happens to have installed.
+# toffy-oatpp `1c00dcc` selects the controller TU with it, exports the same answer
+# as `toffy_oatpp_WITH_BTA` / `COMPONENTS BTA`, and — the product decision this
+# entry was waiting on — makes the endpoints *absent* rather than 503-ing,
+# because `webApi.cpp` already refused to register the controller when there was
+# no bta filter in the bank.
+#
+# The consequence for this file is the reason it matters: with the entry gone the
+# cells build, and the link-surface check — which runs only on a *successful*
+# consumer build — executes on a runner for the first time. The baseline in
+# `consumer-link-surface.txt` was recorded against a BTA-on toffy, so a BTA-less
+# cell will report the two `BtaWrapper` / `capturers::Bta` references as removed.
+# Removals report, additions fail; if a future cell shows them as additions, a
+# consumer has reached for BTA again and that is exactly what the check is for.
+#
+# And the wrinkle this entry carried settles with it: on any machine that has the
+# SDK, the stale-entry check reports the entry as stale, because there the build
+# passes. That was the rule working, not a bug to route around — and now both
+# environments agree, which is what "deleted by P1-13" meant when it was written.
 
-# One honest wrinkle, because this entry is environment-conditional and the file's
-# rules are not: the stale-entry check asks "the build passed, why is this here?",
-# and against a toffy that HAS bta — any machine with the SDK installed, e.g. a
-# developer box — the build does pass, so the script reports this entry as stale
-# and exits 1. That is the rule working, not a bug to route around: on that machine
-# nothing is broken and the entry genuinely does not belong, and the CI cells (all
-# BTA-less, necessarily) are the environment the entry describes. Do not weaken the
-# check to accommodate the local case; do not delete the entry because a local run
-# says so. P1-13 deletes it, and the day it lands both environments agree.
+# Current state: no entries. A green cell with an empty allowlist is the state the
+# whole upgrade is for; the next red one is new breakage, and the fix belongs in
+# the consumer or in toffy — not in this file.

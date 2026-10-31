@@ -108,6 +108,13 @@ message (STATUS ${PROJECT_NAME}" version: " ${PROJECT_VERSION_FULL} )
 ################################################################################
 option (BUILD_STATIC "Build static version of the library" OFF)
 option (WITHOUT_PCL "Exclude pointclouds-based classes" OFF)
+# BTA was previously not a setting at all: `find_package(bta)` either found the
+# proprietary SDK in the prefix or it did not, and the build silently became a
+# different library. `WITHOUT_BTA` makes the off state *choosable*, which is what
+# a consumer needs in order to test against it — and what a packager needs in
+# order to ship a libtoffy that does not mention a camera protocol. The *result*
+# is exported either way as `toffy_WITH_BTA`; see the bta block below.
+option (WITHOUT_BTA "Exclude the BTA capturer and toffy/bta headers even if the bta SDK is found" OFF)
 option (WITH_PCL_CLOUDVIEW "Build pcl-based viewer" OFF)
 option (WITH_VISUALIZATION "Add viewer objects. Requires GUI" ON)
 option (BUILD_TESTS "Build test code." ON)
@@ -115,6 +122,7 @@ option (BUILD_TESTS "Build test code." ON)
 message (STATUS "${CMAKE_PROJECT_NAME} options: ")
 message (STATUS "\t BUILD_STATIC: " ${BUILD_STATIC})
 message (STATUS "\t WITHOUT_PCL: " ${WITHOUT_PCL})
+message (STATUS "\t WITHOUT_BTA: " ${WITHOUT_BTA})
 message (STATUS "\t WITH_VISUALIZATION: " ${WITH_VISUALIZATION})
 
 ################################################################################
@@ -435,23 +443,58 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #
 # bta library -- communication with Becom Systems cameras (Argos, Sentis, ...)
 #
-find_package( bta )
-if (bta_FOUND)
-    message(INFO " bta inc  ${bta_INCLUDE_DIRS}")
-    message(INFO " bta lib  ${bta_LIBRARIES}")
-    message(INFO " bta defs ${bta_DEFINITIONS}")
-    include_directories(${bta_INCLUDE_DIRS})
-    list(APPEND LIBS ${bta_LIBRARIES} )
-    set(HAS_BTA 1)
-    add_definitions(-DHAS_BTA=1)
-
-    if (PLAT_LINUX)
-        # for shm_*
-        list(APPEND LIBS -lrt)
-    endif()
+# TOFFY_WITH_BTA is the exported answer to "is BTA in this libtoffy", and it is
+# ALWAYS defined, 0 or 1. That is the whole design: a package-config variable that
+# is left undefined reads as false to `if()` and as unknown to everything else, so
+# a consumer cannot tell "built without BTA" from "so old it does not say", and the
+# silent version of that mistake is a web API that quietly stops exposing the
+# endpoints for hardware the build did have. `cmake/Config.cmake.in` substitutes it
+# unconditionally, exports it as `toffy_WITH_BTA` and as the component result
+# `toffy_BTA_FOUND` (so `find_package(toffy 2.0 REQUIRED COMPONENTS BTA)` fails at
+# configure with CMake's own message instead of at compile with "no such file"),
+# and puts `TOFFY_WITH_BTA=0|1` on the imported target's interface so an `#ifdef`
+# in a consumer reads the library it is linking, not the consumer's guess. That
+# last part is the `${toffy__DEFINITIONS}` lesson (P1-3) applied to a feature flag:
+# a definition that changes what a consumer compiles belongs to the package.
+#
+# It is not an ABI switch -- no installed header tests it (measured: `grep HAS_BTA`
+# over an install tree is empty; the only in-tree test is modules/core/src/
+# filterfactory.cpp) -- it is a *link-surface* switch: `toffy/bta/*.hpp` and the
+# `toffy::capturers::Bta` type exist only in a BTA-on build, which is exactly what
+# P1-13 is about.
+if (WITHOUT_BTA)
+    set(TOFFY_WITH_BTA 0)
+    message(STATUS "BTA support: OFF (WITHOUT_BTA=ON) -- toffy/bta/*.hpp will not be "
+                   "installed and no BTA symbols will be exported")
 else()
-    message(WARNING "no bta library!")
+    find_package( bta )
+    if (bta_FOUND)
+        message(INFO " bta inc  ${bta_INCLUDE_DIRS}")
+        message(INFO " bta lib  ${bta_LIBRARIES}")
+        message(INFO " bta defs ${bta_DEFINITIONS}")
+        include_directories(${bta_INCLUDE_DIRS})
+        list(APPEND LIBS ${bta_LIBRARIES} )
+        set(TOFFY_WITH_BTA 1)
+        add_definitions(-DHAS_BTA=1)
+        message(STATUS "BTA support: ON -- consumers may use toffy/bta/*.hpp and "
+                       "find_package(toffy COMPONENTS BTA)")
+
+        if (PLAT_LINUX)
+            # for shm_*
+            list(APPEND LIBS -lrt)
+        endif()
+    else()
+        set(TOFFY_WITH_BTA 0)
+        message(WARNING "BTA support: OFF -- the bta SDK was not found, so toffy/bta/*.hpp "
+                        "will not be installed and no BTA symbols will be exported. A "
+                        "consumer that needs them must be built against a BTA-on toffy; "
+                        "one that asks with COMPONENTS BTA fails at configure. "
+                        "Pass -DWITHOUT_BTA=ON to make this deliberate.")
+    endif()
 endif()
+# Internal name, kept in sync: `HAS_BTA` is what the sources and the module guard
+# test. Exported code and consumers use TOFFY_WITH_BTA.
+set(HAS_BTA ${TOFFY_WITH_BTA})
 
 # Warning flags come from the Unix branch of the compiler check above
 # (`add_compile_options(-pthread -g -ggdb -Wall -Wextra -Wno-long-long)`). The
@@ -521,6 +564,13 @@ add_library( ${PROJECT_NAME} SHARED
 target_link_libraries( ${PROJECT_NAME} PUBLIC    ${LIBS}  )
 set_property(TARGET ${PROJECT_NAME} PROPERTY VERSION ${PROJECT_VERSION})
 set_property(TARGET ${PROJECT_NAME} PROPERTY SOVERSION ${PROJECT_VERSION})
+
+# The feature flag a consumer compiles against, on the target's own interface, so
+# it travels into the exported `toffyTargets.cmake` and an `#ifdef TOFFY_WITH_BTA`
+# in a consumer describes the library it is linking rather than the build it
+# happens to be standing in. Always defined, 0 or 1, for the same reason the
+# package-config variable is: see the bta block above and P1-13.
+target_compile_definitions(${PROJECT_NAME} PUBLIC "TOFFY_WITH_BTA=${TOFFY_WITH_BTA}")
 install (TARGETS ${PROJECT_NAME} 
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib

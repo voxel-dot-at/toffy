@@ -191,6 +191,32 @@ the bank's pipeline — see counter 31.
   runner — no bta SDK — so it is a nightly/dispatch workflow on a self-hosted runner that does
   not exist yet, `continue-on-error` until its failure signatures have been measured off a real
   build rather than transcribed from prose.
+- **`TOFFY_WITH_BTA` — the feature flags a package config owes its consumers**
+  (2026-10-31, **P1-13**). BTA was not a setting at all: `find_package(bta)` found
+  the proprietary SDK or it did not, and the result was a *different library* —
+  different installed headers (`modules/bta` is `if (HAS_BTA)`), different exported
+  symbols — with no word about it in `toffyConfig.cmake`. Now `WITHOUT_BTA` makes
+  the off state choosable, and the answer is exported three ways: `toffy_WITH_BTA`
+  (always defined, 0 or 1 — an undefined flag cannot distinguish "built without it"
+  from "built before the flag existed"), the component result `toffy_BTA_FOUND`, so
+  `find_package(toffy 2.0 REQUIRED COMPONENTS BTA)` fails at configure with CMake's
+  own message instead of at compile with "no such file", and
+  `TOFFY_WITH_BTA=0|1` on the imported target's interface, so a consumer's `#ifdef`
+  reads the library it is linking rather than the machine it is standing on. Not an
+  ABI switch — no installed header tests it (measured: the only in-tree test is
+  `modules/core/src/filterfactory.cpp`) — a link-surface switch, which the package
+  now states. Measured both ways: `-DWITHOUT_BTA=ON` installs no
+  `include/toffy/bta`, exports `toffy_WITH_BTA 0` and
+  `INTERFACE_COMPILE_DEFINITIONS "TOFFY_WITH_BTA=0"`, and has zero BTA symbols in
+  `libtoffy.so`; the default configure reports `BTA support: ON`.
+  `toffy-oatpp` uses it to select the BTA adapter TU and its two registration
+  sites, and decided the endpoint question the entry was waiting on: **absent, not
+  503** — `webApi.cpp` already refused to register the controller with no bta
+  filter in the bank, so a 503 would advertise in swagger a camera the build can
+  never reach. That deleted the last entry in `ci/consumer-expected-failures.txt`,
+  and because the link surface is inspected only on a *successful* consumer build,
+  it is also what makes that check execute on a runner for the first time
+  (counter 32).
 - **First green consumer run: 2026-10-30, run 41114309292 on `3ee1ebb`** — `stage toffy (this
   commit)`, `toffy-oatpp (main, Debug)`, `toffy-oatpp (main, Release)`: three jobs, all
   `success`. Green here is the job's own rule, not "it compiled": the consumer failed with
