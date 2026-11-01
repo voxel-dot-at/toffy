@@ -350,12 +350,23 @@ jobs:
         # and reported, so the baseline only grows in a commit that says so.
         #
         # Verified capable of failing, and verified to be silent about the change that
-        # introduced it (both against the same commit): a BTA-off build reports 26
-        # removals and exits 1, while the full-version build and the major-only build
-        # of the same tree diff clean — the proof that this moved the label, not the
-        # ABI. Note what that second measurement also says: BTA-on and BTA-off always
-        # shared a SONAME, so the surface diff is the only check that tells those two
-        # libraries apart.
+        # introduced it (both against the same commit): the full-version build and the
+        # major-only build of the same tree diff clean — the proof that this moved the
+        # label, not the ABI — while a build missing symbols the baseline has reports
+        # them and exits 1.
+        #
+        # The baseline is blessed from a **BTA-off** build, because BTA-off is what this
+        # and every hosted runner builds. The first version was blessed from a BTA-on
+        # development build and failed here on its first run with 26 'removals' — every
+        # `toffy::capturers::Bta` symbol — on a commit that broke nothing. Same failure
+        # shape as the oatpp tag and the depth-1 checkout in this repository's own
+        # history: a check whose environment differs from the thing it claims to measure,
+        # and a red that teaches people to distrust red. If a BTA-on surface is ever
+        # wanted it needs its own baseline file and its own job.
+        #
+        # What the diff does *not* separate, and never could: BTA-on and BTA-off builds
+        # share a SONAME and always did, so nothing in the ELF header tells those two
+        # libraries apart. This check is the only thing that does.
         run: |
           set -euo pipefail
           tools/abi_surface.sh --build-dir build --baseline ci/abi-surface.txt
