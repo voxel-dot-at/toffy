@@ -329,9 +329,22 @@ gets a 2.0 tree instead of a 1.6 one, which is a better accident but the same ac
   `bc921ab`), so deleting it destroys the only copy of that commit; and **`1.8` and `1.9` are
   burned** — never reuse either number, so that anything cached from the `next` era keeps
   meaning exactly one thing.
-- `SOVERSION` is the **full** version, not the major alone, so *every* patch bump changes
-  the SONAME and forces a downstream relink. Version decisions here are never routine —
-  see [`dod/stage-gates.md`](dod/stage-gates.md) §2.4.
+- `SOVERSION` is the **major** (`libtoffy.so.2`), changed 2026-11-01. It used to be the full
+  version, so *every* patch bump changed the SONAME and forced a downstream relink — and that
+  forced relink was the thing that made a partial field deployment impossible rather than merely
+  unwise. Dropping it is a deliberate trade, measured before it was made: an ABI-compatible patch
+  can now be installed with no consumer rebuilt, and in exchange nothing at load time tells a
+  compatible patch from a changed return type (a consumer meets the new library, loads it, and
+  misbehaves with no diagnostic). So the rule moved from the loader to the release process: **a
+  change to a return type, a vtable, or the layout of a public type is a new major**;
+  `tools/abi_surface.sh` against `ci/abi-surface.txt` fails on the part of that which shows up as
+  an exported symbol, and `tools/api_change_report.sh` forces the decision for the part that does
+  not. Version decisions here look more routine now and are no less load-bearing — see
+  [`dod/stage-gates.md`](dod/stage-gates.md) §2.4.
+- `toffy_oatpp` deliberately **kept** the full-version SONAME (`libtoffy_oatpp.so.0.1.0`) in the
+  same change. At `0.x` the major is `0`, and `libtoffy_oatpp.so.0` is a package advertising no
+  ABI promise at all — weaker than what it has today, not stronger. It revisits this at its own
+  `1.0`.
 - **`v2.0.0` is cut at the `P2-5` commit (`47e4cd4`), and `P2-5` is why it is a major and not
   the next minor.** It is on `origin` as of 2026-10-27. A fresh configure from the tag reports
   `version: v2.0.0-0-g47e4cd4` and builds
@@ -359,6 +372,12 @@ gets a 2.0 tree instead of a 1.6 one, which is a better accident but the same ac
   3. `SOVERSION` is the full version (`CMakeLists.txt`, `set_property(... SOVERSION
      ${PROJECT_VERSION})`), so the SONAME moves on every release regardless. The major number
      is not what forces the relink here — it is what tells a downstream maintainer *why*.
+     *[Superseded for future bumps, 2026-11-01: `SOVERSION` is the major alone, so the SONAME
+     will not move on its own and this item's safety net is gone by design — see the
+     `SOVERSION` bullet in "Release / tag situation" above for what replaced it. Items 1 and 2
+     are untouched and are the part that actually decided `v2.0.0`: a return type that the
+     mangled name cannot see is still a major, and now it has to be caught by a human and two
+     scripts rather than by the loader.]*
   A minor bump (`1.12.0`) would keep the reading that `1.x` releases are compatible with each
   other, which after `P2-5` is false in a way a linker will not detect. `v1.7.0` — "breaking
   API change in FilterBank", the last time this class of thing moved — is the precedent for

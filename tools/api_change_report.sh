@@ -8,6 +8,13 @@
 # resolve symbols at load time while the SONAME still claims the old version.
 # This script makes that visible and forces the version decision.
 #
+# SOVERSION is the major alone (`libtoffy.so.2`), so the decision this script
+# forces is heavier than it looks: within one major every consumer accepts every
+# build, and nothing at load time distinguishes a compatible patch from a
+# changed return type. tools/abi_surface.sh diffs the exported symbol table for
+# the part of that which shows up as a symbol; this script covers the part that
+# does not, by reading the headers.
+#
 # Usage: tools/api_change_report.sh [BASE_REF]
 #        BASE_REF defaults to the most recent tag reachable from HEAD.
 #
@@ -74,7 +81,13 @@ A public header changed. Before this ships:
   2. Bump the version tag. Because the version comes from `git describe`, an
      untagged API change keeps the previous SOVERSION and breaks downstream
      binaries silently at load time.
-  3. Add a deprecated alias, or state that this is a breaking release.
+  3. Be exact about the answer to (1). SOVERSION is the major alone, so a change
+     to a return type, a vtable or the layout of a public type is a NEW MAJOR -
+     not a minor, not a patch. The SONAME will not move to warn anyone, and a
+     consumer linked against this major will load the new library and misbehave
+     somewhere far from here. tools/abi_surface.sh catches what shows up in the
+     symbol table; a return type does not, which is why this check reads headers.
+  4. Add a deprecated alias, or state that this is a breaking release.
 See DOD.md 2.4.
 EOF
 exit 1

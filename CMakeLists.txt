@@ -563,7 +563,34 @@ add_library( ${PROJECT_NAME} SHARED
 
 target_link_libraries( ${PROJECT_NAME} PUBLIC    ${LIBS}  )
 set_property(TARGET ${PROJECT_NAME} PROPERTY VERSION ${PROJECT_VERSION})
-set_property(TARGET ${PROJECT_NAME} PROPERTY SOVERSION ${PROJECT_VERSION})
+#
+# SOVERSION is the **major** (`libtoffy.so.2`), not the full version. It used to be
+# `${PROJECT_VERSION}`, so the SONAME moved on every patch and a `2.0.1` could not
+# be dropped into a deployment without relinking `libtoffy_oatpp`, `boxes` and
+# every other consumer — which is where the "one clean rebuild of the whole chain,
+# never a partial field deployment" rule came from. Major-only makes an
+# ABI-compatible patch drop work with no relink at all.
+#
+# What that gives up is specific and worth stating, because the loader is the one
+# check that was doing it: with the full version in the SONAME, a consumer meets a
+# library it was not linked against and **refuses to load**. Measured on this
+# toolchain — a consumer needing `libdemo.so.1.0.0`, presented with `1.0.1`, dies
+# at exec with "error while loading shared libraries"; the same pair under a
+# major-only SONAME loads, and when the change was a return type (toffy's `P2-5`,
+# `createFilter` returning `FilterPtr` by value) the mangled name is byte-identical
+# across the break, so it loads, calls with every argument one register off, and
+# returns garbage with no diagnostic of any kind.
+#
+# So the SONAME no longer enforces the rule; the release process has to. The rule
+# is: any change to a return type, a vtable, or the layout of a public type is a
+# new major. `tools/abi_surface.sh` makes the mechanical part of that visible —
+# it diffs the exported symbol table against `ci/abi-surface.txt` and fails on
+# removals and signature changes, which is how `v1.10.0` (deleting `toffy::Event`
+# and the virtual `Filter::processEvent`, one vtable slot shorter) would have been
+# caught rather than remembered. `tools/api_change_report.sh` covers the part no
+# symbol table can see: a changed installed header is a version decision, and the
+# decision this property used to make for you.
+set_property(TARGET ${PROJECT_NAME} PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
 
 # The feature flag a consumer compiles against, on the target's own interface, so
 # it travels into the exported `toffyTargets.cmake` and an `#ifdef TOFFY_WITH_BTA`

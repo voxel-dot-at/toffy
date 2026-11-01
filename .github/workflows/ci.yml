@@ -340,6 +340,26 @@ jobs:
         # that can be staged. The headers themselves are generated at configure time.
         run: cmake --build build -j "$(nproc)" --target toffy
 
+      - name: ABI surface against the recorded baseline
+        # SOVERSION is the major alone, so `libtoffy.so.2` loads into every consumer
+        # built against any 2.x. While the SONAME carried the full version the loader
+        # refused a library it had not been linked against, and that refusal is what
+        # used to make an ABI break impossible to ship by accident; the check below is
+        # what replaces it. A removed or re-signatured export fails here and names the
+        # rule (new major) instead of leaving it to the field. Additions are allowed
+        # and reported, so the baseline only grows in a commit that says so.
+        #
+        # Verified capable of failing, and verified to be silent about the change that
+        # introduced it (both against the same commit): a BTA-off build reports 26
+        # removals and exits 1, while the full-version build and the major-only build
+        # of the same tree diff clean — the proof that this moved the label, not the
+        # ABI. Note what that second measurement also says: BTA-on and BTA-off always
+        # shared a SONAME, so the surface diff is the only check that tells those two
+        # libraries apart.
+        run: |
+          set -euo pipefail
+          tools/abi_surface.sh --build-dir build --baseline ci/abi-surface.txt
+
       - name: Stage the install tree
         run: |
           set -euxo pipefail

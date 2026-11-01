@@ -85,13 +85,26 @@ races, so `P2-7`'s TSan requirement stands on its own.
      inline/template symbols appear and vanish with the inliner and will bury the real diff;
   2. any change to a **return type** is an ABI change even when `readelf` says it is not, and
      is therefore a major-version change. That is what makes `v2.0.0` a major.
-- **A new version tag is pushed.** This is not ceremony: the library version *and*
-  `SOVERSION` are derived from `git_describe` (`CMakeLists.txt:31`, parsed at `:35-39`;
-  `SOVERSION` set at `:388`). An
-  API change with no new tag therefore ships under the previous `SOVERSION`, so the
-  SONAME keeps advertising the old release while the exported mangled symbols have
-  already changed — downstream binaries then fail at load time against a library that
-  claims to be the version they linked.
+- **A new version tag is pushed.** This is not ceremony: the library version is
+  derived from `git_describe` (`CMakeLists.txt`, the version block; `SOVERSION` comes
+  from it via `set_property(TARGET toffy PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})`,
+  cited by name rather than by line number because this file has been caught citing
+  line numbers that moved). An API change with no new tag therefore ships under the
+  previous version — and since `SOVERSION` is the major alone, what happens next
+  depends on which kind of break it is. Across a major the SONAME moves and old
+  binaries refuse to load, which is the loud case. **Within** a major they load,
+  and that is the quiet one: `libtoffy.so.2` is accepted by everything built
+  against any 2.x, so an untagged ABI change is not refused by anything at all.
+  Before 2026-11-01 the full-version SONAME refused it; that net is gone by design
+  (see the `SOVERSION` bullet in `cleanup/status.md`), and these two checks are what
+  replaced it:
+  - `tools/abi_surface.sh --build-dir <build>` diffs the exported strong symbols
+    against `ci/abi-surface.txt` and fails on removals and signature changes — the
+    `v1.10.0` class below. It runs in CI (`installed-headers` job) and re-blessing
+    the baseline *is* the version decision, so it belongs in a commit naming a major.
+  - `tools/api_change_report.sh` fails on any changed installed header, which is the
+    only handle on the class a symbol table cannot see: return types, vtable
+    contents, struct layout.
 
   Two worked examples, both real:
   - **`v1.7.0`** — exists only to mark the `findPos()` / `remove()` signature change.
@@ -118,9 +131,14 @@ races, so `P2-7`'s TSan requirement stands on its own.
   fix is the next number. `v1.10.0` staying at `7fea594` instead of its branch tip is the
   worked example.
 
-  Also worth knowing before the next bump: `SOVERSION` is set to the **full** version, not
-  the major alone, so every patch bump changes the SONAME and forces a downstream relink.
-  That is why version decisions here cannot be routine.
+  Also worth knowing before the next bump: `SOVERSION` is the **major** alone
+  (`libtoffy.so.2`), so a patch or minor release does *not* change the SONAME and a
+  consumer will load it without being rebuilt. That is the point — an ABI-compatible
+  `2.0.1` reaches a cabinet without relinking `libtoffy_oatpp`, `boxes` and the rest,
+  which the old scheme made impossible — and it is why the version number, not the
+  loader, now carries the promise. A patch bump is a claim that the ABI is unchanged
+  within the major; make it knowing that, and let `tools/abi_surface.sh` and
+  `tools/api_change_report.sh` be read before the tag, not after the incident.
 - Run `tools/api_change_report.sh [BASE]` and put its output in the PR description. It
   exits 1 when any installed header under `*/include/` changed, 2 if the base ref is
   invalid (it fails closed on purpose), and 0 otherwise. The declaration listing is

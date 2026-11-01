@@ -96,6 +96,11 @@ Three gotchas, all encountered for real:
   build directory keeps producing the old SONAME after a new tag — running this in a
   `build/` configured before `v1.10.0` prints `libtoffy.so.1.7.1` and looks like the tag
   failed. Re-run `cmake -S . -B build` (or use a clean directory) first.
+- **Since `SOVERSION` is the major alone, the SONAME is no longer a version check.**
+  `libtoffy.so.2` says nothing about whether the build is `2.0.0` or `2.0.3`; read the
+  file name (`libtoffy.so.2.0.3`, from `VERSION`) or the package config for that, and
+  use `tools/abi_surface.sh` for the question the SONAME used to answer by accident —
+  "is this the library my consumer was linked against?".
 - **`api_change_report.sh` compares against the most recent tag**, so once the tag for the
   current work exists it correctly returns 0. It is a *pre*-tag gate: run it before
   tagging, not after, or it will tell you nothing.
