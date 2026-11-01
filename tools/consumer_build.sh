@@ -14,7 +14,14 @@
 #     # machine running this can actually read.
 #     --build-type Release \
 #     [--work /tmp/consumer] [--allowlist ci/consumer-expected-failures.txt] \
-#     [--link-surface ci/consumer-link-surface.txt] [--name toffy-oatpp]
+#     [--link-surface ci/consumer-link-surface.txt] [--name toffy-oatpp] \
+#     [--link-target <glob>] ...   # artifact(s) the link surface is read from.
+#       Default 'lib*.so*', which is right for a library and wrong for an
+#       application: becom-knapp-wurthbox builds `boxes` and
+#       `compute_single_box` and no toffy-facing shared library at all, so the
+#       default finds only libboxes-lic.so — 0 toffy symbols, a vacuous PASS.
+#       Name the executables for an app: --link-target boxes --link-target
+#       compute_single_box.
 #
 # Why this exists (P0-2). Every error recorded in the consumer upgrade notes was
 # introduced by a toffy commit and sat undetected because no job anywhere
@@ -53,12 +60,13 @@ set -uo pipefail
 # ---------------------------------------------------------------- invocation --
 
 usage() {
-  sed -n '3,30p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '3,36p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 }
 
 TOFFY_PREFIX="" CONSUMER_REPO="" CONSUMER_REF="" BUILD_TYPE="Release"
 WORK="" ALLOWLIST="" LINKSURF="" NAME="" KEEP=0
+LINK_TARGETS=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -70,6 +78,7 @@ while [ $# -gt 0 ]; do
     --allowlist)    ALLOWLIST="${2:-}"; shift 2 ;;
     --link-surface) LINKSURF="${2:-}"; shift 2 ;;
     --name)         NAME="${2:-}"; shift 2 ;;
+    --link-target)  LINK_TARGETS+=("${2:-}"); shift 2 ;;
     --keep)         KEEP=1; shift ;;
     -h|--help)      usage ;;
     *) echo "consumer_build.sh: unknown argument '$1'" >&2; usage ;;
@@ -95,6 +104,10 @@ command -v git   >/dev/null || { echo "consumer_build.sh: git not found" >&2; ex
   echo "consumer_build.sh: '$TOFFY_PREFIX' has no lib/cmake/toffy — that is not an" >&2
   echo "  installed toffy. Install one first: cmake --install build --prefix <prefix>." >&2
   exit 2; }
+
+# Default: the consumer's own shared library. See the --link-target note at the
+# top — an application has to say what to look at instead.
+[ ${#LINK_TARGETS[@]} -gt 0 ] || LINK_TARGETS=('lib*.so*')
 
 NAME="${NAME:-$(basename "$CONSUMER_REPO" .git)}"
 LABEL="${NAME}@${CONSUMER_REF}"
@@ -145,9 +158,20 @@ if ! git clone --quiet --no-checkout "$CONSUMER_REPO" "$SRC" 2>"$WORK/clone.log"
   flush_summary
   exit 2
 fi
-# Fetch the one ref we were asked for. A branch that has been deleted since the
-# last green run must fail here, loudly, and not silently build main instead.
-if ! git -C "$SRC" fetch --quiet --depth 1 origin "$CONSUMER_REF" 2>>"$WORK/clone.log"; then
+# Fetch the ref we were asked for. A branch that has been deleted since the last
+# green run must fail here, loudly, and not silently build main instead.
+#
+# No `--depth 1`, and the previous version of this line had one. The clone above
+# is a full clone, so the depth bought nothing; what it did was move the shallow
+# boundary in front of the consumer's own tags, so `git describe --tags` inside
+# the consumer's CMake found nothing and the build produced
+# `libtoffy_oatpp.so.-128-NOTFOUND.-128-NOTFOUND.-128-NOTFOUND` while the cell
+# reported PASS. Measured: after the clone, `git describe --tags` says
+# `v0.1.0-3-g6f44c36`; after the depth-1 fetch it says "No tags can describe".
+# This is the bug consumer-build.yml documents at length for toffy's own
+# checkout — it was only ever fixed on the toffy side of the job, and the
+# consumer side of the same job kept it.
+if ! git -C "$SRC" fetch --quiet origin "$CONSUMER_REF" 2>>"$WORK/clone.log"; then
   note "- **ref \`$CONSUMER_REF\` does not exist on the consumer's origin** — this is not"
   note "  a toffy breakage, it is the gate being pointed at nothing. Fix the ref."
   sed 's/^/    /' "$WORK/clone.log"
@@ -157,6 +181,23 @@ fi
 git -C "$SRC" checkout --quiet FETCH_HEAD || { echo "checkout failed" >&2; exit 2; }
 CONSUMER_SHA="$(git -C "$SRC" rev-parse --short FETCH_HEAD)"
 note "- consumer commit: \`$CONSUMER_SHA\`"
+# Reported, not gated: a version that did not parse is the consumer's business
+# (or this script's, which is why the depth-1 fetch above is gone). It is said
+# out loud because the alternative is a green cell whose artifact is named
+# `.so.-128-NOTFOUND…` — and the upgrade notes' one-line sanity check for a bad
+# install is a grep for exactly that string. The link surface is unaffected;
+# what is not being tested is the consumer's version machinery, and a real
+# install of an unversioned tree is refused by find_package at any version.
+CONSUMER_DESCRIBE="$(git -C "$SRC" describe --tags 2>/dev/null || true)"
+if [ -z "$CONSUMER_DESCRIBE" ]; then
+  note "- **no tag describes \`$CONSUMER_SHA\`** — the consumer's \`git_describe\` will "
+  note "  produce a NOTFOUND version, so its library name, SONAME and package config "
+  note "  version are all junk. The link surface below is still a valid measurement; "
+  note "  the version gate is not being exercised. Either the repository has no tags, "
+  note "  or this checkout does not have them."
+else
+  note "- consumer version: \`$CONSUMER_DESCRIBE\`"
+fi
 
 # ------------------------------------------------------------- configure+build --
 
@@ -252,27 +293,53 @@ fi
 # Additions are new coupling; removals are not reported as a problem.
 LINK_NOTE=""
 if [ "$STATUS" = "ok" ]; then
-  CONSUMER_LIB=$(find "$BUILD" -maxdepth 3 -name 'lib*.so*' -type f -o -maxdepth 3 -name 'lib*.so*' -type l \
-                 2>/dev/null | grep -v '\.so\.[0-9]*\.[0-9]*\.[0-9]*$' | head -1)
-  if [ -z "$CONSUMER_LIB" ]; then
-    CONSUMER_LIB=$(find "$BUILD" -name 'lib*.so*' 2>/dev/null | head -1)
-  fi
-  if [ -z "$CONSUMER_LIB" ]; then
-    note "- build reported success but produced **no shared library** — the link surface"
-    note "  could not be checked, so this run does not prove what the gate claims."
-    flush_summary
-    exit 2
-  fi
+  # Artifacts to read. Every --link-target is searched and every match is
+  # inspected: a consumer that ships two executables binds to toffy twice, and
+  # reading only the first would report a surface that is a subset of the truth.
+  ARTIFACTS=""
+  for pat in "${LINK_TARGETS[@]}"; do
+    hit=$(find "$BUILD" -maxdepth 3 \( -type f -o -type l \) -name "$pat" 2>/dev/null \
+            | grep -v '\.so\.[0-9]*\.[0-9]*\.[0-9]*$' | sort)
+    [ -n "$hit" ] || hit=$(find "$BUILD" \( -type f -o -type l \) -name "$pat" 2>/dev/null | sort)
+    if [ -z "$hit" ]; then
+      note "- link surface: no artifact matching \`$pat\` under \`$BUILD\` — the surface"
+      note "  could not be read, so this run does not prove what the gate claims."
+      flush_summary
+      exit 2
+    fi
+    ARTIFACTS="${ARTIFACTS}${hit}
+"
+  done
+  ARTIFACTS=$(printf '%s\n' "$ARTIFACTS" | grep . | sort -u)
+  ARTIFACT_NAMES=$(printf '%s\n' "$ARTIFACTS" | while read -r f; do basename "$f"; done \
+                    | sort -u | paste -sd, -)
+
   # link_normalise: demangled names carry the standard library's own ABI tags
   # (libstdc++ spells std::string as std::__cxx11::string). Those are not
   # coupling and not toffy's, and leaving them in means a compiler upgrade
   # reports all 16 symbols as new — which is how a check like this gets muted.
   link_normalise() { sed -e 's/std::__cxx11::/std::/g'; }
-  CURRENT=$(nm -D --undefined-only "$CONSUMER_LIB" 2>/dev/null \
+  CURRENT=$(while read -r f; do nm -D --undefined-only "$f" 2>/dev/null; done <<< "$ARTIFACTS" \
               | awk '$1=="U"{print $2}' | c++filt 2>/dev/null | grep -E 'toffy::' \
               | link_normalise | sort -u)
   CURRENT_COUNT=$(printf '%s\n' "$CURRENT" | grep -c . || true)
-  note "- link surface: \`$(basename "$CONSUMER_LIB")\` — **${CURRENT_COUNT}** toffy symbols"
+  note "- link surface: \`${ARTIFACT_NAMES}\` — **${CURRENT_COUNT}** toffy symbols"
+  # A surface of zero is not a result, it is the absence of one. This is the
+  # shape the gate took on 2026-11-01 for boxes: the default target matched
+  # libboxes-lic.so — the licence checker, which has no business calling toffy —
+  # and the cell reported PASS with 0 symbols measured, against a baseline that
+  # had no `boxes` lines either, so the diff was empty in both directions.
+  # Zero means "looked in the wrong place", and rc 2 is what this script says
+  # about a check that did not run: a gate that passes vacuously is worse than
+  # no gate, because it gets cited as evidence.
+  if [ "$CURRENT_COUNT" -eq 0 ]; then
+    note "- **the artifacts inspected reference no toffy symbol at all.** Either this"
+    note "  consumer does not link toffy — in which case it is not a consumer cell — or"
+    note "  \`--link-target\` names the wrong artifact. For an application, name its"
+    note "  executables (\`--link-target boxes --link-target compute_single_box\`)."
+    flush_summary
+    exit 2
+  fi
   if [ -n "$LINKSURF" ] && [ -f "$LINKSURF" ]; then
     BASELINE=$(grep -E "^${NAME}([[:space:]]|@)" "$LINKSURF" 2>/dev/null \
                  | sed -E "s/^${NAME}([[:space:]]|@[^[:space:]]*)?[[:space:]]+//" \

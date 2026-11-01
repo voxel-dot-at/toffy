@@ -14,25 +14,33 @@ name: Consumer build — boxes (self-hosted)
 # it out of the per-push workflow means a missing self-hosted runner can never
 # block or redden the signal that developers actually wait for.
 #
-# STATUS: informational (`continue-on-error: true`). That is not laziness, it is
-# the honest state of the measurement. The expected-failure list for boxes is
-# empty because nobody has run this on a machine with the SDK yet, and the
-# errors it will produce — `webApiInit()` vs `webApiStart()`, the
-# `addSwaggerServerUrl()` call that has never existed in toffy-oatpp, the
-# `find_package(toffy 1.6)` gate, the `WBox` ownership change — are recorded in
-# the upgrade notes as *prose*, not as signatures. Writing them into
-# ci/consumer-expected-failures.txt from prose would put unmeasured strings into
-# a file whose entire authority is that every line in it came off a build.
+# STATUS: informational (`continue-on-error: true`) — for one reason only, and it
+# is not the build. The steps below have now been executed, on a machine that has
+# the bta SDK, protobuf dev headers and oatpp (2026-11-01): `boxes` at
+# `feature/toffy-upgrade` configures, builds and links against a staged toffy
+# 2.0, and its 24-symbol link surface is recorded in
+# ci/consumer-link-surface.txt. What is still missing is a *runner registered
+# with this repository*, which is the only reason the job cannot gate yet: a job
+# that has never been scheduled on the machine it names has not been observed,
+# and this repository does not call unobserved green.
 #
-# First run on a real runner, in this order:
-#   1. run it as-is; the job prints every error in the exact normalised form the
-#      allowlist wants;
-#   2. paste the ones that are the known Phase 2 / pre-existing drift into
-#      ci/consumer-expected-failures.txt as `becom-knapp-wurthbox@<ref>|…`, each
-#      with a line saying which change deletes it;
-#   3. anything left over is new — fix it or file it before continuing;
-#   4. flip `continue-on-error` below to false. Until then this job reports and
-#      does not gate, and that is stated in the job, not buried in a YAML diff.
+# Two findings from running it, both fixed here rather than noted:
+#
+#   * the default link-surface target is `lib*.so*`, and `boxes` ships no shared
+#     library. The script picked up `libboxes-lic.so` — the licence checker —
+#     measured **0 toffy symbols**, diffed that against a baseline with no
+#     `boxes` lines, and returned PASS. The cell was therefore green from the day
+#     it was written and had never measured anything. It now names its two
+#     executables (`--link-target` below), and the script refuses to pass a
+#     surface of zero (rc 2, "the check did not run").
+#   * `master` is still in the matrix on purpose: it is the line that ships, and
+#     it does not build against toffy 2.0. Its failure is now a measured
+#     signature in ci/consumer-expected-failures.txt rather than prose in the
+#     upgrade notes, which is what an allowlist entry is for. It goes away when
+#     the upgrade branch lands, and the cell going red is what will notice.
+#
+# If the runner is ever registered and this job runs: keep `continue-on-error`
+# until the first observed run, then flip it to false in a commit that says so.
 
 on:
   workflow_dispatch:
@@ -121,13 +129,20 @@ jobs:
         continue-on-error: true
         run: |
           set -uo pipefail
+          # --link-target twice, and deliberately: `boxes` is an application, so
+          # the default `lib*.so*` finds only libboxes-lic.so and the link-surface
+          # check measures nothing. Both executables are named because both bind
+          # to toffy — compute_single_box adds `FilterBank::add(FilterPtr)` and
+          # `Filter::setLogLevel` on top of what `boxes` itself uses, and reading
+          # only one of them would record a surface that is a subset of the truth.
           tools/consumer_build.sh \
             --toffy-prefix "$RUNNER_TEMP/toffy-stage" \
             --repo git@repo.voxel.at:becom-knapp-wurthbox \
             --ref "${{ matrix.ref }}" \
             --build-type "${{ matrix.build_type }}" \
             --allowlist ci/consumer-expected-failures.txt \
-            --link-surface ci/consumer-link-surface.txt
+            --link-surface ci/consumer-link-surface.txt \
+            --link-target boxes --link-target compute_single_box
 
       - name: Upload logs
         if: always()

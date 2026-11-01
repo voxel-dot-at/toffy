@@ -42,3 +42,57 @@ toffy-oatpp toffy::Frame::getData(std::basic_string<char, std::char_traits<char>
 toffy-oatpp toffy::Frame::hasKey(std::basic_string<char, std::char_traits<char>, std::allocator<char> >) const
 toffy-oatpp toffy::Frame::info(std::vector<toffy::Frame::SlotInfo, std::allocator<toffy::Frame::SlotInfo> >&) const
 toffy-oatpp typeinfo for toffy::Filter
+
+# Baseline: boxes @ feature/toffy-upgrade (f3def07) against toffy
+# v2.0.0-29-g862db19 + toffy_oatpp v0.1.0-3, Release, gcc 13 / aarch64-linux-gnu,
+# 2026-11-01. Measured on a machine with the bta SDK, protobuf dev and oatpp —
+# i.e. the runner the boxes cell has been waiting for, which is why this baseline
+# exists and the paragraph above did not need to be written first.
+#
+# `boxes` is an application: it ships two executables and no shared object, so
+# the surface is the union of both and the cell has to say so —
+#   --link-target boxes --link-target compute_single_box
+# With the default target the script found `libboxes-lic.so`, the licence
+# checker, reported **0 toffy symbols**, diffed that against a baseline with no
+# `boxes` lines in it, and returned PASS. That is not a green gate, it is a gate
+# that never ran while claiming to; the zero-surface guard added alongside this
+# baseline turns exactly that shape into rc 2.
+#
+# 22 of the 24 are `boxes` itself — the number the upgrade notes carry, and it
+# reproduces. The other two, FilterBank::add(FilterPtr) and
+# Filter::setLogLevel, come only from compute_single_box, the offline tool that
+# builds a filter bank by hand; `add` is the one line here a v1.11 binary cannot
+# resolve, for the reason recorded in the Phase 2 notes.
+#
+# One line is not a toffy symbol: toffy_oatpp::setupGlobalState matches the
+# `toffy::` filter through its `toffy::Player*` argument. It stays, because the
+# filter is the tool's definition of the surface and a baseline that does not
+# reproduce the tool is not a baseline — it is a wish.
+#
+# The label is `becom-knapp-wurthbox`, not `boxes`: it is the repository basename,
+# which is what tools/consumer_build.sh derives the consumer name from when no
+# `--name` is passed. Same rule as the allowlist's `consumer@ref` globs.
+becom-knapp-wurthbox toffy::detection::DetectedObject::DetectedObject()
+becom-knapp-wurthbox toffy::FilterBank::add(std::shared_ptr<toffy::Filter>)
+becom-knapp-wurthbox toffy::FilterBank::countFiltersByType(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+becom-knapp-wurthbox toffy::FilterBank::getFiltersByType(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<toffy::Filter*, std::allocator<toffy::Filter*> >&)
+becom-knapp-wurthbox toffy::FilterFactory::getInstance()
+becom-knapp-wurthbox toffy::FilterFactory::registerCreator(std::basic_string<char, std::char_traits<char>, std::allocator<char> >, toffy::Filter* (*)())
+becom-knapp-wurthbox toffy::Filter::~Filter()
+becom-knapp-wurthbox toffy::Filter::Filter(std::basic_string<char, std::char_traits<char>, std::allocator<char> >, unsigned long)
+becom-knapp-wurthbox toffy::Filter::getConfig[abi:cxx11]() const
+becom-knapp-wurthbox toffy::Filter::loadConfig(boost::property_tree::basic_ptree<std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)
+becom-knapp-wurthbox toffy::Filter::loadFileConfig(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+becom-knapp-wurthbox toffy::Filter::setLogLevel(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+becom-knapp-wurthbox toffy::Filter::setState(toffy::filterState)
+becom-knapp-wurthbox toffy::Filter::updateConfig(boost::property_tree::basic_ptree<std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)
+becom-knapp-wurthbox toffy::Frame::addData(std::basic_string<char, std::char_traits<char>, std::allocator<char> >, boost::any, toffy::Frame::SlotDataType)
+becom-knapp-wurthbox toffy::Frame::~Frame()
+becom-knapp-wurthbox toffy::Frame::Frame()
+becom-knapp-wurthbox toffy::Frame::getData(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const
+becom-knapp-wurthbox toffy::Frame::hasKey(std::basic_string<char, std::char_traits<char>, std::allocator<char> >) const
+becom-knapp-wurthbox toffy_oatpp::setupGlobalState(toffy_oatpp::WebApiState&, bool, toffy::Player*)
+becom-knapp-wurthbox toffy::Player::loadConfig(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
+becom-knapp-wurthbox toffy::Player::Player(boost::log::v2_mt_posix::trivial::severity_level, bool)
+becom-knapp-wurthbox toffy::Player::runOnce()
+becom-knapp-wurthbox typeinfo for toffy::Filter

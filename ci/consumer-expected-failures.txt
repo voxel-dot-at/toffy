@@ -85,6 +85,34 @@
 # passes. That was the rule working, not a bug to route around — and now both
 # environments agree, which is what "deleted by P1-13" meant when it was written.
 
-# Current state: no entries. A green cell with an empty allowlist is the state the
+# ---------------------------------------------------------------------------
+# becom-knapp-wurthbox@master — 'Could not find a configuration file for package
+# "toffy" that is compatible'  [P2-1]
+#
+# Measured 2026-11-01 by running tools/consumer_build.sh on a machine that has
+# the bta SDK, protobuf dev headers and oatpp — the environment the boxes cell
+# has been queueing for since P0-2. `master` is the line boxes ships from, and it
+# still asks `find_package(toffy 1.6 REQUIRED)`; SameMajorVersion refuses a 2.0
+# install, which is the gate doing its job.
+#
+# One line, and it is the whole report: a configure failure masks every compile
+# error behind it, so the three that are waiting underneath — the dead
+# `boost::thread` declaration in gpioListener, the stack `WBox` handed to
+# `FilterBank::add` in compute_single_box, and the `webApiInit()` /
+# `addSwaggerServerUrl()` calls that have never existed in toffy-oatpp — are not
+# visible from here at all. Same shape as the deleted toffy-oatpp entry above:
+# the allowlist is complete about the layer it is standing in and silent about
+# the next one. All three are fixed on `feature/toffy-upgrade`, which this same
+# job runs green with a 24-symbol link surface on record.
+#
+# Deleting condition: master carries the upgrade branch. If boxes ships from a
+# branch that has it while master does not, move the matrix entry in
+# consumer-build-boxes.yml rather than extending this one — an allowlist entry
+# that outlives the branch it describes is how a known-broken ref becomes a
+# permanent exception.
+becom-knapp-wurthbox@master|Could not find a configuration file for package "toffy" that is compatible
+
+# Current state: one entry, and it is the un-upgraded `master` line of the last
+# consumer in the chain. A green cell with an empty allowlist is the state the
 # whole upgrade is for; the next red one is new breakage, and the fix belongs in
 # the consumer or in toffy — not in this file.
