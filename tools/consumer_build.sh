@@ -244,16 +244,31 @@ normalise() {
 }
 
 error_lines() {
-  # CMake's configure errors and the compiler's errors, in one stream.
-  cat "$CFG_LOG" "$BUILD_LOG" 2>/dev/null \
-    | grep -E '(^|[[:space:]])error:' \
-    | normalise
-  # find_package version-gate failures are not "error:" lines in the log body;
-  # CMake writes "Could not find a configuration file ...". They are the single
-  # most common consumer breakage in this upgrade, so they count.
-  cat "$CFG_LOG" 2>/dev/null \
-    | grep -E 'Could not find a configuration file for package' \
-    | normalise
+  # Three sources, deduplicated: the same line can be caught by more than one
+  # pattern, and the report reads one entry per line.
+  {
+    # CMake's configure errors and the compiler's errors.
+    cat "$CFG_LOG" "$BUILD_LOG" 2>/dev/null \
+      | grep -E '(^|[[:space:]])error:'
+    # find_package version-gate failures are not "error:" lines in the log body;
+    # CMake writes "Could not find a configuration file ...". They are the single
+    # most common consumer breakage in this upgrade, so they count.
+    cat "$CFG_LOG" 2>/dev/null \
+      | grep -E 'Could not find a configuration file for package'
+    # Linker diagnostics, which the `error:` grep above does not see — and this
+    # gap hid a real breakage. A failed link ends with
+    #
+    #     collect2: error: ld returned 1 exit status
+    #
+    # which *does* match `error:`, and was the only line that did: what is actually
+    # wrong is on the lines above it, `undefined reference to …` / `cannot find -l…`.
+    # Run 41354081913 reported that one line for toffy-oatpp in both configurations
+    # — "1 error NOT on the allowlist: collect2: error: ld returned 1 exit status" —
+    # and no reader could tell a missing symbol from a missing library from an OOM
+    # kill. The symbol name is the entire message here, so it is collected.
+    cat "$BUILD_LOG" 2>/dev/null \
+      | grep -E "undefined reference to|undefined symbol:|cannot find -l|cannot find library|DSO missing from command line|error: ld returned"
+  } | normalise
 }
 
 MATCHED="" UNMATCHED=""

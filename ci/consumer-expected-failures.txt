@@ -16,6 +16,14 @@
 #     so entries never name a line number and never go stale because something
 #     above them moved. Copy the string from the job's "NOT on the allowlist"
 #     report — that report prints exactly this form.
+#   * What counts as an error line is defined by `error_lines()` in
+#     tools/consumer_build.sh: compiler and CMake lines containing `error:`, the
+#     find_package "Could not find a configuration file" gate, and — since
+#     2026-11-02 — the linker's own diagnostics (`undefined reference to …`,
+#     `cannot find -l…`). That last set was added because a failed link reported
+#     only `collect2: error: ld returned 1 exit status`, which is the one line of a
+#     link failure that says nothing; the symbol it names is now in the report, and
+#     so is any new entry it produces.
 #   * Entries are matched case-sensitively, one per line. `#` starts a comment.
 #
 # Each entry must say *why* it exists and *what deletes it*. An entry without a
