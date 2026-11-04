@@ -266,8 +266,22 @@ error_lines() {
     # — "1 error NOT on the allowlist: collect2: error: ld returned 1 exit status" —
     # and no reader could tell a missing symbol from a missing library from an OOM
     # kill. The symbol name is the entire message here, so it is collected.
+    #
+    # Collecting symbols was still not enough, and the next red run proved it. From
+    # ab3d6a3 onward this job reported the same single collect2 line for five runs,
+    # and the cause was neither a symbol nor a library:
+    #
+    #     ld: liboatpp.a(Environment.cpp.o): relocation R_X86_64_TPOFF32 against
+    #       symbol '…' can not be used when making a shared object; recompile with -fPIC
+    #     ld: failed to set dynamic section sizes: bad value
+    #
+    # Neither line matched any pattern below, so a gate whose whole job is to name a
+    # consumer's error named nothing, and blamed toffy for its consumer's dependency
+    # stack. Lesson kept as a pattern, not as a promise to think harder: take the
+    # linker's failure vocabulary as the set to match, not the subset that has been
+    # seen. `ld:` lines are cheap; a red nobody can diagnose is not.
     cat "$BUILD_LOG" 2>/dev/null \
-      | grep -E "undefined reference to|undefined symbol:|cannot find -l|cannot find library|DSO missing from command line|error: ld returned"
+      | grep -E "undefined reference to|undefined symbol:|cannot find -l|cannot find library|DSO missing from command line|can not be used when making a shared object|failed to set dynamic section sizes|relocation [^ ]+ against|error: ld returned"
   } | normalise
 }
 

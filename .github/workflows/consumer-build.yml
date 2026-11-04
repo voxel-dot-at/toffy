@@ -285,15 +285,34 @@ jobs:
           }
           fetch_pinned https://github.com/oatpp/oatpp.git "$OATPP_SHA" /tmp/oatpp
           grep -q '#define OATPP_VERSION "1.4.0"' /tmp/oatpp/src/oatpp/Environment.hpp
+          # BUILD_SHARED_LIBS=ON, and it took five red runs to earn it. oatpp's own
+          # default is OFF, so this step used to install a static, non-PIC liboatpp.a
+          # — and libtoffy_oatpp is a shared library, so the cell died at link with
+          #   ld: liboatpp.a(Environment.cpp.o): relocation R_X86_64_TPOFF32 against
+          #   symbol '..._m_threadLocalObjectsCountE' can not be used when making a
+          #   shared object; recompile with -fPIC
+          # That is the failure this job has been reporting since ab3d6a3 as one line,
+          # `collect2: error: ld returned 1 exit status`, and misreporting as "a toffy
+          # commit just broke toffy-oatpp": toffy never touched it, the consumer's
+          # dependency stack was never buildable into its own shared library. Every
+          # local build passed because the local prefix has liboatpp.so. Assert the
+          # artifact, not just the version string — the version assert above is true
+          # of a static build too, which is exactly why this survived.
           cmake -S /tmp/oatpp -B /tmp/oatpp/build -DCMAKE_BUILD_TYPE=Release \
-            -DOATPP_BUILD_TESTS=OFF
+            -DOATPP_BUILD_TESTS=OFF -DBUILD_SHARED_LIBS=ON
           cmake --build /tmp/oatpp/build -j "$(nproc)"
           sudo cmake --install /tmp/oatpp/build
+          test -f /usr/local/lib/oatpp-1.4.0/liboatpp.so \
+            || { echo '::error::oatpp installed no shared library — BUILD_SHARED_LIBS=ON did not take'; exit 1; }
           fetch_pinned https://github.com/oatpp/oatpp-swagger.git "$OATPP_SWAGGER_SHA" /tmp/oatpp-swagger
           grep -q 'set(OATPP_THIS_MODULE_VERSION "1.4.0")' /tmp/oatpp-swagger/CMakeLists.txt
-          cmake -S /tmp/oatpp-swagger -B /tmp/oatpp-swagger/build -DCMAKE_BUILD_TYPE=Release
+          # Shared for the same reason: it goes into the same DSO.
+          cmake -S /tmp/oatpp-swagger -B /tmp/oatpp-swagger/build -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=ON
           cmake --build /tmp/oatpp-swagger/build -j "$(nproc)"
           sudo cmake --install /tmp/oatpp-swagger/build
+          test -f /usr/local/lib/oatpp-1.4.0/liboatpp-swagger.so \
+            || { echo '::error::oatpp-swagger installed no shared library'; exit 1; }
 
       - name: Consumer build
         # Anonymous HTTPS, always. The token is optional and only layers
