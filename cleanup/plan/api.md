@@ -66,11 +66,21 @@ Renames, all in the public API and all currently uncalled elsewhere, so do them 
 
 | Current | Should be | Location |
 |---|---|---|
-| `Controller::CERROR` | `ERROR` | `controller.hpp:60` |
-| `Controller::stedBackward()` | `stepBackward()` | `controller.hpp:97`, `controller.cpp:154` |
-| `Frame::getSertMatPtr()` | `getOrInsertMatPtr()` | `frame.hpp:282,392` |
+| `Controller::CERROR` | `ERROR` | `controller.hpp:63` — open |
+| ~~`Controller::stedBackward()`~~ | ~~`stepBackward()`~~ | **done**, `b397f44` — `controller.hpp:115` declares `stepBackward()` and the old name is gone from the tree |
+| `Frame::getSertMatPtr()` | `getOrInsertMatPtr()` | `frame.hpp:299,409` — open |
 
 Leave a deprecated inline alias for each for one release.
+
+**The alias rule was not followed for `stedBackward`, deliberately** (`b397f44`): an alias
+keeps in the public surface of the class the very thing the item exists to remove, and it
+would not have preserved the ABI anyway — the alias is *added* and the old name stays,
+which is not a reduction. This is the branch where breaking is allowed, and the break is
+the loud kind: `nm -D` shows `- toffy::Controller::stedBackward()` /
+`+ toffy::Controller::stepBackward()` and nothing else. Nothing in the repository called
+either name. Whoever does the other two inherits the same choice, and `getSertMatPtr` is
+the one to think about first: it is `inline` in a public header, so it has no exported
+symbol to watch and an out-of-tree caller cannot be found with `nm`.
 
 ### 14 — Finish or delete the `Event` stub — **DONE (deleted)**
 

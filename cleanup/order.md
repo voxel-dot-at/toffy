@@ -16,7 +16,7 @@ This is the plan. What has actually landed is [`status.md`](status.md); item tit
 | **9** | `P2-4` `createFilter()` → `registerCreator()` | 7 | Mechanical and independent. Do it before `P2-5` so the ownership change touches one map lookup instead of ~30 branches. **Not done, and `P2-5` landed without it** — the ordering was a preference, not a dependency, and the ~35 branches came through the ownership change unchanged. `P2-4` is now the smaller job it was always going to be: each branch becomes a `registerCreator` call returning a `Filter*` for a creator that `createFilter()` wraps. |
 | ~~**10**~~ | ~~`P2-5` one owner per `Filter` (`FilterPtr`)~~ | 9 | **Landed as PR 36**, out of order (before `P2-4`) and deliberately without `clearCreators()`'s removal. The keystone: `P2-9`'s `getFilter` fix and `P2-7`'s `FilterThread` ownership both fall out of it, and both are unblocked now. |
 | **11** | `P2-6` + `P2-13` collapse the four run methods, unify state, rename typos | 10 | Tightly coupled — the run methods are where `Controller::state` is read and where banks are manipulated. One PR, no renames mixed with behaviour (plan ground rule). |
-| **12** | `P2-7` threading: `atomic<bool>`, replace `interprocess_semaphore`, `FilterThread` ownership | 10 | Needs the ownership model settled. Run this PR under TSan/ASan (see Definition of done). |
+| ~~**12**~~ | ~~`P2-7` threading: `atomic<bool>`, replace `interprocess_semaphore`, `FilterThread` ownership~~ | 10 | **Landed as PR 37** (`b9e3032`), after `P2-5` as ordered. The semaphore is gone (counter 10 → 0), `lanes` owns its threads, the flag is atomic. Its sanitizer evidence is post-hoc — see the PR 12 note below. |
 | **13** | `P2-9` module layering: drop the `imageview.hpp` dependency, move `btaFrame.hpp`, `getFilter` against `_pipe`, private `Controller` members | 10 | `getFilter` can only be reimplemented against `_pipe` once `_pipe` owns. |
 | **14** | `P2-10` consolidate the three plugin loaders | 8 | Easier once the dead `MSVC` branches are gone. |
 | **15** | `P2-8` logging policy out of `Filter` | 6 | Independent, but touches the hot path — land after the correctness work so perf changes are not confused with fixes. |
@@ -52,14 +52,19 @@ or `X` id, never by PR number, when the two could be confused.
 **The critical path is `1 → 7 → 9 → 10 → {11,12,13} → 16 → 17 → 18`.** Everything else
 hangs off it. PR 10 (one owner per `Filter`) was the keystone and **has landed** (PR 36,
 ahead of `P2-4`); `P2-9`'s `getFilter` reimplementation, `P2-7`'s `FilterThread` ownership and
-the deletion of the name-based `clearBank()` teardown have all fallen out of it, so the path
-from here is `{11,12,13} → 16 → 17 → 18` with `9` (`P2-4`) still open alongside.
+the deletion of the name-based `clearBank()` teardown have all fallen out of it. PR 12 (`P2-7`)
+has landed as well (PR 37), so the path from here is **`{11,13} → 16 → 17 → 18`** with `9`
+(`P2-4`) still open alongside — and `16` is the row to watch: `P2-12` inside it is the item that
+can silently stop three filters processing frames, which is why `P3-3` and `P3-9` exist.
 
-One consequence worth stating before anyone starts on PR 12: `P2-5` settled the *ownership*
-half of `FilterThread` (it holds a `FilterPtr` and no longer deletes), so what is left of
-`P2-7` is the `atomic<bool>`, the semaphore, the copy ctor and `delete lanes[i]` — the last
-`delete` in `modules/core`. TSan is still the gate on that remainder, and `P2-5` does not
-change it: the ownership change was checked with ASan/UBSan/LSan, which do not find data races.
+One consequence worth stating before anyone starts on PR 12, which was the note this row carried
+until PR 37 landed: `P2-5` settled the *ownership* half of `FilterThread` (it holds a `FilterPtr`
+and no longer deletes), so what was left of `P2-7` was the `atomic<bool>`, the semaphore, the
+copy ctor and `delete lanes[i]` — the last `delete` in `modules/core`. **All four went in
+`b9e3032`** (counters 10, 13 and 12b are at 0), and the note's warning held: TSan was the gate
+on that remainder precisely because `P2-5` had been checked with ASan/UBSan/LSan, which do not
+find data races — and TSan is the part of `P2-7`'s evidence that never ran at its own commit.
+See the PR 12 note at the end of this file.
 
 **PR 1 was a hard gate, and it has landed.** The row above is the original rationale; it no
 longer describes the tree. `enable_testing()`, **8** `add_test()` targets and a CI workflow
@@ -114,6 +119,14 @@ filters outside core implement only that overload, and three of them never said 
 Without `P3-3` first, the change compiles, passes every existing gate, and stops three
 filters processing frames — [`findings/api.md`](findings/api.md) has the reproduction.
 
-**PR 12 should run under sanitizers.** It is the only PR changing concurrency behaviour
-(`std::atomic<bool>`, replacing `interprocess_semaphore`, `FilterThread` ownership). A green
-`ctest` is weak evidence for a data race; a green TSan run is not.
+**PR 12 should run under sanitizers — and it did not, at the time.** It is the only PR changing
+concurrency behaviour (`std::atomic<bool>`, replacing `interprocess_semaphore`, `FilterThread`
+ownership). A green `ctest` is weak evidence for a data race; a green TSan run is not. `b9e3032`
+landed on 2026-10-18, which is inside the window in which **every** job was red on the runner's
+toolchain (**P0-4**, 2026-10-03 → 10-28), so there is no TSan run of `P2-7` at its own commit:
+the evidence is the `ThreadSanitizer` job green on every push since the toolchain was fixed
+(`a3d882f`, run 43760237608, 2026-11-15 included). So the tree has had TSan run against it for
+seventeen days since the threading changed, which is real coverage — it is simply not the
+evidence this row asked for: nothing between `b9e3032` and the first green run was checked at
+its own commit, and the commits in that window are the CI plumbing of **P0-4**, which is exactly
+the kind of change a sanitizer gate would be silent about either way.

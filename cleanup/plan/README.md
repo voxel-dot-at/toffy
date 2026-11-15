@@ -60,13 +60,13 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P2-4` | `createFilter()` → `registerCreator()` | [`structure.md`](structure.md) | ❌ |
 | `P2-5` | one owner per `Filter` | [`structure.md`](structure.md) | ✅ **the keystone — landed, and it is why `v2.0.0` exists** |
 | `P2-6` | collapse the four run methods | [`structure.md`](structure.md) | ❌ |
-| `P2-7` | make the threading honest | [`structure.md`](structure.md) | ❌ |
+| `P2-7` | make the threading honest | [`structure.md`](structure.md) | ✅ landed as PR 37 (`b9e3032`) — `std::thread`/`mutex`/`condition_variable`/`atomic`, `interprocess_semaphore` gone, and `<boost/thread.hpp>` no longer reaches a consumer |
 | `P2-8` | logging policy out of `Filter` | [`structure.md`](structure.md) | ✅ |
 | `P2-9` | module layering | [`structure.md`](structure.md) | ❌ |
 | `P2-10` | consolidate the three plugin loaders | [`structure.md`](structure.md) | ❌ |
 | `P2-11` | `Frame` accessor API | [`api.md`](api.md) | ❌ |
 | `P2-12` | the `filter()` const/non-const overload trap | [`api.md`](api.md) | ❌ see `P3-9` |
-| `P2-13` | unify run state, rename the typos | [`api.md`](api.md) | ❌ |
+| `P2-13` | unify run state, rename the typos | [`api.md`](api.md) | ◐ one of the three renames landed (`stedBackward` → `stepBackward`, `b397f44`); `CERROR`, `getSertMatPtr` and the state unification are open |
 | `P2-14` | finish or delete the `Event` stub | [`api.md`](api.md) | ✅ deleted |
 | `P2-15` | enforce formatting | [`build-and-hygiene.md`](build-and-hygiene.md) | ❌ |
 | `P2-16` | build flags | [`build-and-hygiene.md`](build-and-hygiene.md) | ✅ — the `-Werror` half landed as `P3-4` |
@@ -85,7 +85,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P3-7` | `if( ${VAR} )` → `if(VAR)`, 4 sites | 4 lines | ✅ |
 | `P3-8` | `toffy_tracking` layering inversion | CMake | ❌ |
 | `P3-9` | a test that a filter's body actually ran | 1 test | ✅ |
-| `P3-10` | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | ❌ |
+| `P3-10` | drop `TOFFY_EXPORT` and the generated export header | 16 annotation sites in 15 headers + 6 `toffy_export.h` includes (counters 18/18a, re-measured 2026-11-15) | ❌ |
 | `P3-11` | CI warning counter, without changing the build | CI | ✅ |
 | `P3-13` | delete the Windows scaffolding `P2-2` left unreachable in the build | CMake | ❌ |
 
