@@ -82,21 +82,31 @@ Controller::~Controller()
     // ~FilterBank::clearBank() had to race the factory on the way out.
     //
     // reset() is explicit rather than leaving the member to destruct after this
-    // body, because clearCreators() below and any future teardown step want the
-    // pipeline to be gone *before* they run: ~FilterBank can call into filters
-    // (it calls their destructors), and those run while the factory is still
-    // intact only if the bank dies first.
+    // body, because any teardown step below wants the pipeline to be gone
+    // *before* it runs: ~FilterBank can call into filters (it calls their
+    // destructors), and those run while the factory is still intact only if the
+    // bank dies first.
     baseFilterBank.reset();
-    // clearCreators() is still here, and it is still wrong for a different
-    // reason. It wipes the *process-wide* creator registry, so destroying one
-    // Controller throws away every plug-in and Player::loadFilter() creator in
-    // the process (finding C3). What changed with P2-5 is that it no longer has
-    // anything to do with ownership: the bank above is released by this object,
-    // and nothing in the factory needs emptying to keep that safe. Removing the
-    // call is a behaviour change -- a second Controller would start keeping the
-    // plug-ins the first one registered -- and it belongs with P2-10, which is
-    // where the dlopen/dlclose lifetime that makes it tempting lives.
-    toffy::FilterFactory::getInstance()->clearCreators();
+    // The `clearCreators()` call that used to sit here is gone.
+    //
+    // It wiped the *process-wide* creator registry from the destructor of one
+    // object, so destroying a Controller threw away every plug-in and
+    // Player::loadFilter() creator in the process (finding C3). It survived
+    // review for as long as it did because it was invisible from the built-in
+    // types: createFilter() resolved those through a hard-coded chain, so a
+    // second Controller still worked and only a consumer's own filters went --
+    // and no test registered one. `DestroyingAControllerKeepsRegisteredCreators`
+    // does, and fails with the call in place.
+    //
+    // P2-5 is what made this call removable at all: once the bank is released by
+    // letting the FilterPtr go, nothing in the factory needs emptying to keep
+    // teardown safe. The behaviour change is the correct one -- a second
+    // Controller now keeps the plug-ins the first registered, which is what
+    // `boxes` and `toffy-oatpp` already assume, both registering their filters
+    // once at startup (`init_toffy()`) and naming them from config afterwards.
+    //
+    // The method itself stays: it is public API, and removing it is an X6 break.
+    // Nothing in toffy calls it any more.
     // TODO(P2-10): _loads is never drained, so dlopen() handles leak for the
     // lifetime of the process. The dlclose() loop that used to sit here was
     // commented out and has been deleted; unloading plug-ins cannot be
