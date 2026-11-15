@@ -141,9 +141,18 @@ flush_summary() {
 
 # -------------------------------------------------------------------- clone ---
 
-TOFFY_SO=$(ls "$TOFFY_PREFIX"/lib/ 2>/dev/null | grep -m1 -oE 'libtoffy\.so\..*' || true)
+# The library's own name, not one configuration's. toffy sets
+# CMAKE_DEBUG_POSTFIX "-d", so a Debug staging prefix carries `libtoffy-d.so.2`
+# and the previous pattern (`libtoffy\.so\..*`) called a *complete* Debug prefix
+# "half-installed" — then contradicted itself a few lines later by configuring,
+# linking and reporting PASS. Measured 2026-11-15 against a
+# `-DCMAKE_BUILD_TYPE=Debug -DWITHOUT_BTA=ON` install: warning printed, consumer
+# built, 15 symbols, verdict PASS. CI stages Release so the runner never sees
+# it; whoever stages a Debug prefix does — and a standing false alarm on the one
+# line that says whether the prefix is real is how red text comes to be ignored.
+TOFFY_SO=$(ls "$TOFFY_PREFIX"/lib/ 2>/dev/null | grep -m1 -oE 'libtoffy[A-Za-z0-9_-]*\.so\..*' || true)
 if [ -z "$TOFFY_SO" ]; then
-  note "- toffy: \`$TOFFY_PREFIX\` — **no libtoffy.so.* in its lib/**: the prefix has the"
+  note "- toffy: \`$TOFFY_PREFIX\` — **no \`libtoffy*.so.*\` in its lib/**: the prefix has the"
   note "  CMake package but not the library. That is a half-installed prefix; the consumer"
   note "  may still configure and then fail to link, which is not what this job tests."
 else
