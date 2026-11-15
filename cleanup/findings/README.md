@@ -22,8 +22,10 @@ The checked-in Doxygen docs were **not** used as a source of truth — see
   on the headline. The ids are cited by commit messages and by the plan, so the entry
   stays so the citation resolves.
 - **Partially** fixed findings say exactly which half landed — `A12` (only the `joinable()`
-  guard), `A21` (null check landed, the non-overwriting `_filters.insert` remains),
-  `C3` (null guards landed, `clearCreators()` untouched).
+  guard), `A21` (null check landed, the non-overwriting `_filters.insert` remains).
+  `C3` was the third of these for eleven PRs and is now closed: the null guards landed under
+  `P0-9`, the ownership half under `P2-5`, and the `clearCreators()` half under `P2-4`, which
+  is the commit that made leaving it alone impossible rather than merely untidy.
 - Where a fix was deliberately *not* made, the reason is recorded with the finding —
   `A23` is the clearest case: propagating `loadConfig()`'s return value breaks a valid
   empty `<cond>`, so the return value stays unchecked until the convention is decided.

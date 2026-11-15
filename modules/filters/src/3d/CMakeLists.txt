@@ -4,6 +4,7 @@ message (STATUS "PCL_VIZ in 3D: " ${PCL_VISUALIZATION_FOUND})
 # if() takes variable *names*; ${PCL_FOUND} expanded to nothing when PCL was off.
 if (PCL_FOUND)
     set(PCL_SRCS 
+        init.cpp
         boundbox.cpp
         groundprojection.cpp
         merge.cpp

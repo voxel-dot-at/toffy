@@ -9,6 +9,16 @@ baseline, and `tools/consumer_build.sh` against a fresh install of the same comm
 **PASS / 16 symbols** (counter 32). Two rows moved under that re-measure — 18 and 18a, both
 stale by one since `P3-2`, see below.
 
+Rows **11**, **11a**, **15a**, **17** and **24** were re-measured again on the `P2-4` commit
+itself, in all three configurations this tree can build here (PCL on/BTA on, `WITHOUT_PCL=ON`,
+`WITHOUT_BTA=ON`): **15/15 `ctest`** in each, 25 tree warnings (unchanged), installed headers
+**174 checks / 0 broken**, `abi_surface.sh` **matches** with **0 removals** and **+7 symbols**
+(the six `init<Category>Filters` plus `CreateExportYaml`) against the same baseline the parent
+commit reports **+26**. `P2-4` also measured the thing the counters cannot express: the set of
+type names `createFilter()` resolves is **byte-identical** to the parent commit's — 35 names
+with PCL and BTA on, and in the other two cells exactly the expected 10 and 1 names absent,
+with nothing appearing that was not there before.
+
 Earlier basis: `feature/code-cleanup` with PR 37 (`P2-7`, the threading) applied —
 i.e. after `P3-1`, `P3-3`, `P3-4`, `P3-7`, `P3-9`, `P3-11`, `A24`, `P3-6`, `P3-2`, `P3-12`,
 `X2b`, `X3`, `X4`, the `Doxyfile.cfg` fix, the `docs` gate, `P2-2`, `P3-5`, `P2-5` and
@@ -43,7 +53,8 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 8c | | tree | **0** (was 2, both in the deleted orphan) | 0 | ✅ |
 | 9 | `#include <toffy/viewers/…>` from core | `modules/core` | **1** | 0 | |
 | 10 | `interprocess` primitives | `modules/core` | **0** (was 2: the `#include <boost/interprocess/sync/interprocess_semaphore.hpp>` in `filterbank.hpp` and the `ready` member it declared; `P2-7`). `FilterBank::wait()`/`try_wait()` survive on a `std::mutex` + `std::condition_variable` + one flag. The finding predicted `post()` past the maximum would throw — **measured, that is not reachable**: `interprocess_semaphore` is `sem_init` on Linux and `SEM_VALUE_MAX` is `INT_MAX`, so 40 000 posts are accepted and the count just climbs. What was actually wrong is that nothing ever called `wait()`, so the count was a lagging tally and `wait()` could not mean "a frame has arrived since you last looked" — it meant "N frames have gone by at some point". See [`findings/correctness.md`](findings/correctness.md) D | 0 | ✅ |
-| 11 | `else if (type ==` branches in the factory | `filterfactory.cpp` | **37** | 0 | |
+| 11 | `else if (type ==` branches in the factory | `filterfactory.cpp` | **0** (was 37; `P2-4`) — the chain is gone and every built-in type is a registered creator. The command below strips comments, because the replacement records the chain in order to explain what it replaced; unstripped it reports 1 and means nothing | 0 | ✅ |
+| 11a | `#include` of a header from a module above core, from core | `modules/core` | **2** (was 35, all 35 in `filterfactory.cpp`; `P2-4`) — what remains is `<toffy/bta/initPlugin.hpp>` under `#if defined(HAS_BTA)`, which is `P2-10`'s to move, and `viewers/imageview.hpp` in `controller.cpp`, which is counter 9 / `P2-9`. `P2-4`'s point was never the include count for its own sake: it is that core could not be built without the proprietary module's headers being present, and could not host a plug-in mechanism its own filters did not use | 1 | |
 | 12 | `@todo` markers | `modules/core` | **10** (was 20; all 10 that went were `filterThread.hpp`'s, documented in place by `P2-7`) | ≤ 5 | |
 | 12b | `@todo` markers | `filterThread.hpp` | **0** (was 10 — every member of the class was `///< @todo document`, including the two mutexes and the two condition variables whose semantics were the bug; `P2-7` wrote the documentation instead) | 0 | ✅ |
 | 13 | `delete` of a `Filter` | `modules/core` | **0** (was 4 sites in 3 owners: the factory's `deleteFilter`, `~FilterThread`, `~ParallelFilter` through its lanes, and `~Controller` via the factory; `P2-5`). `delete lanes[i]` — the `FilterThread` delete `P2-5` left behind — is gone with `P2-7`: `ParallelFilter::lanes` is a `vector<unique_ptr<FilterThread>>`. What `delete`s remain in `modules/core/src` are the two loops in `~FilterThread` freeing the `Frame`s the lane created and nobody else could reach, which is the leak `tests/test_filterthread.cpp` `LaneWork.ReleasesTheFramesItCreated` reports under LSan (measured on the parent commit: `Direct leak of 240 byte(s) in 3 object(s)` for `init(3)`). The gate is not this grep — it is `tests/test_ownership.cpp` under the `sanitizers` job, where 8 of the 9 tests fail on the pre-`P2-5` tree and five of those produce a sanitizer report (two heap-use-after-free, a `SEGV` in `clearBank()`, a heap-buffer-overflow in `_pipe`, and a 184-byte direct leak from the `Player` session) | 0 | ✅ |
@@ -54,7 +65,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 15 | warnings in core under `-Wall -Wextra` | `modules/core` | **0** in all four configurations, and `toffy_core` is compiled with `-Werror` (`P3-4`) | 0 | ✅ |
 | 15a | warnings in a full default build (Release, PCL on, BTA on) | tree | **25** (was 32; −4 from the `Mux` using-declaration, −2 from `csv_source`'s `fscanf` sites now being checked, `P3-6`, −1 from `system()`'s `-Wunused-result` going with `P3-5`) — unchanged by `P2-5`, re-measured in all four configurations (25/24/23/22). Reported per area by `tools/warning_report.sh` on every CI build, only `modules/core` gates (`P3-11`) | reported, not gated | |
 | 16 | artefacts describing the removed web control product | tree | **0** (was 12, then 8: 4 installed headers `P3-2`, 3 screenshots and the `use.dox` page `X4`, 3 CLI options `X3`, 1 `Player` `@todo` `X4`) — enumerated below, because "≥ 3" was not a number | 0 | ✅ |
-| 17 | installed public headers that do not compile standalone | install tree | **0** (was 4 by hand, 5 once the check was written: 3 deleted by `P3-2`, 2 fixed by `P3-12`) — 86 of 86 pass, 0 skipped, and the `installed-headers` CI job runs the check on every push. The check is now **two passes**: each header once, and each header twice (`X2b`), so 172 checks | 0 | ✅ |
+| 17 | installed public headers that do not compile standalone | install tree | **0** (was 4 by hand, 5 once the check was written: 3 deleted by `P3-2`, 2 fixed by `P3-12`) — 87 of 87 pass, 0 skipped, and the `installed-headers` CI job runs the check on every push. The check is now **two passes**: each header once, and each header twice (`X2b`), so 174 checks. The 87th is `toffy/filter_init.hpp` (`P2-4`) | 0 | ✅ |
 | 18 | public headers including the CMake-generated `toffy_export.h` | tree | **6** (was 8: one went with the `libraries/sensor/` orphan in `P3-1`, one with `libraries/include/toffy/web/common/plugins.hpp` in `P3-2`/`a3650ce`) — the second deletion was never posted here, so this row carried **7** for the 14 commits between `a3650ce` and today while the command below returned 6. `P3-10` targets 0 | 0 | |
 | 18a | `TOFFY_EXPORT` annotation sites | tree | **16** in 15 headers (was 17 in 16 — same header, same unposted deletion; re-measured 2026-11-15) | 0 | |
 | 19 | CMake `if( ${VAR} )` sites | build | **0** (was 4) — CI now fails on any new one | 0 | ✅ |
@@ -62,7 +73,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 21 | config string used as a `printf` format | `modules/filters` | **0** — `csv_source`'s 2 and `exportcsv`'s 2 are closed (`P3-6`); both filters validate their pattern at config time and expand through `toffy::formatPath`, the one place in the tree where snprintf's format argument is a variable | 0 | ✅ |
 | 22 | files containing hard tabs / files in core | `modules/core` | **9 / 20** (was 11; `filterThread.hpp`, `filterThread.cpp` were among them and were rewritten by `P2-7`. `P2-15` is still the item that formats the whole tree, not this one) | 0 / 20 | |
 | 23 | lines of code | `modules/core` | **4 619** (was 4 113; `P2-7` is +506, of which the large majority is comment: the lane's wait/stop/join contract, the Boost-v2 detach semantics and the reason each guard exists. The executable content of the change is much smaller than the diff) | — | |
-| 24 | `ctest` targets | `tests/` | **14** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`, `exportcsv` by `P3-6`, `objecttrack` by `P3-5`, `ownership` by `P2-5`, `filterthread` by `P2-7`) | ≥ 8 | ✅ |
+| 24 | `ctest` targets | `tests/` | **15** (was 8; `filter_overloads` by `P3-9`, `csv_source` by `A24`, `exportcsv` by `P3-6`, `objecttrack` by `P3-5`, `ownership` by `P2-5`, `filterthread` by `P2-7`, `filter_registry` by `P2-4`) | ≥ 8 | ✅ |
 | 25 | `const`-only `filter()` overrides that do not say `override` | `modules/`, `libraries/` | **0** (was 3, fixed by `P3-3`; 4 sites now carry it) | 0 | ✅ |
 | 26 | `WITH_CONTROL` sites — a symbol no build file defines | tree | **0** (was 5: 3 in `initPlugin.cpp`, 2 in `initPlugin.hpp`; `P3-2`) | 0 | ✅ |
 | 27 | `toffyRunner` options describing a server that never starts | `apps/` | **0** (was 3: `--host/-h`, `--port/-p`, `--html/-d` — parsed, printed, used by nothing; `X3`) | 0 | ✅ |
@@ -99,8 +110,11 @@ grep -rnE "define (WIN|UNIX)\b" modules/ libraries/ apps/
 grep -rn "include <toffy/viewers" modules/core
 grep -rn "interprocess" modules/core
 
-# 11, 12 — factory and documentation debt
-grep -c "else if (type ==" modules/core/src/filterfactory.cpp
+# 11, 12 — factory and documentation debt. 0 since P2-4; comment-stripped, because
+#      the code that replaced the chain quotes it. 11a is the layering question the
+#      chain answered: what does core include from modules above it?
+grep -vE '^[[:space:]]*(//|\*)' modules/core/src/filterfactory.cpp | grep -c "else if (type =="
+grep -rhoE '#include *[<"]toffy/(base|smoothing|detection|import|io|3d|viewers|tracking|reproject|bta)/' modules/core/src modules/core/include | wc -l
 grep -rc "@todo" modules/core | grep -v ":0$"
 
 # 13 — who deletes a Filter. 0 since P2-5; the one line this returns is

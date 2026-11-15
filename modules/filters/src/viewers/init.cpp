@@ -13,6 +13,9 @@
 #include <toffy/viewers/exportcloud.hpp>
 #endif
 #include <toffy/viewers/exportcsv.hpp>
+#if PCL_FOUND
+#include <toffy/viewers/exportYaml.hpp>
+#endif
 #include <toffy/viewers/imageview.hpp>
 #include <toffy/viewers/videoout.hpp>
 #include <iostream>
@@ -45,6 +48,19 @@ toffy::Filter* CreateExportCSV(void)
     return new ExportCSV();
 }
 
+#if PCL_FOUND
+// P2-4: this one came out of createFilter()'s chain, where it sat under
+// `#if defined(PCL_FOUND)`. It is guarded the same way here so that the move
+// does not change which type names resolve -- but the guard is vestigial
+// (exportYaml.cpp is built unconditionally and its pcl includes are commented
+// out), so a PCL-less build compiles the filter and refuses to name it. Filed
+// with squareDetect, same shape, same follow-up.
+toffy::Filter* CreateExportYaml(void)
+{
+    return new ExportYaml();
+}
+#endif
+
 #if OPENCV_VIZ
 toffy::Filter* CreateCloudViewOpenCv(void)
 {
@@ -76,6 +92,9 @@ void initFilters(FilterFactory& factory)
     factory.registerCreator("exportcloud", CreateExportCloud);
 #endif
     factory.registerCreator("exportcsv", CreateExportCSV);
+#if PCL_FOUND
+    factory.registerCreator("exportYaml", CreateExportYaml);
+#endif
     factory.registerCreator("imageview", CreateImageView);
     factory.registerCreator("videoout", CreateVideoOut);
 }

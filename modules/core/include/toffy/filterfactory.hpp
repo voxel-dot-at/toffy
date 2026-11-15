@@ -194,6 +194,18 @@ public:
      */
     static bool hasCreator(const std::string& name);
 
+    /**
+     * @brief Drop every registered creator, built-in ones included.
+     *
+     * Kept as public API (removing it is an X6 break), but since `P2-4` it is
+     * a much sharper instrument than it looks: every type libtoffy ships is a
+     * registered creator now, so this does not just drop plug-ins -- it leaves
+     * the process unable to create *any* filter, with no way to get the
+     * built-ins back (`getInstance()` registers once). `~Controller` used to
+     * call it and got away with it only while the built-ins were hard-coded.
+     *
+     * Nothing in toffy calls it any more.
+     */
     void clearCreators() {creators.clear();}
 
 private:

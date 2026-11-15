@@ -1,4 +1,5 @@
 add_library(toffy_detection OBJECT 
+    init.cpp
     blobs.cpp
     blobsDetector.cpp
     detectedObject.cpp

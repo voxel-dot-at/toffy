@@ -1,4 +1,5 @@
 add_library(toffy_import OBJECT 
+    init.cpp
     dataimporter.cpp
     importYaml.cpp
     )

@@ -3,6 +3,7 @@
 # the bta module meant it vanished from BTA-less builds even though it never needed
 # the camera library, and filterfactory.cpp referenced it unconditionally.
 add_library(toffy_capture OBJECT 
+    init.cpp
     capturerFilter.cpp
     csv_source.cpp
     )

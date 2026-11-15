@@ -1,4 +1,5 @@
 add_library(toffy_base STATIC 
+    init.cpp
     amplitudeRange.cpp
     backgroundsubs.cpp
     cond.cpp

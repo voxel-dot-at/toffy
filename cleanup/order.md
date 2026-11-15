@@ -13,7 +13,7 @@ This is the plan. What has actually landed is [`status.md`](status.md); item tit
 | **6** | `P0-10`, `P0-11`, `P0-12` — `creators.find()`, `Player::stop()`, guarded `get_child` | 1 | Small leftovers; finish P0 so the label stays meaningful. |
 | **7** | `P2-3` debug leftovers and dead code | 3–6 | Removes code that would otherwise be copied into the structural PRs. Must come *after* P0 so the P0 diffs stay small and reviewable. |
 | **8** | `P2-2` Windows paths — fix or delete | 7 | Deleting dead `#ifdef MSVC` branches shrinks `loadPlugin()` before `P2-10` consolidates it. |
-| **9** | `P2-4` `createFilter()` → `registerCreator()` | 7 | Mechanical and independent. Do it before `P2-5` so the ownership change touches one map lookup instead of ~30 branches. **Not done, and `P2-5` landed without it** — the ordering was a preference, not a dependency, and the ~35 branches came through the ownership change unchanged. `P2-4` is now the smaller job it was always going to be: each branch becomes a `registerCreator` call returning a `Filter*` for a creator that `createFilter()` wraps. |
+| ~~**9**~~ | ~~`P2-4` `createFilter()` → `registerCreator()`~~ | 7 | **Landed.** Done after `P2-5` rather than before, which turned out to be the better order: because ownership had already been settled at one line, each branch became a one-line `registerCreator` and `createFilter()` lost its ~120 lines without a single ownership question reopening. Not as mechanical as this row claimed — it forced `~Controller`'s `clearCreators()` call out (finding `C3`), and it found three type names the chain could never resolve (`reprojectopencv`, `kalmanAverage`, `reprojectpcl`), which are deliberately left unreachable by the move and filed as their own change. |
 | ~~**10**~~ | ~~`P2-5` one owner per `Filter` (`FilterPtr`)~~ | 9 | **Landed as PR 36**, out of order (before `P2-4`) and deliberately without `clearCreators()`'s removal. The keystone: `P2-9`'s `getFilter` fix and `P2-7`'s `FilterThread` ownership both fall out of it, and both are unblocked now. |
 | **11** | `P2-6` + `P2-13` collapse the four run methods, unify state, rename typos | 10 | Tightly coupled — the run methods are where `Controller::state` is read and where banks are manipulated. One PR, no renames mixed with behaviour (plan ground rule). |
 | ~~**12**~~ | ~~`P2-7` threading: `atomic<bool>`, replace `interprocess_semaphore`, `FilterThread` ownership~~ | 10 | **Landed as PR 37** (`b9e3032`), after `P2-5` as ordered. The semaphore is gone (counter 10 → 0), `lanes` owns its threads, the flag is atomic. Its sanitizer evidence is post-hoc — see the PR 12 note below. |
@@ -53,9 +53,19 @@ or `X` id, never by PR number, when the two could be confused.
 hangs off it. PR 10 (one owner per `Filter`) was the keystone and **has landed** (PR 36,
 ahead of `P2-4`); `P2-9`'s `getFilter` reimplementation, `P2-7`'s `FilterThread` ownership and
 the deletion of the name-based `clearBank()` teardown have all fallen out of it. PR 12 (`P2-7`)
-has landed as well (PR 37), so the path from here is **`{11,13} → 16 → 17 → 18`** with `9`
-(`P2-4`) still open alongside — and `16` is the row to watch: `P2-12` inside it is the item that
+has landed as well (PR 37), and so has `9` (`P2-4`), so the path from here is
+**`{11,13} → 16 → 17 → 18`** — and `16` is the row to watch: `P2-12` inside it is the item that
 can silently stop three filters processing frames, which is why `P3-3` and `P3-9` exist.
+
+`P2-4` leaves two follow-ups of its own, both recorded where the code that defers them sits
+rather than only here: the three names the chain could never resolve (`reprojectopencv`,
+`kalmanAverage`, `reprojectpcl` — the first two are compiled filters no configuration can
+name, the third is a class that does not exist), and two guards that are vestigial
+(`squareDetect`, `exportYaml`: gated on `PCL_FOUND`, built unconditionally, containing no pcl).
+`P2-10` also got more concrete: the `#if defined(HAS_BTA)` include of
+`<toffy/bta/initPlugin.hpp>` that survives in `filterfactory.cpp` is the last thing core
+includes from a module above it besides `P2-9`'s `imageview.hpp`, and it is the one keeping
+core unbuildable without the proprietary SDK present.
 
 One consequence worth stating before anyone starts on PR 12, which was the note this row carried
 until PR 37 landed: `P2-5` settled the *ownership* half of `FilterThread` (it holds a `FilterPtr`

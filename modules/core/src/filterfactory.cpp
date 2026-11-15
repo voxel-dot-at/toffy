@@ -17,71 +17,27 @@
 #include "toffy/filterfactory.hpp"
 //#include <toffy/toffy_config.h>
 
-// from core/include:
+// The only filter classes core names any more (P2-4). FilterBank is not
+// declared by filterfactory.hpp -- filterbank.hpp includes *this* header, not
+// the other way round -- and used to arrive here transitively through one of
+// the 35 filter headers this file used to carry.
+#include "toffy/filterbank.hpp"
 #include "toffy/parallelFilter.hpp"
 
-// from filters/include:
-#include "toffy/base/amplitudeRange.hpp"
-#include "toffy/base/cond.hpp"
-#include "toffy/base/distAmpl.hpp"
-#include "toffy/base/nop.hpp"
-#include "toffy/base/offset.hpp"
-#include "toffy/base/ofsCorr.hpp"
-#include "toffy/base/polar2cart.hpp"
-#include "toffy/base/range.hpp"
-#include "toffy/base/rectify.hpp"
-#include "toffy/base/roi.hpp"
-#include "toffy/base/backgroundsubs.hpp"
-#include "toffy/base/focus.hpp"
+// The categories libtoffy ships. This one header replaced 35 includes of
+// modules that sit above core -- among them <toffy/bta/initPlugin.hpp>, the one
+// module no CI runner can even build -- and the ~120-line createFilter() chain
+// that needed them.
+#include <toffy/filter_init.hpp>
 
-#include "toffy/smoothing/bilateral.hpp"
-#include "toffy/smoothing/average.hpp"
-#include "toffy/smoothing/kalmanaverage.hpp"
-
-#include "toffy/detection/objectTrack.hpp"
-#include "toffy/detection/blobs.hpp"
-#include "toffy/detection/blobsDetector.hpp"
-#include <toffy/detection/mask.hpp>
-
-#include "toffy/import/dataimporter.hpp"
-#include "toffy/import/importYaml.hpp"
-#include "toffy/io/csv_source.hpp"
-
-#include "toffy/reproject/reprojectopencv.hpp"
-
+// Still here, and still guarded, because core is what calls it: `bta` is
+// registered by the factory rather than by whoever loads the library, and
+// `boxes`/`toffy-oatpp` configs name `<bta>` on that basis. Moving that hook is
+// `P2-10`'s (the three plugin loaders), not a side effect of this one.
 #if defined(HAS_BTA)
 #include <toffy/bta/initPlugin.hpp>
 #endif
 
-#if defined(PCL_FOUND)
-
-#include "toffy/reproject/reprojectpcl.hpp"
-#include "toffy/3d/split.hpp"
-#include "toffy/3d/merge.hpp"
-#include "toffy/3d/muxMerge.hpp"
-#include "toffy/3d/sampleConsensus.hpp"
-#include "toffy/3d/transform.hpp"
-#include "toffy/3d/xyz2pcl.hpp"
-#include "toffy/3d/groundprojection.hpp"
-#include "toffy/viewers/exportcloud.hpp"
-#include "toffy/viewers/exportYaml.hpp"
-#include "toffy/detection/squareDetect.hpp"
-
-using namespace toffy::filters::f3d;
-#endif
-
-/****** forward declarations for init functions of the single sub-libs: */
-namespace toffy {
-    namespace viewers {
-        extern void initFilters(FilterFactory& factory);
-    }
-    namespace tracking {
-        extern void initFilters(FilterFactory& factory);
-    }
-}
-
-
-// TODO Create a header with a list of filters
 #include <boost/log/trivial.hpp>
 
 using namespace toffy;
@@ -98,6 +54,35 @@ FilterFactory* FilterFactory::getInstance()
 {
     if (uniqueFactory == NULL) {
         uniqueFactory = new FilterFactory();
+
+        // Core's own two creatable types, registered like everyone else's
+        // (P2-4). They were the first two branches of the chain.
+        registerCreator("filterBank",
+                        []() -> Filter* { return new FilterBank(); });
+        registerCreator("parallelFilter",
+                        []() -> Filter* { return new ParallelFilter(); });
+
+        // The categories libtoffy ships. Order matters in exactly one way:
+        // registerCreator() inserts and does not overwrite, so the *first*
+        // registration of a name wins. Registering the built-ins here, during
+        // the first getInstance(), is what keeps a consumer's later
+        // registerCreator() from replacing one -- which is what the chain
+        // guaranteed by being tried before the registry. The case that does
+        // change is a plug-in that registers during static initialisation,
+        // before anyone calls getInstance(): it now wins over the built-in. No
+        // plug-in in this tree or in either consumer does that, and
+        // tests/test_filter_registry.cpp pins the later-registration case.
+        initBaseFilters(*uniqueFactory);
+        initCaptureFilters(*uniqueFactory);
+        initSmoothingFilters(*uniqueFactory);
+        initDetectionFilters(*uniqueFactory);
+        initImportFilters(*uniqueFactory);
+#if defined(PCL_FOUND)
+        // toffy_3d does not exist when PCL is off, so neither does this
+        // function. Same macro the build sets, now the only place the decision
+        // is made -- the chain used to re-test it per type.
+        init3dFilters(*uniqueFactory);
+#endif
 
         // init the linked-in plugins:
 #ifdef HAS_BTA
@@ -177,125 +162,42 @@ FilterPtr FilterFactory::createFilter(const std::string& type,
                                       std::string /* name */)
 {
     BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-    // Raw on purpose, and only until the FilterPtr is built at the bottom of
-    // this function: the chain below is ~35 `new` expressions, and taking
-    // ownership in exactly one place is what makes "the caller owns it" true.
-    Filter* created = nullptr;
-    if (type == "filterBank")
-        created = new FilterBank();
-    else if (type == "offset")
-        created = new OffSet();
-    else if (type == "distAmpl")
-        created = new DistAmpl();
-    else if (type == "offsetCorr")
-        created = new OffsetCorr();
 
-    else if (type == "polar2cart")
-        created = new Polar2Cart();
-    else if (type == "rectify")
-        created = new Rectify();
+    // One path (P2-4). This used to be ~120 lines and 35 `else if (type ==
+    // "...")` branches that `new`-ed every filter in the product before falling
+    // through to the registry below -- which is why core included 35 headers of
+    // modules above it (including the proprietary bta one), re-tested the
+    // build's PCL and visualisation decisions in the C++ preprocessor, and
+    // hosted a plug-in mechanism that its own filters did not use. Three of
+    // those branches tested macros no build defines for core, so three compiled
+    // filters could not be named from a config file at all; see
+    // tests/test_filter_registry.cpp.
+    //
+    // Look the creator up without inserting. operator[] default-constructs a
+    // missing key, so the old `creators[type]` turned every failed lookup into
+    // a write to this shared registry: a typo'd filter type left a null entry
+    // behind and the map grew without bound (P0-10).
+    const auto it = creators.find(type);
+    if (it == creators.end() || !it->second) {
+        BOOST_LOG_TRIVIAL(error) << "Unknown filter: " << type;
+        return nullptr;
+    }
 
-#ifdef WITH_VISUALIZATION
-    else if (type == ReprojectOpenCv::id_name)
-        created = new ReprojectOpenCv();
-#endif
-    else if (type == "csvSource")
-        created = new capturers::CSVSource();
-
-    else if (type == "amplitudeRange")
-        created = new AmplitudeRange();
-    else if (type == "range")
-        created = new Range();
-
-    else if (type == "nop")
-        created = new Nop();
-    else if (type == "cond")
-        created = new Cond();
-    else if (type == "bilateral")
-        created = new smoothing::Bilateral();
-    else if (type == "average")
-        created = new smoothing::Average();
-#if OPENCV_TRACKING
-    else if (type == toffy::filters::smoothing::KalmanAverage::id_name)
-        created = new smoothing::KalmanAverage();
-#endif
-    else if (type == "objectTrack")
-        created = new detection::ObjectTrack();
-    else if (type == "blobs")
-        created = new detection::Blobs();
-    else if (type == detection::BlobsDetector::id_name)
-        created = new detection::BlobsDetector();
-    else if (type == "focus")
-        created = new Focus();
-    else if (type == "mask")
-        created = new detection::Mask();
-    else if (type == "dataImporter")
-        created = new import::DataImporter();
-    else if (type == "importYaml")
-        created = new import::ImportYaml();
-    else if (type == "roi")
-        created = new Roi();
-    else if (type == BackgroundSubs::id_name)
-        created = new BackgroundSubs();
-
-#if defined(PCL_FOUND)
-#ifdef PCL_VISUALIZATION
-    else if (type == "reprojectpcl")
-        created = new ReprojectPCL();
-#endif
-    else if (type == "transform")
-        created = new Transform();
-    else if (type == "merge")
-        created = new Merge();
-    else if (type == "xyz2pcl")
-        created = new Xyz2Pcl();
-    else if (type == "split")
-        created = new Split();
-    else if (type == "muxMerge")
-        created = new MuxMerge();
-    else if (type == "sampleConsensus")
-        created = new SampleConsensus();
-    else if (type == "exportcloud")
-        created = new ExportCloud();
-    else if (type == "exportYaml")
-        created = new ExportYaml();
-    else if (type == "groundprojection")
-        created = new GroundProjection();
-    else if (type == "squareDetect")
-        created = new detection::SquareDetect();
-#endif
-    //#if defined(WITH_SENSOR2D)
-    //    else if (type == "sensor2d")
-    //	created = new Sensor2();
-    //    else if (type == "sensorUsb")
-    //	created = new SensorU();
-    //#endif
-    else if (type == "parallelFilter")
-        created = new ParallelFilter();
-
-    else {
-        // Look the creator up without inserting. operator[] default-constructs
-        // a missing key, so the old `creators[type]` turned every failed lookup
-        // into a write to this shared registry: a typo'd filter type left a
-        // null entry behind and the map grew without bound.
-        const auto it = creators.find(type);
-        if (it == creators.end() || !it->second) {
-            BOOST_LOG_TRIVIAL(error) << "Unknown filter: " << type;
-            return nullptr;
-        }
-        created = it->second();
-        // The creator itself may hand back null; it used to be dereferenced a
-        // few lines below when the name was logged.
-        if (!created) {
-            BOOST_LOG_TRIVIAL(error)
-                << "Creator for filter type " << type << " returned null";
-            return nullptr;
-        }
+    Filter* created = it->second();
+    // The creator itself may hand back null; it used to be dereferenced a few
+    // lines below when the name was logged.
+    if (!created) {
+        BOOST_LOG_TRIVIAL(error)
+            << "Creator for filter type " << type << " returned null";
+        return nullptr;
     }
 
     // The single point where ownership starts (P2-5). From here on there is one
-    // owner -- the caller -- and the registry below holds a weak index entry
-    // next to it, so the index cannot keep the filter alive and cannot dangle.
+    // owner -- the caller -- and the index below holds a weak entry next to it,
+    // so the index cannot keep the filter alive and cannot dangle. Before P2-4
+    // this line also had to cover ~35 `new` expressions spread over the chain;
+    // that is what made "the caller owns it" tractable in the first place, and
+    // it is why the chain could be deleted without touching ownership at all.
     const FilterPtr f(created);
 
     BOOST_LOG_TRIVIAL(debug)

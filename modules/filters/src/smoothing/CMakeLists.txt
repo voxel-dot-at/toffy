@@ -9,6 +9,7 @@ else()
 endif()
 
 add_library(toffy_smoothing OBJECT 
+    init.cpp
     average.cpp
     bilateral.cpp
     ${TRACK_SRCS}

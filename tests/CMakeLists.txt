@@ -94,3 +94,13 @@ add_test(NAME ownership COMMAND test_ownership)
 add_executable(test_filterthread test_filterthread.cpp)
 target_link_libraries(test_filterthread toffy GTest::gtest GTest::gtest_main)
 add_test(NAME filterthread COMMAND test_filterthread)
+
+# P2-4: the factory's built-in types are registrations, not branches. The set is
+# the assertion -- a dropped type name fails in the field, from a config file, at
+# run time, and nothing in a compile or a link notices. `EveryExpectedTypeIsA-
+# RegisteredCreator` is the half that is red while the chain is still in place;
+# see the header comment in the source for what the set was measured against and
+# for the three names that are deliberately still unreachable.
+add_executable(test_filter_registry test_filter_registry.cpp)
+target_link_libraries(test_filter_registry toffy GTest::gtest GTest::gtest_main)
+add_test(NAME filter_registry COMMAND test_filter_registry)

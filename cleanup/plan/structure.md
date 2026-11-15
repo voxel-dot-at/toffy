@@ -1,26 +1,45 @@
 # Structural: factory, ownership, run loop, threading, layering, plugins
 
-### 4 — Replace the `createFilter()` chain with registration
+### 4 — Replace the `createFilter()` chain with registration — **DONE** (`P2-4`)
 
-`filterfactory.cpp:148-265` is a ~120-line `if/else if` over ~30 string literals, executed
-on every instantiation. It also hard-codes every filter into core, which defeats the plugin
-mechanism sitting in the same file.
+All three steps landed as written. `createFilter()` is now one `creators.find()`, a null check
+on the creator, one on its result, and the `name`/`id` bookkeeping; the categories are
+`base`, `capture`, `smoothing`, `detection`, `import`, `3d` alongside the `viewers` and
+`tracking` that already registered themselves, each an `init.cpp` that is nothing but
+`registerCreator` calls; and `modules/filters/include/toffy/filter_init.hpp` replaced the
+`extern` block. Counters 11 and 11a carry the numbers (37 branches → 0; 35 includes of modules
+above core → 2).
 
-The replacement already exists and works: `modules/filters/src/viewers/init.cpp:54` and
-`modules/filters/src/tracking/init.cpp:26` define `initFilters(FilterFactory&)` and call
-`factory.registerCreator(...)` (`viewers/init.cpp:59-68`, `tracking/init.cpp:31-33`).
+Three things the plan did not know, because they only show up when you do it:
 
-Steps:
+**The chain had three branches that could never be taken.** `reprojectopencv` and
+`kalmanAverage` were guarded on `WITH_VISUALIZATION` and `OPENCV_TRACKING`, and `reprojectpcl`
+on `PCL_VISUALIZATION` — macros no build defines for `modules/core`, because the filters' own
+directories define them for themselves. So `ReprojectOpenCV` and `KalmanAverage` are compiled,
+linked into `libtoffy.so` and unreachable by name from any configuration file, and
+`reprojectpcl` points at a class that does not exist. `tests/test_filter_registry.cpp`
+`ThreeChainNamesAreUnreachableToday` pins all three, and the move leaves them unreachable on
+purpose: making them resolvable changes which configs load, which is not what a commit whose
+claim is "the set did not move" gets to do. Filed as its own change.
 
-1. Give each sub-category its own `init.cpp` doing nothing but `registerCreator` calls
-   (capture, filters, detection, smoothing — viewers and tracking are done).
-2. Have core call the category init functions once, instead of branching per type. Replace
-   the `extern void initFilters(FilterFactory&)` declarations currently buried inside a
-   namespace block at `filterfactory.cpp:76,79` with a real header.
-3. Reduce `createFilter()` to a single map lookup plus the `name`/`id` bookkeeping.
+**`~Controller` called `clearCreators()`, and the chain was the only reason that was
+survivable.** Finding `C3` had it recorded as wiping plug-in creators process-wide; with the
+built-ins registered too, the same call erased every type name in the product, so the second
+`Controller` in a process could not create its base bank. `SequentialControllersStillWork`
+said so in a comment — "the coupling is real but currently benign" — and stopped being benign
+on schedule. The call is gone, not the built-ins re-registered behind it: a `Controller` does
+not own the registry (`P2-5` settled that).
 
-This deletes the largest function in core and makes the "unknown filter" path a single
-log line instead of a fall-through `else`.
+**Two of the chain's guards are vestigial.** `squareDetect` and `exportYaml` are gated on
+`PCL_FOUND`, but both are built unconditionally and neither contains pcl (exportYaml's pcl
+includes are commented out), so a PCL-less build compiles the filter and refuses to name it.
+Preserved as-is so this commit moves types rather than adding them; noted at each site.
+
+The evidence is a set comparison, not a diff read: the probe over every type name resolves
+**byte-identical** sets before and after — 35 names with PCL and BTA on, and in the
+`WITHOUT_PCL=ON` and `WITHOUT_BTA=ON` cells exactly the expected 10 and 1 names absent with
+nothing appearing that was not there before. `EveryExpectedTypeIsARegisteredCreator` is the
+assertion that was red before the move and green after it.
 
 ### 5 — One owner per `Filter` — **DONE** (`P2-5`, PR 36)
 
@@ -31,12 +50,12 @@ The recommended shape below is what landed, with two differences worth naming:
   true — the caller of `createFilter()` holds the only strong reference — and it is what lets
   `getFilter(name)` answer "no such filter" instead of returning freed memory once the owner
   has gone. A `shared_ptr` registry would have kept the old leak and given it a GC feel.
-- **`clearCreators()` is still called by `~Controller`.** The paragraph below says it "no
-  longer has to exist as a teardown step", and since `P2-5` that is exactly true: it has
-  nothing to do with ownership any more. It is kept because removing it is a behaviour change
-  (a second `Controller` would start retaining the plug-ins the first registered) and it
-  belongs with `P2-10`, which owns the `dlopen`/`dlclose` lifetime that makes it tempting.
-  Finding `C3` stays open for that half; `C1` and `A17` are closed.
+- **`clearCreators()` is no longer called by `~Controller`.** The paragraph below said it "no
+  longer has to exist as a teardown step", which `P2-5` made true and `P2-4` made enforced: the
+  call is gone. It could not survive the move — with the built-ins registered, wiping the map
+  in a destructor wiped every type name in the product. The behaviour change `P2-5` deferred
+  (a second `Controller` keeps the plug-ins the first registered) is the correct behaviour and
+  is what both consumers already assume. Findings `C1`, `C3` and `A17` are closed.
 
 Everything else went as written: `_pipe` is `std::vector<FilterPtr>`, `createFilter()` returns
 `FilterPtr`, `remove()` is an `erase` with no factory round-trip, `insert()` gained its bounds
@@ -74,7 +93,7 @@ FilterPtr createFilter(const std::string& type, const std::string& name = "");
 
 Then `remove()` is `_pipe.erase(begin() + pos)` with no factory round-trip, `~Controller`
 needs no `deleteFilter` (done), and `clearCreators()` no longer has to exist as a teardown
-step (true, and now true for the right reason — but still called; see the note above).
+step — true under `P2-5`, enforced under `P2-4`, which is where the call came out.
 
 If `shared_ptr` is judged too invasive, the alternative is to make the factory a pure
 creator (no registry at all) and let banks own `std::unique_ptr<Filter>` — but then

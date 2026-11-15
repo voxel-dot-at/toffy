@@ -25,21 +25,31 @@ keyed by *id*. `clearBank()` is now `_pipe.clear()`. The reachable-through-a-con
 version of this is `FilterOwnership.PlayerSessionReleasesEverythingOnShutdown`, which pre-fix
 leaves exactly one filter alive: the one the config renamed.
 
-**`~Controller` tears down process-global state — HALF FIXED (`P2-5`).** It used to call
+**`~Controller` tears down process-global state — FIXED (`P2-5`, `P2-4`).** It used to call
 `deleteFilter(baseFilterBank->id())`, then `clearCreators()`. The first half is gone:
 `baseFilterBank` is a `std::shared_ptr<FilterBank>` and the teardown is letting it go, which
 destroys the bank and everything pipelined into it, in this object, without a registry
 round-trip (`ControllerLifecycle.*` still pass, and `P2-5` added the `Player` session test
 that exercises the same path through a config file).
 
-**`clearCreators()` is still called**, and `P2-5` is what makes it *optional* rather than
-load-bearing: it has nothing to do with ownership any more. Removing it is a behaviour change
-(a second `Controller` would start retaining the plug-ins the first registered) and belongs
-with `P2-10`, which owns the `dlopen`/`dlclose` lifetime that makes it tempting to keep. It
-is currently benign for built-in types: `createFilter()` resolves those through a hard-coded
-chain rather than the creator map, so a second `Controller` still works (pinned by
-`ControllerLifecycle.SequentialControllersStillWork`). Only *registered* creators — plugins,
-`Player::loadFilter()` — are lost, and nothing tests that yet.
+**`clearCreators()` is no longer called.** `P2-5` made it *optional* rather than load-bearing
+(it has nothing to do with ownership any more); `P2-4` made it fatal. Once the built-in types
+were registered creators like everyone else's, the call erased every type name in the product,
+so the second `Controller` in a process could not create its base bank —
+`Unknown filter: filterBank` / `Controller: FilterFactory could not create the base FilterBank`,
+which is what `ControllerLifecycle.SequentialControllersStillWork` fails with on the
+intermediate commit. That test used to pass with a comment explaining that the coupling was
+"real but currently benign" *because* the chain resolved built-ins without the map; the
+benign-ness was the chain, and deleting the chain deleted it.
+
+The fix is the call coming out, not the built-ins being re-registered behind it — a `Controller`
+does not own the registry. The behaviour change is the one `P2-5` deferred: a second
+`Controller` now keeps the plug-ins the first registered, which is what `boxes` and
+`toffy-oatpp` already assume — both register once at startup via `init_toffy()` and name those
+types from config, so a `Player` restart in a long-running process used to silently lose them.
+That was the untested case this entry noted; it is closed now rather than still untested. The
+method itself stays: it is public API, and removing it is an `X6` break. Nothing in toffy calls
+it any more.
 
 **`FilterThread` copies a raw owner — HALF FIXED (`P2-5`).** The thread used to document that
 it owns the `Filter` and `delete` it in its destructor while the `FilterBank` that created the

@@ -23,6 +23,7 @@ it; `feature/code-cleanup` is kept where the extraction happened and is now behi
 | **6** | `creators.find()`, `Player::stop()`, guarded `get_child` | ✅ done | `Player::stop()` defined in `player.cpp` |
 | **7** | debug leftovers, `modules/core` | ✅ core done | 0 prints, 0 `#warning` in core. **128 remain in `modules/filters`/`modules/bta`, 97 more in `libraries/`** |
 | **7a** | dead macros | ✅ done | 22 `DLLExport` deleted, `WIN`/`UNIX` gone, `RAWFILE` 3 headers → 1. Side effect: 7 of the 19 `MSVC` branches went with them |
+| **9** | `P2-4` factory → registration | ✅ done | `createFilter()` is one `creators.find()`; 0 `else if (type ==)` branches (counter 11) and 2 includes from modules above core, down from 35 (counter 11a). The fence: `tests/test_filter_registry.cpp` — the resolvable set is **byte-identical** to the parent commit in all three configurations (35 / 25 / 34 names), and `EveryExpectedTypeIsARegisteredCreator` is the half that was red before the move. One behaviour change forced out of it: `~Controller` no longer calls `clearCreators()` (finding `C3`) |
 | **15** | logging policy | ✅ done | `setLoggingLvl()` is data-only; 3 hot-path calls removed; `Filter::setGlobalLogLevel()` added; `~Player` no longer kills process logging. 7 new tests, 4 of them failing pre-fix |
 | **17** | delete `Event` | ✅ done | `event.hpp`/`event.cpp` gone; tagged `v1.10.0` (annotated, **on `origin`**), at `7fea594` rather than the branch tip — see *Release / tag situation* |
 | **19** | `P3-1` verification scope + `libraries/sensor/` orphan | ✅ done | 2 unreferenced headers deleted; counters 7a 3→0, 8c 2→0, 14a 16→15, 18 8→7. Counter 21's command was also broken (grepped `_pattern`, the variables are `_depthPattern`/`_amplPattern`) |
@@ -57,7 +58,7 @@ public header surface proved compilable rather than assumed, one long-standing "
 then act" item actually decided, and the ownership model the rest of the structural work was
 blocked on.
 
-`P1`/`P2` items closed: **7 of 16** (`P1-1`, `P2-2`, `P2-5`, `P2-7`, `P2-8`, `P2-14`, `P2-16`),
+`P1`/`P2` items closed: **8 of 16** (`P1-1`, `P2-2`, `P2-4`, `P2-5`, `P2-7`, `P2-8`, `P2-14`, `P2-16`),
 with `P2-3` core-only and `P2-13` one-third done (`stedBackward()` → `stepBackward()`,
 `b397f44`; the rest of the renames and the four duplicated run-method bodies are still open,
 with `P2-6`). `P2-16` closed when `P3-4` landed the `-Werror` half of it, `P2-2` when the
@@ -67,7 +68,6 @@ Windows branches were deleted rather than enabled.
 
 | PR | Item | State |
 |---|---|---|
-| **9** | `P2-4` factory → registration | ❌ 37 branches |
 | ~~**10**~~ | ~~`P2-5` one owner per `Filter`~~ | ✅ **landed as PR 36** — the keystone, so 11, 12 and 13 are no longer blocked on it |
 | **11** | `P2-6` + `P2-13` run methods, state, typos | ◐ unblocked by `P2-5`; the first typo is landed (`stedBackward()` → `stepBackward()`, `b397f44` — renamed, not aliased, and `nm -D` shows exactly that pair). What is left is the other run-method renames, the unified state and the four duplicated bodies |
 | ~~**12**~~ | ~~`P2-7` threading~~ | ✅ **landed as PR 37** (`b9e3032`) — the atomic flag, the semaphore, the copy ctor and `delete lanes[i]` all went; see *Landed*. TSan was named as the gate on this one and it is the weakest part of its evidence: `b9e3032` landed on 2026-10-18, inside the window in which **every** CI job was red on the runner's toolchain (**P0-4**), so no TSan run of `P2-7` exists before 2026-10-29. What exists is the `ThreadSanitizer` job green on every push since, `a3d882f` included (run 43760237608, 2026-11-15) |
