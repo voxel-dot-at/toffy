@@ -16,8 +16,8 @@
 */
 
 #include "toffy/frame.hpp"
+#include "toffy/logging.hpp"
 
-#include <boost/log/trivial.hpp>
 
 using namespace toffy;
 
@@ -40,17 +40,17 @@ bool Frame::hasKey(std::string key) const
 
 boost::any Frame::getData(const std::string& key) const
 {
-    // BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ", key: " << key;
+    // toffy::log::debug() << __FUNCTION__ << ", key: " << key;
     boost::any out;
     if (data.find(key) != data.end()) {
         try {
             out = data.at(key);
         } catch (std::out_of_range& e) {
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "Frame::getData(): Could not find key " << key;
         }
     } else {
-        BOOST_LOG_TRIVIAL(info)
+        toffy::log::info()
             << "Frame::getData(): Could not find key " << key;
     }
     return out;

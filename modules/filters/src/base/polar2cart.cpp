@@ -26,7 +26,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
 
-#include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -37,7 +36,6 @@ using namespace toffy;
 using namespace toffy::filters;
 using namespace cv;
 using namespace std;
-namespace logging = boost::log;
 namespace fs = boost::filesystem;
 
 std::size_t Polar2Cart::_filter_counter = 1;
@@ -55,7 +53,7 @@ Polar2Cart::Polar2Cart()
 
 void Polar2Cart::updateConfig(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -75,10 +73,10 @@ void Polar2Cart::updateConfig(const boost::property_tree::ptree &pt)
             fs.getFirstTopLevelNode() >> _cameraMatrix;
             fs.release();
         } else
-            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-        BOOST_LOG_TRIVIAL(debug) << "Node cameraMatrix is not opencv.";
+            toffy::log::debug() << __FUNCTION__;
+        toffy::log::debug() << "Node cameraMatrix is not opencv.";
     } else
-        BOOST_LOG_TRIVIAL(debug) << "Node options.cameraMatrix not found.";
+        toffy::log::debug() << "Node options.cameraMatrix not found.";
 
     _in_img = pt.get<string>("inputs.img", _in_img);
     _in_fovx = pt.get<string>("inputs.fovx", _in_fovx);
@@ -106,13 +104,13 @@ boost::property_tree::ptree Polar2Cart::getConfig() const
 
 bool Polar2Cart::filter(const Frame &in, Frame & /*out*/)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
     matPtr img;
     try {
         img = boost::any_cast<matPtr >(in.getData(_in_img));
     } catch (const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(error) << "Could not cast input " << _in_img
+        toffy::log::error() << "Could not cast input " << _in_img
                                  << ", filter  " << id() << " not applied.";
         return false;
     }
@@ -129,19 +127,19 @@ bool Polar2Cart::filter(const Frame &in, Frame & /*out*/)
         try {
             _fovx = boost::any_cast<double>(in.getData(_in_fovx));
         } catch (const boost::bad_any_cast &) {
-            BOOST_LOG_TRIVIAL(warning) << "Could not read input " << _in_fovx;
+            toffy::log::warning() << "Could not read input " << _in_fovx;
         }
     }
     if (!_in_fovy.empty()) {
         try {
             _fovy = boost::any_cast<double>(in.getData(_in_fovy));
         } catch (const boost::bad_any_cast &) {
-            BOOST_LOG_TRIVIAL(warning) << "Could not read input " << _in_fovy;
+            toffy::log::warning() << "Could not read input " << _in_fovy;
         }
     }
 
     if (_fovx <= 0. || _fovy <= 0.) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "No FoV data, filter " << id() << " not applied.";
         return false;
     }

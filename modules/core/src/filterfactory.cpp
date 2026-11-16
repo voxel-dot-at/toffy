@@ -38,7 +38,6 @@
 #include <toffy/bta/initPlugin.hpp>
 #endif
 
-#include <boost/log/trivial.hpp>
 
 using namespace toffy;
 using namespace toffy::filters;
@@ -136,7 +135,7 @@ Filter* FilterFactory::getFilter(const std::string& name) const
     boost::container::flat_map<std::string, std::weak_ptr<Filter> >::const_iterator
         it = _filters.find(name);
     if (it == _filters.end()) {
-        BOOST_LOG_TRIVIAL(warning) << name << " not found.";
+        toffy::log::warning() << name << " not found.";
         return NULL;
     }
 
@@ -145,7 +144,7 @@ Filter* FilterFactory::getFilter(const std::string& name) const
     // the object was deleted -- and is the use-after-free this change removes.
     const FilterPtr f = it->second.lock();
     if (!f) {
-        BOOST_LOG_TRIVIAL(warning) << name << " not found.";
+        toffy::log::warning() << name << " not found.";
         return NULL;
     }
     return f.get();
@@ -161,7 +160,7 @@ bool FilterFactory::findFilter(std::string name) const
 FilterPtr FilterFactory::createFilter(const std::string& type,
                                       std::string /* name */)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
 
     // One path (P2-4). This used to be ~120 lines and 35 `else if (type ==
     // "...")` branches that `new`-ed every filter in the product before falling
@@ -179,7 +178,7 @@ FilterPtr FilterFactory::createFilter(const std::string& type,
     // behind and the map grew without bound (P0-10).
     const auto it = creators.find(type);
     if (it == creators.end() || !it->second) {
-        BOOST_LOG_TRIVIAL(error) << "Unknown filter: " << type;
+        toffy::log::error() << "Unknown filter: " << type;
         return nullptr;
     }
 
@@ -187,7 +186,7 @@ FilterPtr FilterFactory::createFilter(const std::string& type,
     // The creator itself may hand back null; it used to be dereferenced a few
     // lines below when the name was logged.
     if (!created) {
-        BOOST_LOG_TRIVIAL(error)
+        toffy::log::error()
             << "Creator for filter type " << type << " returned null";
         return nullptr;
     }
@@ -200,7 +199,7 @@ FilterPtr FilterFactory::createFilter(const std::string& type,
     // it is why the chain could be deleted without touching ownership at all.
     const FilterPtr f(created);
 
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "created f->name(): " << f->name() << " id(): " << f->id()
         << "  type(): " << f->type();
 
@@ -229,7 +228,7 @@ int FilterFactory::renameFilter(const FilterPtr& f, const std::string& oldName,
             // filter with target name exists already!
 
             // if name == id (no name set explicitly), we fall into this case.
-            // BOOST_LOG_TRIVIAL(info) << "FF we already have a filter named "
+            // toffy::log::info() << "FF we already have a filter named "
             //			   << newName << "! Abort!" <<endl;
             return 0;
         }
@@ -245,19 +244,19 @@ int FilterFactory::renameFilter(const FilterPtr& f, const std::string& oldName,
     _filters.insert(
         std::pair<std::string, std::weak_ptr<Filter> >(newName, f));
 
-    BOOST_LOG_TRIVIAL(debug) << "FF stored " << newName << endl;
+    toffy::log::debug() << "FF stored " << newName << endl;
     return 1;
 }
 
 int FilterFactory::getFiltersByType(const std::string& type,
                                     std::vector<Filter*>& vec)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     for (boost::container::flat_map<std::string, std::weak_ptr<Filter> >::iterator
              it = _filters.begin();
          it != _filters.end(); it++) {
-        // BOOST_LOG_TRIVIAL(debug) << type;
-        // BOOST_LOG_TRIVIAL(debug) << (*it)->id();
+        // toffy::log::debug() << type;
+        // toffy::log::debug() << (*it)->id();
         // if ((*it)->type() == "filterBank" ||
         //	(*it)->type() == "parallelFilter")
         //{

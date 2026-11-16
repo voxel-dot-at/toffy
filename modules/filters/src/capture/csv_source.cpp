@@ -25,7 +25,6 @@
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/log/trivial.hpp>
 
 #include <opencv2/highgui.hpp>
 #include <toffy/filter_helpers.hpp>
@@ -57,7 +56,7 @@ CSVSource::CSVSource(): CapturerFilter(CSVSource::id_name, 0),
 CSVSource::~CSVSource() {}
 
 int CSVSource::loadConfig(const boost::property_tree::ptree& pt) {
-  BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::loadConfig() " << id();
+  toffy::log::debug() << " ------------ CSVSource::loadConfig() " << id();
 
   Filter::loadConfig(pt);
 
@@ -81,7 +80,7 @@ int CSVSource::loadConfig(const boost::property_tree::ptree& pt) {
   if (validSequencePattern(amplPattern, why)) {
     _amplPattern = amplPattern;
   } else {
-    BOOST_LOG_TRIVIAL(error) << "CSVSource::" << __FUNCTION__
+    toffy::log::error() << "CSVSource::" << __FUNCTION__
                              << ": rejecting options/amplPattern \"" << amplPattern
                              << "\" - " << why << "; keeping \"" << _amplPattern
                              << "\"";
@@ -90,7 +89,7 @@ int CSVSource::loadConfig(const boost::property_tree::ptree& pt) {
   if (validSequencePattern(depthPattern, why)) {
     _depthPattern = depthPattern;
   } else {
-    BOOST_LOG_TRIVIAL(error) << "CSVSource::" << __FUNCTION__
+    toffy::log::error() << "CSVSource::" << __FUNCTION__
                              << ": rejecting options/depthPattern \""
                              << depthPattern << "\" - " << why << "; keeping \""
                              << _depthPattern << "\"";
@@ -111,7 +110,7 @@ int CSVSource::loadConfig(const boost::property_tree::ptree& pt) {
                   cout << "fc: " << fc << endl;
           } 
   }
-  BOOST_LOG_TRIVIAL(debug) << "CSVSource::loadConfig() configured to  " << width
+  toffy::log::debug() << "CSVSource::loadConfig() configured to  " << width
                            << "x" << height << " " << _amplPattern << " "
                            << _depthPattern;
   return errors ? 0 : 1;
@@ -138,7 +137,7 @@ boost::property_tree::ptree CSVSource::getConfig() const {
 }
 
 void CSVSource::updateConfig(const boost::property_tree::ptree& pt) {
-          BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::updateConfig() " << id();
+          toffy::log::debug() << " ------------ CSVSource::updateConfig() " << id();
 
   width = pt.get<int>("options.width", width);
   height = pt.get<int>("options.height", height);
@@ -156,7 +155,7 @@ void CSVSource::updateConfig(const boost::property_tree::ptree& pt) {
   if (validSequencePattern(amplPattern, why)) {
     _amplPattern = amplPattern;
   } else {
-    BOOST_LOG_TRIVIAL(error) << "CSVSource::" << __FUNCTION__
+    toffy::log::error() << "CSVSource::" << __FUNCTION__
                              << ": rejecting options/amplPattern \"" << amplPattern
                              << "\" - " << why << "; keeping \"" << _amplPattern
                              << "\"";
@@ -164,7 +163,7 @@ void CSVSource::updateConfig(const boost::property_tree::ptree& pt) {
   if (validSequencePattern(depthPattern, why)) {
     _depthPattern = depthPattern;
   } else {
-    BOOST_LOG_TRIVIAL(error) << "CSVSource::" << __FUNCTION__
+    toffy::log::error() << "CSVSource::" << __FUNCTION__
                              << ": rejecting options/depthPattern \""
                              << depthPattern << "\" - " << why << "; keeping \""
                              << _depthPattern << "\"";
@@ -181,15 +180,15 @@ void CSVSource::updateConfig(const boost::property_tree::ptree& pt) {
                   cout << "fc: " << fc << endl;
           } 
   }
-  BOOST_LOG_TRIVIAL(debug) << "CSVSource::loadConfig() configured to  " << width
+  toffy::log::debug() << "CSVSource::loadConfig() configured to  " << width
                            << "x" << height << " " << _amplPattern << " "
                            << _depthPattern << " seq? " << useSequence;
 }
 
 bool CSVSource::filter(const Frame& /*in*/, Frame& out) {
-  BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::filter() " << id();
+  toffy::log::debug() << " ------------ CSVSource::filter() " << id();
   cv::waitKey(500);
-  BOOST_LOG_TRIVIAL(debug) << " ------------ CSVSource::filter() " << id();
+  toffy::log::debug() << " ------------ CSVSource::filter() " << id();
 
   matPtr ampl;
   matPtr depth;
@@ -230,7 +229,7 @@ int CSVSource::loadPath(const std::string& ) { return 1; }
 void CSVSource::loadDepth(Frame& /*frame*/, Mat& depth) {
   char path[1024];
   if (!formatPath(path, sizeof(path), _depthPattern, sequence)) {
-    BOOST_LOG_TRIVIAL(error) << "CSVSource: depthPattern \"" << _depthPattern
+    toffy::log::error() << "CSVSource: depthPattern \"" << _depthPattern
                              << "\" expands past " << sizeof(path)
                              << " characters; depth not updated";
     return;
@@ -253,7 +252,7 @@ void CSVSource::loadDepth(Frame& /*frame*/, Mat& depth) {
     for (int x = 0; x < width; x++) {
       float val = 0;
       if (fscanf(f, "%g;", &val) != 1) {
-        BOOST_LOG_TRIVIAL(error) << "CSVSource: " << path << ": expected "
+        toffy::log::error() << "CSVSource: " << path << ": expected "
                                  << expected << " depth values, read " << read
                                  << "; the rest of the frame keeps its previous "
                                  << "content";
@@ -270,7 +269,7 @@ void CSVSource::loadDepth(Frame& /*frame*/, Mat& depth) {
 void CSVSource::loadAmpl(Frame& /*frame*/, Mat& ampl) {
   char path[1024];
   if (!formatPath(path, sizeof(path), _amplPattern, sequence)) {
-    BOOST_LOG_TRIVIAL(error) << "CSVSource: amplPattern \"" << _amplPattern
+    toffy::log::error() << "CSVSource: amplPattern \"" << _amplPattern
                              << "\" expands past " << sizeof(path)
                              << " characters; ampl not updated";
     return;
@@ -290,7 +289,7 @@ void CSVSource::loadAmpl(Frame& /*frame*/, Mat& ampl) {
     for (int x = 0; x < width; x++) {
       int val = 0;
       if (fscanf(f, "%d;", &val) != 1) {
-        BOOST_LOG_TRIVIAL(error) << "CSVSource: " << path << ": expected "
+        toffy::log::error() << "CSVSource: " << path << ": expected "
                                  << expected << " ampl values, read " << read
                                  << "; the rest of the frame keeps its previous "
                                  << "content";

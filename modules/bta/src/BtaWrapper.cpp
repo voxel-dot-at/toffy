@@ -10,9 +10,6 @@
 #include <condition_variable>
 #include <mutex>
 
-#include <boost/log/core.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/trivial.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
 #include <toffy/bta/BtaWrapper.hpp>
@@ -27,10 +24,10 @@ static void BTA_CALLCONV infoEventCbEx2(BTA_Handle /*handle*/,
 {
     // BtaWrapper* bta = (BtaWrapper*)userArg;
     if (status == BTA_StatusOk) {
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "   BTACallback: infoEventEx2 (" << status << ") " << msg;
     } else {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "   BTACallback: infoEventEx2 (" << status << ") " << msg;
     }
 }
@@ -40,12 +37,12 @@ static void BTA_CALLCONV frameArrivedEx2(
     struct BTA_FrameArrivedReturnOptions * /*frameArrivedReturnOptions*/)
 {
     if (!frame) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "   BTACallback: frameArrivedEx2 NO FRAME ";
         return;
     }
     /*
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "   BTACallback: frameArrivedEx2 (" << frame->frameCounter << ") ";
 */
     BtaWrapper *bta = (BtaWrapper *)arg;
@@ -76,7 +73,7 @@ static void errorHandling(BTA_Status status)
             0,
         };
         BTAstatusToString(status, statusString, sizeof(statusString));
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "bta: " << statusString << ". error id: " << status;
     }
 }
@@ -119,11 +116,11 @@ int BtaWrapper::parseConfig(string configFile)
     try {
         boost::property_tree::read_xml(configFile, pt);
     } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "Could not open config file: " << configFile << ". " << e.what();
         return -1;
     }
-    BOOST_LOG_TRIVIAL(debug) << "Config file opened.";
+    toffy::log::debug() << "Config file opened.";
     boost::optional<boost::property_tree::ptree &> opt =
         pt.get_child_optional("opencv_storage");
     if (opt.is_initialized()) {
@@ -140,7 +137,7 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
     pres = pt_optional_get_default<uint8_t>(pt, "connection.shmDataEnabled",
                                             config.shmDataEnabled, 0);
     if (pres) {
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "shmDataEnabled is set! now=" << (int)config.shmDataEnabled;
     }
 
@@ -193,13 +190,13 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
                                   "192.168.0.10");
     config.tcpDeviceIpAddr = tcpDeviceIpAddr;
     if (pres) {
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "tcpDeviceIpAddr set to " << (unsigned int)tcpDeviceIpAddr[0]
             << "." << (unsigned int)tcpDeviceIpAddr[1] << "."
             << (unsigned int)tcpDeviceIpAddr[2] << "."
             << (unsigned int)tcpDeviceIpAddr[3];
     } else {
-        BOOST_LOG_TRIVIAL(debug) << "tcpDeviceIpAddr not set ";
+        toffy::log::debug() << "tcpDeviceIpAddr not set ";
     }
 
     // static inline bool pt_optional_get_ipaddr(const
@@ -220,10 +217,10 @@ int BtaWrapper::parseConfig(const boost::property_tree::ptree pt)
         frameMode =
             pt.get<int32_t>("connection.frameMode", BTA_FrameModeDistAmp);
         config.frameMode = (BTA_FrameMode)frameMode;
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "BtaWrapper::parseConfig Read frameMode: " << config.frameMode;
     } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "BtaWrapper::parseConfig Error getting parameters: " << e.what();
     }
 
@@ -277,11 +274,11 @@ int BtaWrapper::reConnect()
 int BtaWrapper::connect()
 {
     if (isConnected()) {
-        BOOST_LOG_TRIVIAL(warning) << "The camera is already connected.";
+        toffy::log::warning() << "The camera is already connected.";
         return -1;
     }
     if (state == connecting) {
-        BOOST_LOG_TRIVIAL(info) << "The camera is already connecting.";
+        toffy::log::info() << "The camera is already connecting.";
         return -1;
     }
     state = connecting;
@@ -297,7 +294,7 @@ int BtaWrapper::connect()
     }
 
     if (bltstreamFilename.length()) {
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::connect() - enabling playback";
+        toffy::log::debug() << "BtaWrapper::connect() - enabling playback";
         config.bltstreamFilename = (uint8_t *)bltstreamFilename.c_str();
         config.deviceType = BTA_DeviceTypeBltstream;
         async = true;
@@ -306,33 +303,33 @@ int BtaWrapper::connect()
         async = true;
     }
 
-    BOOST_LOG_TRIVIAL(info) << "BtaWrapper::connect() Read tcpDeviceIpAddr: "
+    toffy::log::info() << "BtaWrapper::connect() Read tcpDeviceIpAddr: "
                             << (int)config.tcpDeviceIpAddr[0] << "."
                             << (int)config.tcpDeviceIpAddr[1] << "."
                             << (int)config.tcpDeviceIpAddr[2] << "."
                             << (int)config.tcpDeviceIpAddr[3];
 
     if (config.udpDataIpAddr) {
-        BOOST_LOG_TRIVIAL(info) << "BtaWrapper::connect() Read udpDataIpAddr: "
+        toffy::log::info() << "BtaWrapper::connect() Read udpDataIpAddr: "
                                 << (int)config.udpDataIpAddr[0] << "."
                                 << (int)config.udpDataIpAddr[1] << "."
                                 << (int)config.udpDataIpAddr[2] << "."
                                 << (int)config.udpDataIpAddr[3] << ".";
     }
-    BOOST_LOG_TRIVIAL(info)
+    toffy::log::info()
         << "BtaWrapper::connect() shm " << (int)config.shmDataEnabled;
     // hack on:
     // config.shmDataEnabled = 1;
 
     status = BTAopen(&config, &handle);
     if (status != BTA_StatusOk) {
-        BOOST_LOG_TRIVIAL(warning) << "BtaWrapper::connect() BTAopen: Could "
+        toffy::log::warning() << "BtaWrapper::connect() BTAopen: Could "
                                       "not connect to the camera. status: "
                                    << status;
         state = disconnected;
         return status;
     }
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "BtaWrapper::connect() Camera connected sucessfully. status: "
         << status;
     state = connected;
@@ -340,23 +337,23 @@ int BtaWrapper::connect()
     if (hasChannels) {
         status = setChannels();
         if (status < 0) {
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "BtaWrapper::connect() setChannels() failed with: "
                 << status;
             state = error;
         } else {
-            BOOST_LOG_TRIVIAL(debug)
+            toffy::log::debug()
                 << "BtaWrapper::connect() setChannels() status: " << status;
         }
     }
 
     status = BTAgetDeviceInfo(handle, &deviceInfo);
     if (status != BTA_StatusOk) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not get device info. " << status;
+        toffy::log::warning() << "Could not get device info. " << status;
         state = error;
         return -1;
     }
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "Retrieved device info: \n"
         << "deviceType: " << hex << deviceInfo->deviceType << dec << "\n"
         << "serialNumber: " << deviceInfo->serialNumber << "\n"
@@ -365,13 +362,13 @@ int BtaWrapper::connect()
         << deviceInfo->firmwareVersionNonFunc << std::endl;
 
     device = deviceInfo->deviceType;
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "Service running: " << (int)BTAisRunning(handle);
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "Connection up: " << (int)BTAisConnected(handle);
 
     if (bltstreamFilename.length()) {
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "BtaWrapper::connect() - auto playback speed";
         BTAsetLibParam(handle, BTA_LibParamStreamAutoPlaybackSpeed, 1);
         status = BTAsetFrameRate(handle, 2.0f);
@@ -459,7 +456,7 @@ int BtaWrapper::disconnect()
     if (deviceInfo != NULL) {
         status = BTAfreeDeviceInfo(deviceInfo);
         if (status != BTA_StatusOk) {
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "Could not free device info. status: " << status;
         }
         deviceInfo = NULL;
@@ -468,7 +465,7 @@ int BtaWrapper::disconnect()
     if (isConnected()) {
         status = BTAclose(&handle);
         if (status != BTA_StatusOk) {
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "Could not disconnect. Status: " << status;
         }
         // Setting the handle to 0 as the bta_p100 keeps returning connected
@@ -491,10 +488,10 @@ int BtaWrapper::capture(char *&buffer)
 {
     BTA_Frame *frame;
     int i;
-    BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::capture() async? " << async;
+    toffy::log::debug() << "BtaWrapper::capture() async? " << async;
     return 0;
     for (i = 0; i <= retries; i++) {
-        BOOST_LOG_TRIVIAL(debug) << "BtaWrapper::capture().BTAgetFrame";
+        toffy::log::debug() << "BtaWrapper::capture().BTAgetFrame";
         status = BTAgetFrame(handle, &frame, 1000);
         if (status != BTA_StatusOk) {
             if (status ==
@@ -502,7 +499,7 @@ int BtaWrapper::capture(char *&buffer)
                 sleep(2);
                 continue;
             }
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "Could no capture frame. status: " << status;
             continue;
         } else {
@@ -510,26 +507,26 @@ int BtaWrapper::capture(char *&buffer)
         }
     }
     if (i > retries) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not capture.";
+        toffy::log::warning() << "Could not capture.";
         return 0;
     }
 
-    // BOOST_LOG_TRIVIAL(debug) << "Frame captured";
+    // toffy::log::debug() << "Frame captured";
     buffer = (char *)frame;
     /*
-    BOOST_LOG_TRIVIAL(debug) << "frame size: " << sizeof(BTA_Frame);
-    BOOST_LOG_TRIVIAL(debug) << "BTA_CHANNEL size: " << sizeof(BTA_Channel);
-    BOOST_LOG_TRIVIAL(debug) << "frame->firmwareVersionNonFunc: " <<
-    (int)frame->firmwareVersionNonFunc; BOOST_LOG_TRIVIAL(debug) <<
+    toffy::log::debug() << "frame size: " << sizeof(BTA_Frame);
+    toffy::log::debug() << "BTA_CHANNEL size: " << sizeof(BTA_Channel);
+    toffy::log::debug() << "frame->firmwareVersionNonFunc: " <<
+    (int)frame->firmwareVersionNonFunc; toffy::log::debug() <<
     "frame->firmwareVersionMinor: " << (int)frame->firmwareVersionMinor;
-    BOOST_LOG_TRIVIAL(debug) << "frame->firmwareVersionMajor: " <<
-    (int)frame->firmwareVersionMajor; BOOST_LOG_TRIVIAL(debug) <<
-    "frame->mainTemp: " << (float)frame->mainTemp; BOOST_LOG_TRIVIAL(debug) <<
-    "frame->ledTemp " << (float)frame->ledTemp; BOOST_LOG_TRIVIAL(debug) <<
-    "frame->genericTemp " << (float)frame->genericTemp; BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug() << "frame->firmwareVersionMajor: " <<
+    (int)frame->firmwareVersionMajor; toffy::log::debug() <<
+    "frame->mainTemp: " << (float)frame->mainTemp; toffy::log::debug() <<
+    "frame->ledTemp " << (float)frame->ledTemp; toffy::log::debug() <<
+    "frame->genericTemp " << (float)frame->genericTemp; toffy::log::debug()
     << "frame->frameCounter " << (float)frame->frameCounter;
-    BOOST_LOG_TRIVIAL(debug) << "frame->timeStamp " << frame->timeStamp;
-    BOOST_LOG_TRIVIAL(debug) << "frame->channelsLen: " <<
+    toffy::log::debug() << "frame->timeStamp " << frame->timeStamp;
+    toffy::log::debug() << "frame->channelsLen: " <<
     (int)frame->channelsLen;
     //buffer = (char *)malloc(sizeof(BTA_Frame));
     //memcpy(buffer,frame,sizeof(BTA_Frame));
@@ -542,7 +539,7 @@ uint32_t BtaWrapper::readRegister(unsigned int reg)
     uint32_t usValue;
     status = BTAreadRegister(handle, reg, &usValue, 0);
     if (status != BTA_StatusOk) {
-        BOOST_LOG_TRIVIAL(warning) << "Could read reg: status" << status;
+        toffy::log::warning() << "Could read reg: status" << status;
         return status;
     }
     return usValue;
@@ -552,10 +549,10 @@ int BtaWrapper::writeRegister(uint32_t reg, uint32_t data)
 {
     status = BTAwriteRegister(handle, reg, &data, 0);
     if (status != BTA_StatusOk) {
-        BOOST_LOG_TRIVIAL(warning) << "Could write reg. status: " << status;
+        toffy::log::warning() << "Could write reg. status: " << status;
         return -1;
     }
-    BOOST_LOG_TRIVIAL(debug) << "Register: " << reg << " set to: " << data;
+    toffy::log::debug() << "Register: " << reg << " set to: " << data;
     return 0;
 }
 
@@ -565,32 +562,33 @@ char *BtaWrapper::loadFrame(char *data, std::string /*ext*/)
     memcpy(frame, data, sizeof(BTA_Frame));
 
 #ifdef CM_DEBUG
-    namespace logging = boost::log;
-    logging::core::get()->set_filter(logging::trivial::severity >=
-                                     logging::trivial::debug);
+    // P2-17 moved this verbatim: it is `logging::core::get()->set_filter(
+    // severity >= debug)` with the backend hidden behind toffy::log. It is
+    // wrong either way and is removed in the next commit -- see finding A26.
+    toffy::log::root().setLevel(toffy::log::level::debug);
 #endif
 
-    BOOST_LOG_TRIVIAL(debug) << "frame size: " << sizeof(BTA_Frame);
-    BOOST_LOG_TRIVIAL(debug) << "BTA_CHANNEL size: " << sizeof(BTA_Channel);
-    BOOST_LOG_TRIVIAL(debug) << "frame->firmwareVersionNonFunc: "
+    toffy::log::debug() << "frame size: " << sizeof(BTA_Frame);
+    toffy::log::debug() << "BTA_CHANNEL size: " << sizeof(BTA_Channel);
+    toffy::log::debug() << "frame->firmwareVersionNonFunc: "
                              << (int)frame->firmwareVersionNonFunc;
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "frame->firmwareVersionMinor: " << (int)frame->firmwareVersionMinor;
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "frame->firmwareVersionMajor: " << (int)frame->firmwareVersionMajor;
-    BOOST_LOG_TRIVIAL(debug) << "frame->mainTemp: " << (float)frame->mainTemp;
-    BOOST_LOG_TRIVIAL(debug) << "frame->ledTemp " << (float)frame->ledTemp;
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug() << "frame->mainTemp: " << (float)frame->mainTemp;
+    toffy::log::debug() << "frame->ledTemp " << (float)frame->ledTemp;
+    toffy::log::debug()
         << "frame->genericTemp " << (float)frame->genericTemp;
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "frame->frameCounter " << (float)frame->frameCounter;
-    BOOST_LOG_TRIVIAL(debug) << "frame->timeStamp " << (int)frame->timeStamp;
+    toffy::log::debug() << "frame->timeStamp " << (int)frame->timeStamp;
     cout << endl;
 
     // if (UNIX && ext == ".rw")
     memcpy(&frame->channelsLen, data + 28, 1);
 
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "frame->channelsLen: " << (int)frame->channelsLen;
     cout << endl;
 
@@ -613,21 +611,21 @@ char *BtaWrapper::loadFrame(char *data, std::string /*ext*/)
         memcpy(frame->channels[i], data + pos, sizeof(BTA_Channel));
         // memcpy(frame->channels[i],data+pos,28);
 
-        BOOST_LOG_TRIVIAL(debug) << "frame size: " << sizeof(BTA_Frame);
-        BOOST_LOG_TRIVIAL(debug) << "BTA_CHANNEL size: " << sizeof(BTA_Channel);
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug() << "frame size: " << sizeof(BTA_Frame);
+        toffy::log::debug() << "BTA_CHANNEL size: " << sizeof(BTA_Channel);
+        toffy::log::debug()
             << "frame->channels[i]->id: " << (int)frame->channels[i]->id;
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "frame->channels[i]->xRes: " << (int)frame->channels[i]->xRes;
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "frame->channels[i]->yRes: " << (int)frame->channels[i]->yRes;
-        BOOST_LOG_TRIVIAL(debug) << "frame->channels[i]->dataFormat: "
+        toffy::log::debug() << "frame->channels[i]->dataFormat: "
                                  << (int)frame->channels[i]->dataFormat;
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "frame->channels[i]->unit: " << (int)frame->channels[i]->unit;
-        BOOST_LOG_TRIVIAL(debug) << "frame->channels[i]->integrationTime: "
+        toffy::log::debug() << "frame->channels[i]->integrationTime: "
                                  << (int)frame->channels[i]->integrationTime;
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "frame->channels[i]->modulationFrequency: "
             << (int)frame->channels[i]->modulationFrequency;
         cout << endl;
@@ -645,7 +643,7 @@ char *BtaWrapper::loadFrame(char *data, std::string /*ext*/)
         if (frame->channels[i]->dataFormat == BTA_DataFormatUInt32)
             dataSize = sizeof(unsigned int);
 
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << (int)(dataSize *
                      (frame->channels[i]->xRes * frame->channels[i]->yRes));
         dataSize *= frame->channels[i]->xRes * frame->channels[i]->yRes;
@@ -655,7 +653,7 @@ char *BtaWrapper::loadFrame(char *data, std::string /*ext*/)
 
         pos += dataSize;
     }
-    BOOST_LOG_TRIVIAL(debug) << "frame loaded.";
+    toffy::log::debug() << "frame loaded.";
     return (char *)frame;
 }
 
@@ -667,24 +665,24 @@ char *BtaWrapper::serializeFrame(char *data, size_t &size)
     // channelsLen is nº of channels
     size = sizeof(BTA_Frame) + sizeof(BTA_Channel) * frame->channelsLen;
 
-    BOOST_LOG_TRIVIAL(info) << "frame size: " << sizeof(BTA_Frame);
-    BOOST_LOG_TRIVIAL(info) << "BTA_CHANNEL size: " << sizeof(BTA_Channel);
-    BOOST_LOG_TRIVIAL(debug) << "frame->firmwareVersionNonFunc "
+    toffy::log::info() << "frame size: " << sizeof(BTA_Frame);
+    toffy::log::info() << "BTA_CHANNEL size: " << sizeof(BTA_Channel);
+    toffy::log::debug() << "frame->firmwareVersionNonFunc "
                              << (int)frame->firmwareVersionNonFunc;
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "frame->firmwareVersionMinor " << (int)frame->firmwareVersionMinor;
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "frame->firmwareVersionMajor " << (int)frame->firmwareVersionMajor;
-    BOOST_LOG_TRIVIAL(debug) << "frame->mainTemp " << (float)frame->mainTemp;
-    BOOST_LOG_TRIVIAL(debug) << "frame->ledTemp " << (float)frame->ledTemp;
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug() << "frame->mainTemp " << (float)frame->mainTemp;
+    toffy::log::debug() << "frame->ledTemp " << (float)frame->ledTemp;
+    toffy::log::debug()
         << "frame->genericTemp " << (float)frame->genericTemp;
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "frame->frameCounter " << (int)frame->frameCounter;
-    BOOST_LOG_TRIVIAL(debug) << "frame->timeStamp " << (int)frame->timeStamp;
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug() << "frame->timeStamp " << (int)frame->timeStamp;
+    toffy::log::debug()
         << "frame->channelsLen: " << (int)frame->channelsLen;
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "frame->sequenceCounter: " << (int)frame->sequenceCounter;
 
     for (int i = 0; i < frame->channelsLen; i++) {
@@ -696,7 +694,7 @@ char *BtaWrapper::serializeFrame(char *data, size_t &size)
         else if (frame->channels[i]->dataFormat == BTA_DataFormatFloat32)
             dataSize = sizeof(unsigned int);
         else {
-            BOOST_LOG_TRIVIAL(error)
+            toffy::log::error()
                 << "unknown dataFormat: 0x" << hex
                 << (int)(frame->channels[i]->dataFormat) << dec;
         }
@@ -711,24 +709,24 @@ char *BtaWrapper::serializeFrame(char *data, size_t &size)
     memcpy(raw, frame, sizeof(BTA_Frame));
 
     for (int i = 0; i < frame->channelsLen; i++) {
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "frame->channels[i]->id: " << (int)frame->channels[i]->id;
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "frame->channels[i]->xRes: " << (int)frame->channels[i]->xRes;
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "frame->channels[i]->yRes: " << (int)frame->channels[i]->yRes;
-        BOOST_LOG_TRIVIAL(debug) << "frame->channels[i]->dataFormat: "
+        toffy::log::debug() << "frame->channels[i]->dataFormat: "
                                  << (int)frame->channels[i]->dataFormat;
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "frame->channels[i]->unit: " << (int)frame->channels[i]->unit;
-        BOOST_LOG_TRIVIAL(debug) << "frame->channels[i]->integrationTime: "
+        toffy::log::debug() << "frame->channels[i]->integrationTime: "
                                  << frame->channels[i]->integrationTime;
-        BOOST_LOG_TRIVIAL(debug) << "frame->channels[i]->modulationFrequency: "
+        toffy::log::debug() << "frame->channels[i]->modulationFrequency: "
                                  << frame->channels[i]->modulationFrequency;
 
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "sizeof(BTA_Channel): " << sizeof(BTA_Channel);
-        BOOST_LOG_TRIVIAL(debug) << "channels[i]: " << (int)channels[i];
+        toffy::log::debug() << "channels[i]: " << (int)channels[i];
 
         memcpy(raw + count, frame->channels[i], sizeof(BTA_Channel));
 
@@ -745,11 +743,11 @@ char *BtaWrapper::serializeFrame(char *data, size_t &size)
 
 int BtaWrapper::freeFrame(char *data)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     BTA_Frame *frame = (BTA_Frame *)data;
     status = BTAfreeFrame(&frame);
     if (status != BTA_StatusOk) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not connect to the camera.";
+        toffy::log::warning() << "Could not connect to the camera.";
         return -1;
     }
     frame = NULL;
@@ -765,7 +763,7 @@ int BtaWrapper::getDistances(float *&depth, int &size, char *data)
     BTA_DataFormat dataFormat;
     BTA_Unit unit;
     uint16_t xRes, yRes;
-    // BOOST_LOG_TRIVIAL(debug) << "BTAgetDistances()";
+    // toffy::log::debug() << "BTAgetDistances()";
     status = BTAgetDistances(frame, &disVoid, &dataFormat, &unit, &xRes, &yRes);
 
     if (status != BTA_StatusOk) {
@@ -774,15 +772,15 @@ int BtaWrapper::getDistances(float *&depth, int &size, char *data)
 
     if (size != xRes * yRes) {
         size = xRes * yRes;
-        BOOST_LOG_TRIVIAL(debug) << "Size does not match! " << size;
-        BOOST_LOG_TRIVIAL(debug) << "xRes: " << xRes;
-        BOOST_LOG_TRIVIAL(debug) << "yRes: " << yRes;
+        toffy::log::debug() << "Size does not match! " << size;
+        toffy::log::debug() << "xRes: " << xRes;
+        toffy::log::debug() << "yRes: " << yRes;
 
         return -1;
     }
 
     if (dataFormat == BTA_DataFormatUInt16) {
-        // BOOST_LOG_TRIVIAL(debug) << "unit: " << unit;
+        // toffy::log::debug() << "unit: " << unit;
         if (unit == BTA_UnitMillimeter) {
             unsigned short *distances = (unsigned short *)disVoid;
 
@@ -804,12 +802,12 @@ int BtaWrapper::getDistances(float *&depth, int &size, char *data)
                     depth[j] = std::numeric_limits<float>::quiet_NaN();
                 else
                     depth[j] = distances[j];
-                // BOOST_LOG_TRIVIAL(warning) << depth[j];
+                // toffy::log::warning() << depth[j];
             }
             return 1;
         }
     } else {
-        BOOST_LOG_TRIVIAL(warning) << "Unknown data format! " << dataFormat;
+        toffy::log::warning() << "Unknown data format! " << dataFormat;
     }
 
     return -1;
@@ -833,11 +831,11 @@ int BtaWrapper::getAmplitudes(unsigned short *&amplitudes, int &size,
 
     if (sz != xRes * yRes) {
         size = xRes * yRes;
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "Size does not match! " << size << " " << xRes << " " << yRes
             << " " << (xRes * yRes) << endl;
-        BOOST_LOG_TRIVIAL(debug) << "xRes: " << xRes;
-        BOOST_LOG_TRIVIAL(debug) << "yRes: " << yRes;
+        toffy::log::debug() << "xRes: " << xRes;
+        toffy::log::debug() << "yRes: " << yRes;
 
         return -1;
     }
@@ -863,7 +861,7 @@ int BtaWrapper::getAmplitudes(unsigned short *&amplitudes, int &size,
             return 1;
         }
     } else {
-        BOOST_LOG_TRIVIAL(warning) << "Unknown data format! " << dataFormat;
+        toffy::log::warning() << "Unknown data format! " << dataFormat;
     }
 
     return -1;
@@ -873,15 +871,15 @@ int BtaWrapper::reset() { return BTAsendReset(handle); }
 
 int BtaWrapper::getDisSize(char *data, int &x, int &y)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     BTA_Frame *frame = (BTA_Frame *)data;
     uint16_t *distances;
     BTA_DataFormat dataFormat;
     BTA_Unit unit;
-    // BOOST_LOG_TRIVIAL(debug) << "BTAgetDistances()";
+    // toffy::log::debug() << "BTAgetDistances()";
     status = BTAgetDistances(frame, (void **)&distances, &dataFormat, &unit,
                              (uint16_t *)&x, (uint16_t *)&y);
-    BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
+    toffy::log::debug() << "Status: " << status;
     if (status == BTA_StatusOk) {
         return 1;
     }
@@ -890,16 +888,16 @@ int BtaWrapper::getDisSize(char *data, int &x, int &y)
 
 int BtaWrapper::getAmpSize(char *data, int &x, int &y)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     BTA_Frame *frame = (BTA_Frame *)data;
 
     BTA_DataFormat dataFormat;
     uint16_t *amplitudes;
     BTA_Unit unit;
-    // BOOST_LOG_TRIVIAL(debug) << "BTAgetAmplitudes()";
+    // toffy::log::debug() << "BTAgetAmplitudes()";
     status = BTAgetAmplitudes(frame, (void **)&amplitudes, &dataFormat, &unit,
                               (uint16_t *)&x, (uint16_t *)&y);
-    BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
+    toffy::log::debug() << "Status: " << status;
     if (status == BTA_StatusOk) {
         return 1;
     }
@@ -975,7 +973,7 @@ float BtaWrapper::getGlobalOffset()
     float val;
     status = BTAgetGlobalOffset(handle, &val);
     if (status != BTA_StatusOk) {
-        BOOST_LOG_TRIVIAL(warning) << "getGlobalOffset() Status: " << status;
+        toffy::log::warning() << "getGlobalOffset() Status: " << status;
         return -1;
     }
     return val;
@@ -985,7 +983,7 @@ int BtaWrapper::setGlobalOffset(float val)
 {
     status = BTAsetGlobalOffset(handle, val);
     if (status != BTA_StatusOk) {
-        BOOST_LOG_TRIVIAL(warning) << "setGlobalOffset() Status: " << status;
+        toffy::log::warning() << "setGlobalOffset() Status: " << status;
         return -1;
     }
     return 1;
@@ -995,7 +993,7 @@ unsigned int BtaWrapper::getIntegrationTime()
 {
     unsigned int it;
     status = BTAgetIntegrationTime(handle, &it);
-    BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
+    toffy::log::debug() << "Status: " << status;
     if (status != BTA_StatusOk) {
         return -1;
     }
@@ -1006,7 +1004,7 @@ float BtaWrapper::getFrameRate()
 {
     float fr;
     status = BTAgetFrameRate(handle, &fr);
-    BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
+    toffy::log::debug() << "Status: " << status;
     if (status != BTA_StatusOk) {
         return -1;
     }
@@ -1017,7 +1015,7 @@ unsigned long BtaWrapper::getModulationFrequency()
 {
     unsigned int it;
     status = BTAgetModulationFrequency(handle, &it);
-    BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
+    toffy::log::debug() << "Status: " << status;
     if (status != BTA_StatusOk) {
         return -1;
     }
@@ -1027,7 +1025,7 @@ unsigned long BtaWrapper::getModulationFrequency()
 int BtaWrapper::setIntegrationTime(unsigned int it)
 {
     status = BTAsetIntegrationTime(handle, it);
-    BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
+    toffy::log::debug() << "Status: " << status;
     if (status != BTA_StatusOk) {
         return -1;
     }
@@ -1037,7 +1035,7 @@ int BtaWrapper::setIntegrationTime(unsigned int it)
 int BtaWrapper::setFrameRate(float fr)
 {
     status = BTAsetFrameRate(handle, fr);
-    BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
+    toffy::log::debug() << "Status: " << status;
     if (status != BTA_StatusOk) {
         return -1;
     }
@@ -1047,7 +1045,7 @@ int BtaWrapper::setFrameRate(float fr)
 int BtaWrapper::setModulationFrequency(unsigned long mf)
 {
     status = BTAsetModulationFrequency(handle, mf);
-    BOOST_LOG_TRIVIAL(debug) << "Status: " << status;
+    toffy::log::debug() << "Status: " << status;
     if (status != BTA_StatusOk) {
         return -1;
     }
@@ -1056,7 +1054,7 @@ int BtaWrapper::setModulationFrequency(unsigned long mf)
 
 int BtaWrapper::startGrabbing(std::string filename)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     BTA_GrabbingConfig grabbingConfig;
     status = BTAinitGrabbingConfig(&grabbingConfig);
     errorHandling(status);
@@ -1070,7 +1068,7 @@ int BtaWrapper::startGrabbing(std::string filename)
 
 int BtaWrapper::stopGrabbing()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     status = BTAstartGrabbing(handle, 0);
     errorHandling(status);
     return 1;
@@ -1085,25 +1083,25 @@ int BtaWrapper::saveRaw(string fileName, char *data)
 
     FrameHeader header;
     header.manufacturer = manufacturer;
-    // BOOST_LOG_TRIVIAL(debug) << "camera->getDevice() " <<
+    // toffy::log::debug() << "camera->getDevice() " <<
     // camera->getDevice();
     header.device = device;
-    // BOOST_LOG_TRIVIAL(debug) << "header.device " << header.device;
+    // toffy::log::debug() << "header.device " << header.device;
     header.lenght = static_cast<int>(data_serialized_size);
 
     memcpy(raw, &header, sizeof(FrameHeader));
     memcpy(raw + sizeof(FrameHeader), data_serialized, data_serialized_size);
     free(data_serialized);
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "Saving file: " << fileName
         << ", size: " << data_serialized_size + sizeof(FrameHeader);
     // Frame *test = (Frame *)raw;
-    // BOOST_LOG_TRIVIAL(debug) << "Tests frame: " << test->device;
+    // toffy::log::debug() << "Tests frame: " << test->device;
     ofstream f;
     f.open(fileName.c_str(), ios::out | ios_base::binary);
     f.write(raw, sizeof(FrameHeader) + data_serialized_size);
     f.close();
-    BOOST_LOG_TRIVIAL(debug) << "Saved file: " << fileName;
+    toffy::log::debug() << "Saved file: " << fileName;
     delete[] raw;
 
     return 0;
@@ -1113,7 +1111,7 @@ char *BtaWrapper::loadRaw(string rawFile)
 {
     FILE *raw = fopen(rawFile.c_str(), "rb");
     if (raw == NULL) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not open file: " << rawFile;
+        toffy::log::warning() << "Could not open file: " << rawFile;
         return NULL;
     }
 
@@ -1122,28 +1120,28 @@ char *BtaWrapper::loadRaw(string rawFile)
     size_t ret;
     ret = fread(&header, sizeof(FrameHeader), 1, raw);
     if (ret == 0) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not read file: " << rawFile;
+        toffy::log::warning() << "Could not read file: " << rawFile;
         fclose(raw);
         return NULL;
     }
 
     /*if (checkRaw(header)){
-        BOOST_LOG_TRIVIAL(warning) << "Raw frame does not match sensor device.";
+        toffy::log::warning() << "Raw frame does not match sensor device.";
         return NULL;
     }
-    BOOST_LOG_TRIVIAL(debug) << "sizeof(FrameHeader): " <<
+    toffy::log::debug() << "sizeof(FrameHeader): " <<
     sizeof(FrameHeader);*/
 
     char *frame_data = new char[header.lenght];
     ret = fread(frame_data, sizeof(char), header.lenght, raw);
     if (ret == 0) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not read file: " << rawFile;
+        toffy::log::warning() << "Could not read file: " << rawFile;
         fclose(raw);
         delete[] frame_data;
         return NULL;
     }
 
-    BOOST_LOG_TRIVIAL(debug) << "Raw frame read.";
+    toffy::log::debug() << "Raw frame read.";
     fclose(raw);
 
     string ext = rawFile.substr(rawFile.find_last_of("."),

@@ -14,7 +14,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <boost/log/trivial.hpp>
 #include <boost/any.hpp>
 
 #include <opencv2/viz.hpp>
@@ -34,7 +33,7 @@ CloudViewOpenCv::~CloudViewOpenCv() {
 }
 
 int CloudViewOpenCv::loadConfig(const boost::property_tree::ptree& pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "(const boost::property_tree::ptree& pt)";
+    toffy::log::debug() << __FUNCTION__ << "(const boost::property_tree::ptree& pt)";
     const boost::property_tree::ptree& conf = pt.get_child(this->type());
 
     loadGlobals(conf);
@@ -45,7 +44,7 @@ int CloudViewOpenCv::loadConfig(const boost::property_tree::ptree& pt) {
 }
 
 void CloudViewOpenCv::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    toffy::log::debug() << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -66,13 +65,13 @@ boost::property_tree::ptree CloudViewOpenCv::getConfig() const {
 
 
 bool CloudViewOpenCv::filter(const Frame &in, Frame& out) const {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
 	matPtr img3d;
 	try {
 		img3d = boost::any_cast<matPtr>(in.getData(_in_cloud));
 	} catch(const boost::bad_any_cast &) {
-		BOOST_LOG_TRIVIAL(warning) <<
+		toffy::log::warning() <<
 			"Could not cast input " << _in_cloud <<
 			", filter  " << id() <<" not applied.";
 		return false;

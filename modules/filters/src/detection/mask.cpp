@@ -21,7 +21,6 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <boost/log/trivial.hpp>
 #include <toffy/common/filenodehelper.hpp>
 
 #include <toffy/detection/mask.hpp>
@@ -45,7 +44,7 @@ Mask::Mask()
 
 boost::property_tree::ptree Mask::getConfig() const
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
     boost::property_tree::ptree pt;
 
     pt = Filter::getConfig();
@@ -66,7 +65,7 @@ boost::property_tree::ptree Mask::getConfig() const
 
 void Mask::updateConfig(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -91,10 +90,10 @@ void Mask::updateConfig(const boost::property_tree::ptree &pt)
             fs.getFirstTopLevelNode() >> *_cameraMatrix;
             fs.release();
         } else
-            BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
-        BOOST_LOG_TRIVIAL(debug) << "Node cameraMatrix is not opencv.";
+            toffy::log::debug() << __FUNCTION__;
+        toffy::log::debug() << "Node cameraMatrix is not opencv.";
     } else
-        BOOST_LOG_TRIVIAL(debug) << "Node options.cameraMatrix not found.";
+        toffy::log::debug() << "Node options.cameraMatrix not found.";
 
     _in_depth = pt.get<string>("inputs.depth", _in_depth);
     _in_ampl = pt.get<string>("inputs.ampl", _in_ampl);
@@ -107,7 +106,7 @@ bool Mask::filter(const Frame &in, Frame &out)
     try {
         depth = in.getMatPtr(_in_depth);
     } catch (const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << _in_depth
+        toffy::log::warning() << "Could not cast input " << _in_depth
                                    << ", filter  " << id() << " not applied.";
         return false;
     }
@@ -117,14 +116,14 @@ bool Mask::filter(const Frame &in, Frame &out)
         try {
             ampl = in.getMatPtr(_in_ampl);
         } catch (const boost::bad_any_cast &) {
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "Could not cast input " << _in_ampl << ", filter  " << id()
                 << " not applied.";
             return false;
         }
 
         if (!_cameraMatrix || _cameraMatrix->empty()) {
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "No cameraMatrix data, filter " << id() << " not applied.";
             return false;
         }
@@ -141,7 +140,7 @@ bool Mask::filter(const Frame &in, Frame &out)
 
         //groundProjection();
         groundProjection2();
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow(id_name + "[1] proj2d", cv::WINDOW_NORMAL);
             cv::imshow(id_name + "[1] proj2d", *proj2d);
         }
@@ -150,7 +149,7 @@ bool Mask::filter(const Frame &in, Frame &out)
             fground.reset(new cv::Mat());
         }
         *fground = proj2d->clone();
-        BOOST_LOG_TRIVIAL(debug) << "fground->size()" << fground->size();
+        toffy::log::debug() << "fground->size()" << fground->size();
         //cout << "fground->size()" << fground->size() << endl;
         /*
         for(int i = 0; i < proj2d->rows; i++) {
@@ -163,30 +162,30 @@ bool Mask::filter(const Frame &in, Frame &out)
                 }
             }
         }
-        if (dbg) cv::imshow("fground", *fground);
+        if (debugEnabled()) cv::imshow("fground", *fground);
         */
         //Project back
         projectBack();
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow(id_name + "[2] projectBack", cv::WINDOW_NORMAL);
             imshow(id_name + "[2] projectBack", *new_mask);
         }
 
         //Add low amp pixel to mask
         /*amplitudeMasking();
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow("amplitudeMasking", cv::WINDOW_NORMAL);
             imshow("*amplitudeMasking", *new_mask);
         }*/
 
         morfExMask(*new_mask);
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow(id_name + "[3] morfExMask", cv::WINDOW_NORMAL);
             imshow(id_name + "[3] morfExMask", *new_mask);
         }
 
         fillMaskGaps();
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow(id_name + "[4] new_mask insider",
                             cv::WINDOW_NORMAL);
             imshow(id_name + "[4] new_mask insider", *new_mask);
@@ -203,13 +202,13 @@ bool Mask::filter(const Frame &in, Frame &out)
         try {
             old_mask = in.getMatPtr(_out_mask);
         } catch (const boost::bad_any_cast &) {
-            BOOST_LOG_TRIVIAL(debug) << "Could not cast previous mask.";
+            toffy::log::debug() << "Could not cast previous mask.";
             out.addData(_out_mask, new_mask);
             old_mask = new_mask;
         }
         *old_mask &= *new_mask;
 
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow(id_name + "[5] mask", cv::WINDOW_NORMAL);
             imshow(id_name + "[5] mask", *old_mask);
         }
@@ -227,12 +226,12 @@ bool Mask::filter(const Frame &in, Frame &out)
         *depth_mask += (temp - temp * (5. / 100));
         *depth_mask /= 2.f;
 
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow("1depth_mask", cv::WINDOW_NORMAL);
             imshow("1depth_mask", *depth_mask);
         }
 
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "depth_mask nomorph 20x77: " << depth_mask->at<float>(77, 20);
         int morph_size = 1;
         cv::Mat structuringElement = cv::getStructuringElement(
@@ -248,14 +247,14 @@ bool Mask::filter(const Frame &in, Frame &out)
                          structuringElement, cv::Point(-1, -1), 1,
                          cv::BORDER_CONSTANT);
 
-        BOOST_LOG_TRIVIAL(debug) << "depth 20x77: " << depth->at<float>(77, 20);
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug() << "depth 20x77: " << depth->at<float>(77, 20);
+        toffy::log::debug()
             << "depth_mask 20x77: " << depth_mask->at<float>(77, 20);
 
         cv::FileStorage fs(_maskPath + "/mask.yml", cv::FileStorage::WRITE);
         fs << "mask" << *depth_mask;
 
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow("2depth_mask", cv::WINDOW_NORMAL);
             imshow("2depth_mask", *depth_mask);
         }
@@ -264,14 +263,14 @@ bool Mask::filter(const Frame &in, Frame &out)
         //depth->copyTo(fdepth, *mask);
         depth->copyTo(fdepth);
 
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "fdepth 20x77: " << fdepth.at<float>(77, 20);
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "depth_mask 20x77: " << depth_mask->at<float>(77, 20);
 
         cv::Mat m = (fdepth > *depth_mask) & (*depth_mask > 0.);
 
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow("comp", cv::WINDOW_NORMAL);
             imshow("comp", m);
         }
@@ -279,7 +278,7 @@ bool Mask::filter(const Frame &in, Frame &out)
         fdepth.setTo(0., m);
 
         //*depth &= *mask;
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow("depthmask masked", cv::WINDOW_NORMAL);
             imshow("depthmask masked", fdepth);
         }
@@ -294,7 +293,7 @@ bool Mask::filter(const Frame &in, Frame &out)
         fdepth.setTo(0.);
         depth->copyTo(fdepth, *old_mask);
         //*depth &= *mask;
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow("depth masked", cv::WINDOW_NORMAL);
             imshow("depth masked", fdepth);
         }
@@ -312,7 +311,7 @@ bool Mask::filter(const Frame &in, Frame &out)
             try {
                 old_mask = in.getMatPtr(_out_mask);
             } catch(const boost::bad_any_cast &) {
-                BOOST_LOG_TRIVIAL(debug) <<
+                toffy::log::debug() <<
                                             "Could not cast previous mask.";
                 out.addData(_out_mask,new_mask);
                 old_mask = new_mask;
@@ -329,27 +328,27 @@ bool Mask::filter(const Frame &in, Frame &out)
 
     } else {
         //Load depth and ampl angle by side
-        BOOST_LOG_TRIVIAL(debug) << "Loading mask.";
+        toffy::log::debug() << "Loading mask.";
         matPtr mask;
         try {
             mask = in.getMatPtr(_out_mask);
         } catch (const boost::bad_any_cast &) {
-            BOOST_LOG_TRIVIAL(debug) << "Not mask.";
+            toffy::log::debug() << "Not mask.";
             mask.reset(new cv::Mat());
             out.addData("mask", mask);
         }
 
         if (mask->empty()) {
             //Load mask;
-            BOOST_LOG_TRIVIAL(debug) << "New angle, loading.";
+            toffy::log::debug() << "New angle, loading.";
             *mask = cv::imread(_maskPath + "/test.png", cv::IMREAD_UNCHANGED);
             if (mask->data == NULL) {
-                BOOST_LOG_TRIVIAL(warning)
+                toffy::log::warning()
                     << "Could not load mask file: "
                     << _maskPath + "/test" + ".png" << ", filter  " << id();
             }
         }
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow("Mask", cv::WINDOW_NORMAL);
             imshow("Mask", *mask);
         }
@@ -358,7 +357,7 @@ bool Mask::filter(const Frame &in, Frame &out)
         cv::FileStorage fs(_maskPath + "/mask.yml", cv::FileStorage::READ);
         fs["mask"] >> dmask;
 
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow("dmask", cv::WINDOW_NORMAL);
             imshow("dmask", dmask);
         }
@@ -367,13 +366,13 @@ bool Mask::filter(const Frame &in, Frame &out)
         //depth->copyTo(fdepth, *mask);
         depth->copyTo(fdepth);
 
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "fdepth 20x77: " << fdepth.at<float>(77, 20);
-        BOOST_LOG_TRIVIAL(debug) << "dmask 20x77: " << dmask.at<float>(77, 20);
+        toffy::log::debug() << "dmask 20x77: " << dmask.at<float>(77, 20);
 
         cv::Mat m = (fdepth > dmask) & (dmask > 0.);
 
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow("comp", cv::WINDOW_NORMAL);
             imshow("comp", m);
         }
@@ -381,7 +380,7 @@ bool Mask::filter(const Frame &in, Frame &out)
         fdepth.setTo(0., m);
 
         //*depth &= *mask;
-        if (dbg) {
+        if (debugEnabled()) {
             cv::namedWindow("depth masked", cv::WINDOW_NORMAL);
             imshow("depth masked", fdepth);
         }
@@ -395,7 +394,7 @@ static inline double deg2rad(float degrees) { return (degrees * M_PI) / 180.0; }
 
 void Mask::groundProjection2()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
 
     cv::Mat channel[3];
 
@@ -407,8 +406,8 @@ void Mask::groundProjection2()
     maxSizeX = (tan(deg2rad(fovx) / 2) * _dis * 2) * _scale;
     maxSizeY = (tan(deg2rad(fovy) / 2) * _dis * 2) * _scale;
 
-    //BOOST_LOG_TRIVIAL(debug) << "maxSizeX: " << maxSizeX;
-    //BOOST_LOG_TRIVIAL(debug) << "maxSizeY: " << maxSizeY;
+    //toffy::log::debug() << "maxSizeX: " << maxSizeX;
+    //toffy::log::debug() << "maxSizeY: " << maxSizeY;
 
     if (!proj2d || !proj2d->data ||
         proj2d->size() != cv::Size(maxSizeX, maxSizeY)) {
@@ -459,7 +458,7 @@ void Mask::groundProjection2()
 
 void Mask::projectBack()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
 
     if (!new_mask || !new_mask->data || new_mask->size() != depth->size()) {
         new_mask.reset(new cv::Mat(cv::Mat::zeros(depth->size(), CV_8U)));
@@ -495,14 +494,14 @@ void Mask::projectBack()
                 iValY < new_mask->rows)
                 new_mask->at<unsigned char>(iValY, iValX) = 255;
             else
-                BOOST_LOG_TRIVIAL(debug) << "ERR " << iValX << "/" << iValY;
+                toffy::log::debug() << "ERR " << iValX << "/" << iValY;
         }
     }
 }
 
 void Mask::amplitudeMasking()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
 
     cv::Mat amp_mask;
     amp_mask = *ampl <= 150;
@@ -511,7 +510,7 @@ void Mask::amplitudeMasking()
 
 void Mask::morfExMask(cv::Mat &mask)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
 
     int morph_size = 0;
     cv::Mat structuringElement = cv::getStructuringElement(
@@ -521,7 +520,7 @@ void Mask::morfExMask(cv::Mat &mask)
     cv::morphologyEx(mask, mask, cv::MORPH_OPEN, structuringElement);
 
     cv::Mat antiMask = ~mask.clone();
-    if (dbg) {
+    if (debugEnabled()) {
         cv::namedWindow("morphologyEx antiMask", cv::WINDOW_NORMAL);
         cv::imshow("morphologyEx antiMask", antiMask);
     }
@@ -534,7 +533,7 @@ void Mask::morfExMask(cv::Mat &mask)
 
     mask = ~antiMask.clone();
 
-    if (dbg) {
+    if (debugEnabled()) {
         cv::namedWindow("morphologyEx mask", cv::WINDOW_NORMAL);
         cv::imshow("morphologyEx mask", mask);
     }
@@ -547,7 +546,7 @@ void Mask::morfExMask(cv::Mat &mask)
 
 void Mask::fillMaskGaps()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
 
     vector<vector<cv::Point> > contours;
     vector<cv::Vec4i> hierarchy;
@@ -561,7 +560,7 @@ void Mask::fillMaskGaps()
         cv::drawContours(drawing2, contours, i, cv::Scalar(255, 0, 255), 1,
                          LINE_AA, hierarchy, 0, cv::Point());
     }
-    if (dbg) cv::imshow("drawing2", drawing2);
+    if (debugEnabled()) cv::imshow("drawing2", drawing2);
 
     double maxArea = -1;
     int maxAreaIndex = -1;
@@ -604,13 +603,13 @@ void Mask::fillMaskGaps()
         cv::drawContours(drawing, contours, i, cv::Scalar(255, 255, 255),
                          FILLED, LINE_8, hierarchy, 0, cv::Point());
     }
-    if (dbg) cv::imshow("drawing", drawing);
+    if (debugEnabled()) cv::imshow("drawing", drawing);
     *new_mask |= drawing;
 }
 
 void Mask::generate3D()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
 
     if (!img3d) {
         img3d.reset(new cv::Mat(depth->size(), CV_32FC3));

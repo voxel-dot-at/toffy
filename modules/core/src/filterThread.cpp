@@ -18,7 +18,6 @@
 
 #include <system_error>
 
-#include <boost/log/trivial.hpp>
 
 #include "toffy/frame.hpp"
 
@@ -27,7 +26,7 @@ using namespace std;
 
 FilterThread::~FilterThread()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     // Stop the worker even if the caller never called stop(). Without the
     // signal, the join below would wait forever on a thread parked in
     // inCond.wait(), and ~ParallelFilter would hang the process.
@@ -49,7 +48,7 @@ FilterThread::~FilterThread()
 
 void FilterThread::init(int numFrames)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     lock_guard<mutex> lock(qMtx);
     for (int i = 0; i < numFrames; i++)
     {
@@ -67,13 +66,13 @@ void FilterThread::start()
         // with no owner, both of them pulling from the same input queue, and the
         // lane's destructor joining only the newest. std::thread would call
         // std::terminate() on the same assignment.
-        BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << ": lane already running";
+        toffy::log::warning() << __FUNCTION__ << ": lane already running";
         return;
     }
     // A lane that was stop()ed leaves a finished but still joinable thread
     // behind; collecting it here is what makes stop() followed by start() legal.
     if (theThread.joinable()) theThread.join();
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     keepRunning = true;
     try
     {
@@ -85,13 +84,13 @@ void FilterThread::start()
         // `if (!theThread.joinable())` check could never fire, because
         // boost::thread either started or threw as well.
         keepRunning = false;
-        BOOST_LOG_TRIVIAL(error) << "FT could not start the lane thread: " << e.what();
+        toffy::log::error() << "FT could not start the lane thread: " << e.what();
     }
 }
 
 void FilterThread::stop()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     {
         // The write is under the mutex the waiters hold while they test the
         // predicate; setting an atomic outside the lock is enough to lose the
@@ -109,7 +108,7 @@ void FilterThread::stop()
 
 Frame* FilterThread::dequeue()
 {
-    BOOST_LOG_TRIVIAL(trace) << "FT deq wait";
+    toffy::log::trace() << "FT deq wait";
     unique_lock<mutex> lock(qMtx);
     // Wait on the queue that is actually consumed, holding the mutex that
     // guards it, with the emptiness test as the predicate. The old body tested
@@ -122,10 +121,10 @@ Frame* FilterThread::dequeue()
         // Only a stop() can get us here. Returning null is the caller's cue;
         // the old code fell through to outQ.front() on an empty list, which is
         // undefined behaviour on the first thing it did with the result.
-        BOOST_LOG_TRIVIAL(debug) << "FT dequeue: lane stopped, no frame";
+        toffy::log::debug() << "FT dequeue: lane stopped, no frame";
         return nullptr;
     }
-    BOOST_LOG_TRIVIAL(trace) << "FT deq got one";
+    toffy::log::trace() << "FT deq got one";
     Frame* fr = outQ.front();
     outQ.pop_front();
     return fr;
@@ -138,10 +137,10 @@ void FilterThread::enqueue(Frame* fr)
         // A null here means the caller is returning a frame it never got, i.e.
         // it carried on after dequeue() reported a stopped lane. Queuing it would
         // put a null in front of the worker, which dereferences it.
-        BOOST_LOG_TRIVIAL(warning) << "FT enqueue: ignoring null frame";
+        toffy::log::warning() << "FT enqueue: ignoring null frame";
         return;
     }
-    BOOST_LOG_TRIVIAL(trace) << "FT enq " << fr;
+    toffy::log::trace() << "FT enq " << fr;
     {
         lock_guard<mutex> lock(qMtx);
         inQ.push_back(fr);
@@ -151,7 +150,7 @@ void FilterThread::enqueue(Frame* fr)
 
 void FilterThread::loop()
 {
-    BOOST_LOG_TRIVIAL(info) << "FT thread started " << this_thread::get_id();
+    toffy::log::info() << "FT thread started " << this_thread::get_id();
     while (true)
     {
         Frame* in = nullptr;
@@ -164,21 +163,21 @@ void FilterThread::loop()
                 // stop() wins, as it always did: frames still queued are left
                 // for ~FilterThread to free rather than being processed by a
                 // lane that has been told to stop.
-                BOOST_LOG_TRIVIAL(debug) << "FT loop exit";
+                toffy::log::debug() << "FT loop exit";
                 break;
             }
-            BOOST_LOG_TRIVIAL(trace) << "FT get data";
+            toffy::log::trace() << "FT get data";
             in = inQ.front();
             inQ.pop_front();
         }
-        BOOST_LOG_TRIVIAL(trace) << "FT run filter on " << in;
+        toffy::log::trace() << "FT run filter on " << in;
         f->filter(*in, *in);
         {
             lock_guard<mutex> lock(qMtx);
             outQ.push_back(in);
         }
-        BOOST_LOG_TRIVIAL(trace) << "FT push result";
+        toffy::log::trace() << "FT push result";
         outCond.notify_all();
     }
-    BOOST_LOG_TRIVIAL(info) << "FT thread loop exit " << this_thread::get_id();
+    toffy::log::info() << "FT thread loop exit " << this_thread::get_id();
 }

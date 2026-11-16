@@ -21,7 +21,6 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include <boost/log/trivial.hpp>
 
 #include <toffy/filter_helpers.hpp>
 #include <toffy/btaFrame.hpp>
@@ -64,7 +63,7 @@ SimpleBlobs::~SimpleBlobs() {}
 
 void SimpleBlobs::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -114,17 +113,17 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
     unsigned int fc;
     try {
         fc = in.getUInt(btaFc);
-        BOOST_LOG_TRIVIAL(debug) << id() << ": Found input fc: " << btaFc;
+        toffy::log::debug() << id() << ": Found input fc: " << btaFc;
     } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning) << id() << " Could not cast input " << btaFc;
+        toffy::log::warning() << id() << " Could not cast input " << btaFc;
         return false;
     }
     matPtr inImg;
     try {
         inImg = in.getMatPtr(in_img);
-        BOOST_LOG_TRIVIAL(debug) << id() << ": Found input in_img: " << in_img;
+        toffy::log::debug() << id() << ": Found input in_img: " << in_img;
     } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning) << id() << " Could not cast input " << in_img
+        toffy::log::warning() << id() << " Could not cast input " << in_img
                                    << ", filter  " << id() << " not applied.";
         return true;
     }
@@ -132,10 +131,10 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
     matPtr ampl;
     try {
         ampl = in.getMatPtr(in_ampl);
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << id() << ": Found input in_ampl: " << in_ampl;
     } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << id() << " Could not cast input " << in_ampl << ", filter  "
             << id() << " not applied.";
         return true;
@@ -144,7 +143,7 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
         if (in.hasKey(CAM_SLOT)) {
             cam = boost::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
         } else {
-            BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " " << id()
+            toffy::log::warning() << __FUNCTION__ << " " << id()
                                        << " NO cameraPtr found in Frame!";
             return false;
         }
@@ -156,10 +155,10 @@ bool SimpleBlobs::filter(const toffy::Frame& in, toffy::Frame& out)
             boost::any_cast<DetObjectsPtr >(
                 out.getData(out_blobs));
         blobs->clear();
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << id() << ": Found output out_blobs: " << out_blobs;
     } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning) << id() << " Could not find object vector.";
+        toffy::log::warning() << id() << " Could not find object vector.";
         blobs.reset(new std::vector<DetectedObject*>);
         // return true;
     }
@@ -178,7 +177,7 @@ void SimpleBlobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
                             std::vector<DetectedObject*>& detObj)
 {
     UNUSED(ampl);
-    // BOOST_LOG_TRIVIAL(debug) << __FILE__ << ": " << __FUNCTION__;
+    // toffy::log::debug() << __FILE__ << ": " << __FUNCTION__;
 
     // Filter
     Mat m;
@@ -202,7 +201,7 @@ void SimpleBlobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
         morphologyEx(m, m, _morphoType, element, Point(-1, -1), _morphoIter);
     }
 
-    if (dbg) {
+    if (debugEnabled()) {
         imshow("blobs to track ", m);
     }
 
@@ -214,7 +213,7 @@ void SimpleBlobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
     cout << "contours: " << contours.size() << endl;
 
     // Shows all found contours
-    if (dbg) {
+    if (debugEnabled()) {
         Mat imgCopy(img.size(), CV_8UC3, Scalar(0, 0, 0));
         RNG rng(12345);
         for (size_t i = 0; i < contours.size(); i++) {
@@ -232,7 +231,7 @@ void SimpleBlobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
     Moments mu;
     Point2f mc;
 
-    if (dbg) {
+    if (debugEnabled()) {
         cout << id() << " Blobs: # = " << contours.size() << endl;
     }
 
@@ -321,7 +320,7 @@ void SimpleBlobs::findBlobs(cv::Mat& img, cv::Mat& ampl, int fc,
     }
 
     // shows blobs after filtering
-    if (dbg) {
+    if (debugEnabled()) {
         Mat imgCopy(img.size(), CV_8UC3, Scalar(0, 0, 0));
         // img.convertTo(imgCopy,CV_GRAY2BGR);
         RNG rng(12345);

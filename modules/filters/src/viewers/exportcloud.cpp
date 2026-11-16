@@ -18,7 +18,6 @@
 #include <pcl/io/pcd_io.h>
 #include <opencv2/core.hpp>
 
-#include <boost/log/trivial.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/any.hpp>
 

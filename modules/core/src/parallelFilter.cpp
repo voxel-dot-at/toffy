@@ -14,7 +14,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <boost/log/trivial.hpp>
 
 #include "toffy/filterbank.hpp"
 #include "toffy/filterThread.hpp"
@@ -45,14 +44,14 @@ int ParallelFilter::handleConfigItem(
 {
     // The `cout << "PF::handle "` that followed this logged the same two values
     // as the line above, so it is deleted rather than converted.
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << __FUNCTION__ << ":: " << type() << " " << it->first;
 
     if (it->first == "parallelFilter") {
         // recurse
         return loadConfig(confFile, it->second.begin(), it->second.end());
     } else if (it->first == "thread") {
-        BOOST_LOG_TRIVIAL(debug) << "PF::thread node";
+        toffy::log::debug() << "PF::thread node";
         // FilterPtr, not Filter* (P2-5): this filter ends up owned by two
         // places -- the FilterThread that runs it and this bank's pipeline --
         // and that is exactly what shared ownership is for. With raw pointers
@@ -84,7 +83,7 @@ int ParallelFilter::handleConfigItem(
             std::shared_ptr<FilterBank> fb = std::make_shared<FilterBank>();
             const boost::property_tree::ptree pt = it->second.begin()->second;
 
-            BOOST_LOG_TRIVIAL(debug) << "PF::filterGroup file " << pt.data();
+            toffy::log::debug() << "PF::filterGroup file " << pt.data();
             fb->bank(NULL);  // see the note above
             fb->loadFileConfig(pt.data());
 
@@ -97,7 +96,7 @@ int ParallelFilter::handleConfigItem(
         if (!f) {
             // instantiateFilter() returns empty for an unknown type; the lane
             // would then dereference it in its own thread.
-            BOOST_LOG_TRIVIAL(error)
+            toffy::log::error()
                 << name() << "::" << __FUNCTION__
                 << " could not create the filter for this thread node";
             return 0;
@@ -111,11 +110,11 @@ int ParallelFilter::handleConfigItem(
 
     } else if (it->first == "barrier") {
         boost::property_tree::ptree::const_iterator child = it->second.begin();
-        BOOST_LOG_TRIVIAL(debug) << "PF::barrier node " << child->first;
+        toffy::log::debug() << "PF::barrier node " << child->first;
 
         FilterPtr f = instantiateFilter(child);
         if (!f) {
-            BOOST_LOG_TRIVIAL(error)
+            toffy::log::error()
                 << name() << "::" << __FUNCTION__
                 << " could not create the barrier filter";
             return 0;
@@ -144,7 +143,7 @@ bool ParallelFilter::filter(const Frame& /*in*/, Frame& out)
     // sync all threads to get one result
     res.resize(lanes.size());
     for (i = 0; i < lanes.size(); i++) {
-        BOOST_LOG_TRIVIAL(trace) << name() << "::filter dequeuing lane " << i;
+        toffy::log::trace() << name() << "::filter dequeuing lane " << i;
         res[i] = lanes[i]->dequeue();
         if (!res[i]) {
             // dequeue() returns null only when the lane was stopped while this
@@ -152,19 +151,19 @@ bool ParallelFilter::filter(const Frame& /*in*/, Frame& out)
             // the barrier -- or back to the lane, which would put it in front of
             // its worker -- is worse than reporting that this pass produced
             // nothing. Give back the frames already taken, and leave.
-            BOOST_LOG_TRIVIAL(info) << name() << "::" << __FUNCTION__
+            toffy::log::info() << name() << "::" << __FUNCTION__
                                     << " lane " << i
                                     << " is stopped; no frame this pass";
             for (size_t j = 0; j < i; j++) lanes[j]->enqueue(res[j]);
             return false;
         }
     }
-    BOOST_LOG_TRIVIAL(trace) << name() << "::filter all lanes dequeued";
+    toffy::log::trace() << name() << "::filter all lanes dequeued";
 
     if (mux) {
         mux->filter(res, out);
     } else {
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << name() << "::" << __FUNCTION__ << " --> No Muxer found! ";
     }
 

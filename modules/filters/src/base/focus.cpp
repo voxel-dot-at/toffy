@@ -18,7 +18,6 @@
 
 #include <opencv2/imgproc.hpp>
 
-#include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
@@ -29,7 +28,6 @@ using namespace toffy::filters;
 using namespace cv;
 using namespace std;
 
-namespace logging = boost::log;
 namespace fs = boost::filesystem;
 
 
@@ -41,7 +39,7 @@ Focus::Focus(): Filter(Focus::id_name),
 }
 
 void Focus::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    toffy::log::debug() << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -65,14 +63,14 @@ boost::property_tree::ptree Focus::getConfig() const {
 }
 
 bool Focus::filter(const Frame &in, Frame& out) {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+	toffy::log::debug() << __FUNCTION__ <<  " " << id();
 
 	matPtr img;
 	try {
 		img = boost::any_cast<matPtr >(in.getData(in_img));
 
 	} catch(const boost::bad_any_cast &) {
-		BOOST_LOG_TRIVIAL(warning) <<
+		toffy::log::warning() <<
 			"Could not cast input " << in_img <<
 			", filter  " << id() <<" not applied.";
 		return false;

@@ -14,9 +14,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <boost/log/trivial.hpp>
 
 #include "toffy/detection/detectedObject.hpp"
+#include <toffy/logging.hpp>
 
 using namespace toffy::detection;
 using namespace cv;
@@ -94,7 +94,7 @@ DetectedObject& DetectedObject::operator=( const DetectedObject& newDO ) {
 
 void DetectedObject::init() {
     if (record) {
-        BOOST_LOG_TRIVIAL(warning) << "Detected object already initialized!";
+        toffy::log::warning() << "Detected object already initialized!";
     }
 
     first_fc = fc;

@@ -14,7 +14,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <boost/log/trivial.hpp>
 #include <limits.h>
 
 #include <opencv2/imgproc.hpp>
@@ -53,7 +52,7 @@ GroundProjection::GroundProjection()
 
 void GroundProjection::updateConfig(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -77,9 +76,9 @@ void GroundProjection::updateConfig(const boost::property_tree::ptree &pt)
             fs.getFirstTopLevelNode() >> _cameraMatrix;
             fs.release();
         } else
-            BOOST_LOG_TRIVIAL(debug) << "Node cameraMatrix is not opencv.";
+            toffy::log::debug() << "Node cameraMatrix is not opencv.";
     } else
-        BOOST_LOG_TRIVIAL(debug) << "Node options.cameraMatrix not found.";
+        toffy::log::debug() << "Node options.cameraMatrix not found.";
 
     _max_x = pt.get<float>("options.max_x", _max_x);
     _max_y = pt.get<float>("options.max_y", _max_y);
@@ -117,7 +116,7 @@ boost::property_tree::ptree GroundProjection::getConfig() const
 
 bool GroundProjection::filter(const Frame &in, Frame &out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
     double maxSizeX, maxSizeY, fl_x_reciprocal = 1., fl_y_reciprocal = 1.;
     Point2d center;
@@ -146,7 +145,7 @@ bool GroundProjection::filter(const Frame &in, Frame &out)
             cloud =
                 boost::any_cast<pcl::PCLPointCloud2Ptr>(in.getData(_in_cloud));
         } catch (const boost::bad_any_cast &) {
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "Could not cast input " << _in_cloud << ", filter  " << id()
                 << " not applied.";
             return false;
@@ -160,7 +159,7 @@ bool GroundProjection::filter(const Frame &in, Frame &out)
             cout << "maxSizeY: " << maxSizeY << endl;
         } else {
             if (_max_x <= 0 || _max_y <= 0) {
-                BOOST_LOG_TRIVIAL(warning)
+                toffy::log::warning()
                     << "Wrong max values, x=" << _max_x << ", y=" << _max_y
                     << ", filter  " << id() << " not applied.";
                 return false;
@@ -178,17 +177,17 @@ bool GroundProjection::filter(const Frame &in, Frame &out)
             proj2d = in.getMatPtr(_out_img);
             cout << "proj2d found. " << proj2d->size() << endl;
         } catch (const boost::bad_any_cast &) {
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "Could not cast output " << _out_img << ", filter  " << id();
             proj2d.reset(new Mat(maxSizeY, maxSizeX, CV_32F,
                                  numeric_limits<float>::quiet_NaN()));
             out.addData(_out_img, proj2d);
         }
 
-        BOOST_LOG_TRIVIAL(debug) << "Sizes: " << proj2d->size()
+        toffy::log::debug() << "Sizes: " << proj2d->size()
                                  << " ==  " << Size(maxSizeX, maxSizeY);
         if (!proj2d->data || proj2d->size() != Size(maxSizeX, maxSizeY)) {
-            BOOST_LOG_TRIVIAL(debug) << "Output " << _out_img
+            toffy::log::debug() << "Output " << _out_img
                                      << " found but empty of different size."
                                      << " Allocating data. Filter " << id();
             proj2d->release();
@@ -263,7 +262,7 @@ bool GroundProjection::filter(const Frame &in, Frame &out)
         try {
             fground = in.getMatPtr(_in_img);
         } catch (const boost::bad_any_cast &) {
-            BOOST_LOG_TRIVIAL(error) << "Could not cast output " << _in_img
+            toffy::log::error() << "Could not cast output " << _in_img
                                      << ", filter  " << id() << " not applied.";
             return false;
         }
@@ -272,7 +271,7 @@ bool GroundProjection::filter(const Frame &in, Frame &out)
         try {
             pback = in.getMatPtr(_out_img);
         } catch (const boost::bad_any_cast &) {
-            BOOST_LOG_TRIVIAL(debug) << "Could not cast output " << _out_img;
+            toffy::log::debug() << "Could not cast output " << _out_img;
             // TODO were is the size???
             pback.reset(new cv::Mat(Mat::zeros(imgSize, CV_32F)));
             out.addData(_out_img, pback);
@@ -344,7 +343,7 @@ bool GroundProjection::filter(const Frame &in, Frame &out)
 
 /*
 void GroundProjection::projectBack(const cv::Mat &mask, double maxSizeX , double
-maxSizeY) { BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+maxSizeY) { toffy::log::debug() << __FUNCTION__;
 
     double factx = sin( pcl::deg2rad(_fovx)),
             facty = sin( pcl::deg2rad(_fovy));

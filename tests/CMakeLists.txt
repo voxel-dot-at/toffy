@@ -46,6 +46,12 @@ add_executable(test_logging test_logging.cpp)
 target_link_libraries(test_logging toffy GTest::gtest GTest::gtest_main)
 add_test(NAME logging COMMAND test_logging)
 
+# P2-17: the toffy::log abstraction on its own, naming no backend -- this file
+# has to pass unchanged when src/logging.cpp is swapped to log4cplus.
+add_executable(test_logging_abstraction test_logging_abstraction.cpp)
+target_link_libraries(test_logging_abstraction toffy GTest::gtest GTest::gtest_main)
+add_test(NAME logging_abstraction COMMAND test_logging_abstraction)
+
 # P3-9: asserts that a filter's body actually ran, for both override shapes.
 # The gate P2-12 needs - see the header comment in the source.
 add_executable(test_filter_overloads test_filter_overloads.cpp)

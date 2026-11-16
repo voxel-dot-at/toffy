@@ -20,8 +20,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
 
 #include <toffy/smoothing/average.hpp>
 
@@ -54,7 +52,7 @@ BackgroundSubs::~BackgroundSubs() {}
 
 void BackgroundSubs::updateConfig(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -96,7 +94,7 @@ boost::property_tree::ptree BackgroundSubs::getConfig() const
 
 bool BackgroundSubs::filter(const toffy::Frame &in, toffy::Frame &out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
     matPtr inImg;
     //matPtr outFg, outBg;
     //int fc = in.getInt(btaFc);
@@ -104,7 +102,7 @@ bool BackgroundSubs::filter(const toffy::Frame &in, toffy::Frame &out)
     try {
         inImg = in.getMatPtr(in_img);
     } catch (const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not cast input " << in_img
+        toffy::log::warning() << "Could not cast input " << in_img
                                    << ", filter  " << id() << " not applied.";
         return false;
     }
@@ -138,7 +136,7 @@ bool BackgroundSubs::filter(const toffy::Frame &in, toffy::Frame &out)
             try {
                 avgdImg = out.getMatPtr("avgd_img");
             } catch (const boost::bad_any_cast &) {
-                BOOST_LOG_TRIVIAL(warning)
+                toffy::log::warning()
                     << "Could not cast input avgd_img, filter " << id()
                     << " not applied.";
                 return false;
@@ -202,7 +200,7 @@ bool BackgroundSubs::filter(const toffy::Frame &in, toffy::Frame &out)
 bool BackgroundSubs::loadAvgData(matPtr inImg)
 {
     cout << id() << " Loading image " << endl;
-    BOOST_LOG_TRIVIAL(debug) << "Loading image ";
+    toffy::log::debug() << "Loading image ";
     ifstream f(_in_mask.c_str(), ios::in | ios::binary);
     if (f) {
         f.seekg(0, f.end);

@@ -20,7 +20,6 @@
 #include <limits.h>
 
 #include <boost/foreach.hpp>
-#include <boost/log/trivial.hpp>
 
 #include <pcl/range_image/range_image_planar.h>
 #include <pcl/common/transforms.h>
@@ -48,13 +47,13 @@ Merge::Merge(): Filter(Merge::id_name,_filter_counter), _out_cloud("merged")
 }
 
 int Merge::loadConfig(const boost::property_tree::ptree& pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     //const boost::property_tree::ptree& tree = pt.get_child(this->type());
 
     Filter::loadConfig(pt);
 
     if (_clouds.size() < 2) {
-	    BOOST_LOG_TRIVIAL(warning) <<
+	    toffy::log::warning() <<
 		    "Missing input clouds for filter " << id();
 	    _clouds.clear();
 	    return -1;
@@ -65,7 +64,7 @@ int Merge::loadConfig(const boost::property_tree::ptree& pt) {
 
 void Merge::updateConfig(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    toffy::log::debug() << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -76,7 +75,7 @@ void Merge::updateConfig(const boost::property_tree::ptree &pt)
 	   _clouds.push_back(v.second.data());
 	}
     } catch (const std::exception& ex) {
-	BOOST_LOG_TRIVIAL(debug) << "Input values are wrong. Ex:" << ex.what();
+	toffy::log::debug() << "Input values are wrong. Ex:" << ex.what();
     }
 
     _out_cloud = pt.get<string>("outputs.cloud", _out_cloud);
@@ -99,7 +98,7 @@ boost::property_tree::ptree Merge::getConfig() const
 }
 
 /*int Merge::loadConfig(const FileNode &fn) {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+	toffy::log::debug() << __FUNCTION__;
 
 	Filter::loadConfig(fn);
 	FileNode merge = fn;
@@ -108,7 +107,7 @@ boost::property_tree::ptree Merge::getConfig() const
 	FileNode ios = merge["inputs"];
 	for(FileNodeIterator it = ios.begin() ; it != ios.end(); ++it) {
 		string input = (string)*it;
-		BOOST_LOG_TRIVIAL(debug) << input;
+		toffy::log::debug() << input;
 		_clouds.push_back(input);
 	}
 	if (_clouds.size() < 2) {
@@ -145,26 +144,26 @@ boost::property_tree::ptree Merge::getConfig() const
 
 	ios = merge["outputs"];
 	if (ios.empty()) {
-		BOOST_LOG_TRIVIAL(warning) <<
+		toffy::log::warning() <<
 			"Missing outputs for filter " <<	id() <<
 			" ... using defauts: " << endl <<
 			"cloud: " << _out_cloud;
 	} else {
 		ios["cloud"] >> _out_cloud;
-		BOOST_LOG_TRIVIAL(debug) << "output cloud: " << _out_cloud;
+		toffy::log::debug() << "output cloud: " << _out_cloud;
 	}
 
 	return 1;
 }*/
 
 bool Merge::filter(const Frame &in, Frame& out) const {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+	toffy::log::debug() << __FUNCTION__ << " " << id();
 
 	pcl::RangeImagePlanar::Ptr planar;
 	try {
 	    planar = boost::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_clouds.front()));
 	} catch(const boost::bad_any_cast &) {
-	    BOOST_LOG_TRIVIAL(warning) <<
+	    toffy::log::warning() <<
 		    "Could not cast input " << _clouds.front() <<
 		    ", filter  " << id() <<" not applied.";
 	    return false;
@@ -175,7 +174,7 @@ bool Merge::filter(const Frame &in, Frame& out) const {
 		try {
 		    planar2 = boost::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_clouds[i]));
 		} catch(const boost::bad_any_cast &) {
-		    BOOST_LOG_TRIVIAL(warning) <<
+		    toffy::log::warning() <<
 			    "Could not cast input " << _clouds[i] <<
 			    ", filter  " << id() <<" not applied.";
 		    return false;

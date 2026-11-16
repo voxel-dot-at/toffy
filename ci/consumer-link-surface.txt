@@ -20,6 +20,17 @@
 # toffy's, and a toolchain upgrade would otherwise report the whole surface as
 # new.
 #
+# P2-17 (2026-11-17) is the reason three `toffy::log::` lines appeared here and
+# the reason no line in this file names a Boost type any more. Before it, this
+# line was in the boxes section:
+#
+#   toffy::Player::Player(boost::log::v2_mt_posix::trivial::severity_level, bool)
+#
+# A consumer's undefined-symbol table named a Boost.Log type, because toffy's
+# Player constructor took one. That is the dependency this item exists to
+# remove, and it is visible in ELF rather than in a header, which is why the
+# gate caught it and a code read would not have.
+#
 # Baseline: toffy-oatpp @ feature/toffy-upgrade (21e8ecb) against toffy
 # v2.0.0-5-g2a8bf19, Release, gcc 13 / aarch64-linux-gnu, 2026-10-28. Measured,
 # and it reproduces the 16 recorded in the upgrade notes for the pre-upgrade
@@ -41,6 +52,9 @@ toffy-oatpp toffy::Frame::addData(std::basic_string<char, std::char_traits<char>
 toffy-oatpp toffy::Frame::getData(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const
 toffy-oatpp toffy::Frame::hasKey(std::basic_string<char, std::char_traits<char>, std::allocator<char> >) const
 toffy-oatpp toffy::Frame::info(std::vector<toffy::Frame::SlotInfo, std::allocator<toffy::Frame::SlotInfo> >&) const
+toffy-oatpp toffy::log::logger::root()
+toffy-oatpp toffy::log::record::~record()
+toffy-oatpp toffy::log::record::record(toffy::log::logger const&, toffy::log::level)
 toffy-oatpp typeinfo for toffy::Filter
 
 # Baseline: boxes @ feature/toffy-upgrade (f3def07) against toffy
@@ -93,6 +107,6 @@ becom-knapp-wurthbox toffy::Frame::getData(std::basic_string<char, std::char_tra
 becom-knapp-wurthbox toffy::Frame::hasKey(std::basic_string<char, std::char_traits<char>, std::allocator<char> >) const
 becom-knapp-wurthbox toffy_oatpp::setupGlobalState(toffy_oatpp::WebApiState&, bool, toffy::Player*)
 becom-knapp-wurthbox toffy::Player::loadConfig(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
-becom-knapp-wurthbox toffy::Player::Player(boost::log::v2_mt_posix::trivial::severity_level, bool)
+becom-knapp-wurthbox toffy::Player::Player(toffy::log::level, bool)
 becom-knapp-wurthbox toffy::Player::runOnce()
 becom-knapp-wurthbox typeinfo for toffy::Filter

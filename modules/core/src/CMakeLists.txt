@@ -5,6 +5,7 @@ add_library(toffy_core OBJECT
     filterfactory.cpp
     filterThread.cpp
     frame.cpp
+    logging.cpp
     mux.cpp
     parallelFilter.cpp
     player.cpp

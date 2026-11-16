@@ -19,7 +19,6 @@
 
 #include <opencv2/imgproc.hpp>
 
-#include <boost/log/trivial.hpp>
 
 #include "toffy/base/range.hpp"
 
@@ -27,7 +26,6 @@ using namespace toffy;
 using namespace toffy::filters;
 using namespace cv;
 using namespace std;
-namespace logging = boost::log;
 
 std::size_t toffy::filters::Range::_filter_counter = 1;
 
@@ -38,7 +36,7 @@ toffy::filters::Range::Range(): Filter("range",_filter_counter),
 
 /*
 int toffy::filters::Range::loadConfig(const boost::property_tree::ptree& pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "(const boost::property_tree::ptree& pt)";
+    toffy::log::debug() << __FUNCTION__ << "(const boost::property_tree::ptree& pt)";
     const boost::property_tree::ptree& range = pt.get_child(this->type());
     updateConfig(range);
 
@@ -47,7 +45,7 @@ int toffy::filters::Range::loadConfig(const boost::property_tree::ptree& pt) {
 */
 
 void toffy::filters::Range::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    toffy::log::debug() << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -62,13 +60,13 @@ void toffy::filters::Range::updateConfig(const boost::property_tree::ptree &pt) 
 }
 
 bool toffy::filters::Range::filter(const Frame &in, Frame& out) {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+	toffy::log::debug() << __FUNCTION__ <<  " " << id();
 
 	matPtr img;
 	try {
 		img = boost::any_cast<matPtr>(in.getData(_in_img));
 	} catch(const boost::bad_any_cast &) {
-		BOOST_LOG_TRIVIAL(warning) <<
+		toffy::log::warning() <<
 			"Could not cast input " << _in_img <<
 			", filter  " << id() <<" not applied.";
 		return false;
@@ -82,7 +80,7 @@ bool toffy::filters::Range::filter(const Frame &in, Frame& out) {
 	Mat mask = (*img >= _min) & (*img <= _max) ;
 
 	if (!img->data) {
-	    BOOST_LOG_TRIVIAL(warning) <<
+	    toffy::log::warning() <<
 		    "Range filtered out everything from input: " << _in_img <<
 		    ", filter  " << id() <<" failed.";
 	    return false;
@@ -93,7 +91,7 @@ bool toffy::filters::Range::filter(const Frame &in, Frame& out) {
 	try {
 		img_out = boost::any_cast<matPtr>(in.getData(_out_img));
 	} catch(const boost::bad_any_cast &) {
-		BOOST_LOG_TRIVIAL(info) << 
+		toffy::log::info() << 
 			"Range::filter() Could not cast output " << _out_img << " - initializing it.";
 		img_out.reset(new Mat());
 		img->copyTo(*img_out, mask);

@@ -24,9 +24,9 @@
 #include <vector>
 
 #include <boost/property_tree/ptree.hpp>
-#include <boost/log/trivial.hpp>
 
 #include <toffy/frame.hpp>
+#include <toffy/logging.hpp>
 
 /** @defgroup Core Core
  *
@@ -138,22 +138,25 @@ class TOFFY_EXPORT Filter
     Filter* _bank = nullptr;  ///< reference to the filter bank whre the filter resides
     // static std::size_t _filter_counter;
 
-    // Per-filter log level, as *data only* (P2-8). It drives `dbg` and is
-    // reported by logLvl()/getConfig(); it deliberately does NOT reconfigure the
-    // process-wide boost::log filter. Boost's trivial severity levels are, in
-    // order: trace, debug, info, warning, error, fatal.
+    // Per-filter log level, as *data only* (P2-8). It is the single source of
+    // truth for debugEnabled() and is reported by logLevel()/getConfig(); it
+    // deliberately does NOT reconfigure process-wide logging.
     //
     // The old behaviour -- a per-filter setter calling
     // logging::core::get()->set_filter() -- meant the last filter to run set the
     // level for the entire application, and FilterBank::filter() did it three
     // times per filter per frame. Use setGlobalLogLevel() to move the process
     // level, once, from the application.
-    boost::log::trivial::severity_level _log_lvl = boost::log::trivial::info;
+    toffy::log::level _logLevel = toffy::log::level::info;
+
+    /// Channel this filter logs through, built from type() on first use.
+    /// Mutable and unsynchronised on purpose: toffy::log::getLogger() returns a
+    /// reference to stable storage, so two threads racing to fill this in both
+    /// write the same pointer and neither can observe the other's write.
+    mutable const toffy::log::logger* _channel = nullptr;
 
    public:
-    bool dbg =
-        false,  ///< flag for activating debug options (images view, log, etc)
-        update = false;  ///< Flag for indicating config updated
+    bool update = false;  ///< Flag for indicating config updated
 
     /**
      * @brief Filter
@@ -165,7 +168,35 @@ class TOFFY_EXPORT Filter
      */
     virtual ~Filter();
 
-    boost::log::trivial::severity_level logLvl() const { return _log_lvl; }
+    /**
+     * @brief This filter's own log level.
+     *
+     * Data only: it decides what debugEnabled() says and what this filter's
+     * channel accepts. It does not change what the process logs -- see
+     * setGlobalLogLevel().
+     */
+    toffy::log::level logLevel() const { return _logLevel; }
+
+    /**
+     * @brief Set this filter's own log level.
+     *
+     * Replaces the old pair of `setLogLevel(string)` + `setLoggingLvl()`: there
+     * is no derived state left to refresh.
+     */
+    void setLogLevel(toffy::log::level lvl) { _logLevel = lvl; }
+
+    /**
+     * @brief True if this filter's level is debug or more verbose.
+     *
+     * Drives debug options (image views, extra output). Derived on read, not
+     * cached: the cached `dbg` flag this replaces was only ever refreshed when a
+     * caller happened to invoke setLoggingLvl(), which is how a filter
+     * configured with `<loglvl>debug</loglvl>` ended up with `dbg == false`.
+     */
+    bool debugEnabled() const {
+        return static_cast<int>(_logLevel) <=
+               static_cast<int>(toffy::log::level::debug);
+    }
 
     /**
      * @brief getCounter
@@ -382,15 +413,6 @@ class TOFFY_EXPORT Filter
     const std::string& getErrorMsg() { return errMsg; }
 
     /**
-     * @brief Refresh this filter's derived state (`dbg`) from its own log level.
-     *
-     * Does NOT touch the process-wide logging configuration -- see the note on
-     * the `_log_lvl` member. Name kept for compatibility; it no longer "sets the
-     * boost log filter severity", which is exactly why it was dangerous.
-     */
-    void setLoggingLvl();
-
-    /**
      * @brief Set the severity filter for the whole process.
      * @param lvl minimum severity that will be emitted
      *
@@ -398,7 +420,7 @@ class TOFFY_EXPORT Filter
      * once from the application (Player's ctor already does). Do not call it per
      * filter or per frame.
      */
-    static void setGlobalLogLevel(boost::log::trivial::severity_level lvl);
+    static void setGlobalLogLevel(toffy::log::level lvl);
 
     /**
      * @brief set boost log level to one of debug, info,... defaults to info if
@@ -409,6 +431,16 @@ class TOFFY_EXPORT Filter
     void setLogLevel(const std::string& level);
 
    protected:
+    /**
+     * @brief Start a log record on this filter's channel, prefixed with its id.
+     *
+     * The implementation of the `LOG(lvl)` macro in `filter_helpers.hpp`, which
+     * is how a filter gets `rectify_3::process() : ` on every line without
+     * spelling it out. Use the macro, not this.
+     */
+    toffy::log::record filterRecord(toffy::log::level lvl,
+                                   const char* func) const;
+
     /**
      * @brief set the filter state and notify listeners on a change.
      */

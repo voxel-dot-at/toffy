@@ -18,7 +18,6 @@
 
 #include <gtest/gtest.h>
 
-#include <boost/log/trivial.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 #include <toffy/filter.hpp>
@@ -29,10 +28,10 @@ using toffy::filterLoaded;
 // Regression test for cleanup/plan/p0-correctness.md P0-5 / finding A6.
 //
 // Filter::Filter() was `Filter::Filter() : _type("...") {}`, which left _bank,
-// _log_lvl, dbg and update indeterminate. Both constructors also omitted
+// _logLevel, update and `state` indeterminate. Both constructors also omitted
 // `state` entirely, so getState() before init() returned garbage.
 //
-// _log_lvl is the observable one: boost::log::trivial::info is 2, so an
+// _logLevel is the observable one: toffy::log::level::info is 2, so an
 // uninitialised member reads as something else and this fails rather than
 // passing by luck on zeroed memory. bank() matters most in production:
 // Filter::loadGlobals() static_casts it to FilterBank* and calls through it.
@@ -43,8 +42,8 @@ TEST(FilterConstruction, DefaultConstructedMembersAreInitialised)
     EXPECT_EQ(nullptr, f.bank())
         << "uninitialised _bank is cast to FilterBank* and dereferenced by "
         << "Filter::loadGlobals()";
-    EXPECT_EQ(boost::log::trivial::info, f.logLvl());
-    EXPECT_FALSE(f.dbg);
+    EXPECT_EQ(toffy::log::level::info, f.logLevel());
+    EXPECT_FALSE(f.debugEnabled());
     EXPECT_FALSE(f.update);
     EXPECT_EQ(filterLoaded, f.getState());
 }
@@ -78,16 +77,22 @@ TEST(FilterConstruction, TypedConstructorInitialisesMembers)
     // disagree about the initial log level. Worth unifying, but that is a
     // behaviour change and not this test's business.
 #ifdef CM_DEBUG
-    const boost::log::trivial::severity_level expectedLvl =
-        boost::log::trivial::debug;
+    const toffy::log::level expectedLvl = toffy::log::level::debug;
 #else
-    const boost::log::trivial::severity_level expectedLvl =
-        boost::log::trivial::info;
+    const toffy::log::level expectedLvl = toffy::log::level::info;
 #endif
-    EXPECT_EQ(expectedLvl, f.logLvl())
-        << "an uninitialised _log_lvl is the P0-5 bug; this asserts it is set to "
+    EXPECT_EQ(expectedLvl, f.logLevel())
+        << "an uninitialised _logLevel is the P0-5 bug; this asserts it is set to "
         << "the level the constructor actually documents for this build type";
-    EXPECT_FALSE(f.dbg);
+    // Derived from the level, so it follows the build type above. The cached
+    // `dbg` flag this replaced said "false" in a CM_DEBUG build even though the
+    // constructor had just set the level to debug, because nothing refreshed it
+    // and the constructor's setLoggingLvl() call was commented out.
+#ifdef CM_DEBUG
+    EXPECT_TRUE(f.debugEnabled());
+#else
+    EXPECT_FALSE(f.debugEnabled());
+#endif
     EXPECT_FALSE(f.update);
     EXPECT_EQ(filterLoaded, f.getState());
     EXPECT_EQ("probefilter", f.type());

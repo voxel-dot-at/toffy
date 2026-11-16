@@ -21,8 +21,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
 
 #include <toffy/filter_helpers.hpp>
 #include <toffy/btaFrame.hpp>
@@ -67,7 +65,7 @@ Blobs::~Blobs() {}
 
 
 void Blobs::updateConfig(const boost::property_tree::ptree &pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    toffy::log::debug() << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -77,7 +75,7 @@ void Blobs::updateConfig(const boost::property_tree::ptree &pt) {
     out_blobs = pt.get<string>("outputs.blobs",out_blobs);
 
     xyzMode = in_img != "depth";
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << __FUNCTION__ << " " << id() << " xyzMode " << xyzMode;
 
     _minSize = pt.get<int>("options.minSize", _minSize);
@@ -126,7 +124,7 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
     try {
         fc = in.getUInt(btaFc);
     } catch(const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning) <<
+        toffy::log::warning() <<
                                       "Could not cast input " << btaFc;
         return false;
     }
@@ -134,7 +132,7 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
     try {
         inImg = in.getMatPtr(in_img);
     } catch(const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning) <<
+        toffy::log::warning() <<
                                       "Could not cast input " << in_img <<
                                       ", filter  " << id() <<" not applied.";
         return true;
@@ -144,7 +142,7 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
             cam = boost::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
             cout << "CAM found " << cam->name << endl;
         } else {
-            BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " " << id()
+            toffy::log::warning() << __FUNCTION__ << " " << id()
                                        << " NO cameraPtr found in Frame!";
             return false;
         }
@@ -153,7 +151,7 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
     try {
         ampl = in.getMatPtr(in_ampl);
     } catch(const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning) <<
+        toffy::log::warning() <<
                                       "Could not cast input " << in_ampl <<
                                       ", filter  " << id() <<" not applied.";
         return true;
@@ -164,7 +162,7 @@ bool Blobs::filter(const toffy::Frame& in, toffy::Frame& out)
         blobs = boost::any_cast<DetObjectsPtr >(out.getData(out_blobs));
         blobs->clear();
     } catch(const boost::bad_any_cast &) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not find object vector. Initializing it";
+        toffy::log::warning() << "Could not find object vector. Initializing it";
         blobs.reset(new std::vector<DetectedObject*>);
         //return true;
     }
@@ -183,7 +181,7 @@ void Blobs::findBlobs(const Frame& frame, cv::Mat& img, cv::Mat& ampl, int fc, s
 {
     UNUSED(ampl);
     bool dbg = false;
-    // BOOST_LOG_TRIVIAL(debug) << __FILE__ << ": " <<__FUNCTION__;
+    // toffy::log::debug() << __FILE__ << ": " <<__FUNCTION__;
     matPtr mx,my,mz;
     if (xyzMode) {
         mx = frame.getMatPtr("x");

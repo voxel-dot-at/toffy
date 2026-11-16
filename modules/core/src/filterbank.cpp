@@ -14,7 +14,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-#include <boost/log/trivial.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
@@ -55,22 +54,22 @@ bool FilterBank::filter(const Frame& in, Frame& out)
             success = _pipe[i]->filter(in, out);
 
         } catch (std::exception& e) {
-            BOOST_LOG_TRIVIAL(error) << name() << "::" << __FUNCTION__
+            toffy::log::error() << name() << "::" << __FUNCTION__
                                      << " Exception in " << _pipe[i]->name();
-            BOOST_LOG_TRIVIAL(error)
+            toffy::log::error()
                 << name() << "::" << __FUNCTION__ << " " << e.what();
         }
 
         boost::posix_time::time_duration diff =
             microsec_clock::local_time() - start;
         if (!success) {
-            BOOST_LOG_TRIVIAL(info)
+            toffy::log::info()
                 << id() << "::filter" << i << "\t" << diff.total_milliseconds()
                 << "\t" << _pipe[i]->name() << "\t failed!" << endl;
             return false;
         }
 
-        // BOOST_LOG_TRIVIAL(debug)
+        // toffy::log::debug()
         //    << id() << "::filter" << i << "\t" << _pipe[i]->name() << "\t done"
         //    << "\t duration: " << diff.total_microseconds() << " us";
     }
@@ -82,7 +81,7 @@ bool FilterBank::filter(const Frame& in, Frame& out)
 
 boost::property_tree::ptree FilterBank::getConfig() const
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << id();
+    toffy::log::debug() << __FUNCTION__ << id();
     boost::property_tree::ptree pt;
 
     for (size_t i = 0; i < _pipe.size(); i++) {
@@ -103,13 +102,13 @@ int FilterBank::handleConfigItem(
         // out of the same control block, not be re-derived from a raw address.
         FilterPtr group = ff->createFilter(it->first);
         if (!group) {
-            BOOST_LOG_TRIVIAL(error)
+            toffy::log::error()
                 << "Error creating FilterBank for filterGroup in: "
                 << configFile;
             return -1;
         }
         FilterBank* fb = static_cast<FilterBank*>(group.get());
-        BOOST_LOG_TRIVIAL(debug) << "FG RECURSE NEW FB #" << it->second.size()
+        toffy::log::debug() << "FG RECURSE NEW FB #" << it->second.size()
                                  << " " << it->second.data();
         fb->loadFileConfig(it->second.data());
         // add() shares; `group` going out of scope here does not destroy it.
@@ -119,7 +118,7 @@ int FilterBank::handleConfigItem(
                it->first == "plugins") {
         ;
     } else {
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "FB LOAD FILTER:: " << it->first << " || " << it->second.size();
         // instantiate new filter instance, configure and add it.
         FilterPtr f = instantiateFilter(it);
@@ -135,7 +134,7 @@ int FilterBank::handleConfigItem(
 FilterPtr FilterBank::instantiateFilter(
     const boost::property_tree::ptree::const_iterator& it)
 {
-    BOOST_LOG_TRIVIAL(debug) << "FB INSTANTIATE FILTER:: " << it->first << endl;
+    toffy::log::debug() << "FB INSTANTIATE FILTER:: " << it->first << endl;
     // The FilterPtr created by the factory is passed straight through: this
     // function configures a filter somebody else has already given ownership of
     // (to the caller, which is normally handleConfigItem() -> add()).
@@ -145,7 +144,7 @@ FilterPtr FilterBank::instantiateFilter(
         pnode.add_child(it->first, it->second);
         string old = f->name();
 
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "FB INSTANTIATE FILTER:: config " << it->first << endl;
         f->bank(this);
         // The return value is deliberately not checked here, and P0-12 does not
@@ -159,7 +158,7 @@ FilterPtr FilterBank::instantiateFilter(
         //ff->renameFilter(f, old, f->name());
         return f;
     } else {
-        LOG(warning) " unknown filter " << it->first << " ignored!";
+        LOG(warning) << " unknown filter " << it->first << " ignored!";
         return 0;
     }
 }
@@ -169,12 +168,12 @@ int FilterBank::loadConfig(
     const boost::property_tree::ptree::const_iterator& begin,
     const boost::property_tree::ptree::const_iterator& end)
 {
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "FilterBank::" << type() << "::" << __FUNCTION__ << "(begin, end)";
     int errors = 0;
     for (boost::property_tree::ptree::const_iterator it = begin; it != end;
          ++it) {
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "FB  iter " << it->first << "\t" << it->second.size();
         int ret = this->handleConfigItem(configFile, it);
         if (!ret) errors++;
@@ -193,7 +192,7 @@ void FilterBank::add(FilterPtr f)
     if (!f) {
         // Refused rather than pipelined: the next filter() would dereference it
         // with nothing left in the log to say where it came from.
-        BOOST_LOG_TRIVIAL(warning) << id() << "::add: ignoring null filter";
+        toffy::log::warning() << id() << "::add: ignoring null filter";
         return;
     }
     _pipe.push_back(std::move(f));
@@ -203,14 +202,14 @@ void FilterBank::add(FilterPtr f)
 void FilterBank::insert(int pos, FilterPtr f)
 {
     if (!f) {
-        BOOST_LOG_TRIVIAL(warning) << id() << "::insert: ignoring null filter";
+        toffy::log::warning() << id() << "::insert: ignoring null filter";
         return;
     }
     // pos == size() is a legal insert position (append); anything outside
     // [0, size()] used to be undefined behaviour, because the old body did
     // `_pipe.insert(_pipe.begin() + pos, f)` unchecked.
     if (pos < 0 || static_cast<size_t>(pos) > _pipe.size()) {
-        BOOST_LOG_TRIVIAL(error)
+        toffy::log::error()
             << id() << "::insert: position " << pos << " out of range 0.."
             << _pipe.size();
         throw std::out_of_range("FilterBank::insert: position " +
@@ -223,21 +222,21 @@ void FilterBank::insert(int pos, FilterPtr f)
 int FilterBank::loadConfig(const boost::property_tree::ptree& pt,
                            const std::string& confFile /*= ""*/)
 {
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << __FUNCTION__ << " " << __LINE__ << " " << confFile;
     // const boost::property_tree::ptree& ptRead = pt;
     boost::optional<const boost::property_tree::ptree&> pfilters =
         pt.get_child_optional("toffy");
     //TODO we keep working with configs not enclosed in a root <toffy> for compatibility
     if (!pfilters) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "Could not open config file: "
             << "Missing root node <toffy>.\n"
             << "Add <toffy> as root node to remove this error.";
         return -1;
     } else {
         const boost::property_tree::ptree& ptRead = *pfilters;
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << __FUNCTION__ << " first node " << ptRead.begin()->first;
         loadGlobals(ptRead);
         return loadConfig(confFile, ptRead.begin(), ptRead.end());
@@ -246,17 +245,17 @@ int FilterBank::loadConfig(const boost::property_tree::ptree& pt,
 
 int FilterBank::loadFileConfig(const std::string& confFile)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " FilterBank " << confFile;
+    toffy::log::debug() << __FUNCTION__ << " FilterBank " << confFile;
 
     boost::property_tree::ptree pt;
     try {
         boost::property_tree::read_xml(confFile, pt);
 
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << __FUNCTION__ << " first node " << pt.begin()->first;
 
     } catch (boost::property_tree::xml_parser_error& e) {
-        BOOST_LOG_TRIVIAL(error)
+        toffy::log::error()
             << "FB Could not open config file: " << e.filename() << ". "
             << e.what() << ", in line: " << e.line();
         return -1;
@@ -287,8 +286,8 @@ int FilterBank::getFiltersByType(const std::string& type,
 {
     for (std::vector<FilterPtr>::iterator it = _pipe.begin(); it != _pipe.end();
          it++) {
-        //BOOST_LOG_TRIVIAL(debug) << type;
-        //BOOST_LOG_TRIVIAL(debug) << (*it)->id();
+        //toffy::log::debug() << type;
+        //toffy::log::debug() << (*it)->id();
         if ((*it)->type() == "filterBank" ||
             (*it)->type() == "parallelFilter") {
             static_cast<FilterBank*>(it->get())->getFiltersByType(type, vec);
@@ -300,12 +299,12 @@ int FilterBank::getFiltersByType(const std::string& type,
 
 int FilterBank::countFiltersByType(const std::string& type)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     int cnt = 0;
     for (std::vector<FilterPtr>::iterator it = _pipe.begin(); it != _pipe.end();
          it++) {
-        //BOOST_LOG_TRIVIAL(debug) << type;
-        //BOOST_LOG_TRIVIAL(debug) << (*it)->id();
+        //toffy::log::debug() << type;
+        //toffy::log::debug() << (*it)->id();
         if ((*it)->type() == "filterBank" ||
             (*it)->type() == "parallelFilter") {
             cnt += static_cast<FilterBank*>(it->get())->countFiltersByType(type);
@@ -327,7 +326,7 @@ int FilterBank::remove(const std::string& name)
 {
     const std::optional<int> pos = findPos(name);
     if (!pos) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << id() << "::remove: no filter named " << name;
         return 0;
     }
@@ -343,7 +342,7 @@ int FilterBank::remove(const std::string& name)
 int FilterBank::remove(size_t i)
 {
     if (i >= _pipe.size()) {
-        BOOST_LOG_TRIVIAL(warning) << "Position i: " << i << " out of bounds.";
+        toffy::log::warning() << "Position i: " << i << " out of bounds.";
         return 0;
     }
     _pipe.erase(_pipe.begin() + i);
@@ -352,7 +351,7 @@ int FilterBank::remove(size_t i)
 
 void FilterBank::clearBank()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     // Used to walk _pipe calling ff->deleteFilter(_pipe[i]->name()) so the
     // factory would `delete` each child, and swallow the exceptions when the
     // name lookup failed -- which it did for every renamed filter, leaking it.
@@ -399,14 +398,14 @@ FilterBank* FilterBank::getBaseFilterbank()
 
 int FilterBank::loadGlobals(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     boost::optional<const boost::property_tree::ptree&> globals =
         pt.get_child_optional("globals");
     if (!globals) {
-        BOOST_LOG_TRIVIAL(info) << "No global configuration included.";
+        toffy::log::info() << "No global configuration included.";
         return 0;
     } else {
-        BOOST_LOG_TRIVIAL(info) << "Loading global configuration...";
+        toffy::log::info() << "Loading global configuration...";
         _globalConfig = *globals;
         // updateConfig() now refreshes _log_lvl and `dbg` itself, so the separate
         // setLoggingLvl() call that used to follow is gone.
@@ -418,14 +417,14 @@ int FilterBank::loadGlobals(const boost::property_tree::ptree& pt)
 const boost::property_tree::ptree& FilterBank::getGlobals(
     std::string node /* = "" */)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     if (node.empty()) {
         return _globalConfig;
     } else {
         boost::optional<boost::property_tree::ptree&> globals =
             _globalConfig.get_child_optional(node.c_str());
         if (!globals) {
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "Node " << node << " not present in global configurations.";
             return _globalConfig;
         } else {
@@ -436,11 +435,11 @@ const boost::property_tree::ptree& FilterBank::getGlobals(
 
 int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     BOOST_FOREACH (const boost::property_tree::ptree::value_type& v,
                    pt.get_child("plugins")) {
-        BOOST_LOG_TRIVIAL(debug) << "v.first " << v.first;
-        BOOST_LOG_TRIVIAL(debug) << "v.second " << v.second.data();
+        toffy::log::debug() << "v.first " << v.first;
+        toffy::log::debug() << "v.second " << v.second.data();
 
         // POSIX only: toffy has no Windows plugin loader (P2-2, cleanup/findings/build.md).
         // The LoadLibrary/GetProcAddress half of this loop was never compiled, because
@@ -448,7 +447,7 @@ int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
         void* libHandle;
         libHandle = dlopen(v.second.data().c_str(), RTLD_LAZY);
         if (!libHandle) {
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "Could not load library: " << v.second.data() << std::endl
                 << dlerror();
 
@@ -460,12 +459,12 @@ int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
             (toffy::commons::plugins::init_t)dlsym(libHandle, "init");
         const char* dlsym_error = dlerror();
         if (dlsym_error) {
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "Could not load plug-in filters from: " << v.second.data()
                 << std::endl
                 << dlerror();
         } else {
-            BOOST_LOG_TRIVIAL(info)
+            toffy::log::info()
                 << "Loaded plug-in filters from: " << v.second.data();
             init(FilterFactory::getInstance());
         }

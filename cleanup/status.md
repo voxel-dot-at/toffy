@@ -3,10 +3,11 @@
 What has landed, what is in flight, and what the release situation is. Counters are in
 [`counters.md`](counters.md); the order the rest goes in is in [`order.md`](order.md).
 
-State as of PR 37 (`P2-7`, the threading), re-checked against the tree rather than carried over
-from the previous round, and re-measured on `main` @ `a3d882f` on 2026-11-15 (clean Release
-build, 14/14 `ctest`, installed headers 172/172, `abi_surface.sh` matches, consumer cell green
-on the runner — see *Gates*). The *Release / tag situation* section was re-checked against
+State as of PR 39 (`P2-17`, the logging API), re-checked against the tree rather than carried
+over from the previous round, and re-measured on that commit (Release, PCL on, BTA on: 25 tree
+warnings, 16/16 `ctest`, installed headers 176/176, `abi_surface.sh` re-blessed from a BTA-off
+build and matching; `WITHOUT_BTA=ON` and `WITHOUT_PCL=ON` both 16/16; both consumers built
+against a fresh install of it — see *Gates*). The *Release / tag situation* section was re-checked against
 `origin` separately on 2026-10-27, after the tags were pushed and `origin/next` was deleted.
 The code state above it is `main`, which has carried the 2.0 line since **P0-3** fast-forwarded
 it; `feature/code-cleanup` is kept where the extraction happened and is now behind.
@@ -58,7 +59,9 @@ public header surface proved compilable rather than assumed, one long-standing "
 then act" item actually decided, and the ownership model the rest of the structural work was
 blocked on.
 
-`P1`/`P2` items closed: **8 of 16** (`P1-1`, `P2-2`, `P2-4`, `P2-5`, `P2-7`, `P2-8`, `P2-14`, `P2-16`),
+`P1`/`P2` items closed: **9 of 17** (`P1-1`, `P2-2`, `P2-4`, `P2-5`, `P2-7`, `P2-8`, `P2-14`,
+`P2-16`, `P2-17`) — 17 because `P2-17` is new, opened by the decision to move off Boost.Log
+rather than by the original `CLEANUP_PLAN.md`,
 with `P2-3` core-only and `P2-13` one-third done (`stedBackward()` → `stepBackward()`,
 `b397f44`; the rest of the renames and the four duplicated run-method bodies are still open,
 with `P2-6`). `P2-16` closed when `P3-4` landed the `-Werror` half of it, `P2-2` when the
@@ -74,7 +77,8 @@ Windows branches were deleted rather than enabled.
 | **13** | `P2-9` module layering | ❌ `imageview.hpp` still included by `controller.cpp`. `getFilter(name)` can now be reimplemented against `_pipe`, which is what `P2-5` was waiting on |
 | **14** | `P2-10` three plugin loaders | ❌ all three still exist |
 | **16** | `P2-11` + `P2-12` `Frame` API, `filter()` overload | ❌ see `P3-9` before touching `P2-12` |
-| **18** | `P2-15` formatting | ❌ 11 of 20 core files have hard tabs; clang-format 18.1.3 **is** installed |
+| **18** | `P2-15` formatting | ❌ 11 of 20 core files have hard tabs; clang-format 18.1.3 **is** installed. `P2-17` touched 75 files and deliberately did **not** reformat any of them, so the whitespace-only commit is still whitespace-only |
+| **39** | `P2-17` `toffy::log`, off Boost.Log | ◐ **step A landed** — the abstraction, the 658 call sites, the 5 installed headers and both Boost-typed signatures. Steps B/C (log4cplus backend, drop `log log_setup` from `find_package`) and D (`boxes`' own 378 sites) are open. See [`plan/logging.md`](plan/logging.md) |
 
 The second-pass work (`P3-1` … `P3-12`) is listed in
 [`plan/second-pass.md`](plan/second-pass.md). All four of its cheap items are done (`P3-1`,

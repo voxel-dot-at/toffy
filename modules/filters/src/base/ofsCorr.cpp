@@ -16,7 +16,6 @@
 */
 #include <iostream>
 
-#include <boost/log/trivial.hpp>
 
 #include <opencv2/imgproc.hpp>
 
@@ -30,7 +29,7 @@ using namespace std;
 OffsetCorr::OffsetCorr()
     : Filter("offsetCorr"), in_ampl("ampl"), in_depth("depth")
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << "OFS";
+    toffy::log::debug() << __FUNCTION__ << "OFS";
 }
 
 bool OffsetCorr::filter(const toffy::Frame& in, toffy::Frame& /*out*/)
@@ -45,7 +44,7 @@ bool OffsetCorr::filter(const toffy::Frame& in, toffy::Frame& /*out*/)
     if (fi == 1.5) {  // 7.5mhz
         idx = 1;
     } else if (fi != idx || idx > 6) {
-        BOOST_LOG_TRIVIAL(error)
+        toffy::log::error()
             << "ERROR CONVERTING TO IDX! " << (mf / 5000000.);
     }
 
@@ -57,7 +56,7 @@ bool OffsetCorr::filter(const toffy::Frame& in, toffy::Frame& /*out*/)
 
 /*
 int OffsetCorr::loadConfig(const boost::property_tree::ptree& pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     const boost::property_tree::ptree& tree = pt.get_child(this->type());
 
     loadGlobals(tree);
@@ -70,7 +69,7 @@ int OffsetCorr::loadConfig(const boost::property_tree::ptree& pt) {
 
 void OffsetCorr::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 

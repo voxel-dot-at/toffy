@@ -16,8 +16,6 @@
 */
 #include <iostream>
 
-#include <boost/log/common.hpp>
-#include <boost/log/trivial.hpp>
 #include <boost/math/special_functions.hpp>
 
 #include <opencv2/imgproc.hpp>
@@ -55,7 +53,7 @@ SquareDetect::~SquareDetect() {}
 
 void SquareDetect::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -73,9 +71,9 @@ void SquareDetect::updateConfig(const boost::property_tree::ptree& pt)
             fs.getFirstTopLevelNode() >> _cameraMatrix;
             fs.release();
         } else
-            BOOST_LOG_TRIVIAL(debug) << "Node cameraMatrix is not opencv.";
+            toffy::log::debug() << "Node cameraMatrix is not opencv.";
     } else
-        BOOST_LOG_TRIVIAL(debug) << "Node options.cameraMatrix not found.";
+        toffy::log::debug() << "Node options.cameraMatrix not found.";
 
     //minSize = pt.get<int>("options.minSize", minSize);
 }
@@ -101,7 +99,7 @@ bool SquareDetect::filter(const Frame& in, Frame& out)
             boost::any_cast<DetObjectsPtr >(
                 in.getData(in_blobs));
     } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << id() << ": Could not find detected object vector:" << in_blobs;
         return false;
     }
@@ -115,7 +113,7 @@ bool SquareDetect::filter(const Frame& in, Frame& out)
             outDet.reset(new Mat());
         }
     } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning) << "Could not cast output " << out_detect
+        toffy::log::warning() << "Could not cast output " << out_detect
                                    << ", filter  " << id() << " not applied.";
         return false;
     }
@@ -123,7 +121,7 @@ bool SquareDetect::filter(const Frame& in, Frame& out)
         if (in.hasKey(CAM_SLOT)) {
             cam = boost::any_cast<cam::CameraPtr>(in.getData(CAM_SLOT));
         } else {
-            BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << " " << id()
+            toffy::log::warning() << __FUNCTION__ << " " << id()
                                        << " NO cameraPtr found in Frame!";
             return false;
         }

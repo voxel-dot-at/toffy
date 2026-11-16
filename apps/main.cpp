@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
     try {
         // Initialise the server.
         cout << "INIT PLAYER" << endl;
-        toffy::Player p(boost::log::trivial::info,
+        toffy::Player p(toffy::log::level::info,
                         vm["output2File"].as<bool>());
 
         p.loadConfig(vm["config"].as<std::string>());

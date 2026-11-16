@@ -70,6 +70,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P2-14` | finish or delete the `Event` stub | [`api.md`](api.md) | ✅ deleted |
 | `P2-15` | enforce formatting | [`build-and-hygiene.md`](build-and-hygiene.md) | ❌ |
 | `P2-16` | build flags | [`build-and-hygiene.md`](build-and-hygiene.md) | ✅ — the `-Werror` half landed as `P3-4` |
+| `P2-17` | `toffy::log`, so the logging backend is a choice | [`logging.md`](logging.md) | ◐ **new item, step A landed** — 658 `BOOST_LOG_TRIVIAL` sites → 0, no installed header includes `boost/log`, no consumer symbol names a Boost type. log4cplus backend and `boxes`' own 378 sites still open |
 
 ### `P3` — second pass ([`second-pass.md`](second-pass.md))
 

@@ -16,7 +16,6 @@
 */
 #pragma once
 
-#include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
 
 #include <string>

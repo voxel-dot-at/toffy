@@ -35,7 +35,7 @@ using toffy::validSequencePattern;
 using toffy::formatPath;
 
 int ExportCSV::loadConfig(const boost::property_tree::ptree &pt) {
-  BOOST_LOG_TRIVIAL(debug) << __FUNCTION__
+  toffy::log::debug() << __FUNCTION__
                            << "(const boost::property_tree::ptree& pt)";
   const boost::property_tree::ptree &conf = pt.get_child(this->type());
 
@@ -47,7 +47,7 @@ int ExportCSV::loadConfig(const boost::property_tree::ptree &pt) {
 }
 
 void ExportCSV::updateConfig(const boost::property_tree::ptree &pt) {
-  BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+  toffy::log::debug() << __FUNCTION__ << " " << id();
 
   using namespace boost::property_tree;
 
@@ -74,8 +74,8 @@ void ExportCSV::updateConfig(const boost::property_tree::ptree &pt) {
                << why << "; keeping \"" << _filePattern << "\"";
   }
 
-  BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " fp " << _filePattern;
-  BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " fc " << _fc;
+  toffy::log::debug() << __FUNCTION__ << " fp " << _filePattern;
+  toffy::log::debug() << __FUNCTION__ << " fc " << _fc;
 
 }
 
@@ -214,7 +214,7 @@ static void saveMatCSV(const std::string &fileName, const Mat& mat, bool skipZer
       }
       break;
     default:
-      BOOST_LOG_TRIVIAL(warning)
+      toffy::log::warning()
           << "no suitable mat data conversion for " 
           << mat.type() << " "
           << " type " << typeToString(mat.type())  

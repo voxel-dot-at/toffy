@@ -16,7 +16,6 @@
 */
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/log/trivial.hpp>
 
 // POSIX only, like the rest of toffy (P2-2): the process primitives publishCount
 // needs are fork/execvp/waitpid, and there is no Windows variant to keep in step.
@@ -60,7 +59,7 @@ ObjectTrack::ObjectTrack()
 
 boost::property_tree::ptree ObjectTrack::getConfig() const
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
     boost::property_tree::ptree pt;
 
     pt = Filter::getConfig();
@@ -75,7 +74,7 @@ boost::property_tree::ptree ObjectTrack::getConfig() const
 
 void ObjectTrack::updateConfig(const boost::property_tree::ptree& pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
     using namespace boost::property_tree;
 
@@ -92,32 +91,31 @@ void ObjectTrack::updateConfig(const boost::property_tree::ptree& pt)
 
 bool ObjectTrack::filter(const Frame& in, Frame& out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
-    toffy::Filter::setLoggingLvl();
 
     // List of detected objects
-    BOOST_LOG_TRIVIAL(debug) << "Getting _in_vec: " << _in_vec;
+    toffy::log::debug() << "Getting _in_vec: " << _in_vec;
     std::shared_ptr<DetectedObjects> detObjs;
     try {
         detObjs = boost::any_cast<std::shared_ptr<DetectedObjects> >(
             in.getData(_in_vec));
     } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "Could not find object vector: " << _in_vec << ". " << id();
         return true;
     }
 
-    BOOST_LOG_TRIVIAL(debug)
+    toffy::log::debug()
         << "Got _in_vec(" << _in_vec << "): " << detObjs->size();
 
     // TODO Where come img from?, why we mask it with the objects.
-    BOOST_LOG_TRIVIAL(debug) << "Getting got _in_img: " << _in_img;
+    toffy::log::debug() << "Getting got _in_img: " << _in_img;
     matPtr img;
     try {
         img = in.getMatPtr(_in_img);
     } catch (const boost::bad_any_cast&) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "Could not cast input " << _in_img << ", filter  " << id()
             << " does not show objects.";
     }
@@ -145,35 +143,35 @@ bool ObjectTrack::filter(const Frame& in, Frame& out)
 
         if (z1.contains(obj->firstCenter)) {
             if (z1.contains(obj->massCenter))
-                BOOST_LOG_TRIVIAL(debug) << "IN ZONE 1";
+                toffy::log::debug() << "IN ZONE 1";
             else {
                 obj->firstCenter = obj->massCenter;
-                BOOST_LOG_TRIVIAL(debug) << "Change to zone 2";
+                toffy::log::debug() << "Change to zone 2";
                 cnt++;
                 publishCount();
             }
         } else {
             if (!z1.contains(obj->massCenter))
-                BOOST_LOG_TRIVIAL(debug) << "IN ZONE 2";
+                toffy::log::debug() << "IN ZONE 2";
             else {
                 obj->firstCenter = obj->massCenter;
-                BOOST_LOG_TRIVIAL(debug) << "Change to zone 1";
+                toffy::log::debug() << "Change to zone 1";
                 cnt--;
                 publishCount();
             }
         }
 
-        BOOST_LOG_TRIVIAL(debug)
+        toffy::log::debug()
             << "Old: " << obj->record->back()->massCenter3D;
-        BOOST_LOG_TRIVIAL(debug) << "New: " << obj->massCenter3D;
+        toffy::log::debug() << "New: " << obj->massCenter3D;
         double dis =
             cv::norm(obj->massCenter3D - obj->record->front()->massCenter3D);
-        BOOST_LOG_TRIVIAL(debug) << "dis: " << dis;
+        toffy::log::debug() << "dis: " << dis;
         boost::posix_time::time_duration time =
             obj->record->front()->ts - obj->ts;
-        BOOST_LOG_TRIVIAL(debug) << "time: " << time.seconds();
+        toffy::log::debug() << "time: " << time.seconds();
         double speed = dis / time.seconds();
-        BOOST_LOG_TRIVIAL(debug) << "speed: " << speed;
+        toffy::log::debug() << "speed: " << speed;
 
         cv::arrowedLine(color, obj->record->back()->massCenter, obj->massCenter,
                         CV_RGB(255, 255, 0));
@@ -251,7 +249,7 @@ void runDetached(const std::string &program, const std::string &a1,
         // set options/script lands here too, because the default is the relative
         // name "updateCount.sh" - the shell printed the same complaint on stderr
         // once per call, so this is not a new message, only a filterable one.
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "publishCount: cannot execute " << program << ": "
             << strerror(errno);
         return;
@@ -263,7 +261,7 @@ void runDetached(const std::string &program, const std::string &a1,
 
     const pid_t intermediate = fork();
     if (intermediate < 0) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "publishCount: fork failed: " << strerror(errno);
         return;
     }
@@ -307,7 +305,7 @@ void ObjectTrack::publishCount()
     const std::string count = boost::lexical_cast<std::string>(cnt);
     const std::string objects = boost::lexical_cast<std::string>(numObjects);
 
-    BOOST_LOG_TRIVIAL(debug) << "publ: " << updateScript << " " << count << " "
+    toffy::log::debug() << "publ: " << updateScript << " " << count << " "
                              << objects;
 
     runDetached(updateScript, count, objects);

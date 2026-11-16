@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     // FilterBank. loadConfig() and runOnce() are commented out below, so the
     // object's only real job here is installing the logging configuration -- and
     // it is now destroyed normally at the end of main.
-    toffy::Player player(boost::log::trivial::debug, false);
+    toffy::Player player(toffy::log::level::debug, false);
     FilterBank fb;
 
     if (argc >= 2) {

@@ -15,7 +15,6 @@
    limitations under the License.
 */
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/log/trivial.hpp>
 #include <iostream>
 
 #include <opencv2/highgui.hpp>
@@ -52,7 +51,7 @@ Tracker::Tracker()
 }
 
 void Tracker::updateConfig(const boost::property_tree::ptree &pt) {
-  BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+  toffy::log::debug() << __FUNCTION__ << " " << id();
 
   using namespace boost::property_tree;
 
@@ -92,7 +91,7 @@ boost::property_tree::ptree Tracker::getConfig() const {
 
 bool Tracker::filter(const Frame &in, Frame &out) {
 
-  toffy::Filter::setLoggingLvl();
+
 
   // Get list of detected blobs
   std::shared_ptr<detection::DetectedObjects > blobs;
@@ -101,19 +100,19 @@ bool Tracker::filter(const Frame &in, Frame &out) {
         std::shared_ptr<detection::DetectedObjects > >(
         in.getData(_in_vec));
   } catch (const boost::bad_any_cast &) {
-    BOOST_LOG_TRIVIAL(warning)
+    toffy::log::warning()
         << id() << " Could not find object vector: " << _in_vec
         << ". Nothing to do!";
     return true;
   }
 
-  BOOST_LOG_TRIVIAL(debug) << id() << " Got _in_vec size: " << blobs->size();
+  toffy::log::debug() << id() << " Got _in_vec size: " << blobs->size();
 
   // Current frame counter
   try {
     _fc = in.getUInt(_in_fc);
   } catch (const boost::bad_any_cast &) {
-    BOOST_LOG_TRIVIAL(warning) << id() << " Could not find framecounter. ";
+    toffy::log::warning() << id() << " Could not find framecounter. ";
     _fc = -1;
   }
 
@@ -121,11 +120,11 @@ bool Tracker::filter(const Frame &in, Frame &out) {
   try {
     _ts = in.getUInt("ts");
   } catch (const boost::bad_any_cast &) {
-    BOOST_LOG_TRIVIAL(warning) << id() << " Could not find Timestamp. ";
+    toffy::log::warning() << id() << " Could not find Timestamp. ";
     _ts = -1;
   }
 
-  BOOST_LOG_TRIVIAL(debug) << id() << " filter() fc " << _fc << " ts " << _ts ;
+  toffy::log::debug() << id() << " filter() fc " << _fc << " ts " << _ts ;
 
   // List of tracked objects
   std::shared_ptr<detection::DetectedObjects > tracked;
@@ -134,7 +133,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
         std::shared_ptr<detection::DetectedObjects > >(
         out.getData(_out_objects));
   } catch (const boost::bad_any_cast &) {
-    BOOST_LOG_TRIVIAL(warning)
+    toffy::log::warning()
         << id() << " Could not find object vector. Creating a new one";
     tracked.reset(new detection::DetectedObjects);
   }
@@ -148,8 +147,8 @@ bool Tracker::filter(const Frame &in, Frame &out) {
 
   ///// 1.: compare all old objects against the candidates, extract best matches
 
-  BOOST_LOG_TRIVIAL(debug) << id() << " detObjs: " << detObjs.size();
-  BOOST_LOG_TRIVIAL(debug) << id() << " blobs: " << blobs->size();
+  toffy::log::debug() << id() << " detObjs: " << detObjs.size();
+  toffy::log::debug() << id() << " blobs: " << blobs->size();
 
   // compare the list of already tracked objects against incoming blobs.
   // finds the nearest candidate; if it is near enough, consider it as the new position
@@ -168,7 +167,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
 
       double ndis = norm(trackedObj->massCenter - blob->massCenter);
 
-      // BOOST_LOG_TRIVIAL(debug) << id() << "  (1): " << trackedObj->id << " " << blob->id << " dist " << ndis;
+      // toffy::log::debug() << id() << "  (1): " << trackedObj->id << " " << blob->id << " dist " << ndis;
 
       if (ndis < minDis) {
         minDis = ndis;
@@ -185,7 +184,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
       blob = (*blobs)[candidate];
       blob->size = contourArea(blob->contour);
 
-      // BOOST_LOG_TRIVIAL(debug)
+      // toffy::log::debug()
       //     << "Found candidate object id = " << blob->id << "\t" << minDis
       //     << "\t" << blob->size << "\t" << blob->contour.size() << "\t"
       //     << blob->massCenter << " for " << trackedObj->id;
@@ -214,18 +213,18 @@ bool Tracker::filter(const Frame &in, Frame &out) {
       candIter++;
       continue;
     }
-    // BOOST_LOG_TRIVIAL(debug) << id() << "  (2): " << blob->id << " c " << blob->contour.size();
+    // toffy::log::debug() << id() << "  (2): " << blob->id << " c " << blob->contour.size();
 
     // TODO Parameter?
     if (blob->contour.size() < 4) {
-        // BOOST_LOG_TRIVIAL(debug) << id() << "  (2): ignoring " << blob->id;
+        // toffy::log::debug() << id() << "  (2): ignoring " << blob->id;
 
       delete blob;
       blob = NULL;
       // candIter = candidates.erase(candIter);
     } else {
       // init new detected object
-      // BOOST_LOG_TRIVIAL(debug) << id() << "  (2):   new trk " << blob->id << " " << nextId;
+      // toffy::log::debug() << id() << "  (2):   new trk " << blob->id << " " << nextId;
       blob->id = this->nextId++;
       blob->fc = _fc;
       blob->ts = boost::posix_time::from_time_t(_ts);
@@ -239,7 +238,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
       >(10));*/
 
       newState.push_back(blob);
-      // BOOST_LOG_TRIVIAL(debug) << id() << "  (2):       trk " << blob->id;
+      // toffy::log::debug() << id() << "  (2):       trk " << blob->id;
     }
     candIter++;
   }
@@ -252,7 +251,7 @@ bool Tracker::filter(const Frame &in, Frame &out) {
 
     // TODO Parameter!
     if (abs(_fc - obj->fc) > 5) {
-      // BOOST_LOG_TRIVIAL(debug) << id() << "  (3):       kill " << obj->id;
+      // toffy::log::debug() << id() << "  (3):       kill " << obj->id;
       delete obj;
     } else {
       newState.push_back(obj);
@@ -275,18 +274,18 @@ bool Tracker::filter(const Frame &in, Frame &out) {
     try {
       img = in.getMatPtr(_in_img);
     } catch (const boost::bad_any_cast &) {
-      BOOST_LOG_TRIVIAL(warning)  << id()
+      toffy::log::warning()  << id()
           << " Could not cast input " << _in_img << ", filter  " << id()
           << " does not show objects.";
       return true;
     }
 
-    BOOST_LOG_TRIVIAL(debug) << id() << " Getting got _out_img: " << _out_img;
+    toffy::log::debug() << id() << " Getting got _out_img: " << _out_img;
     matPtr img_out;
     try {
       img_out = in.getMatPtr(_out_img);
     } catch (const boost::bad_any_cast &) {
-      BOOST_LOG_TRIVIAL(info)  << id() << " Creating outputs.img : " << _out_img;
+      toffy::log::info()  << id() << " Creating outputs.img : " << _out_img;
       img_out.reset(new Mat());
       out.addData(_out_img, img_out);
     }
@@ -304,7 +303,7 @@ void Tracker::showObjects(cv::Mat &depth) {
                   -255.0 * min / (max - min));
   cvtColor(depth, depth, COLOR_GRAY2RGB);
 
-  // BOOST_LOG_TRIVIAL(debug) << "showObjects " << detObjs.size();
+  // toffy::log::debug() << "showObjects " << detObjs.size();
   for (size_t i = 0; i < detObjs.size(); i++) {
     if (detObjs[i]->first_fc == _fc) {
       circle(depth, detObjs[i]->massCenter, 4, detObjs[i]->color);

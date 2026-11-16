@@ -19,7 +19,6 @@
 #include <system_error>
 #include <thread>
 
-#include <boost/log/trivial.hpp>
 
 #include <toffy/controller.hpp>
 #include <toffy/parallelFilter.hpp>
@@ -51,7 +50,7 @@ Controller * Controller::getInstance() {
 
 Controller::Controller() : baseFilterBank(NULL), _state(Controller::IDLE)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     baseFilterBank = std::static_pointer_cast<FilterBank>(
         toffy::FilterFactory::getInstance()->createFilter("filterBank",
                                                           "baseController"));
@@ -68,7 +67,7 @@ Controller::Controller() : baseFilterBank(NULL), _state(Controller::IDLE)
 
 Controller::~Controller()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     _state = Controller::IDLE;
     // Releasing the root bank is now just letting the FilterPtr go (P2-5): the
     // bank and everything pipelined into it are destroyed here, by this object,
@@ -136,7 +135,7 @@ bool Controller::forward()
             // `if (!_thread.joinable())` check that used to follow the
             // assignment could never fire: boost::thread threw as well.
             _state = Controller::IDLE;
-            BOOST_LOG_TRIVIAL(error) << "Could not start the filter thread: " << e.what();
+            toffy::log::error() << "Could not start the filter thread: " << e.what();
             return false;
         }
     } else {
@@ -163,7 +162,7 @@ bool Controller::backward()
             _thread = std::thread(&Controller::loopFilters, this);
         } catch (const std::system_error &e) {
             _state = Controller::IDLE;
-            BOOST_LOG_TRIVIAL(error) << "Could not start the filter thread: " << e.what();
+            toffy::log::error() << "Could not start the filter thread: " << e.what();
             return false;
         }
     } else {
@@ -244,7 +243,7 @@ bool Controller::stop()
 
 void Controller::loopFilters()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     if (baseFilterBank->size() == 0) _state = Controller::IDLE;
     int viewers = baseFilterBank->countFiltersByType(ImageView::id_name);
     while (_state > Controller::IDLE) {
@@ -255,12 +254,12 @@ void Controller::loopFilters()
         //cv::waitKey(1);
     }
     cv::destroyAllWindows();
-    BOOST_LOG_TRIVIAL(debug) << "Thread " << __FUNCTION__ << " ends";
+    toffy::log::debug() << "Thread " << __FUNCTION__ << " ends";
 }
 
 void Controller::loopFiltersOnce()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     if (baseFilterBank->size() == 0) _state = Controller::IDLE;
 
     if (_state > Controller::IDLE) {
@@ -270,19 +269,19 @@ void Controller::loopFiltersOnce()
         cv::waitKey(1);
         _state = Controller::IDLE;
     }
-    BOOST_LOG_TRIVIAL(debug) << "Thread " << __FUNCTION__ << " ends";
+    toffy::log::debug() << "Thread " << __FUNCTION__ << " ends";
 }
 
 int Controller::loadRuntimeConfig(const std::string &configFile)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
 
     boost::property_tree::ptree pt;
     try {
         boost::property_tree::read_xml(configFile, pt);
 
     } catch (boost::property_tree::xml_parser_error &e) {
-        BOOST_LOG_TRIVIAL(error)
+        toffy::log::error()
             << "FB Could not open config file: " << e.filename() << ". "
             << e.what() << ", in line: " << e.line();
         return -1;
@@ -294,7 +293,7 @@ int Controller::loadRuntimeConfig(const std::string &configFile)
             FilterFactory::getInstance()->getFilter(it->first)->updateConfig(
                 it->second);
         else
-            BOOST_LOG_TRIVIAL(warning)
+            toffy::log::warning()
                 << "loadRuntimeConfig: "
                 << "Filter " << it->first << " not found.";
     }
@@ -303,7 +302,7 @@ int Controller::loadRuntimeConfig(const std::string &configFile)
 
 void Controller::saveRunConfig(std::string fileName)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     boost::property_tree::ptree pt;
 
     pt = baseFilterBank->getConfig();
@@ -320,14 +319,14 @@ void Controller::saveRunConfig(std::string fileName)
 
 int Controller::loadConfigFile(const std::string &configFile)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
 
     boost::property_tree::ptree pt;
     try {
         boost::property_tree::read_xml(configFile, pt);
 
     } catch (boost::property_tree::xml_parser_error &e) {
-        BOOST_LOG_TRIVIAL(error)
+        toffy::log::error()
             << "FB Could not open config file: " << e.filename() << ". "
             << e.what() << ", in line: " << e.line();
         return -1;
@@ -339,7 +338,7 @@ int Controller::loadConfigFile(const std::string &configFile)
 
 int Controller::loadConfig(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
 
     loadPlugins(pt);
     return baseFilterBank->loadConfig(pt);
@@ -347,11 +346,11 @@ int Controller::loadConfig(const boost::property_tree::ptree &pt)
 
 void Controller::loadPlugins(const boost::property_tree::ptree &pt)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     BOOST_FOREACH (const boost::property_tree::ptree::value_type &v,
                    pt.get_child("toffy.plugins")) {
-        BOOST_LOG_TRIVIAL(debug) << "v.first " << v.first;
-        BOOST_LOG_TRIVIAL(debug) << "v.second " << v.second.data();
+        toffy::log::debug() << "v.first " << v.first;
+        toffy::log::debug() << "v.second " << v.second.data();
 
         loadPlugin(v.second.data());
     }
@@ -366,10 +365,10 @@ void Controller::loadPlugin(std::string lib)
     // MSVC is not defined for the library in any configuration. The dlopen() handles are
     // pushed onto _loads and never closed -- see the TODO(P2-10) at the top of this file.
     void *libHandle;
-    BOOST_LOG_TRIVIAL(debug) << "Loading plug-in from: " << lib;
+    toffy::log::debug() << "Loading plug-in from: " << lib;
     libHandle = dlopen(lib.c_str(), RTLD_LAZY);
     if (!libHandle) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "Could not load library: " << lib << std::endl
             << dlerror();
 
@@ -381,11 +380,11 @@ void Controller::loadPlugin(std::string lib)
         (toffy::commons::plugins::init_t)dlsym(libHandle, "init");
     const char *dlsym_error = dlerror();
     if (dlsym_error) {
-        BOOST_LOG_TRIVIAL(warning)
+        toffy::log::warning()
             << "Could not load plug-in filters from: " << lib << std::endl
             << dlsym_error;
     } else {
-        BOOST_LOG_TRIVIAL(info) << "Loaded plug-in filters from: " << lib;
+        toffy::log::info() << "Loaded plug-in filters from: " << lib;
         init(FilterFactory::getInstance());
         _loads.push_back(libHandle);
     }

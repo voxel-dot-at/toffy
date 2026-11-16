@@ -21,7 +21,6 @@
 
 #include <boost/any.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include <boost/log/trivial.hpp>
 
 #include <pcl/visualization/point_cloud_handlers.h>
 #include <pcl/visualization/pcl_visualizer.h>
@@ -45,7 +44,7 @@ CloudViewPCL::CloudViewPCL(): Filter(CloudViewPCL::id_name,_filter_counter),
 
 CloudViewPCL::~CloudViewPCL()
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     _signal = 0;
     // A viewer that was configured but never ran has no thread to join.
     // std::thread::join() throws std::system_error in that case -- out of a
@@ -103,7 +102,7 @@ void CloudViewPCL::loopViewer()
     const std::string ref="reference"; // default id
     std::vector<pcl::visualization::PointCloudColorHandler<pcl::PCLPointCloud2>::Ptr > hdlr;
 
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
 
     pcl::visualization::PCLVisualizer viewer(std::string("3D Viewer ")+id() + " " +_in_cloud);
 #if (PCL_MAJOR_VERSION == 1) && (PCL_MINOR_VERSION >= 7)
@@ -176,7 +175,7 @@ void CloudViewPCL::loopViewer()
 	pcl_sleep(0.01);
     }
 
-    BOOST_LOG_TRIVIAL(debug) << "Thread " << __FUNCTION__ << " stopping";
+    toffy::log::debug() << "Thread " << __FUNCTION__ << " stopping";
     viewer.removeAllPointClouds();
     viewer.spinOnce(100,true);
     viewer.close();
@@ -185,13 +184,13 @@ void CloudViewPCL::loopViewer()
     _viewerRunning = false;
 
     _signal = 0;
-    BOOST_LOG_TRIVIAL(debug) << "Thread " << __FUNCTION__ << " ends";
+    toffy::log::debug() << "Thread " << __FUNCTION__ << " ends";
     return;
 }
 
 bool CloudViewPCL::filter(const Frame &in, Frame& out)
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+    toffy::log::debug() << __FUNCTION__ << " " << id();
 
     toffy::Filter::setLoggingLvl();
 
@@ -248,7 +247,7 @@ bool CloudViewPCL::filter(const Frame &in, Frame& out)
         } catch (const std::system_error &e) {
             _viewerRunning = false;
             _signal = 0;
-            BOOST_LOG_TRIVIAL(error) << "Could not start the viewer thread: " << e.what();
+            toffy::log::error() << "Could not start the viewer thread: " << e.what();
         }
     }
 

@@ -22,7 +22,6 @@
 #include <pcl/range_image/range_image_planar.h>
 #include <pcl/common/transforms.h>
 
-#include <boost/log/trivial.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
@@ -45,7 +44,7 @@ Transform::Transform(): Filter(Transform::id_name,_filter_counter),
 
 /*
 int Transform::loadConfig(const boost::property_tree::ptree& pt) {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__;
+    toffy::log::debug() << __FUNCTION__;
     const boost::property_tree::ptree& tree = pt.get_child(this->type());
 
     loadGlobals(tree);
@@ -57,12 +56,12 @@ int Transform::loadConfig(const boost::property_tree::ptree& pt) {
 */
 
 bool Transform::filter(const Frame &in, Frame& out) const {
-	BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << " " << id();
+	toffy::log::debug() << __FUNCTION__ << " " << id();
 	pcl::RangeImagePlanar::Ptr planar;
 	try {
 	    planar = boost::any_cast<pcl::RangeImagePlanar::Ptr>(in.getData(_in_cloud));
 	} catch(const boost::bad_any_cast &) {
-	    BOOST_LOG_TRIVIAL(warning) <<
+	    toffy::log::warning() <<
 		    "Could not cast input " << _in_cloud <<
 		    ", filter  " << id() <<" not applied.";
 	    return false;
@@ -84,7 +83,7 @@ bool Transform::filter(const Frame &in, Frame& out) const {
 			//Eigen::Affine3f m = ;
 			tr = Eigen::Scaling((float)_actions[i][0],(float)_actions[i][1],(float)_actions[i][2]) *tr;
 		} else
-			BOOST_LOG_TRIVIAL(warning) <<
+			toffy::log::warning() <<
 				"Operation unknown.";
 	}
 
@@ -123,7 +122,7 @@ boost::property_tree::ptree Transform::getConfig() const
 
 void Transform::updateConfig(const boost::property_tree::ptree &pt) 
 {
-    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ <<  " " << id();
+    toffy::log::debug() << __FUNCTION__ <<  " " << id();
 
     using namespace boost::property_tree;
 
@@ -136,17 +135,17 @@ void Transform::updateConfig(const boost::property_tree::ptree &pt)
 	    BOOST_FOREACH(const ptree::value_type &w, v.second) {
 
 		std::vector<double> vec;
-		BOOST_LOG_TRIVIAL(debug) << "w.first " << w.first;
-		BOOST_LOG_TRIVIAL(debug) << w.second.data();
+		toffy::log::debug() << "w.first " << w.first;
+		toffy::log::debug() << w.second.data();
 		std::stringstream ss(w.second.data());
 		boost::property_tree::ptree jvec;
 		boost::property_tree::json_parser::read_json(ss,jvec);
-		BOOST_LOG_TRIVIAL(debug) << "jvec.size() " << jvec.size();
+		toffy::log::debug() << "jvec.size() " << jvec.size();
 		BOOST_FOREACH(const ptree::value_type &x, jvec) {
-		    BOOST_LOG_TRIVIAL(debug) << "x.second.data()" << x.second.data();
+		    toffy::log::debug() << "x.second.data()" << x.second.data();
 		    vec.push_back(x.second.get<double>(""));
 		}
-		BOOST_LOG_TRIVIAL(debug) << "vec.size()" << vec.size();
+		toffy::log::debug() << "vec.size()" << vec.size();
 		if (vec.size() == 3) {
 		    _actions.push_back(cv::Vec3d(vec[0],vec[1],vec[2]));
 		    if(w.first == "rotation")
@@ -159,7 +158,7 @@ void Transform::updateConfig(const boost::property_tree::ptree &pt)
 	    }
 	}
     } catch (const std::exception& ex) {
-	BOOST_LOG_TRIVIAL(debug) << "Transform values are wrong. Ex:" << ex.what();
+	toffy::log::debug() << "Transform values are wrong. Ex:" << ex.what();
     }
 
     //_minAmpl = pt.get("options.minAmpl", _minAmpl);

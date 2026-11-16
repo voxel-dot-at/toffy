@@ -16,7 +16,7 @@
 */
 #pragma once
 
-#include <boost/log/trivial.hpp>
+#include <toffy/logging.hpp>
 
 #include <toffy/toffy_export.h>
 #include <toffy/controller.hpp>
@@ -43,14 +43,14 @@ class TOFFY_EXPORT Player {
 public:
     /**
      * @brief Constructor that sets the debug filter
-     * @param severity Boost severity_level
+     * @param severity minimum severity that will be emitted
      * @param file Flag for logging to a file
      *
      * A creation time we can select the debug level and if we want to save the
      * log to a file. By default the info level is set.
      *
      */
-    Player(boost::log::trivial::severity_level severity,bool file);
+    Player(toffy::log::level severity, bool file);
 
     // defaults to debug, false
     Player();
