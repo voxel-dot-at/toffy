@@ -46,8 +46,10 @@
 // at all; `OPENCV_TRACKING` and `PCL_VISUALIZATION` are defined only inside
 // `modules/filters/src/{smoothing,viewers}/`, and the chain lives in
 // `modules/core`). So three filters that are compiled into `libtoffy.so` could
-// not be instantiated by name: the `WITH_CONTROL` bug class (counter 26) in a
-// new place. They are left unreachable by the move (deleting a branch that can
+// not be instantiated by name: a macro the build never sets, gating something
+// the build does compile -- the bug class the deleted web-control hook was
+// (counter 26), in a new place. They are left unreachable by the move
+// (deleting a branch that can
 // never be taken must not silently become a new feature) and fixed in their own
 // commit, where the guard that gates them is one the build actually sets.
 //
