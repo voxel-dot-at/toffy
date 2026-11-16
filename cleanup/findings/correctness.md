@@ -255,3 +255,17 @@ test red on purpose. Not fixed with `P3-5`: the item is "do not hand configurati
 and passing the new count is a behaviour change every consumer of the script would have to
 agree to. Both `cnt` and `numObjects` *are* initialised by the constructor, so this is a stale
 read, not an uninitialised one — the `P0-5` shape does not apply here.
+
+26. **~~`BtaWrapper::loadFrame()` re-pinned the process log level, once per frame.~~ FIXED
+    (`P2-17`)** — under `#ifdef CM_DEBUG` it called
+    `logging::core::get()->set_filter(trivial::severity >= trivial::debug)` from inside a
+    function that runs for every frame. In a debug build that meant the process-wide severity
+    filter was re-decided on every frame and nothing else in the application could turn it
+    back down: the `P2-8` defect (`Filter::setLoggingLvl()` doing the same thing from a
+    per-filter method) surviving in the module `P2-8` never looked at. It is not a BTA bug —
+    it is the same mistake, in a second place, and the reason it was invisible is that
+    `P2-8`'s evidence was "grep for `set_filter`" run over `modules/core`.
+    Found only because `P2-17` converted all 658 call sites at once and every remaining
+    `set_filter` in the tree became one short list. Fixed by deleting it: the level belongs
+    to the application, and `toffy::log` gives no method that a frame loop could use to move
+    it by accident.

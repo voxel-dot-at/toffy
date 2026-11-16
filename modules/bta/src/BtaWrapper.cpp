@@ -561,12 +561,8 @@ char *BtaWrapper::loadFrame(char *data, std::string /*ext*/)
     BTA_Frame *frame = (BTA_Frame *)malloc(sizeof(BTA_Frame));
     memcpy(frame, data, sizeof(BTA_Frame));
 
-#ifdef CM_DEBUG
-    // P2-17 moved this verbatim: it is `logging::core::get()->set_filter(
-    // severity >= debug)` with the backend hidden behind toffy::log. It is
-    // wrong either way and is removed in the next commit -- see finding A26.
-    toffy::log::root().setLevel(toffy::log::level::debug);
-#endif
+    // Nothing here sets the log level. A `#ifdef CM_DEBUG` block used to, on
+    // every call -- see finding A26 and cleanup/plan/logging.md.
 
     toffy::log::debug() << "frame size: " << sizeof(BTA_Frame);
     toffy::log::debug() << "BTA_CHANNEL size: " << sizeof(BTA_Channel);
