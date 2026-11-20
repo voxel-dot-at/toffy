@@ -78,7 +78,7 @@ Windows branches were deleted rather than enabled.
 | **14** | `P2-10` three plugin loaders | ❌ all three still exist |
 | **16** | `P2-11` + `P2-12` `Frame` API, `filter()` overload | ❌ see `P3-9` before touching `P2-12` |
 | **18** | `P2-15` formatting | ❌ 11 of 20 core files have hard tabs; clang-format 18.1.3 **is** installed. `P2-17` touched 75 files and deliberately did **not** reformat any of them, so the whitespace-only commit is still whitespace-only |
-| **39** | `P2-17` `toffy::log`, off Boost.Log | ◐ **step A landed** — the abstraction, the 658 call sites, the 5 installed headers and both Boost-typed signatures. Steps B/C (log4cplus backend, drop `log log_setup` from `find_package`) and D (`boxes`' own 378 sites) are open. See [`plan/logging.md`](plan/logging.md) |
+| **39** | `P2-17` `toffy::log`, off Boost.Log | ◐ **steps A and C landed** — the abstraction, the 658 call sites, the 5 installed headers, both Boost-typed signatures, and the backend is now log4cplus: `libtoffy.so` has no `libboost_log` in `NEEDED` and `test_logging_abstraction` passes unchanged against the new backend. Only step D (`boxes`' own 378 sites) is open, and that is on `boxes`. See [`plan/logging.md`](plan/logging.md) |
 
 The second-pass work (`P3-1` … `P3-12`) is listed in
 [`plan/second-pass.md`](plan/second-pass.md). All four of its cheap items are done (`P3-1`,

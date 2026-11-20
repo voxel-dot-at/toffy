@@ -195,11 +195,11 @@ public:
     void emit(level lvl, const std::string& text) const;
 
 private:
-    /** Held by the channel table only; `get()` and `root()` are the entrances. */
-    logger(std::string name, int ownLevel);
+    /** A handle is a name and nothing else: the levels belong to the backend,
+     *  not to us. `get()` and `root()` are the only entrances. */
+    explicit logger(std::string name);
 
     std::string name_;
-    int ownLevel_;  ///< -1: inherit from the parent; else a `level` value
 };
 
 /** @brief The root channel. */

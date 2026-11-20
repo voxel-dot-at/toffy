@@ -8,6 +8,15 @@ SET(@PROJECT_NAME@_VERSION_PATCH  @PROJECT_VERSION_PATCH@)
 
 @PACKAGE_INIT@
 
+# No find_dependency(log4cplus) here, and that is deliberate (P2-17). libtoffy
+# links log4cplus by name (`-llog4cplus`, found through pkg-config) rather than
+# through log4cplus's imported target, so the export below names no target a
+# consumer would have to have found first. It is by name because Ubuntu's
+# liblog4cplus-dev exports an imported target that hardcodes
+# /usr/.../libnsl.so without depending on libnsl-dev — see the log4cplus block
+# in CMakeLists.txt. If that is ever fixed, switch both halves together: the
+# imported target, and find_dependency for it here.
+
 
 #
 # common prefix to make things cross-compile save:

@@ -23,26 +23,24 @@
 // process. FilterBank::filter() invoked it three times per child per frame, so
 // the effective level was whatever the last filter to run happened to want.
 //
-// The `Capture` helper below reaches into Boost.Log directly. That is a
-// deliberate exception: this file tests that *Filter* does not touch the
+// The `Capture` helper below reaches into the logging backend directly. That is
+// a deliberate exception: this file tests that *Filter* does not touch the
 // process-wide configuration, and the only way to see what reached the sinks is
 // to install one. It is the one place in the tree outside src/logging.cpp
-// allowed to name the backend, and it moves when the backend does (P2-17 step
-// C). The backend-independent half of the new API is tested in
-// test_logging_abstraction.cpp instead.
+// allowed to name the backend. The backend-independent half of the API is tested
+// in test_logging_abstraction.cpp instead, and that file has to pass against any
+// backend — which is the property that makes this one's coupling acceptable.
 
 #include <gtest/gtest.h>
 
 #include <sstream>
 #include <string>
 
-#include <boost/log/core.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/sinks/sync_frontend.hpp>
-#include <boost/log/sinks/text_ostream_backend.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/property_tree/ptree.hpp>
+
+#include <log4cplus/callbackappender.h>
+#include <log4cplus/clogger.h>
+#include <log4cplus/logger.h>
 
 #include <toffy/filter.hpp>
 #include <toffy/filterbank.hpp>
@@ -57,33 +55,41 @@ using toffy::log::level;
 
 namespace {
 
-using Sink = boost::log::sinks::synchronous_sink<
-    boost::log::sinks::text_ostream_backend>;
+/// Appends each record's message to a string. The cookie is the Capture's own
+/// buffer, so nothing is shared between instances and the callback needs no
+/// lock: a test thread is the only writer.
+void capture_to_string(void* cookie, log4cplus_char_t const* message,
+                       log4cplus_char_t const* /*loggerName*/,
+                       log4cplus_loglevel_t /*ll*/, log4cplus_char_t const* /*thread*/,
+                       log4cplus_char_t const* /*thread2*/,
+                       unsigned long long /*timestamp_secs*/,
+                       unsigned long /*timestamp_usecs*/,
+                       log4cplus_char_t const* /*file*/,
+                       log4cplus_char_t const* /*function*/, int /*line*/)
+{
+    static_cast<std::string*>(cookie)->append(message).push_back('\n');
+}
 
-/// Installs a sink that captures log records into a string, and removes it
-/// again. The global severity filter is left alone -- tests set it explicitly.
+/// Installs an appender that captures log records into a string, and removes
+/// that one appender again -- not every appender, which would silence the
+/// console for the tests that run after this one.
 class Capture
 {
    public:
     Capture()
     {
-        auto backend = boost::make_shared<boost::log::sinks::text_ostream_backend>();
-        // The ostringstream is owned by *this, so the stream must not be freed
-        // by the shared_ptr.
-        backend->add_stream(
-            boost::shared_ptr<std::ostream>(&stream, [](std::ostream*) {}));
-        backend->auto_flush(true);
-        sink = boost::make_shared<Sink>(backend);
-        boost::log::core::get()->add_sink(sink);
+        appender = log4cplus::SharedAppenderPtr(
+            new log4cplus::CallbackAppender(&capture_to_string, &text_));
+        log4cplus::Logger::getRoot().addAppender(appender);
     }
 
-    ~Capture() { boost::log::core::get()->remove_sink(sink); }
+    ~Capture() { log4cplus::Logger::getRoot().removeAppender(appender); }
 
-    std::string text() const { return stream.str(); }
+    std::string text() const { return text_; }
 
    private:
-    std::ostringstream stream;
-    boost::shared_ptr<Sink> sink;
+    std::string text_;
+    log4cplus::SharedAppenderPtr appender;
 };
 
 boost::property_tree::ptree levelTree(const std::string& key, int value)

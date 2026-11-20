@@ -22,7 +22,7 @@
 # is. Configure the surface you are blessing, and say which one it is.
 # If a BTA-on baseline is ever wanted, it needs its own file and its own job, not
 # a second meaning in this one.
-# Blessed from: libtoffy.so.2.0.0 (5f251e3)
+# Blessed from: libtoffy.so.2.0.0 (dfaa3f1)
 _ZN5toffy10Controller10loadConfigERKN5boost13property_tree11basic_ptreeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES9_St4lessIS9_EEE
 _ZN5toffy10Controller10loadPluginENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
 _ZN5toffy10Controller11loadPluginsERKN5boost13property_tree11basic_ptreeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES9_St4lessIS9_EEE
@@ -147,8 +147,8 @@ _ZN5toffy3log4initERKNS0_6configE
 _ZN5toffy3log4nameENS0_5levelE
 _ZN5toffy3log6logger3getERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
 _ZN5toffy3log6logger4rootEv
-_ZN5toffy3log6loggerC1ENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEi
-_ZN5toffy3log6loggerC2ENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEi
+_ZN5toffy3log6loggerC1ENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+_ZN5toffy3log6loggerC2ENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
 _ZN5toffy3log6recordC1EOS1_
 _ZN5toffy3log6recordC1ERKNS0_6loggerENS0_5levelE
 _ZN5toffy3log6recordC2EOS1_

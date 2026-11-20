@@ -43,7 +43,7 @@ target_link_libraries(test_filterbank toffy GTest::gtest GTest::gtest_main)
 add_test(NAME filterbank COMMAND test_filterbank)
 
 add_executable(test_logging test_logging.cpp)
-target_link_libraries(test_logging toffy GTest::gtest GTest::gtest_main)
+target_link_libraries(test_logging toffy ${LOG4CPLUS_LIBRARIES} GTest::gtest GTest::gtest_main)
 add_test(NAME logging COMMAND test_logging)
 
 # P2-17: the toffy::log abstraction on its own, naming no backend -- this file

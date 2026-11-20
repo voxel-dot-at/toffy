@@ -379,7 +379,7 @@ else()
     endif()
 endif()
 find_package(Boost
-    COMPONENTS log log_setup program_options system
+    COMPONENTS program_options system
         filesystem date_time serialization chrono
     REQUIRED)
 #include_directories(${Boost_INCLUDE_DIRS})
@@ -390,6 +390,29 @@ if(NOT MSVC)
     find_package(PkgConfig)
     pkg_search_module(Eigen3 REQUIRED eigen3)
     include_directories(${Eigen3_INCLUDE_DIRS})
+
+    # log4cplus (P2-17) — the logging backend.
+    #
+    # `toffy/logging.hpp` names no backend and no consumer includes this; it is
+    # here so that `libtoffy.so`'s own link line carries the library.
+    #
+    # Found through pkg-config, NOT through `find_package(log4cplus)`, and that
+    # is a workaround for a measured packaging defect rather than a style
+    # choice. Ubuntu's liblog4cplus-dev exports
+    #
+    #   INTERFACE_LINK_LIBRARIES "/usr/.../librt.a;/usr/.../libnsl.so"
+    #
+    # in log4cplusTargets.cmake, and it does not depend on libnsl-dev, so on a
+    # machine that has liblog4cplus-dev and not libnsl-dev — which is what
+    # `apt-get install liblog4cplus-dev` produces — the imported target names a
+    # file that is not there and every link fails with
+    # "No rule to make target '/usr/.../libnsl.so'". pkg-config gives
+    # `-llog4cplus` and nothing else. Re-test `find_package(log4cplus)` if the
+    # package is ever fixed; the imported target is the better mechanism.
+    pkg_search_module(LOG4CPLUS REQUIRED log4cplus)
+    include_directories(${LOG4CPLUS_INCLUDE_DIRS})
+    link_directories(${LOG4CPLUS_LIBRARY_DIRS})
+    list(APPEND LIBS ${LOG4CPLUS_LIBRARIES})
 endif()
 
 # PCL

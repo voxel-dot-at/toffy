@@ -303,3 +303,49 @@ This is the same inversion `P2-9` is fixing between core and viewers, in the lay
 **Suggestion S8 — record it as a `P2-9` follow-on**, not a separate item: `toffy_tracking`
 belongs in `libraries/` next to the code it builds, or the `$<TARGET_OBJECTS:>` reference comes
 out of `libraries/CMakeLists.txt`.
+
+---
+
+## Ubuntu's `liblog4cplus-dev` exports a CMake target that cannot link (found by `P2-17` step C)
+
+`find_package(log4cplus)` succeeds and then every link fails:
+
+```
+No rule to make target '/usr/lib/aarch64-linux-gnu/libnsl.so', needed by 'libtoffy.so.2.0.0'
+```
+
+`/usr/lib/aarch64-linux-gnu/cmake/log4cplus/log4cplusTargets.cmake` exports
+
+```cmake
+INTERFACE_LINK_LIBRARIES "/usr/lib/aarch64-linux-gnu/librt.a;/usr/lib/aarch64-linux-gnu/libnsl.so"
+```
+
+with absolute paths to libraries the package does not depend on. `apt-cache
+depends liblog4cplus-dev` lists exactly one dependency, `liblog4cplus-2.0.5t64`.
+So a machine that has the dev package and not `libnsl-dev` — which is what
+`apt-get install liblog4cplus-dev` gives you — has an imported target naming a
+file that is not there. This machine has `libnsl.so.1` and `libnsl.so.2` and no
+`libnsl.so`; the `-dev` symlink is what is missing, and nothing asked for it.
+
+Two things make it worse than a missing dependency, and both are the reason it is
+written down rather than worked around silently:
+
+* It fails at **build time with a CMake generator error**, not at configure with
+  a "could not find dependency" message. The imported target was accepted; the
+  file is only needed when something tries to link. So `find_package` reports
+  success and the failure lands somewhere far away from the thing that was wrong.
+* It is **absolute-pathed**, so it is not even a name the linker could resolve
+  some other way.
+
+`P2-17` works around it by finding log4cplus with `pkg_search_module` and linking
+`-llog4cplus`, and `toffyConfig.cmake` correspondingly has no
+`find_dependency(log4cplus)` — there is no imported target for a consumer to have
+needed first. Both halves switch back together if the package is fixed; the
+imported target is the better mechanism and this is a workaround, commented as
+one where it is used.
+
+Not toffy's problem to fix, and it will bite anyone: the CI runner installs from
+the same archive, and an embedded sysroot that installs a dev package without its
+transitive dev symlinks is the normal shape of the thing rather than the
+exception. If log4cplus is going to be a real dependency of toffy deployments,
+this is worth reporting upstream or pinning around deliberately.

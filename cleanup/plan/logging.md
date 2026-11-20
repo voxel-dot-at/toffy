@@ -214,6 +214,72 @@ toffy's layer, so the observable rule is
 has per-logger levels natively, and the second clause goes away. Recorded here
 so nobody discovers it as a surprise in `boxes`.
 
+## Step C landed
+
+One backend, not two. Keeping Boost.Log selectable was considered and rejected:
+the semantics tests are the reason to believe the swap is safe, they pass
+against log4cplus, and a second backend that nothing exercises is the thing this
+programme deletes on sight.
+
+The header lost one member in the process: `logger` used to carry its own
+`ownLevel_`, which was correct for the Boost backend (which had no hierarchy and
+so needed one invented) and wrong for log4cplus (which has one and owns the
+levels). A handle is a name now, and `effectiveLevel()`, `setLevel()` and
+`inheritLevel()` are the backend's. That is less code in both backends, not
+just one.
+
+Three things log4cplus does that the abstraction had been doing by hand, and one
+it does not:
+
+* **Inheritance, including through names that were never requested** —
+  `Logger::getInstance("a.b.c")` creates `"a.b"` implicitly, and
+  `getChainedLogLevel()` resolves the chain. The hand-written walk in the Boost
+  backend existed only to agree with this, and it is gone.
+* **`NOT_SET_LOG_LEVEL == -1` is exactly `inheritLevel()`** — the sentinel the
+  first implementation invented for its own table is the library's own value.
+* **`OFF_LOG_LEVEL` exists natively**, so `level::off` maps instead of being
+  emulated by "above fatal".
+* **It does not give you a default appender.** An unconfigured log4cplus root
+  logger has no appender and discards every record without a word. Boost.Log's
+  trivial logger creates a stderr sink on first use, so "the application
+  configured nothing" produced output. This is the silent-regression case the
+  semantics table called out, and it is now handled by installing a stderr
+  `ConsoleAppender` on the root at `TRACE` on first use of the API.
+
+### The Ubuntu package's exported CMake target is broken, so log4cplus is found by pkg-config
+
+`find_package(log4cplus)` does not work on a stock Ubuntu install of
+`liblog4cplus-dev`. Its `log4cplusTargets.cmake` exports
+
+```
+INTERFACE_LINK_LIBRARIES "/usr/lib/aarch64-linux-gnu/librt.a;/usr/lib/aarch64-linux-gnu/libnsl.so"
+```
+
+and `apt-cache depends liblog4cplus-dev` lists only `liblog4cplus-2.0.5t64` — no
+`libnsl-dev`. So the imported target names `/usr/lib/.../libnsl.so`, a file that
+`apt-get install liblog4cplus-dev` does not put there (this machine has
+`libnsl.so.1` and `libnsl.so.2` and no `libnsl.so`), and every link dies with
+`No rule to make target '/usr/lib/aarch64-linux-gnu/libnsl.so'`. Measured, not
+read: that is the first thing that happened when step C was built.
+
+So toffy finds it with `pkg_search_module(LOG4CPLUS REQUIRED log4cplus)` and
+links `-llog4cplus`, and `toffyConfig.cmake` has no `find_dependency(log4cplus)`
+because there is no imported target for a consumer to have to have found. Both
+halves switch back together if the package is ever fixed; the imported target is
+the better mechanism and this is a workaround, written as one.
+
+This matters beyond toffy: it is the precondition question for the whole
+log4cplus move, and it will bite on the CI runner and on any sysroot that
+installs the dev package without `libnsl-dev` — which is the normal shape.
+
+### One behaviour difference, chosen
+
+`config::fileSink` (what `Player(level, true)` means) wrote `toffy_%N.log` with
+**both** a 10 MiB and a midnight rotation configured. log4cplus does one or the
+other per appender, so it is now `toffy.log` with size rotation at 10 MiB and
+five backups — the closer of the two, and the one that bounds disk use, which is
+what the setting was for. `propertiesFile` is how you get anything else.
+
 ## Step A landed
 
 Steps A and B arrived together, because they could not be separated: deleting
@@ -264,7 +330,7 @@ conversion made every `set_filter` call in the tree visible at once.
 |---|---|---|
 | **A+B** | ✅ **landed.** `logging.hpp` + `logging.cpp` backed by **Boost.Log**. `LOG(lvl)` redefined. `Filter`'s and `Player`'s signatures switch to `toffy::log::level`. The 5 installed headers stop including `boost/log`. All 658 + 100 call sites converted, because the transitive include made that unavoidable. | `test_logging_abstraction` (levels, names, channel hierarchy, inheritance through gaps, `initOnce`, `enabled`); existing `test_logging` green and extended (round-trip through config, `warn` alias, `off` unreachable from config); 176/176 installed-header checks; both consumers rebuilt |
 | ~~**B**~~ | merged into A above — see *Step A landed* | |
-| **C** | Backend becomes log4cplus: `find_package(log4cplus)`, `log log_setup` out of `find_package(Boost)`, `logging.cpp` reimplemented. | **the point of the item**: `readelf -d libtoffy.so \| grep boost_log` empty; consumer link surface has no `boost::` in any toffy symbol; step 3's semantics table re-tested against log4cplus, especially #3 |
+| **C** | ✅ **landed.** Backend is log4cplus; `log log_setup` out of `find_package(Boost)`; `logging.cpp` reimplemented against it and the Boost.Log backend deleted rather than kept selectable. | **the point of the item, measured**: `readelf -d libtoffy.so.2.0.0` has **no `libboost_log`** and does have `liblog4cplus-2.0.so.3`; `test_logging_abstraction` — which names no backend — passes **unchanged** against the new one, which is the first real evidence that the abstraction is an abstraction; both consumers rebuilt, both link surfaces unchanged; 16/16 `ctest` in Release, Debug, `WITHOUT_BTA=ON`, `WITHOUT_PCL=ON`; 25 tree warnings unchanged; `abi_surface.sh` re-blessed (BTA-off) with one change, `logger(std::string, int)` → `logger(std::string)` |
 | **D** | `boxes` migrates its 378 sites, on its own schedule. | its own; toffy does not wait for it |
 
 A was the dependency fix for consumers, and it paid for itself before C: with
