@@ -405,3 +405,81 @@ the factory a question: **`FilterFactory::hasCreator()` before the first
 first reported `hasCreator=0 creatable=1` for `cvTracker` — a contradiction that
 was entirely an artefact of call order. The helpers in the fence warm the factory
 first so the answer does not depend on which test ran before it.
+
+---
+
+## Boost.Filesystem was a dependency of `libtoffy` for two files, one of which needed it (fixed by `P2-18`)
+
+`libtoffy.so` linked `libboost_filesystem` — `NEEDED libboost_filesystem.so.1.83.0`
+on the host, `.so.1.81.0` on the target. Counting the users:
+
+```
+modules/filters/src/base/rectify.cpp            include + alias, uses nothing
+modules/filters/src/base/polar2cart.cpp         include + alias, uses nothing
+modules/filters/src/base/focus.cpp              include + alias, uses nothing
+modules/filters/src/base/amplitudeRange.cpp     include + alias, uses nothing
+modules/filters/src/capture/csv_source.cpp      include, uses nothing
+modules/filters/src/smoothing/bilateral.cpp     include + alias, uses nothing
+modules/filters/include/toffy/base/distAmpl.hpp include, uses nothing  <-- INSTALLED HEADER
+modules/filters/src/capture/capturerFilter.cpp  uses it
+modules/bta/src/bta.cpp                         uses it
+```
+
+**Seven of nine used nothing from it at all.** Each had `#include
+<boost/filesystem.hpp>` and, in six cases, a `namespace fs = boost::filesystem;`
+alias that named nothing either — the residue of edits that removed the calls and
+left the include. One of the seven is an **installed header**, so toffy was
+putting `boost/filesystem.hpp` into every consumer's include path to provide
+nothing. That is the same defect `P2-17` removed for Boost.Log, found by counting
+uses rather than includes.
+
+The actual surface in the two real users was eight operations: `path`, `exists`,
+`is_directory`, `is_regular_file`, `directory_iterator`, `create_directories`,
+`absolute`, `filesystem_error`, plus three `path` members (`.string()`,
+`.extension()`, `.parent_path()`). All of it is `stat` / `opendir` / `mkdir`, so
+it is now `libraries/internal/toffy_internal/fs_posix.hpp` and
+`filesystem` is out of `find_package(Boost)`.
+
+Measured after: `libtoffy.so` `NEEDED` has **zero** boost entries; installed
+headers including `boost/filesystem` **0** (was 1); `find_package(Boost)` asks for
+5 components instead of 6; 16/16 `ctest` in Release, `WITHOUT_PCL=ON` and
+`WITHOUT_BTA=ON`; 25 tree warnings unchanged; `abi_surface.sh` matches at 554
+symbols; both consumers rebuild against a fresh install.
+
+### Why the helper is not installed, and why that needed a new directory
+
+`libraries/CMakeLists.txt:11` is `install(DIRECTORY "include/" DESTINATION
+"include/")` — everything under `libraries/include/` becomes shipped API. A
+helper used by two `.cpp` files is not API, and this programme's direction for
+export surface is down, not up (see `P3-10`). So it lives in a new
+`libraries/internal/`, which is on the include path and has no install rule, and
+the include reads `<toffy_internal/fs_posix.hpp>` — the path itself tells a
+consumer whether they are allowed to depend on it. Verified: `find
+<stage> -name fs_posix.hpp` returns nothing.
+
+### Three things the conversion found, deliberately not fixed in the same commit
+
+* **`CapturerFilter::savePath()` computed a parent path and threw it away.** It
+  warned `"is not a directory. Removing file name to get the path"`, assigned
+  `fsPath = fsPath.parent_path()`, and then stored `_savePath = newPath` — the
+  original string. The warning described something that never happened. Behaviour
+  preserved; the dead call is gone. (`loadPath()`'s identical-looking line *is*
+  live — its `fsPath` feeds the directory scan — so that one was ported, not
+  deleted.)
+* **`Bta::loadPath()` has an unreachable `exists()` check.** `if
+  (fs::is_regular_file(fsPath) && ...)` and then, inside, `if
+  (!fs::exists(fsPath))`. `is_regular_file` has already stat'ed it successfully.
+  Kept, with a comment, so the commit stays a backend swap.
+* **`boost::lexical_cast<int>` on a file stem becomes `std::stoi`.** Both throw on
+  a non-numeric stem, so `loadPath()` still propagates rather than silently
+  reading 0 and reordering the begin/end file selection — but the exception
+  *type* changed (`bad_lexical_cast` → `std::invalid_argument`). Nothing in toffy,
+  `toffy-oatpp` or `boxes` catches the old one (measured), so this is not a
+  consumer-visible break; it is noted because it is the one place the swap is not
+  literally identical.
+
+One genuine behaviour difference, and it is an improvement: `boost::filesystem::
+directory_iterator` **throws** if handed a non-directory, so `loadPath("foo.r")`
+at the top level of a tree (`parent_path()` → `""`) threw. `opendir("")` just
+fails, the listing comes back empty, and `loadPath()` returns `-1` — which is
+what its signature has always been for.

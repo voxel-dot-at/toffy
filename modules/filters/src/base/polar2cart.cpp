@@ -26,7 +26,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/calib3d.hpp>
 
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
 #include "toffy/base/polar2cart.hpp"
@@ -36,7 +35,6 @@ using namespace toffy;
 using namespace toffy::filters;
 using namespace cv;
 using namespace std;
-namespace fs = boost::filesystem;
 
 std::size_t Polar2Cart::_filter_counter = 1;
 const std::string Polar2Cart::id_name = "polar2cart";

@@ -16,7 +16,6 @@
 */
 #include <iostream>
 
-#include <boost/filesystem.hpp>
 
 #include "toffy/filter_helpers.hpp"
 #include <boost/algorithm/string/case_conv.hpp>
@@ -30,7 +29,6 @@ using namespace toffy;
 using namespace toffy::filters::smoothing;
 using namespace cv;
 using namespace std;
-namespace fs = boost::filesystem;
 
 
 std::size_t Bilateral::_filter_counter = 1;

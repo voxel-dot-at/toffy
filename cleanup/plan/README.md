@@ -71,6 +71,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P2-15` | enforce formatting | [`build-and-hygiene.md`](build-and-hygiene.md) | ❌ |
 | `P2-16` | build flags | [`build-and-hygiene.md`](build-and-hygiene.md) | ✅ — the `-Werror` half landed as `P3-4` |
 | `P2-17` | `toffy::log`, so the logging backend is a choice | [`logging.md`](logging.md) | ◐ **new item, step A landed** — 658 `BOOST_LOG_TRIVIAL` sites → 0, no installed header includes `boost/log`, no consumer symbol names a Boost type. log4cplus backend and `boxes`' own 378 sites still open |
+| `P2-18` | Boost.Filesystem out of `libtoffy` | [`../findings/build.md`](../findings/build.md) | ✅ **landed** — `libtoffy.so` has no `libboost_filesystem` in `NEEDED` (was 1) and no installed header includes `boost/filesystem` (was 1). Nine shipped files included it; seven used nothing from it. `filesystem` out of `find_package(Boost)` |
 
 ### `P3` — second pass ([`second-pass.md`](second-pass.md))
 

@@ -21,7 +21,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
 #include "toffy/common/filenodehelper.hpp"
@@ -30,7 +29,6 @@ using namespace toffy;
 using namespace toffy::filters;
 using namespace cv;
 using namespace std;
-namespace fs = boost::filesystem;
 
 
 std::size_t Rectify::_filter_counter = 1;

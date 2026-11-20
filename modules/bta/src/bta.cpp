@@ -4,7 +4,7 @@
 #include <boost/any.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/filesystem.hpp>
+#include <toffy_internal/fs_posix.hpp>
 #include <boost/lexical_cast.hpp>
 #include <ctime>
 #include <iostream>
@@ -28,7 +28,7 @@ using namespace toffy;
 using namespace toffy::capturers;
 using namespace cv;
 using namespace std;
-namespace fs = boost::filesystem;
+namespace fsx = toffy::fsx;
 
 std::size_t Bta::_filter_counter = 1;
 const std::string Bta::id_name = "bta";
@@ -446,10 +446,13 @@ void Bta::playback(const bool& pb)
 int Bta::loadPath(const std::string& newPath)
 {
     toffy::log::debug() << __FUNCTION__;
-    fs::path fsPath(newPath);
-    toffy::log::debug() << "fsPath.extension(): " << fsPath.extension();
-    if (fs::is_regular_file(fsPath) && fsPath.extension() == ".bltstream") {
-        if (!fs::exists(fsPath)) {
+    toffy::log::debug() << "extension(): " << fsx::extension(newPath);
+    if (fsx::isRegularFile(newPath) &&
+        fsx::extension(newPath) == ".bltstream") {
+        // Unreachable, and was unreachable before: isRegularFile() has already
+        // stat()ed the path successfully. Kept so this change moves nothing but
+        // the backend; removing it is a separate decision.
+        if (!fsx::exists(newPath)) {
             toffy::log::warning() << "bta::loadPath(): Given path ["
                                        << newPath << "] does not exist.";
             return -1;
@@ -471,9 +474,10 @@ int Bta::loadPath(const std::string& newPath)
 void Bta::savePath(const std::string& newPath)
 {
     toffy::log::debug() << __FUNCTION__;
-    fs::path fsPath(newPath);
-    cout << "is regular: " << fs::is_regular_file(fsPath) << endl;
-    if (fsPath.extension() == ".bltstream") {
+    // The old line printed `fs::is_regular_file(fsPath)` to stdout with cout;
+    // kept as-is (cout and all) so this change moves nothing but the backend.
+    std::cout << "is regular: " << fsx::isRegularFile(newPath) << std::endl;
+    if (fsx::extension(newPath) == ".bltstream") {
         setSavePath(newPath);
         // bta_stream = true;
         return;
@@ -495,33 +499,34 @@ void Bta::save(const bool& save)
         time(&_saveTimeStamp);
         // if (!getSavePath().empty() && fs::path(getSavePath()).extension() ==
         // ".bltstream") { cout << "PATH::: " << saveFolder() << endl;
-        fs::path newPath(getSavePath());
+        std::string newPath = getSavePath();
         // string _strPath = savePath + string("/") + id() + string("/") +
         // boost::lexical_cast<std::string>(_saveTimeStamp);
-        toffy::log::debug() << newPath.string();
+        toffy::log::debug() << newPath;
         if (tsd()) {
-            newPath /= boost::lexical_cast<std::string>(_saveTimeStamp);
+            newPath = fsx::append(newPath, boost::lexical_cast<std::string>(_saveTimeStamp));
         }
-        newPath /= name();
-        toffy::log::debug() << newPath.string();
-        try {
-            fs::create_directories(fs::absolute(newPath));
-        } catch (const fs::filesystem_error& e) {
+        newPath = fsx::append(newPath, name());
+        toffy::log::debug() << newPath;
+        // boost threw filesystem_error and the catch only logged and continued;
+        // createDirectories() reports the same thing through errno.
+        int err = 0;
+        if (!fsx::createDirectories(newPath, &err)) {
             toffy::log::warning()
                 << "Could not create folder: " << strPath()
-                << "; Reason: " << e.code().message();
+                << "; Reason: " << fsx::strError(err);
             setSave(false);
             return;
         }
 
         // newPath /= getSavePath();
 
-        if (fs::path(getSavePath()).extension() != ".bltstream") {
-            newPath /=
-                boost::lexical_cast<std::string>(_saveTimeStamp) + ".bltstream";
+        if (fsx::extension(getSavePath()) != ".bltstream") {
+            newPath = fsx::append(
+                newPath, boost::lexical_cast<std::string>(_saveTimeStamp) + ".bltstream");
         }
 
-        strPath(newPath.string());
+        strPath(newPath);
 
         cout << "PATH::: " << strPath() << endl;
         if (this->isConnected()) sensor->startGrabbing(strPath());

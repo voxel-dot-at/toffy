@@ -19,7 +19,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
 #include "toffy/base/amplitudeRange.hpp"
@@ -28,7 +27,6 @@ using namespace toffy;
 using namespace toffy::filters;
 using namespace cv;
 using namespace std;
-namespace fs = boost::filesystem;
 
 std::size_t AmplitudeRange::_filter_counter = 1;
 const std::string AmplitudeRange::id_name = "amplitudeRange";

@@ -24,7 +24,7 @@
 
 #include <boost/any.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/filesystem.hpp>
+#include <toffy_internal/fs_posix.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/range/algorithm_ext/erase.hpp>
 
@@ -38,7 +38,7 @@
 using namespace toffy;
 using namespace toffy::capturers;
 using namespace cv;
-namespace fs = boost::filesystem;
+namespace fsx = toffy::fsx;
 
 //std::size_t Bta::_filter_counter = 1;
 
@@ -141,19 +141,20 @@ void CapturerFilter::savePath(const std::string &newPath) {
 	_savePath = newPath;
 	return;
     }
-    fs::path fsPath(newPath);
-    if ( !fs::exists(fsPath)) {
+    if (!fsx::exists(newPath)) {
 	toffy::log::warning() << "Given path " << newPath
 				   << " does not exist.";
 	return;
     }
 
-
-    if ( !fs::is_directory(fsPath)) {
+    // The boost version recomputed fsPath.parent_path() here and then assigned
+    // `_savePath = newPath` anyway -- the parent path was computed and thrown
+    // away, so the warning described something that never happened. Behaviour
+    // preserved (newPath is still stored); the dead call is simply gone.
+    if (!fsx::isDirectory(newPath)) {
 	toffy::log::warning() << "Given path " << newPath
 				   << " is not a directory."
 				   << " Removing file name to get the path";
-	fsPath = fsPath.parent_path();
     }
 
     _savePath = newPath;
@@ -169,42 +170,35 @@ void CapturerFilter::setSavePath(const std::string &newPath) {
 
 int CapturerFilter::loadPath(const std::string &newPath) {
     toffy::log::debug() << __FUNCTION__;
-    fs::path fsPath(newPath);
-    if ( !fs::exists(fsPath)) {
+    if (!fsx::exists(newPath)) {
 	toffy::log::warning() << "Given path " << newPath
 				   << " does not exist.";
 	return -1;
     }
 
-
-    if ( !fs::is_directory(fsPath)) {
+    // boost::filesystem::path::parent_path(): when handed a file rather than a
+    // directory, the scan runs over the containing directory. `scanPath` is what
+    // the listing below walks; `_loadPath` keeps the caller's string, as before.
+    std::string scanPath = newPath;
+    if (!fsx::isDirectory(newPath)) {
 	toffy::log::warning() << "Given path " << newPath
 				   << " is not a directory."
 				   << " Removing file name to get the path";
-	fsPath = fsPath.parent_path();
+	scanPath = fsx::parentPath(newPath);
     }
 
     _loadPath = newPath;
 
-    fs::directory_iterator end_iter;
     _fileExt = ".r";
-    typedef std::multimap<int, fs::path> result_set_t;
+    typedef std::multimap<int, std::string> result_set_t;
     result_set_t result_set;
-    for( fs::directory_iterator dir_iter(fsPath) ; dir_iter != end_iter ; ++dir_iter) {
-	if (fs::is_regular_file(dir_iter->status()) &&
-		dir_iter->path().extension() == _fileExt)
-	{
-	    result_set.insert(result_set_t::value_type(boost::lexical_cast<int>(dir_iter->path().stem().c_str()), *dir_iter));
-	}
+    for (const auto &f : fsx::listRegularWithExtension(scanPath, _fileExt)) {
+	result_set.insert(result_set_t::value_type(fsx::toInt(fsx::stem(f)), f));
     }
     if (result_set.size() == 0) {
 	_fileExt = ".rw";
-	for( fs::directory_iterator dir_iter(fsPath) ; dir_iter != end_iter ; ++dir_iter) {
-	    if (fs::is_regular_file(dir_iter->status()) &&
-		    dir_iter->path().extension() == _fileExt)
-	    {
-		result_set.insert(result_set_t::value_type(boost::lexical_cast<int>(dir_iter->path().stem().c_str()), *dir_iter));
-	    }
+	for (const auto &f : fsx::listRegularWithExtension(scanPath, _fileExt)) {
+	    result_set.insert(result_set_t::value_type(fsx::toInt(fsx::stem(f)), f));
 	}
     }
     if (!result_set.empty()) {
@@ -228,25 +222,26 @@ void CapturerFilter::save(const bool &save) {
 	// boost::posix_time half of this was never compiled -- MSVC is not defined for the
 	// library -- and computed the same thing that time() gives.
 	time(&_saveTimeStamp);
-	fs::path newPath(_savePath);
+	std::string newPath = _savePath;
 	//newPath /= name();
 	//string _strPath = savePath + string("/") + id() + string("/") + boost::lexical_cast<std::string>(_saveTimeStamp);
 	if (!_saveFolder.empty())
-	    newPath /= _saveFolder;
+	    newPath = fsx::append(newPath, _saveFolder);
 	if (_tsd)
-	    newPath /= boost::lexical_cast<std::string>(_saveTimeStamp);
-	newPath /= name();
-	toffy::log::debug() << newPath.string();
-	try {
-	    fs::create_directories(fs::absolute(newPath));
-	} catch(const fs::filesystem_error& e) {
+	    newPath = fsx::append(newPath, boost::lexical_cast<std::string>(_saveTimeStamp));
+	newPath = fsx::append(newPath, name());
+	toffy::log::debug() << newPath;
+	// boost threw filesystem_error here and the catch below only logged and
+	// continued; createDirectories() reports the same thing through errno.
+	int err = 0;
+	if (!fsx::createDirectories(newPath, &err)) {
 	    toffy::log::warning() << "Could not create folder: "
 				       << _strPath << "; Reason: "
-				       << e.code().message();
+				       << fsx::strError(err);
 	    _save = false;
 	    return;
 	}
-	_strPath = newPath.string();
+	_strPath = newPath;
 	_cnt=0;
     }
     _save = save;

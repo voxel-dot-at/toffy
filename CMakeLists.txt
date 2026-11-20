@@ -204,7 +204,12 @@ set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH "Installation director
 #
 # set these early to override pollution by installed versions
 #
+# `libraries/internal/` is on the include path but has no install rule, unlike
+# `libraries/include/` (which `libraries/CMakeLists.txt` installs wholesale). That
+# is the whole point of the split: headers under `internal/` are toffy's own and
+# never become shipped API. `toffy_internal/fs_posix.hpp` lives there.
 include_directories(
+        "${CMAKE_CURRENT_SOURCE_DIR}/libraries/internal/"
         "${CMAKE_CURRENT_SOURCE_DIR}/libraries/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/core/include/"
         "${CMAKE_CURRENT_SOURCE_DIR}/modules/bta/include/"
@@ -378,9 +383,16 @@ else()
         cmake_policy(SET CMP0167 NEW)
     endif()
 endif()
+# `filesystem` is gone from this list. Nine shipped files included
+# `<boost/filesystem.hpp>`; seven used nothing from it at all (one of them an
+# *installed* header, `toffy/base/distAmpl.hpp`), and the two that did
+# (`capturerFilter.cpp`, `bta.cpp`) now use POSIX `stat`/`opendir`/`mkdir` via
+# `toffy_internal/fs_posix.hpp`. `libtoffy` therefore no longer links
+# `libboost_filesystem` -- the same dependency-surface removal `P2-17` did for
+# Boost.Log, measured with `readelf -d`.
 find_package(Boost
     COMPONENTS program_options system
-        filesystem date_time serialization chrono
+        date_time serialization chrono
     REQUIRED)
 #include_directories(${Boost_INCLUDE_DIRS})
 list(APPEND LIBS ${Boost_LIBRARIES})

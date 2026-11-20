@@ -88,6 +88,9 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 36 | `libboost_log*` in `libtoffy.so`'s `NEEDED` list | install tree | **0** (was 2: `libboost_log.so.1.83.0` and `libboost_log_setup.so.1.83.0`; `P2-17` step C). It carries `liblog4cplus-2.0.so.3` instead. `readelf -d stage/lib/libtoffy.so.2.0.0`, and the `COMPONENTS` list in `CMakeLists.txt` lost `log log_setup` in the same change | 0 | ✅ |
 | 37 | type names the `P2-4` fence pins in `expectedTypes()` | `tests/test_filter_registry.cpp` | **34** with PCL on (23 unconditional + 10 `PCL_FOUND`-gated + `cvTracker` under `OPENCV_TRACKING`), **24** with PCL off. Was 33 / 23: `cvTracker` was never in the list, though it has been a registered, name-creatable type the whole time — found by building on the target, not by reading the host tree | — | ✅ |
 | 38 | `ctest` configurations where the fence's unreachable-name test has nothing to assert | measured per configuration | **0** (was: silently possible). The test now skips by name with a stated reason and fails at zero assertions. Verified: host (3 asserted), target with OpenCV 4.1 / no `tracking` (2 asserted + 1 skipped), `WITHOUT_PCL=ON` (2 asserted + 1 skipped) | 0 | ✅ |
+| 39 | `libboost_filesystem*` in `libtoffy.so`'s `NEEDED` list | install tree | **0** (was 1: `libboost_filesystem.so.1.83.0` on the host, `.so.1.81.0` on the target). `P2-18` |
+| 40 | installed headers including `boost/filesystem/*` | install tree | **0** (was 1: `toffy/base/distAmpl.hpp`, which included it and used nothing from it). `P2-18` |
+| 41 | Boost components in `find_package(Boost ... REQUIRED)` | `CMakeLists.txt` | **5** (was 6: `program_options system date_time serialization chrono`; `filesystem` removed by `P2-18`) |
 
 ## The commands
 

@@ -18,7 +18,6 @@
 
 #include <opencv2/imgproc.hpp>
 
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 
 #include "toffy/base/focus.hpp"
@@ -28,7 +27,6 @@ using namespace toffy::filters;
 using namespace cv;
 using namespace std;
 
-namespace fs = boost::filesystem;
 
 
 const std::string Focus::id_name = "focus";
