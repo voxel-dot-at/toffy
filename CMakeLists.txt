@@ -447,6 +447,19 @@ if(TARGET opencv_tracking)
     message("  OpenCV modules: TRACKING FOUND " ${OpenCV_LIBS} )
 endif()
 
+# `OPENCV_TRACKING` used to be added only inside `modules/filters/src/{smoothing,
+# tracking}/`, which is the exact bug class that made the old `createFilter()`
+# chain unable to reach `kalmanAverage`: the guard tested a macro the build set
+# somewhere the guarded code could not see. Defining it here makes one flag mean
+# one thing tree-wide, so a guard in any directory -- including `tests/`, which
+# needs it to tell "not registered" from "not compiled" -- is honest.
+#
+# It changes no shipped code: the only sources that test it are the two `init.cpp`
+# files that already saw it (measured: `grep -rl OPENCV_TRACKING --include=*.cpp`).
+if(OPENCV_TRACKING_FOUND)
+    add_definitions(-DOPENCV_TRACKING=1)
+endif()
+
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 list(APPEND LIBS ${OpenCV_LIBS})

@@ -36,7 +36,16 @@
 //     this test the move could be "done" with the chain still in place and
 //     every other assertion here would still pass.
 //   * `ThreeChainNamesAreUnreachableToday` -- found by writing this file, see
-//     below. Pinned as it behaves, not as anyone would choose.
+//     below. Pinned as it behaves, not as anyone would choose -- and pinned only
+//     where the class is actually compiled, because a second machine showed the
+//     unconditional version passing on a build where one of the three classes
+//     was not in the library at all.
+//
+// What measuring the target machine added, beyond the above: `cvTracker` was
+// missing from the expected set entirely. It has been a registered, name-
+// creatable type the whole time (`tracking/init.cpp` registers it under
+// `#if OPENCV_TRACKING`, a macro that directory does see) with nothing here
+// requiring it to stay that way. The fence only protects names it names.
 //
 // The set was measured, not transcribed: every name below was passed to
 // `createFilter()` against a Release/PCL-on/BTA-on build of the pre-move tree
@@ -63,6 +72,7 @@
 #include <toffy/filterfactory.hpp>
 
 #include <algorithm>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -122,6 +132,18 @@ std::vector<std::string> expectedTypes()
     t.insert(t.end(), std::begin(pcl_types), std::end(pcl_types));
 #endif
 
+#if defined(OPENCV_TRACKING)
+    // Found by measuring the target machine rather than reading the tree. This
+    // one was missing from the fence entirely: `tracking/init.cpp` registers
+    // `CVTracker::id_name` under `#if OPENCV_TRACKING`, and the macro *is* set
+    // for that directory, so `cvTracker` has been a working, registered, name-
+    // creatable filter type all along -- measured `hasCreator=1 creatable=1` on
+    // a PCL-on/BTA-on host build -- with nothing in this file asserting it
+    // should stay that way. A type the fence does not name is a type the fence
+    // cannot protect.
+    t.push_back("cvTracker");
+#endif
+
     return t;
 }
 
@@ -135,13 +157,58 @@ const std::vector<std::string> &registeredByModules()
     return n;
 }
 
+// `hasCreator()` reads a registry that `getInstance()` populates lazily, so
+// asking it before anything has asked for an instance answers "no" for every
+// name in the product. Measured: a probe that called `hasCreator("cvTracker")`
+// before its first `getInstance()` reported `hasCreator=0 creatable=1`. Every
+// helper here warms the factory first so the answer means what it looks like it
+// means, independent of which test ran before it.
+void warmRegistry()
+{
+    FilterFactory::getInstance();
+}
+
 std::vector<std::string> missingFromRegistry()
 {
+    warmRegistry();
     std::vector<std::string> missing;
     for (const auto &name : expectedTypes()) {
         if (!FilterFactory::hasCreator(name)) missing.push_back(name);
     }
     return missing;
+}
+
+// Which of the deliberately-unreachable names have their *class* compiled in
+// this configuration. The distinction is the point: asserting that a name does
+// not resolve proves nothing about the registry when the class behind it was
+// never built. That is the difference between a decision ("we have not
+// registered this yet, on purpose") and an accident ("this build does not
+// contain the filter at all"), and the old test certified both identically.
+struct UnreachableName
+{
+    const char *name;
+    bool classCompiled;
+    const char *why;
+};
+
+std::vector<UnreachableName> unreachableNames()
+{
+    return {
+        {"reprojectopencv", true, "reprojectopencv.cpp is in the source list "
+                                  "unconditionally"},
+        {"reprojectpcl",
+#if defined(PCL_FOUND)
+         true, "built when PCL_FOUND"},
+#else
+         false, "not built: PCL is off"},
+#endif
+        {"kalmanAverage",
+#if defined(OPENCV_TRACKING)
+         true, "built when OpenCV's `tracking` module is found"},
+#else
+         false, "not built: OpenCV `tracking` module absent"},
+#endif
+    };
 }
 
 std::vector<std::string> notCreatable()
@@ -217,21 +284,53 @@ TEST(FilterRegistry, ModuleRegisteredTypesSurviveTheMove)
 }
 
 // Pinned as it behaves, not as anyone would choose: three names had branches in
-// the chain that no build can reach, because the guard tests a macro that is
-// not defined for modules/core. The classes are compiled into libtoffy.so --
-// so the filters exist in the library and cannot be named from a config file.
+// the chain that no build could reach, because the guard tested a macro that is
+// not defined for modules/core. Where the class *is* compiled, the filter exists
+// inside libtoffy.so and still cannot be named from a config file -- which is the
+// defect, and the reason these names are pinned rather than fixed here.
 //
-// This test exists so that the next person to define one of those macros, or to
-// register one of these names, is told that the set changed and why, instead of
-// finding out from a config that suddenly works.
+// This test exists so that the next person to register one of these names is told
+// the set changed and why, instead of finding out from a config that suddenly
+// works.
+//
+// It used to assert non-creatability for all three unconditionally, and that was
+// wrong in a way only a second machine exposed. On the 2026-11-20 target build
+// (Ubuntu 18.04, OpenCV 4.1 without the contrib `tracking` module) `kalmanaverage.cpp`
+// is not compiled at all -- `nm` on the resulting libtoffy: zero matching symbols
+// -- so the assertion passed there with nothing behind it. A test that cannot
+// fail in a configuration is not pinning anything in that configuration; it is
+// just quiet. Hence: assert only where the class exists, and say out loud where
+// it does not.
 TEST(FilterRegistry, ThreeChainNamesAreUnreachableToday)
 {
-    for (const auto &name : {"reprojectopencv", "kalmanAverage", "reprojectpcl"}) {
-        EXPECT_EQ(nullptr, FilterFactory::getInstance()->createFilter(name))
-            << "'" << name << "' became creatable -- its guard now reaches "
-               "modules/core, or it was registered. Update this test and "
+    warmRegistry();
+
+    int asserted = 0;
+    for (const auto &u : unreachableNames()) {
+        if (!u.classCompiled) {
+            // Non-creatability here is a property of the build, not of the
+            // registry. Recorded rather than counted as a pass.
+            std::cout << "  [skipped] '" << u.name << "': " << u.why << "\n";
+            RecordProperty("skipped_unreachable", u.name);
+            continue;
+        }
+        ++asserted;
+        EXPECT_FALSE(FilterFactory::hasCreator(u.name))
+            << "'" << u.name << "' is now a registered creator while its class "
+               "is also compiled -- it became resolvable. Update this test and "
+               "cleanup/counters.md: the resolvable set has moved.";
+        EXPECT_EQ(nullptr, FilterFactory::getInstance()->createFilter(u.name))
+            << "'" << u.name << "' became creatable. Update this test and "
                "cleanup/counters.md: the resolvable set has moved.";
     }
+
+    // `reprojectopencv` is built unconditionally, so this can only fire if that
+    // stops being true -- at which point the test below has silently emptied.
+    EXPECT_GT(asserted, 0)
+        << "no unreachable name's class is compiled in this configuration, so "
+           "this test asserted nothing. That is a build-configuration change, "
+           "not a pass.";
+    RecordProperty("unreachable_asserted", asserted);
 }
 
 // The registry is insert-does-not-overwrite, and the built-ins are registered

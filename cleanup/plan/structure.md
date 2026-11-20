@@ -15,12 +15,30 @@ Three things the plan did not know, because they only show up when you do it:
 **The chain had three branches that could never be taken.** `reprojectopencv` and
 `kalmanAverage` were guarded on `WITH_VISUALIZATION` and `OPENCV_TRACKING`, and `reprojectpcl`
 on `PCL_VISUALIZATION` — macros no build defines for `modules/core`, because the filters' own
-directories define them for themselves. So `ReprojectOpenCV` and `KalmanAverage` are compiled,
-linked into `libtoffy.so` and unreachable by name from any configuration file, and
-`reprojectpcl` points at a class that does not exist. `tests/test_filter_registry.cpp`
+directories define them for themselves. So the filters are compiled, linked into `libtoffy.so`
+and unreachable by name from any configuration file. `tests/test_filter_registry.cpp`
 `ThreeChainNamesAreUnreachableToday` pins all three, and the move leaves them unreachable on
 purpose: making them resolvable changes which configs load, which is not what a commit whose
 claim is "the set did not move" gets to do. Filed as its own change.
+
+Two corrections to that paragraph, both from building on the target machine
+(`toreo-vxl`, Ubuntu 18.04, OpenCV 4.1 without the contrib `tracking` module) rather
+than reading the host tree — see [`../findings/build.md`](../findings/build.md):
+
+- *"compiled, linked into `libtoffy.so`"* is configuration-dependent and was stated as
+  unconditional. `kalmanaverage.cpp` is compiled only `if (OPENCV_TRACKING_FOUND)`, and on a
+  target without OpenCV's `tracking` module it is not in the library at all — `nm` finds zero
+  matching symbols. The pinning test therefore passed there with nothing behind it: it asserted
+  a property of the build and reported it as a property of the factory. It now asserts only
+  where the class is compiled, names the skips, and fails at zero assertions.
+- **`cvTracker` was never in the fence at all.** `tracking/init.cpp` registers it under
+  `#if OPENCV_TRACKING`, a macro that directory does see, so it has been a working registered
+  type the whole time (`hasCreator=1 creatable=1` measured) with no test requiring it to stay
+  so. It is in `expectedTypes()` now, under the same guard the build uses.
+
+`OPENCV_TRACKING` is also added at the top level now, next to the `find_package(OpenCV ...)`
+that decides it, instead of only inside the two filter directories — which is the same defect
+that made the chain's guard dead, still live in the flag's scope.
 
 **`~Controller` called `clearCreators()`, and the chain was the only reason that was
 survivable.** Finding `C3` had it recorded as wiping plug-in creators process-wide; with the

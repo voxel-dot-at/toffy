@@ -349,3 +349,59 @@ the same archive, and an embedded sysroot that installs a dev package without it
 transitive dev symlinks is the normal shape of the thing rather than the
 exception. If log4cplus is going to be a real dependency of toffy deployments,
 this is worth reporting upstream or pinning around deliberately.
+
+---
+
+## A build-configuration-dependent test that could not fail on half the fleet (found on the target, fixed by hoisting `OPENCV_TRACKING`)
+
+`tests/test_filter_registry.cpp` is the `P2-4` fence. One of its tests asserts
+that three type names — `reprojectopencv`, `kalmanAverage`, `reprojectpcl` — are
+*not* creatable, pinning a known defect (their classes are compiled and linked,
+but no configuration can name them) so that fixing it is a deliberate act.
+
+On the 2026-11-20 target build (`toreo-vxl`, Ubuntu 18.04, OpenCV **4.1** without
+the contrib `tracking` module) that test **passed with nothing behind it**:
+
+- `modules/filters/src/smoothing/CMakeLists.txt` compiles `kalmanaverage.cpp`
+  only `if (OPENCV_TRACKING_FOUND)`; the configure log says
+  `opencv tracking module not found - will NOT build kalmanaverage`.
+- `nm -D` on the resulting `libtoffy.so`: **0** symbols matching
+  `kalmanaverage|cvTracker`.
+- So `createFilter("kalmanAverage") == nullptr` was true because the class was
+  never built, not because the registry declines the name. The test asserted a
+  property of the build and reported it as a property of the factory.
+
+Two things came out of writing the version that distinguishes them.
+
+**`cvTracker` was missing from the fence entirely.** `tracking/init.cpp`
+registers `CVTracker::id_name` under `#if OPENCV_TRACKING` — a macro that
+directory *does* see — so `cvTracker` has been a working, registered,
+name-creatable filter type throughout, and no test required it to stay that way.
+Measured on a PCL-on/BTA-on host build: `hasCreator=1 creatable=1`. The fence
+only protects the names it names, and this one was found by running the build on
+a second machine rather than by reading the first one.
+
+**`OPENCV_TRACKING` was directory-scoped, which is the same bug class it was
+there to expose.** `add_definitions(-DOPENCV_TRACKING=1)` sat in
+`modules/filters/src/{smoothing,tracking}/CMakeLists.txt` only. That is exactly
+why the deleted `createFilter()` chain could never reach `kalmanAverage`: the
+guard tested a macro `modules/core` never sees. It is now added at the top level
+next to the `find_package(OpenCV ...)` that decides it, so one flag means one
+thing tree-wide — including in `tests/`, which needs it to tell "not registered"
+from "not compiled". No shipped code changes: the only sources testing the macro
+are the two `init.cpp` files that already saw it.
+
+The test now asserts non-creatability **only where the class is compiled**, prints
+`[skipped] '<name>': <why>` where it is not, and fails if that leaves it with zero
+assertions. Verified on both machines: on the host all three are asserted; on the
+target it reports `[skipped] 'kalmanAverage': not built: OpenCV 'tracking' module
+absent` and still asserts the other two; in `WITHOUT_PCL=ON` it reports
+`[skipped] 'reprojectpcl': not built: PCL is off`.
+
+Also measured while doing this, and worth knowing about anything else that asks
+the factory a question: **`FilterFactory::hasCreator()` before the first
+`getInstance()` answers `false` for every name in the product**, because
+`getInstance()` is what populates the registry. A probe that asked `hasCreator`
+first reported `hasCreator=0 creatable=1` for `cvTracker` — a contradiction that
+was entirely an artefact of call order. The helpers in the fence warm the factory
+first so the answer does not depend on which test ran before it.
