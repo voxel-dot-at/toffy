@@ -483,3 +483,26 @@ directory_iterator` **throws** if handed a non-directory, so `loadPath("foo.r")`
 at the top level of a tree (`parent_path()` → `""`) threw. `opendir("")` just
 fails, the listing comes back empty, and `loadPath()` returns `-1` — which is
 what its signature has always been for.
+
+### Sanitizer build trees live *inside* the source tree, and 1.5 GB of them went to the target because of it
+
+`ci.yml` configures its sanitizer builds at `build-san/` and `build-tsan/`
+**relative to the source directory**, so after any local CI-equivalent run the
+source tree contains 931 MB + 621 MB of build output. They are not gitignored
+away from a copy: `rsync -a --exclude='build' src/ target:` does **not** match
+`build-san` or `build-tsan`, and that is exactly what happened when toffy was
+copied to `toreo-vxl` — 1.5 GB landed on a device with 2.6 GB free and took it to
+100%.
+
+Two things worth changing, neither of which is urgent and both of which are cheap:
+
+* move the sanitizer build dirs out of the source tree (`/tmp/toffy-san`, or
+  `${CMAKE_BINARY_DIR}` under a sibling directory), so the source tree is the
+  size it claims to be; and
+* if they stay, make the ignore cover them — the pattern that matters is
+  `build*/`, not `build`.
+
+The general lesson is the one this programme keeps relearning: anything that lives
+in the source tree is going to be copied, tarballed and shipped by someone
+someday, and "it is only build output" is not a reason to put it where a copy
+cannot tell it apart from source.
