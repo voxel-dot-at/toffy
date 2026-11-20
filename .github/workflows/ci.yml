@@ -83,12 +83,19 @@ jobs:
           # date_time, serialization, chrono and thread, plus the header-only
           # container headers. The umbrella package is the reliable option; it
           # can be trimmed later if install time matters.
+          # `liblog4cplus-dev` replaces `libboost-log-dev` (P2-17 step C): toffy's
+          # logging backend is log4cplus and the `log`/`log_setup` Boost components
+          # are no longer in `find_package(Boost)`. `libboost-all-dev` still drags
+          # Boost.Log in, so this line is about what the job asks for, not what ends
+          # up on the machine. The claim worth gating is that a runner without
+          # Boost.Log can still build toffy, and this is the only place that is
+          # testable.
           sudo apt-get install -y --no-install-recommends \
             cmake \
             build-essential \
             pkg-config \
             libboost-all-dev \
-            libboost-system-dev libboost-filesystem-dev libboost-log-dev \
+            libboost-system-dev libboost-filesystem-dev liblog4cplus-dev \
             libboost-program-options-dev libboost-date-time-dev \
             libboost-serialization-dev libboost-chrono-dev \
             libopencv-dev \
@@ -166,7 +173,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake build-essential pkg-config \
-            libboost-all-dev libboost-system-dev libboost-filesystem-dev libboost-log-dev libboost-program-options-dev libboost-date-time-dev libboost-serialization-dev libboost-chrono-dev libopencv-dev libgtest-dev libpcl-dev
+            libboost-all-dev libboost-system-dev libboost-filesystem-dev liblog4cplus-dev libboost-program-options-dev libboost-date-time-dev libboost-serialization-dev libboost-chrono-dev libopencv-dev libgtest-dev libpcl-dev
 
       - name: Configure
         run: |
@@ -241,7 +248,7 @@ jobs:
           # because the job does not run without it.
           sudo apt-get install -y --no-install-recommends \
             cmake build-essential pkg-config util-linux \
-            libboost-all-dev libboost-system-dev libboost-filesystem-dev libboost-log-dev libboost-program-options-dev libboost-date-time-dev libboost-serialization-dev libboost-chrono-dev libopencv-dev libgtest-dev libpcl-dev
+            libboost-all-dev libboost-system-dev libboost-filesystem-dev liblog4cplus-dev libboost-program-options-dev libboost-date-time-dev libboost-serialization-dev libboost-chrono-dev libopencv-dev libgtest-dev libpcl-dev
 
       - name: Configure
         run: |
@@ -321,7 +328,7 @@ jobs:
             build-essential \
             pkg-config \
             libboost-all-dev \
-            libboost-system-dev libboost-filesystem-dev libboost-log-dev \
+            libboost-system-dev libboost-filesystem-dev liblog4cplus-dev \
             libboost-program-options-dev libboost-date-time-dev \
             libboost-serialization-dev libboost-chrono-dev \
             libopencv-dev \
@@ -466,7 +473,7 @@ jobs:
             build-essential \
             pkg-config \
             libboost-all-dev \
-            libboost-system-dev libboost-filesystem-dev libboost-log-dev \
+            libboost-system-dev libboost-filesystem-dev liblog4cplus-dev \
             libboost-program-options-dev libboost-date-time-dev \
             libboost-serialization-dev libboost-chrono-dev \
             libopencv-dev \
