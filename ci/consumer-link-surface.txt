@@ -31,6 +31,16 @@
 # remove, and it is visible in ELF rather than in a header, which is why the
 # gate caught it and a code read would not have.
 #
+# One difference against toffy-oatpp's own ci/link-surface.txt is expected, so write
+# it down before someone "fixes" it: this file records **19** toffy-oatpp symbols and
+# theirs records **18**. The extra line here is
+# `toffy::FilterBank::getFiltersByType(...)`, which a BTA-on toffy exports and a
+# BTA-off one does not. This file was blessed against a BTA-on stage; theirs is
+# blessed BTA-off, because that is what their hosted runner builds. The runner's
+# BTA-off stage therefore reports that one symbol as a removal, which is reported and
+# not failed -- removals are progress here. Same rule toffy applies to its own ABI
+# baseline: bless the configuration the gate actually runs, and say which one that was.
+#
 # Baseline: toffy-oatpp @ feature/toffy-upgrade (21e8ecb) against toffy
 # v2.0.0-5-g2a8bf19, Release, gcc 13 / aarch64-linux-gnu, 2026-10-28. Measured,
 # and it reproduces the 16 recorded in the upgrade notes for the pre-upgrade
