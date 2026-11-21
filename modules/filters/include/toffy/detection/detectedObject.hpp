@@ -22,10 +22,9 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/circular_buffer.hpp>
 
-#include "toffy/toffy_export.h"
 
 
-// DLLExport removed -- TOFFY_EXPORT is the real export macro.
+// No export macro here: TOFFY_EXPORT was vestigial, and P3-10 deleted it.
 
 /** @defgroup Detection Detection
  *
@@ -45,7 +44,7 @@ namespace detection {
  * like contour, center position, etc...
  *
  */
-class TOFFY_EXPORT DetectedObject {
+class DetectedObject {
     static int COUNTER; ///< Internal object identifier
 public:
 

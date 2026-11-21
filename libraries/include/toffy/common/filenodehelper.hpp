@@ -15,7 +15,6 @@
 */
 #pragma once
 
-#include <toffy/toffy_export.h>
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -23,7 +22,7 @@
 
 namespace toffy {
 namespace commons {
-    TOFFY_EXPORT cv::FileStorage loadOCVnode(const boost::property_tree::ptree& pt);
-    TOFFY_EXPORT bool checkOCVNone(const boost::property_tree::ptree& pt);
+    cv::FileStorage loadOCVnode(const boost::property_tree::ptree& pt);
+    bool checkOCVNone(const boost::property_tree::ptree& pt);
 }
 }

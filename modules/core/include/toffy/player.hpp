@@ -18,7 +18,6 @@
 
 #include <toffy/logging.hpp>
 
-#include <toffy/toffy_export.h>
 #include <toffy/controller.hpp>
 #include <toffy/filterfactory.hpp>
 
@@ -39,7 +38,7 @@ namespace toffy {
  * and thread-safe run state. Stage X5 of
  * cleanup/plan/controller-extraction.md.
  */
-class TOFFY_EXPORT Player {
+class Player {
 public:
     /**
      * @brief Constructor that sets the debug filter

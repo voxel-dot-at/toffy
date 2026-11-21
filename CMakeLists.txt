@@ -40,7 +40,9 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 #Function for generation of export macros for libraries
-include(GenerateExportHeader) #(toffy_export.h - TOFFY_EXPORT)
+# No GenerateExportHeader: P3-10 deleted TOFFY_EXPORT, which expanded to
+# __attribute__((visibility("default"))) on both sides of a `toffy_EXPORTS` test the
+# build never made true. See cleanup/findings/build.md for the measurement.
 # Include module with fuction 'write_basic_package_version_file' for ToffyConfig.cmake
 include(CMakePackageConfigHelpers)
 
@@ -666,17 +668,12 @@ set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 # target_compile_definitions(${PROJECT_NAME} PUBLIC "${PROJECT_NAME}_DEBUG=$<CONFIG:Debug>")
 
 
-# # Generate Export header toffy_export.h with toffy_EXPORT:
-set(export_h "${generated_dir}/${PROJECT_NAME}/${PROJECT_NAME}_export.h")
-GENERATE_EXPORT_HEADER(${PROJECT_NAME}
-    EXPORT_FILE_NAME ${export_h}  
-)
-list(APPEND headers ${export_h})
-install(
-   FILES ${export_h}
-   DESTINATION "${INSTALL_INCLUDE_DIR}/"
-)
-
+# No toffy_export.h. It used to be generated here, added to `headers` and installed,
+# which meant `make install` shipped a CMake build artifact to every consumer so
+# that 6 public headers could include a macro that did nothing (P3-10).
+#
+# `generated_dir` stays, and stays on the include path: toffy_config.h is generated
+# there too and is genuinely used.
 
 # Generate Config file toffy_config.h
 set(config_h_in "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}_config.h.in")
@@ -817,7 +814,9 @@ INSTALL( PROGRAMS ${binaries}
 if(MSVC)
     FILE( COPY ${headers_dirs} DESTINATION include/ FILES_MATCHING PATTERN "*.hpp")
     FILE( COPY ${config_h} DESTINATION include/${PROJECT_NAME}/common/ FILES_MATCHING PATTERN "*.h")
-    FILE( COPY ${export_h} DESTINATION include/${PROJECT_NAME}/common/ FILES_MATCHING PATTERN "*.h")
+    # The ${export_h} copy that used to sit here is gone with the header itself (P3-10).
+    # The whole if(MSVC) block is dead code -- P2-2 makes a Windows configure stop
+    # before it -- and is slated for deletion in P3-13.
     export(TARGETS ${PROJECT_NAME} FILE "${PROJECT_BINARY_DIR}/generated/${PROJECT_NAME}Targets.cmake")
 endif()
 

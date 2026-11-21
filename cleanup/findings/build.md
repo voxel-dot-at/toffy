@@ -84,11 +84,30 @@ is generated — and it does nothing:
   generated include dir, and `make install` has to ship `toffy_export.h` for the rest of
   the installed headers to parse.
 
-17 annotation sites across 16 headers, 7 includes (counters 18/18a; the raw
-`TOFFY_EXPORT` grep says 25 because eight of the mentions are `P2-3`'s own
-"DLLExport is gone" comments). `P3-10` deletes them and keeps
-`${CMAKE_CURRENT_BINARY_DIR}/generated/` on the include path for `toffy_config.h`, which
-*is* used. The gate is that `readelf --dyn-syms` on `libtoffy.so` is unchanged.
+**Fixed by `P3-10`.** 16 annotation sites across 15 headers and 6 active includes,
+all deleted, along with `include(GenerateExportHeader)`, the `GENERATE_EXPORT_HEADER()`
+call and the `install()` that shipped the generated file to every consumer.
+`${CMAKE_CURRENT_BINARY_DIR}/generated/` stays on the include path for
+`toffy_config.h`, which *is* used.
+
+The numbers here previously read "17 sites / 16 headers / 7 includes / 25 grep hits";
+re-measured they are **16 / 15 / 6 / 24** — the same off-by-one as counter 18, and the
+same cause: one include line is commented out (`libraries/include/toffy/graphs/raster.hpp:27`)
+and 8 of the grep hits are `P2-3`'s own "DLLExport is gone" comments rather than code.
+
+**Gate, measured:** `readelf --dyn-syms -W libtoffy.so` before and after, 2499 symbols
+each way, `diff` empty. 16/16 `ctest` in Release, `WITHOUT_BTA=ON` and `WITHOUT_PCL=ON`;
+standalone-header gate 88 → 87 headers, 176 → 174 checks, 0 broken; `abi_surface.sh`
+matches the baseline at 554; 25 tree warnings unchanged. `tools/api_change_report.sh`
+exits 1, as designed, because installed headers changed — that is the tag decision, not
+a defect.
+
+Two things the deletion turned up. **9 of the 15 headers used the macro without
+including the header that defined it**, working purely on transitive include order — so
+the macro was not merely useless, it was load-bearing in a way that would break the
+moment include order changed. And `CMakeLists.txt` had a second reference to the
+generated file, `FILE( COPY ${export_h} ... )` inside `if(MSVC)`, which would have
+expanded to an empty list; removed, with the rest of that dead block left for `P3-13`.
 
 **A PCL-less build now works.** `frame.hpp` used to guard the PCL *includes* but leave the
 two typedefs naming those templates outside the guard, so `-DWITHOUT_PCL=ON` failed with

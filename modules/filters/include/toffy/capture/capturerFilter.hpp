@@ -21,9 +21,9 @@
 
 #include <opencv2/core.hpp>
 
-// DLLExport and RAWFILE both removed here. TOFFY_EXPORT is the real export macro,
-// and RAWFILE's only consumer is bta.cpp, where it is now defined once instead of
-// being duplicated across three public headers.
+// DLLExport and RAWFILE both removed here, and so did the TOFFY_EXPORT that briefly
+// stood in for DLLExport (P3-10). RAWFILE's only consumer is bta.cpp, where it is now
+// defined once instead of being duplicated across three public headers.
 
 /** @defgroup Capturers Capturers
  *
@@ -43,7 +43,7 @@ namespace capturers {
  * frames, pose and image flip.
  *
  */
-class TOFFY_EXPORT CapturerFilter : public Filter
+class CapturerFilter : public Filter
 {
     //Sensor *sensor;
     int _cnt,               ///< counter for load and save

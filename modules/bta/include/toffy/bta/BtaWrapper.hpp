@@ -16,8 +16,9 @@
 #ifndef __M100WRAPPER_H__
 #define __M100WRAPPER_H__
 
-// DLLExport, WIN and UNIX removed (TOFFY_EXPORT is the real export macro; WIN/UNIX
-// were referenced only in commented-out code).
+// DLLExport, WIN and UNIX removed (WIN/UNIX were referenced only in commented-out
+// code). No export macro replaces them: the TOFFY_EXPORT that stood in for DLLExport
+// was itself vestigial, and P3-10 deleted it.
 //
 // RAWFILE stays, and stays only here: bta.cpp is its single consumer. It used to be
 // defined identically in core/filterbank.hpp and capture/capturerFilter.hpp as well.
@@ -42,7 +43,7 @@ struct network
 
 const int MAX_CHANNEL_SELECTIONS = 8;
 
-class TOFFY_EXPORT BtaWrapper : public ImageSensor
+class BtaWrapper : public ImageSensor
 {
    public:
     BtaWrapper();

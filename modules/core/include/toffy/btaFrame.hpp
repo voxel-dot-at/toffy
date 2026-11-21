@@ -35,7 +35,7 @@ namespace toffy
     const std::string btaDepth = "depth"; ///< constant for depth mat
     const std::string btaAmpl = "ampl"; ///< constant for amplitudes mat
 
-    class TOFFY_EXPORT BtaFrame : public Frame {
+    class BtaFrame : public Frame {
 
     public:
 	BtaFrame() {}

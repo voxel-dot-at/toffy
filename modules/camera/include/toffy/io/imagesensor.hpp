@@ -16,15 +16,15 @@
 #ifndef __IMAGESENSOR_HPP__
 #define __IMAGESENSOR_HPP__
 
-// DLLExport, WIN and UNIX removed. TOFFY_EXPORT is the real export macro, and
-// WIN/UNIX were never referenced anywhere except in three commented-out lines in
-// BtaWrapper.cpp -- they also leaked two extremely generic macro names into every
-// consumer of the library.
+// DLLExport, WIN and UNIX removed. WIN/UNIX were never referenced anywhere except
+// in three commented-out lines in BtaWrapper.cpp -- they also leaked two extremely
+// generic macro names into every consumer of the library. No export macro replaces
+// any of them: P3-10 deleted TOFFY_EXPORT, which expanded to a no-op.
 
 #include <toffy/io/sensor.hpp>
 #include <opencv2/core.hpp>
 
-class TOFFY_EXPORT ImageSensor : public Sensor
+class ImageSensor : public Sensor
 {
    public:
     virtual int start() = 0;

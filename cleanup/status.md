@@ -86,8 +86,10 @@ The second-pass work (`P3-1` … `P3-12`) is listed in
 [`plan/second-pass.md`](plan/second-pass.md). All four of its cheap items are done (`P3-1`,
 `P3-3`, `P3-4`, `P3-7`) and so are `P3-11`, `P3-9` — the latter is the fence `P2-12` cannot
 be merged without — `P3-6` in full, `P3-2`/`P3-12` (PR 28) and `P3-5` (PR 35). What is left
-there is the mechanical `P3-10` and the `P3-8` note. `P3-10` and `P2-12` are the
-remaining API-surface changes and belong with `P3-2`'s tag.
+there is the `P3-8` note. `P3-10` has since landed — it was mechanical and provably
+ABI-neutral (`readelf --dyn-syms` byte-identical at 2499 symbols), so it needed no tag of
+its own, only a mention in the next one. `P2-12` is now the only remaining API-surface
+change.
 
 The controller extraction (`X1` … `X6`,
 [`plan/controller-extraction.md`](plan/controller-extraction.md)) is the other half of PR 28:

@@ -27,8 +27,8 @@
 
 #include "toffy/filter.hpp"
 
-// DLLExport removed -- TOFFY_EXPORT (from CMake's generate_export_header) is the
-// real export macro, and it was already the one used on FilterFactory below.
+// No export macro on FilterFactory below: DLLExport went first, and the TOFFY_EXPORT
+// that replaced it went too -- it expanded to a no-op (P3-10).
 
 namespace toffy
 {
@@ -81,7 +81,7 @@ typedef Filter* (*CreateFilterFn)(void);
  * The creators should be register with the type name of the filter.
  *
  */
-class TOFFY_EXPORT FilterFactory
+class FilterFactory
 {
 
 public:

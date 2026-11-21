@@ -21,8 +21,9 @@
 #include <opencv2/core.hpp>
 #include <deque>
 
-// DLLExport removed; TOFFY_EXPORT (available via toffy/filter.hpp -> frame.hpp ->
-// the CMake-generated toffy_export.h) is the real export macro.
+// No export macro here: TOFFY_EXPORT was vestigial, and P3-10 deleted it. Note that
+// this header used to *use* the macro without including the header that defined it --
+// it worked only because toffy/filter.hpp -> frame.hpp pulled it in transitively.
 
 /**
  * @brief
@@ -33,7 +34,7 @@ namespace filters {
 namespace smoothing {
 /** perform averaging of the (depth) channel over multiple frames.
      */
-class TOFFY_EXPORT Average : public Filter
+class Average : public Filter
 {
     std::string _in_img, _out_img;
     static std::size_t _filter_counter;

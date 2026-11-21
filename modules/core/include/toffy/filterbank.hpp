@@ -30,8 +30,9 @@
 // RAWFILE used to be defined here, in capturerFilter.hpp and in BtaWrapper.hpp --
 // three public headers, each with its own MSVC #ifdef, so any translation unit that
 // transitively included two of them risked a redefinition. Its only consumer is
-// bta.cpp, so it now lives once, in toffy/bta/BtaWrapper.hpp. DLLExport also went:
-// TOFFY_EXPORT is the real export macro.
+// bta.cpp, so it now lives once, in toffy/bta/BtaWrapper.hpp. DLLExport also went,
+// and so did the TOFFY_EXPORT that briefly replaced it -- it expanded to a no-op
+// (P3-10).
 
 namespace toffy {
 
@@ -68,7 +69,7 @@ namespace toffy {
  * @see FilterBank::loadFileConfig()
  *
  */
-class TOFFY_EXPORT FilterBank : public Filter
+class FilterBank : public Filter
 {
    public:
     static const std::string id_name;  ///< Const with the filter type

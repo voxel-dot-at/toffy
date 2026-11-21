@@ -87,7 +87,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P3-7` | `if( ${VAR} )` → `if(VAR)`, 4 sites | 4 lines | ✅ |
 | `P3-8` | `toffy_tracking` layering inversion | CMake | ❌ |
 | `P3-9` | a test that a filter's body actually ran | 1 test | ✅ |
-| `P3-10` | drop `TOFFY_EXPORT` and the generated export header | 16 annotation sites in 15 headers + 6 `toffy_export.h` includes (counters 18/18a, re-measured 2026-11-15) | ❌ |
+| ✅ `P3-10` | drop `TOFFY_EXPORT` and the generated export header | **0** annotation sites (was 16 in 15 headers), **0** `toffy_export.h` includes (was 6), and `toffy_export.h` is no longer installed — 88 → 87 installed headers. Gate: `readelf --dyn-syms` byte-identical, 2499 symbols | ✅ |
 | `P3-11` | CI warning counter, without changing the build | CI | ✅ |
 | `P3-13` | delete the Windows scaffolding `P2-2` left unreachable in the build | CMake | ❌ |
 

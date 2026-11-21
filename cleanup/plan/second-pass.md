@@ -20,7 +20,7 @@ and none of it depends on the ownership work, so it can all run alongside.
 | `P3-2` | `S2` | delete the dead, installed `toffy/web/` headers | 4 files + 2 sources | API — tag pending | ✅ | counter 17, `X1` of [`controller-extraction.md`](controller-extraction.md) |
 | `P3-12` | `S2` (follow-up) | make every installed header compile, and keep it that way | 2 headers + 1 tool + CI | none | ✅ | counter 17 at 0, gated |
 | `P3-8` | `S8` | `toffy_tracking` layering inversion | CMake | low | ❌ | — |
-| `P3-10` | — | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | none on the shipped ABI | ❌ | `DOD 18`; one less generated header in the public API |
+| ✅ `P3-10` | — | drop `TOFFY_EXPORT` and the generated export header | ~30 lines | **none, measured**: `readelf --dyn-syms` byte-identical, 2499 symbols | ✅ | `DOD 18`; one less generated header in the public API |
 | `P3-11` | `S9` | CI warning counter, without changing the build | CI | none | ✅ | visibility of the 26 non-core warnings |
 
 `P3-1`, `P3-4`, `P3-3` and `P3-7` were together roughly fifteen lines, carried no behaviour
@@ -302,7 +302,39 @@ not compile at all — `-Werror=unused-parameter` on the stubbed-out core — an
 test binary from before it reported 5/5 green: a reminder to check that the build actually
 rebuilt before quoting a test result.
 
-## `P3-10` — drop `TOFFY_EXPORT`
+## `P3-10` — drop `TOFFY_EXPORT` — **done**
+
+**Measured, not asserted.** `readelf --dyn-syms -W libtoffy.so | awk '$7!="UND"{print $8}' | sort`
+before and after: **2499 symbols each way, `diff` empty** — which is what makes this a no-op on
+the shipped ABI rather than a claim about one. 16/16 `ctest` in Release, `WITHOUT_BTA=ON` and
+`WITHOUT_PCL=ON`; standalone-header gate 88 → 87 headers and 176 → 174 checks, 0 broken;
+`tools/abi_surface.sh` matches the baseline at 554; 25 tree warnings unchanged. Both consumers
+rebuild against the fresh install with 0 errors.
+
+**Two things the deletion turned up, neither visible from the diff.**
+
+*9 of the 15 headers used the macro without including the header that defined it.* They worked
+only because include order happened to pull `toffy_export.h` in — `average.hpp` says so in its own
+comment (`via toffy/filter.hpp -> frame.hpp -> the CMake-generated toffy_export.h`). So the macro
+was not merely useless, it was load-bearing in a way that breaks the moment include order changes,
+and the standalone-header gate could not see it: that gate compiles one header per translation
+unit, where transitive includes still resolve fine.
+
+*`CMakeLists.txt` had a second consumer of the generated file:* `FILE( COPY ${export_h} ... )`
+inside `if(MSVC)`, which would have expanded to an empty list. Removed. The rest of that dead
+block stays for `P3-13`.
+
+**How to check the central claim, correctly.** "Nothing compiles with `toffy_EXPORTS` defined"
+cannot be checked by grepping build files: `toffy.dir/flags.make` *does* define it, so that grep
+says the claim is false. It is true because `add_library(toffy SHARED ...)` is assembled entirely
+from `$<TARGET_OBJECTS:...>` and compiles **0 objects of its own** — verify with
+`find <build>/CMakeFiles/toffy.dir -name '*.o' | wc -l`, not with `grep toffy_EXPORTS`.
+
+**Two arguments in the original writeup are now stale.** The MSVC `dllimport` hazard is
+unreachable — `P2-2` makes a Windows configure stop before it. And "consuming `toffy/frame.hpp`
+requires CMake's generated dir" is only true for a build-tree consumer (`add_subdirectory`); an
+install-tree consumer got the header because `make install` shipped it. The real complaint is the
+other half of that sentence: install had to ship a build artifact to keep the rest usable.
 
 `P2-3` replaced the vestigial `DLLExport` with `TOFFY_EXPORT`, "the real macro from
 `generate_export_header`". It is also vestigial, for a reason that is harder to see
@@ -329,7 +361,9 @@ generated there too and is genuinely used.
 **Gate:** the exported symbol set of `libtoffy.so` must be byte-identical before and after
 (`readelf --dyn-syms`), which is what makes this a no-op on the shipped ABI rather than an
 assertion. `tools/api_change_report.sh` will still exit 1, because installed headers
-changed; see the note in that item about the tag decision.
+changed; see the note in that item about the tag decision. **Both halves of that prediction
+held** — the symbol set is identical and the report still exits 1, which is the tag decision
+and not a defect.
 
 ## `P3-11` — a CI warning counter that does not change the build — **done**
 

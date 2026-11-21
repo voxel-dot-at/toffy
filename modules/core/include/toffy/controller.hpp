@@ -47,7 +47,7 @@ namespace toffy {
  *
  *
  */
-class TOFFY_EXPORT Controller {
+class Controller {
 public:
 
     /**

@@ -126,7 +126,7 @@ class Port
  * This class define how is a filter and is capabilities.
  *
  */
-class TOFFY_EXPORT Filter
+class Filter
 {
     std::string _id,  ///< Internal id of the single instance of the filter
         _name,        ///< id alias @deprecated Is the same as id
