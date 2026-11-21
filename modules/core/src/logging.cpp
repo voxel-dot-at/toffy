@@ -40,11 +40,13 @@
 
 #include <cctype>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <utility>
 
 #include <log4cplus/configurator.h>
 #include <log4cplus/fileappender.h>
+#include <log4cplus/layout.h>
 #include <log4cplus/hierarchy.h>
 #include <log4cplus/consoleappender.h>
 #include <log4cplus/logger.h>
@@ -121,6 +123,31 @@ handle_table& table() {
  * passed every test and logged nothing in the field is the failure mode this
  * prevents.
  */
+/*
+ * The line format, chosen to keep what the previous backend gave every caller:
+ * timestamp, thread, level, message.
+ *
+ * Boost.Log's trivial logger printed
+ *     [2026-11-21 15:57:56.115547] [0x0000edfbd69eb040] [info]    message
+ * and log4cplus with no layout configured prints
+ *     INFO - message
+ * -- no timestamp, no thread id. That was already a loss for toffy's own
+ * logging; it would have been a serious one for `boxes`, whose 378 call sites
+ * are the log of a machine running a physical line, where a line without a
+ * timestamp cannot be correlated with anything that happened on the line.
+ *
+ * Milliseconds, not microseconds. log4cplus offers `%q` (ms) and `%Q`
+ * (fractional ms), and `%Q` renders as `.180.137` -- measured -- which reads as
+ * a defect rather than as precision. Both were tried before choosing.
+ *
+ * Applied to every appender toffy installs itself. A `propertiesFile` brings its
+ * own layouts and is not touched: the file is the way to ask for something else.
+ */
+std::unique_ptr<log4cplus::Layout> make_layout() {
+    return std::unique_ptr<log4cplus::Layout>(new log4cplus::PatternLayout(
+        "[%d{%Y-%m-%d %H:%M:%S.%q}] [%t] [%-5p] %m%n"));
+}
+
 void install_default_appender() {
     handle_table& t = table();
     std::lock_guard<std::recursive_mutex> lock(t.m);
@@ -132,6 +159,7 @@ void install_default_appender() {
     log4cplus::SharedAppenderPtr console(
         new log4cplus::ConsoleAppender(/*logToStdErr=*/true,
                                        /*immediateFlush=*/true));
+    console->setLayout(make_layout());
     log4cplus::Logger::getRoot().addAppender(console);
     // Unconfigured means "filter nothing", which is what the previous backend
     // did with no filter installed. Anything else would quietly quiet every
@@ -289,6 +317,7 @@ void init(const config& cfg) {
         sink = log4cplus::SharedAppenderPtr(new log4cplus::ConsoleAppender(/*logToStdErr=*/true,
                                                  /*immediateFlush=*/true));
     }
+    sink->setLayout(make_layout());
     log4cplus::Logger::getRoot().removeAllAppenders();
     log4cplus::Logger::getRoot().addAppender(sink);
 
