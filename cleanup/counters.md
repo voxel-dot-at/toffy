@@ -91,6 +91,8 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 39 | `libboost_filesystem*` in `libtoffy.so`'s `NEEDED` list | install tree | **0** (was 1: `libboost_filesystem.so.1.83.0` on the host, `.so.1.81.0` on the target). `P2-18` |
 | 40 | installed headers including `boost/filesystem/*` | install tree | **0** (was 1: `toffy/base/distAmpl.hpp`, which included it and used nothing from it). `P2-18` |
 | 41 | Boost components in `find_package(Boost ... REQUIRED)` | `CMakeLists.txt` | **5** (was 6: `program_options system date_time serialization chrono`; `filesystem` removed by `P2-18`) |
+| 42 | `BOOST_LOG_TRIVIAL` sites across the whole stack (toffy + `toffy-oatpp` + `boxes`) | all three repos | **0** (was 1036: 658 toffy + 1 `toffy-oatpp` + 378 `boxes`). toffy by `P2-17` step A, `toffy-oatpp` with it, `boxes` by step D. `readelf -d` over a target image finds **0** `libboost_log` in any library or executable | 0 | ✅ |
+| 43 | Boost components `boxes` requires | `becom-knapp-wurthbox/CMakeLists.txt` | **7** (`program_options system thread filesystem date_time serialization chrono`); was 8 with `log_setup log`. `thread` is **added**, not new — `client/client.cpp` has always used `boost::thread` and linked only because `Boost::log` dragged `Boost::thread` in | — | ✅ |
 
 ## The commands
 
