@@ -110,3 +110,11 @@ add_test(NAME filterthread COMMAND test_filterthread)
 add_executable(test_filter_registry test_filter_registry.cpp)
 target_link_libraries(test_filter_registry toffy GTest::gtest GTest::gtest_main)
 add_test(NAME filter_registry COMMAND test_filter_registry)
+
+# P2-9: modules/core must not reach up into the viewers module. Core owns the
+# HighGUI-pump type name now; this test pins that copy against ImageView::id_name
+# so the duplication cannot drift. See tests/test_layering.cpp and the matching
+# hygiene gate in .github/workflows/ci.yml.
+add_executable(test_layering test_layering.cpp)
+target_link_libraries(test_layering toffy GTest::gtest GTest::gtest_main)
+add_test(NAME layering COMMAND test_layering)

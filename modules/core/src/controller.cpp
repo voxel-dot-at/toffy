@@ -30,8 +30,6 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
 
-#include <toffy/viewers/imageview.hpp>
-
 // POSIX only: toffy has no Windows plugin loader (P2-2, cleanup/findings/build.md).
 #include <dlfcn.h>
 
@@ -245,7 +243,9 @@ void Controller::loopFilters()
 {
     toffy::log::debug() << __FUNCTION__;
     if (baseFilterBank->size() == 0) _state = Controller::IDLE;
-    int viewers = baseFilterBank->countFiltersByType(ImageView::id_name);
+    // Core owns this name (see guiViewerTypeName in controller.hpp); it used to
+    // reach into the viewers module for it. tests/test_layering.cpp pins it.
+    int viewers = baseFilterBank->countFiltersByType(guiViewerTypeName);
     while (_state > Controller::IDLE) {
         if (_state == Controller::BACKWARD) f.addData("backward", true);
         baseFilterBank->filter(f, f);

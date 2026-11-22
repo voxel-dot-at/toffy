@@ -27,6 +27,28 @@
 
 namespace toffy {
 
+/**
+ * @brief Type name of the filter whose presence makes the controller pump the
+ *        HighGUI event loop.
+ *
+ *  `Controller::loopFilters()` has to call `cv::waitKey()` while the pipeline
+ *  runs, or any OpenCV window it spawned stops redrawing and the whole loop
+ *  looks wedged. It decides whether to pump by counting filters of this type in
+ *  the bank -- and until `P2-9` it got the string by including
+ *  `<toffy/viewers/imageview.hpp>`, which made `modules/core` depend on the
+ *  viewers module (and link it) for one identifier.
+ *
+ *  Core owns the name now. The cost of duplicating a string is drift, so
+ *  `tests/test_layering.cpp` pins this against `ImageView::id_name` and fails if
+ *  they ever disagree.
+ *
+ *  `inline constexpr` rather than `const`: a plain `const std::string` at
+ *  namespace scope has internal linkage, so every translation unit that included
+ *  it got its own copy and its own static initialiser. See also `P2-9` on
+ *  `btaFrame.hpp`.
+ */
+inline constexpr const char* const guiViewerTypeName = "imageview";
+
 
 /**
  * @brief toffy controller

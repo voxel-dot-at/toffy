@@ -657,3 +657,33 @@ jobs:
             exit 1
           fi
           echo 'no Boost threading primitives in the tracked sources'
+
+      - name: modules/core does not include from a module above it (P2-9)
+        # `Controller::loopFilters()` needed one string -- the filter type name whose
+        # presence means an OpenCV window has to be pumped -- and got it by including
+        # <toffy/viewers/imageview.hpp>. That made modules/core depend on, and link,
+        # the viewers module for one identifier, and it was invisible in the build
+        # because core already had the include path. `P2-4` removed 35 such includes
+        # from filterfactory.cpp; this gate is what stops them growing back, which is
+        # the thing a one-off cleanup cannot do.
+        #
+        # Allowlisted, and only this one line: filterfactory.cpp's <toffy/bta/initPlugin.hpp>
+        # under #if defined(HAS_BTA). It is deliberate -- built-in BTA filters have to be
+        # registered by the factory rather than by whoever dlopen()s the library, because
+        # boxes/toffy-oatpp configs name <bta> on that basis -- and moving it is P2-10's
+        # job (the three plugin loaders), not a side effect of this gate.
+        #
+        # Verified to be capable of failing: re-adding `#include <toffy/viewers/imageview.hpp>`
+        # to modules/core/src/controller.cpp (and the ImageView::id_name use that needs it)
+        # turns this step red on exactly that line; removing it turns it green again.
+        run: |
+          set -uo pipefail
+          hits=$(git ls-files -z 'modules/core/*.cpp' 'modules/core/*.hpp' \
+                   | xargs -0 -r grep -nHE '^[[:space:]]*#[[:space:]]*include[[:space:]]*[<"]toffy/(viewers|filters|camera|tracking|bta)/' \
+                   | grep -vE '^modules/core/src/filterfactory\.cpp:[0-9]+:#include <toffy/bta/initPlugin\.hpp>$' || true)
+          if [ -n "$hits" ]; then
+            echo "$hits"
+            echo "::error::modules/core must not include headers from a module above it (viewers, filters, camera, tracking, bta). Core is the bottom layer; an include upward here makes core link that module and hides the dependency in the build graph. The only allowlisted exception is filterfactory.cpp's HAS_BTA hook, which P2-10 owns. If you need a constant from a filter, own the constant in core and pin it with a test -- see guiViewerTypeName in controller.hpp and tests/test_layering.cpp. See cleanup/plan/structure.md P2-9."
+            exit 1
+          fi
+          echo 'modules/core includes nothing from a module above it, except the allowlisted BTA hook'
