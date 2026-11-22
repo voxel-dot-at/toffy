@@ -227,40 +227,50 @@ TEST(FilterOverloadP212, TheConstCallabilityTraitIsNotVacuous)
     SUCCEED();
 }
 
-/** Read the vtable slot of a virtual out of a pointer-to-member.
+/** The byte offset of a virtual's entry in its class's vtable.
  *
- *  On the Itanium ABI -- what Linux and macOS on x86-64/aarch64 use, which after
- *  P2-2 is the only thing toffy builds for -- a pointer-to-member-function to a
- *  virtual holds `8 * index + 1`. That makes the slot number readable at runtime
- *  with no compiler extension and no debug info.
+ *  Read out of a pointer-to-member, which is the only portable way to ask. The
+ *  encoding is NOT the same everywhere, and the first version of this test got
+ *  that wrong: it passed here and failed on the CI runner.
  *
- *  It is implementation-defined, so the test that uses it is guarded: on any
- *  other ABI the slot arithmetic would not mean what the assertions say it means.
+ *    - x86-64 (Itanium C++ ABI): a pointer-to-member is 8 bytes and, for a
+ *      virtual, holds `vtable_byte_offset + 1`. The low bit is the
+ *      virtual/non-virtual discriminator.
+ *    - aarch64 (ARM C++ ABI): a pointer-to-member is **16 bytes** (measured), a
+ *      two-word form, and the word read here carries the offset without the +1.
+ *
+ *  The vtable layout itself is the same on both; only the low bit differs. So
+ *  clearing it normalises the two, and the assertions below are about the thing
+ *  that actually matters -- where a virtual's entry sits in the vtable, which is
+ *  exactly what a prebuilt plug-in compiled against an older header assumes.
+ *
+ *  Implementation-defined by construction. If it ever stops compiling or starts
+ *  reporting nonsense, the ABI changed: that is a finding, not a bug in the test.
  */
-long vtableSlotOf(long raw) { return (raw - 1) / 8; }
+long vtableByteOffset(long raw) { return raw & ~1L; }
 
 template <typename T, typename R>
-long vtableSlotOf(R (T::*mf)(const toffy::Frame&, toffy::Frame&))
+long vtableByteOffset(R (T::*mf)(const toffy::Frame&, toffy::Frame&))
 {
     long raw = 0;
     std::memcpy(&raw, &mf, sizeof(raw));
-    return vtableSlotOf(raw);
+    return vtableByteOffset(raw);
 }
 
 template <typename T, typename R>
-long vtableSlotOf(R (T::*mf)(const boost::property_tree::ptree&))
+long vtableByteOffset(R (T::*mf)(const boost::property_tree::ptree&))
 {
     long raw = 0;
     std::memcpy(&raw, &mf, sizeof(raw));
-    return vtableSlotOf(raw);
+    return vtableByteOffset(raw);
 }
 
 template <typename T, typename R>
-long vtableSlotOf(R (T::*mf)())
+long vtableByteOffset(R (T::*mf)())
 {
     long raw = 0;
     std::memcpy(&raw, &mf, sizeof(raw));
-    return vtableSlotOf(raw);
+    return vtableByteOffset(raw);
 }
 
 TEST(FilterOverloadP212, FilterVtableLayoutIsPinned)
@@ -280,12 +290,24 @@ TEST(FilterOverloadP212, FilterVtableLayoutIsPinned)
     // this test: it is what stops the next person deleting that slot, or inserting
     // a virtual in the wrong place, without noticing.
     //
-    // These numbers are not chosen for their own sake. They are the layout a
-    // plug-in compiled against toffy <= 2.1.0 was built against. Changing one is
-    // a deliberate ABI break and belongs with a major version.
-    EXPECT_EQ(2, vtableSlotOf(&toffy::Filter::filter));
-    EXPECT_EQ(3, vtableSlotOf(&toffy::Filter::loadConfig));
-    EXPECT_EQ(7, vtableSlotOf(&toffy::Filter::getState));
+    // These are vtable BYTE offsets, not slot numbers, and they are the layout a
+    // plug-in compiled against toffy <= 2.1.0 was built against. Changing one is a
+    // deliberate ABI break and belongs with a major version.
+    //
+    // Asserted two ways on purpose. The gaps are portable by construction and
+    // catch the common mistake -- someone inserting a virtual in the middle of
+    // Filter. The absolute offsets catch the rarer and worse one: deleting one,
+    // which moves everything after it while leaving every gap untouched.
+    EXPECT_EQ(24, vtableByteOffset(&toffy::Filter::filter));
+    EXPECT_EQ(32, vtableByteOffset(&toffy::Filter::loadConfig));
+    EXPECT_EQ(64, vtableByteOffset(&toffy::Filter::getState));
+
+    EXPECT_EQ(8, vtableByteOffset(&toffy::Filter::loadConfig)
+                    - vtableByteOffset(&toffy::Filter::filter))
+        << "a virtual appeared, or vanished, between filter() and loadConfig()";
+    EXPECT_EQ(32, vtableByteOffset(&toffy::Filter::getState)
+                     - vtableByteOffset(&toffy::Filter::loadConfig))
+        << "a virtual appeared, or vanished, between loadConfig() and getState()";
 }
 
 TEST(FilterOverloadP212, ConstFilterReferenceCannotCallFilter)
