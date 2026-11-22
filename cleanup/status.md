@@ -59,8 +59,8 @@ public header surface proved compilable rather than assumed, one long-standing "
 then act" item actually decided, and the ownership model the rest of the structural work was
 blocked on.
 
-`P1`/`P2` items closed: **11 of 17** (`P1-1`, `P2-2`, `P2-4`, `P2-5`, `P2-7`, `P2-8`, `P2-9`,
-`P2-11`, `P2-14`, `P2-16`, `P2-17`) — 17 because `P2-17` is new, opened by the decision to
+`P1`/`P2` items closed: **12 of 17** (`P1-1`, `P2-2`, `P2-4`, `P2-5`, `P2-7`, `P2-8`, `P2-9`,
+`P2-10`, `P2-11`, `P2-14`, `P2-16`, `P2-17`) — 17 because `P2-17` is new, opened by the decision to
 move off Boost.Log rather than by the original `CLEANUP_PLAN.md`. `P2-11` is counted here only
 now: it landed in `5226af2` and its own commit updated `plan/README.md` and `counters.md` but
 not this line, which is the kind of drift that happens when a count is duplicated instead of
