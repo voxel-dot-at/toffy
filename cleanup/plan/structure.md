@@ -118,7 +118,7 @@ creator (no registry at all) and let banks own `std::unique_ptr<Filter>` — but
 `getFilter(name)` must be reimplemented against `_pipe`, which is what its deprecation note
 already asks for.
 
-### 6 — Collapse the four run methods
+### 6 — Collapse the four run methods — **done**
 
 `Controller::forward()`, `backward()`, `stepForward()` and `stedBackward()`
 (`controller.cpp:74-184`) are ~90% the same code: look up `parallelFilter`s, `init()` them,
@@ -133,6 +133,41 @@ seen; the loop condition `while (_state > Controller::IDLE)` depends on enum ord
 `CERROR = 0xff` (`controller.hpp:60`) is the largest value — so an error state spins the
 loop forever instead of exiting; and `cv::waitKey(10)` puts an OpenCV GUI call inside the
 core run loop.
+
+**Landed in `f623259`.** One private `run(state, bool singleStep)`; the four public
+methods are one-line wrappers. The two real differences were the state and whether the
+bank runs once on the calling thread or on a worker until `stop()`. A step deliberately
+never touches `_state` — which is what lets a step follow a step — and that is preserved
+and tested rather than tidied away.
+
+**The loop condition was the actual bug.** `while (_state > Controller::IDLE)` reads as
+"anything but idle" and is not: `CERROR = 0xff` is the largest enumerator, so an error
+state is greater than `IDLE` and the loop spins forever instead of leaving. Now
+`Controller::isRunning()`, an explicit list, so reordering the enumerators cannot silently
+change what the loop does either. `CERROR` is never assigned anywhere in toffy or either
+consumer, so this was unreachable — the same shape as `P2-10`'s throwing loaders, and
+worth fixing for the same reason: the enumerator is public API, so the defect is one line
+of someone else's code away.
+
+**These four methods had no test coverage at all.** Eight `ControllerRun` tests now cover
+them. The red was a genuine runtime red, not a compile error: the 7 characterisation tests
+pass against the *old* code — which is what makes them a faithful baseline for a collapse —
+and the `CERROR` test fails against the old predicate, stubbed in temporarily to prove it.
+
+**Two of the four flagged sub-issues were deliberately not changed**, recorded in
+`findings/correctness.md` rather than quietly dropped:
+
+- The viewer count is computed **once before the loop**. Recomputing per iteration costs a
+  bank walk per frame on a production line-scan machine, so "just recompute" is not free.
+  It needs a decision about whether filters can be added during a run at all — if they
+  cannot, the current code is correct and should say so.
+- `cv::waitKey(10)` inside the core run loop. Removing it means a "needs GUI event pump"
+  hook on `Filter`, which adds a virtual — and `P2-12` pinned `Filter`'s vtable layout
+  precisely because inserting a virtual shifts every later slot. Even appended at the end
+  it changes the vtable size, so it is a plug-in ABI break and belongs in major 3, not
+  smuggled into a collapse commit.
+
+Counters 54–56.
 
 ### 7 — Make the threading honest
 
