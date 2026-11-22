@@ -266,7 +266,31 @@ int FilterBank::loadFileConfig(const std::string& confFile)
 
 const Filter* FilterBank::getFilter(const std::string& name) const
 {
-    return ff->getFilter(name);
+    // P2-9: this used to be `return ff->getFilter(name);` -- a query against the
+    // process-wide FilterFactory registry. The answer therefore had nothing to do
+    // with what this bank contains: a filter created anywhere else in the process
+    // came back, and a filter this bank holds that did not arrive through
+    // FilterFactory::createFilter() was reported missing. The method's own
+    // @deprecated note asked for exactly this.
+    //
+    // The key stays id(), matching the old registry lookup, NOT name() -- even
+    // though findPos()/remove() in this same class match on name(). Fixing the
+    // scope and the key in one commit would be two behaviour changes in one
+    // commit; the name()/id() split is recorded as a finding instead.
+    for (std::vector<FilterPtr>::const_iterator it = _pipe.begin();
+         it != _pipe.end(); ++it) {
+        if ((*it)->id() == name) return it->get();
+        if ((*it)->type() == "filterBank" || (*it)->type() == "parallelFilter") {
+            // Recurse, as countFiltersByType() and getFiltersByType() do. The old
+            // implementation "found" nested filters only by accident, because the
+            // global registry ignores bank structure; recursing keeps the useful
+            // half of that rather than quietly narrowing the contract.
+            const Filter* found =
+                static_cast<const FilterBank*>(it->get())->getFilter(name);
+            if (found) return found;
+        }
+    }
+    return nullptr;
 }
 
 const Filter* FilterBank::getFilter(int i) const
@@ -276,7 +300,11 @@ const Filter* FilterBank::getFilter(int i) const
 
 Filter* FilterBank::getFilter(const std::string& name)
 {
-    return ff->getFilter(name);
+    // One implementation, shared with the const overload, so the two cannot
+    // disagree -- which they previously could not only by accident, both calling
+    // the same global lookup.
+    return const_cast<Filter*>(
+        static_cast<const FilterBank*>(this)->getFilter(name));
 }
 
 Filter* FilterBank::getFilter(int i) { return _pipe.at(i).get(); }

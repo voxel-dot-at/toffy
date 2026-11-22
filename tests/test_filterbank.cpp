@@ -17,6 +17,7 @@
 // Unit tests for toffy::FilterBank.
 
 #include <cstddef>
+#include <memory>
 
 #include <gtest/gtest.h>
 
@@ -100,4 +101,68 @@ TEST(FilterBankRemove, MissingNameLeavesBankIntact)
 
     ASSERT_EQ(1u, fb.size());
     EXPECT_EQ(a.get(), fb.getFilter(0));
+}
+
+// ---------------------------------------------------------------------------
+// P2-9 -- FilterBank::getFilter(const std::string&)
+//
+// Both the const and the non-const overload did `return ff->getFilter(name);`,
+// i.e. they asked the process-wide FilterFactory registry. So the answer had
+// nothing to do with what this bank contains: a filter created anywhere else in
+// the process came back, and a filter this bank holds but that did not arrive
+// through FilterFactory::createFilter() was reported missing. The method's own
+// @deprecated note asks for exactly this to be reimplemented against _pipe.
+// ---------------------------------------------------------------------------
+
+TEST(FilterBankGetFilterByName, ReturnsAFilterTheBankActuallyContains)
+{
+    FilterBank fb;
+    // Deliberately NOT created through the factory, so it is absent from the
+    // global registry. The bank holds it, so the bank must be able to name it.
+    auto d = std::make_shared<DummyFilter>();
+    fb.add(d);
+
+    ASSERT_EQ(1u, fb.size());
+    EXPECT_EQ(d.get(), fb.getFilter(d->id()))
+        << "the bank holds this filter but getFilter() could not find it: it is "
+           "asking the global factory instead of its own pipe";
+}
+
+TEST(FilterBankGetFilterByName, DoesNotReturnAFilterTheBankDoesNotContain)
+{
+    auto elsewhere = makeDummyFilter();  // through the factory: IS in the registry
+
+    FilterBank fb;  // empty
+    ASSERT_EQ(0u, fb.size());
+
+    EXPECT_EQ(nullptr, fb.getFilter(elsewhere->id()))
+        << "an empty bank returned a filter it does not contain, because the "
+           "global registry knows it";
+}
+
+TEST(FilterBankGetFilterByName, ConstOverloadAgreesWithTheNonConstOne)
+{
+    FilterBank fb;
+    auto d = std::make_shared<DummyFilter>();
+    fb.add(d);
+
+    const FilterBank &cfb = fb;
+    EXPECT_EQ(fb.getFilter(d->id()), cfb.getFilter(d->id()))
+        << "the const and non-const overloads must not disagree";
+}
+
+TEST(FilterBankGetFilterByName, FindsAFilterNestedInASubBank)
+{
+    // countFiltersByType() and getFiltersByType() both recurse into embedded
+    // banks. The old implementation "found" nested filters only by accident --
+    // the global registry does not care about bank structure -- so recursing is
+    // what preserves the useful half of the old behaviour rather than narrowing it.
+    FilterBank outer;
+    auto inner = std::make_shared<FilterBank>();
+    auto d = std::make_shared<DummyFilter>();
+    inner->add(d);
+    outer.add(inner);
+
+    EXPECT_EQ(d.get(), outer.getFilter(d->id()))
+        << "a filter inside an embedded bank is still reachable from the outer one";
 }

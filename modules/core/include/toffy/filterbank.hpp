@@ -148,13 +148,19 @@ class FilterBank : public Filter
     void clearBank();
 
     /**
-     * @brief const getFilter by name
-     * @param name
-     * @return Filter
+     * @brief const getFilter by filter id
+     * @param name the filter's id(), e.g. "rectify_12" -- NOT its name()
+     * @return the filter, or nullptr if this bank does not hold it
      *
-     * @todo Use getPosition and getfilter(int) to implement it local
-     * @deprecated We want the getFilter to be local to the FilterBank
+     * Searches this bank's pipeline, recursing into embedded FilterBank and
+     * ParallelFilter elements. It used to query the global FilterFactory registry
+     * instead, so it could return a filter this bank does not contain and miss one
+     * it does (P2-9).
      *
+     * Note the key: this matches id(), while findPos()/remove() in this same class
+     * match name(). That split predates P2-9 and is left alone deliberately --
+     * changing the lookup key is a second behaviour change, and the fix here is
+     * about scope. See cleanup/findings/api.md.
      */
     const Filter* getFilter(const std::string& name) const;
 
@@ -169,13 +175,11 @@ class FilterBank : public Filter
     const Filter* getFilter(int i) const;
 
     /**
-     * @brief getFilter by name
-     * @param name
-     * @return Filter
+     * @brief getFilter by filter id
+     * @param name the filter's id(), e.g. "rectify_12" -- NOT its name()
+     * @return the filter, or nullptr if this bank does not hold it
      *
-     * @todo Use getPosition and getfilter(int) to implement it local
-     * @deprecated We want the getFilter to be local to the FilterBank
-     *
+     * See the const overload: same search, same key, one implementation.
      */
     Filter* getFilter(const std::string& name);
 

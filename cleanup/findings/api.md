@@ -206,3 +206,41 @@ Filter&` still gets `false` from `FilterBank`/`ParallelFilter`, which are the cl
 actually need `P2-12` — so keep `P2-12` open. What changes is that the warning gate and the API
 fix stop being one indivisible job, and that `-Werror` — the thing that stops the count growing
 — becomes available now rather than after four structural PRs.
+
+---
+
+## `FilterBank` matches some lookups on `name()` and others on `id()`
+
+Found while fixing `P2-9` item 3, and deliberately **not** fixed there.
+
+`FilterBank` has two string-keyed lookup families that key on different things:
+
+| method | key |
+|---|---|
+| `findPos(name)`, `remove(name)`, `getFilterPos(name)` | `Filter::name()` |
+| `getFilter(name)` (both overloads) | `Filter::id()` |
+
+`Filter::name()` is the user-visible label, set from config (`_name =
+node.get("name", _name)`); `Filter::id()` is the generated `type_counter`
+identifier (`rectify_12`). Both are `const std::string&` accessors on `Filter`, so
+a call site reads identically either way and the compiler cannot help.
+
+The old `getFilter(name)` keyed on `id()` because it delegated to the
+`FilterFactory` registry, which is keyed by `id()`. `P2-9` reimplemented it against
+`_pipe` and **kept the `id()` key on purpose**: the fix is about *scope* (this bank,
+not the process), and switching the key in the same commit would have been a second
+behaviour change with its own blast radius and its own red test. The header now says
+plainly that the parameter is an `id()`.
+
+Why it is worth recording rather than leaving: the two families now sit side by side
+in one class with one of them documented as taking something its own parameter name
+contradicts. The next person to add a string lookup has a 50% chance of picking the
+wrong one, and the failure is silent — `getFilter` returns `nullptr`, `remove`
+removes nothing.
+
+**Suggestion S5 — pick one key for the string lookups, in its own PR, with a red test
+per family.** `name()` is the better candidate: it is what configs contain and what
+`findPos`/`remove` already use, and `getFilter(name)` is unused by both consumers
+(measured 2026-11-22: zero call sites in `toffy-oatpp` and `becom-knapp-wurthbox`),
+so the change is contained to toffy's own tests. It is still a behaviour change and
+should not ride along with anything else.
