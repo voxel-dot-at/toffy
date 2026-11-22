@@ -67,7 +67,7 @@ toffy-oatpp toffy::log::record::~record()
 toffy-oatpp toffy::log::record::record(toffy::log::logger const&, toffy::log::level)
 toffy-oatpp typeinfo for toffy::Filter
 
-# Baseline: boxes @ feature/toffy-upgrade (f3def07) against toffy
+# Baseline: boxes @ feature/toffy-upgrade (b31d899) against toffy v2.1.0-2 (P2-12 step 2), Release, gcc 13 / aarch64-linux-gnu, 2026-11-21. Supersedes the f3def07 / v2.0.0-29 blessing, which predated P2-17 step D and so still recorded Boost-era coupling this repo no longer has.
 # v2.0.0-29-g862db19 + toffy_oatpp v0.1.0-3, Release, gcc 13 / aarch64-linux-gnu,
 # 2026-11-01. Measured on a machine with the bta SDK, protobuf dev and oatpp —
 # i.e. the runner the boxes cell has been waiting for, which is why this baseline
@@ -97,7 +97,6 @@ toffy-oatpp typeinfo for toffy::Filter
 # which is what tools/consumer_build.sh derives the consumer name from when no
 # `--name` is passed. Same rule as the allowlist's `consumer@ref` globs.
 becom-knapp-wurthbox toffy::detection::DetectedObject::DetectedObject()
-becom-knapp-wurthbox toffy::FilterBank::add(std::shared_ptr<toffy::Filter>)
 becom-knapp-wurthbox toffy::FilterBank::countFiltersByType(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
 becom-knapp-wurthbox toffy::FilterBank::getFiltersByType(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<toffy::Filter*, std::allocator<toffy::Filter*> >&)
 becom-knapp-wurthbox toffy::FilterFactory::getInstance()
@@ -107,7 +106,6 @@ becom-knapp-wurthbox toffy::Filter::Filter(std::basic_string<char, std::char_tra
 becom-knapp-wurthbox toffy::Filter::getConfig[abi:cxx11]() const
 becom-knapp-wurthbox toffy::Filter::loadConfig(boost::property_tree::basic_ptree<std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)
 becom-knapp-wurthbox toffy::Filter::loadFileConfig(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
-becom-knapp-wurthbox toffy::Filter::setLogLevel(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
 becom-knapp-wurthbox toffy::Filter::setState(toffy::filterState)
 becom-knapp-wurthbox toffy::Filter::updateConfig(boost::property_tree::basic_ptree<std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)
 becom-knapp-wurthbox toffy::Frame::addData(std::basic_string<char, std::char_traits<char>, std::allocator<char> >, boost::any, toffy::Frame::SlotDataType)
@@ -115,8 +113,22 @@ becom-knapp-wurthbox toffy::Frame::~Frame()
 becom-knapp-wurthbox toffy::Frame::Frame()
 becom-knapp-wurthbox toffy::Frame::getData(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const
 becom-knapp-wurthbox toffy::Frame::hasKey(std::basic_string<char, std::char_traits<char>, std::allocator<char> >) const
+becom-knapp-wurthbox toffy::log::logger::root()
+becom-knapp-wurthbox toffy::log::record::~record()
+becom-knapp-wurthbox toffy::log::record::record(toffy::log::logger const&, toffy::log::level)
 becom-knapp-wurthbox toffy_oatpp::setupGlobalState(toffy_oatpp::WebApiState&, bool, toffy::Player*)
 becom-knapp-wurthbox toffy::Player::loadConfig(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)
 becom-knapp-wurthbox toffy::Player::Player(toffy::log::level, bool)
 becom-knapp-wurthbox toffy::Player::runOnce()
 becom-knapp-wurthbox typeinfo for toffy::Filter
+
+# What moved since f3def07, all of it P2-17 step D (boxes' 378 BOOST_LOG_TRIVIAL sites ->
+# toffy::log): three additions (`toffy::log::logger::root`, `toffy::log::record::record
+# (logger const&, level)`, `toffy::log::record::~record`) and two removals
+# (`Filter::setLogLevel(string const&)`, `FilterBank::add(shared_ptr<Filter>)`). 24 -> 25.
+#
+# This section is recorded but NOT currently gating: the `Consumer build — boxes` job needs a
+# self-hosted runner with the bta SDK, and every scheduled run of it has been cancelled.
+# Re-blessing now means that when the runner exists the cell does not open on coupling that
+# was agreed here — the same reason the toffy-oatpp section above was updated rather than left
+# for its first failing run.
