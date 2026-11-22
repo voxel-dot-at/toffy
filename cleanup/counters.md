@@ -103,6 +103,9 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 51 | implementations of the plug-in loader (walk a config node, `dlopen`, run `init()`) | `player.cpp`, `controller.cpp`, `filterbank.cpp` | **1** (was 3; all now delegate to `toffy::commons::plugins`) | 1 | ✅ `plugin_loading` |
 | 52 | `dlopen` handles discarded by a loader (opened, never recorded, so unclosable even in principle) | `modules/core/src/filterbank.cpp` | **0** (was 1: `FilterBank::loadPlugins` kept it in a local) | 0 | ✅ `plugin_loading` handle tests |
 | 53 | loaders that throw `ptree_bad_path` on a config with no `<plugins>` node | as above | **0** (was 2) — and `wbox.xml`, boxes' production config, has none | 0 | ✅ red-first |
+| 54 | copies of the controller run-method thread lifecycle | `controller.cpp` | **1** (was 4: `forward`, `backward`, `stepForward`, `stepBackward` → one `run(state, bool)`) | 1 | ✅ 8 `ControllerRun` tests |
+| 55 | run methods with test coverage | `tests/test_controller.cpp` | **4 of 4** (was 0 of 4) | 4 | ✅ |
+| 56 | states that keep the run loop spinning when they should not | `Controller::isRunning()` | **0** (was 1: `CERROR = 0xff > IDLE` spun forever; unreachable — `CERROR` is never assigned) | 0 | ✅ red-first |
 
 ## The commands
 

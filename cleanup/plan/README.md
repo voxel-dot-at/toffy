@@ -59,7 +59,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P2-3` | debug leftovers and dead code | [`build-and-hygiene.md`](build-and-hygiene.md) | 🟡 core done |
 | `P2-4` | `createFilter()` → `registerCreator()` | [`structure.md`](structure.md) | ✅ **landed** — 0 branches, 35 includes → 2; forced `~Controller`'s `clearCreators()` out (finding `C3`) and found three type names the chain could never resolve |
 | `P2-5` | one owner per `Filter` | [`structure.md`](structure.md) | ✅ **the keystone — landed, and it is why `v2.0.0` exists** |
-| `P2-6` | collapse the four run methods | [`structure.md`](structure.md) | ❌ |
+| ✅ `P2-6` | collapse the four run methods | **1** implementation (was 4); run-method coverage 0 → 4 of 4; `CERROR` no longer spins the loop | ✅ |
 | `P2-7` | make the threading honest | [`structure.md`](structure.md) | ✅ landed as PR 37 (`b9e3032`) — `std::thread`/`mutex`/`condition_variable`/`atomic`, `interprocess_semaphore` gone, and `<boost/thread.hpp>` no longer reaches a consumer |
 | `P2-8` | logging policy out of `Filter` | [`structure.md`](structure.md) | ✅ |
 | ✅ `P2-9` | module layering | **0** core includes from a module above it (allowlisted BTA hook excepted); 0 header-defined `const std::string`; 0 registry-backed `FilterBank` lookups; 0 public `Controller` data members | ✅ |
