@@ -116,3 +116,113 @@ TEST(ControllerLifecycle, BaseBankHasNoParentBank)
     EXPECT_EQ(nullptr, c.baseBank()->bank())
         << "if this is non-null, getBaseFilterbank() recurses forever (A10)";
 }
+
+// ---------------------------------------------------------------------------
+// P2-6 -- the four run methods.
+//
+// forward(), backward(), stepForward() and stepBackward() had no test coverage
+// at all before this, and they are ~90% the same code. Collapsing them is the
+// point of P2-6; these tests are what makes the collapse checkable.
+// ---------------------------------------------------------------------------
+
+namespace {
+/// A bank with something in it, so loopFilters() has a reason to keep looping.
+/// With an empty bank loopFilters() puts the state straight back to IDLE and
+/// exits, which makes "is it running?" unobservable.
+void addOneFilterTo(Controller &c)
+{
+    toffy::FilterPtr n =
+        toffy::FilterFactory::getInstance()->createFilter("nop");
+    ASSERT_TRUE(static_cast<bool>(n));
+    c.baseBank()->add(n);
+}
+}  // namespace
+
+TEST(ControllerRun, ForwardOnEmptyBankStartsAndFinishes)
+{
+    Controller c;
+    EXPECT_TRUE(c.forward());
+    // An empty bank ends the run by itself; stop() is what a real run needs.
+    c.stop();
+    EXPECT_EQ(Controller::IDLE, c.getState());
+}
+
+TEST(ControllerRun, BackwardOnEmptyBankStartsAndFinishes)
+{
+    Controller c;
+    EXPECT_TRUE(c.backward());
+    c.stop();
+    EXPECT_EQ(Controller::IDLE, c.getState());
+}
+
+TEST(ControllerRun, StepForwardRunsOnTheCallingThreadAndLeavesStateIdle)
+{
+    Controller c;
+    addOneFilterTo(c);
+    // A step does not set _state: it runs on the caller and returns. That is why
+    // a step can follow another step, and the collapse must not "tidy" it away.
+    EXPECT_TRUE(c.stepForward());
+    EXPECT_EQ(Controller::IDLE, c.getState());
+}
+
+TEST(ControllerRun, StepBackwardRunsOnTheCallingThreadAndLeavesStateIdle)
+{
+    Controller c;
+    addOneFilterTo(c);
+    EXPECT_TRUE(c.stepBackward());
+    EXPECT_EQ(Controller::IDLE, c.getState());
+}
+
+TEST(ControllerRun, ForwardWhileRunningIsRefused)
+{
+    Controller c;
+    addOneFilterTo(c);
+    ASSERT_TRUE(c.forward());
+    ASSERT_EQ(Controller::FORWARD, c.getState());
+    // The second call must not start a second thread over the first: assigning
+    // over a joinable std::thread calls std::terminate().
+    EXPECT_FALSE(c.forward());
+    EXPECT_FALSE(c.backward());
+    c.stop();
+    EXPECT_EQ(Controller::IDLE, c.getState());
+}
+
+TEST(ControllerRun, RunMethodsAreUsableAgainAfterARunFinishes)
+{
+    Controller c;
+    addOneFilterTo(c);
+    ASSERT_TRUE(c.forward());
+    c.stop();
+    EXPECT_TRUE(c.forward()) << "a finished run left the controller unusable";
+    c.stop();
+}
+
+TEST(ControllerRun, StopBeforeAnyRunIsSafe)
+{
+    // Finding A12: stop() used to join unconditionally and threw when nothing had
+    // been started. Kept as a fence, since the collapse touches the same thread.
+    Controller c;
+    EXPECT_NO_THROW(c.stop());
+    EXPECT_EQ(Controller::IDLE, c.getState());
+}
+
+TEST(ControllerRun, ErrorStateDoesNotKeepTheRunLoopSpinning)
+{
+    // The loop used to be `while (_state > Controller::IDLE)`. CERROR is 0xff, so
+    // it is greater than IDLE and an error state would spin the run loop forever
+    // instead of leaving it. Unreachable today -- nothing in toffy or either
+    // consumer ever assigns CERROR -- which is exactly why it is worth pinning:
+    // the value is public API, so the first person to use it would find a hang
+    // rather than an exit.
+    EXPECT_FALSE(Controller::isRunning(Controller::CERROR))
+        << "CERROR > IDLE, so `while (_state > IDLE)` never exits on an error";
+
+    // The states that really are a run, and IDLE which is not. Written out per
+    // enumerator so reordering the enum cannot silently change what the loop does.
+    EXPECT_FALSE(Controller::isRunning(Controller::IDLE));
+    EXPECT_TRUE(Controller::isRunning(Controller::START_FW));
+    EXPECT_TRUE(Controller::isRunning(Controller::FORWARD));
+    EXPECT_TRUE(Controller::isRunning(Controller::STEP_FW));
+    EXPECT_TRUE(Controller::isRunning(Controller::START_BW));
+    EXPECT_TRUE(Controller::isRunning(Controller::BACKWARD));
+}

@@ -22,7 +22,7 @@
 # is. Configure the surface you are blessing, and say which one it is.
 # If a BTA-on baseline is ever wanted, it needs its own file and its own job, not
 # a second meaning in this one.
-# Blessed from: libtoffy.so.2.1.0 (c8eaf64)
+# Blessed from: libtoffy.so.2.1.0 (c746ca2)
 _ZN5toffy10Controller10loadConfigERKN5boost13property_tree11basic_ptreeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES9_St4lessIS9_EEE
 _ZN5toffy10Controller10loadPluginENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
 _ZN5toffy10Controller11loadPluginsERKN5boost13property_tree11basic_ptreeINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES9_St4lessIS9_EEE
@@ -33,6 +33,7 @@ _ZN5toffy10Controller13saveRunConfigENSt7__cxx1112basic_stringIcSt11char_traitsI
 _ZN5toffy10Controller14loadConfigFileERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
 _ZN5toffy10Controller15loopFiltersOnceEv
 _ZN5toffy10Controller17loadRuntimeConfigERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+_ZN5toffy10Controller3runENS0_5stateEb
 _ZN5toffy10Controller4stopEv
 _ZN5toffy10Controller7forwardEv
 _ZN5toffy10Controller8backwardEv

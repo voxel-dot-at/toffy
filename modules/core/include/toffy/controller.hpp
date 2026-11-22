@@ -95,6 +95,17 @@ public:
      * @return True on success, false if failed.
      */
 
+    /**
+     * @brief the one implementation behind forward/backward/stepForward/stepBackward
+     *
+     * P2-6. Those four were ~90% the same code -- look up the parallelFilters,
+     * init and start them, set the state, spawn the loop, join -- which is four
+     * places for the same thread-lifecycle bug to hide (finding A12 was one of
+     * them, in stop()). The two real differences are the state and whether the
+     * bank runs on the calling thread once or on a worker until stop().
+     */
+    bool run(state newState, bool singleStep);
+
     bool forward();
     /**
      * @brief Same as forward but set the backward flag for all capturers.
@@ -130,6 +141,26 @@ public:
      * @return The toffy running state
      */
     Controller::state getState() {return _state;}
+
+    /**
+     * @brief is this state one that the run loop should keep running for?
+     *
+     * P2-6. The run loop used to be `while (_state > Controller::IDLE)`, which
+     * reads as "anything but idle" and is not: `CERROR = 0xff` is the largest
+     * value in the enum, so an error state is greater than IDLE and the loop
+     * spins forever instead of leaving. Nothing in toffy or either consumer ever
+     * assigns CERROR, so this has never been observed -- but the enumerator is
+     * public API, so the first person to use it would get a hang.
+     *
+     * Written as an explicit list rather than a range so that reordering the
+     * enumerators cannot silently change what the loop does -- which is the same
+     * class of accident the comparison just removed.
+     */
+    static bool isRunning(state s)
+    {
+        return s == START_FW || s == FORWARD || s == STEP_FW ||
+               s == START_BW || s == BACKWARD;
+    }
 
     /**
      * @brief Allows saving the filters public runtime configuration values in

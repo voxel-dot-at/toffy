@@ -269,3 +269,34 @@ read, not an uninitialised one — the `P0-5` shape does not apply here.
     `set_filter` in the tree became one short list. Fixed by deleting it: the level belongs
     to the application, and `toffy::log` gives no method that a frame loop could use to move
     it by accident.
+
+## `Controller::loopFilters()` — two things `P2-6` collapsed around but did not change
+
+`P2-6` fixed the loop *condition* (`while (_state > IDLE)` never exits on `CERROR`,
+now `Controller::isRunning()`). Two other things the plan flagged in the same
+function are left alone, deliberately, because both are behaviour changes with no
+red test behind them yet.
+
+**The viewer count is computed once, before the loop.** `loopFilters()` counts
+`guiViewerTypeName` filters once and then pumps HighGUI for the whole run based on
+that number. A viewer added after the run starts is never pumped, so its window
+freezes; a viewer removed leaves a pointless `waitKey(10)` in the loop. Recomputing
+per iteration costs a bank walk per frame on a machine that is counting boxes on a
+production line, so "just recompute" is not free. What it needs is a decision about
+whether filters can be added during a run at all — if they cannot, the current code
+is correct and should say so; if they can, the count belongs on the mutation path.
+
+**`cv::waitKey(10)` is an OpenCV GUI call inside the core run loop.** It is the only
+reason `modules/core` includes `<opencv2/highgui.hpp>`, and it means a headless
+build still pays a 10 ms sleep per iteration whenever a pipeline happens to contain
+an `imageview`. The layering fix is a "needs GUI event pump" hook on `Filter` — but
+that adds a virtual, and `P2-12` pinned `Filter`'s vtable layout precisely because
+inserting a virtual shifts every later slot. It would have to go at the end and
+still changes the vtable size, so it is a plug-in ABI break and belongs in major 3,
+not smuggled into a collapse commit.
+
+Also worth recording: **`CERROR` is never assigned anywhere** in toffy or either
+consumer — it exists only as the enumerator. So the infinite-spin this fixes was
+unreachable, in the same way `P2-10`'s throwing loaders were unreachable. Both are
+worth fixing anyway: the enum value and the public methods are API, so the defect is
+one line of someone else's code away.

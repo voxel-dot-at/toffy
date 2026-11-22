@@ -116,114 +116,72 @@ Controller::~Controller()
     // in the first place: FilterBank's copy of the loop discarded them outright.
 }
 
-bool Controller::forward()
+namespace {
+// Every parallelFilter in the bank, in pipeline order. All four run methods
+// needed this; P2-6 collapses them into one, so it is here once.
+std::vector<Filter *> parallelFiltersIn(toffy::FilterBank *bank)
 {
-    if (_state == Controller::IDLE) {
-        std::vector<Filter *> vec;
-        baseFilterBank->getFiltersByType("parallelFilter", vec);
-        for (size_t i = 0; i < vec.size(); i++) {
-            ((ParallelFilter *)vec[i])->init();
-            ((ParallelFilter *)vec[i])->start();
-        }
-        _state = Controller::FORWARD;
-        // Collect a previous run before starting a new one: loopFilters() puts
-        // the state back to IDLE itself when the bank is empty, so arriving here
-        // with a finished but still joinable thread is normal. Assigning over it
-        // calls std::terminate(); boost::thread at BOOST_THREAD_VERSION 2 turned
-        // the same assignment into a detached worker nobody owned.
-        if (_thread.joinable()) _thread.join();
-        try {
-            _thread = std::thread(&Controller::loopFilters, this);
-        } catch (const std::system_error &e) {
-            // std::thread reports a failed launch by throwing. The
-            // `if (!_thread.joinable())` check that used to follow the
-            // assignment could never fire: boost::thread threw as well.
-            _state = Controller::IDLE;
-            toffy::log::error() << "Could not start the filter thread: " << e.what();
-            return false;
-        }
-    } else {
-        //ALREADY RUNNING
+    std::vector<Filter *> vec;
+    bank->getFiltersByType("parallelFilter", vec);
+    return vec;
+}
+}  // namespace
+
+bool Controller::run(Controller::state newState, bool singleStep)
+{
+    if (_state != Controller::IDLE) {
+        // Already running. A second launch would assign over a joinable
+        // std::thread, which calls std::terminate().
         return false;
     }
-    return true;
-}
 
-bool Controller::backward()
-{
-    if (_state == Controller::IDLE) {
-        std::vector<Filter *> vec;
-        baseFilterBank->getFiltersByType("parallelFilter", vec);
-        for (size_t i = 0; i < vec.size(); i++) {
-            ((ParallelFilter *)vec[i])->init();
-            ((ParallelFilter *)vec[i])->start();
-        }
-        _state = Controller::BACKWARD;
-        // See forward(): join a finished previous run before assigning, and
-        // report a launch that threw rather than testing joinable() after.
-        if (_thread.joinable()) _thread.join();
-        try {
-            _thread = std::thread(&Controller::loopFilters, this);
-        } catch (const std::system_error &e) {
-            _state = Controller::IDLE;
-            toffy::log::error() << "Could not start the filter thread: " << e.what();
-            return false;
-        }
-    } else {
-        //ALREADY RUNNING
-        return false;
+    std::vector<Filter *> vec = parallelFiltersIn(baseFilterBank.get());
+    for (size_t i = 0; i < vec.size(); i++) {
+        static_cast<ParallelFilter *>(vec[i])->init();
+        static_cast<ParallelFilter *>(vec[i])->start();
     }
-    return true;
-}
 
-bool Controller::stepForward()
-{
-    if (_state == Controller::IDLE) {
-        std::vector<Filter *> vec;
-        baseFilterBank->getFiltersByType("parallelFilter", vec);
-        for (size_t i = 0; i < vec.size(); i++) {
-            ((ParallelFilter *)vec[i])->init();
-            ((ParallelFilter *)vec[i])->start();
-        }
-        // A single step runs the bank on the calling thread. The commented-out
-        // launch of loopFiltersOnce() that used to sit here went with the
-        // boost::thread it named; P2-6 collapses these four methods and decides
-        // whether the threaded variant comes back at all.
+    if (singleStep) {
+        // A single step runs the bank on the calling thread and deliberately
+        // never touches _state -- which is what lets a step follow another step,
+        // and what the collapse must not "tidy" away.
+        const bool backwards = (newState == Controller::BACKWARD);
+        if (backwards) f.addData("backward", true);
         baseFilterBank->filter(f, f);
+        if (backwards) f.removeData("backward");
         for (size_t i = 0; i < vec.size(); i++) {
-            ((ParallelFilter *)vec[i])->stop();
+            static_cast<ParallelFilter *>(vec[i])->stop();
         }
-    } else {
-        //already RUNNING
+        return true;
+    }
+
+    _state = newState;
+    // Collect a previous run before starting a new one: loopFilters() puts the
+    // state back to IDLE itself when the bank is empty, so arriving here with a
+    // finished but still joinable thread is normal. Assigning over it calls
+    // std::terminate(); boost::thread at BOOST_THREAD_VERSION 2 turned the same
+    // assignment into a detached worker nobody owned.
+    if (_thread.joinable()) _thread.join();
+    try {
+        _thread = std::thread(&Controller::loopFilters, this);
+    } catch (const std::system_error &e) {
+        // std::thread reports a failed launch by throwing. The
+        // `if (!_thread.joinable())` check that used to follow the assignment
+        // could never fire: boost::thread threw as well.
+        _state = Controller::IDLE;
+        toffy::log::error() << "Could not start the filter thread: " << e.what();
         return false;
     }
     return true;
 }
 
-bool Controller::stepBackward()
-{
-    if (_state == Controller::IDLE) {
-        std::vector<Filter *> vec;
-        baseFilterBank->getFiltersByType("parallelFilter", vec);
-        for (size_t i = 0; i < vec.size(); i++) {
-            ((ParallelFilter *)vec[i])->init();
-            ((ParallelFilter *)vec[i])->start();
-        }
-        // See stepForward(): the commented-out threaded variant went with the
-        // boost::thread it named.
-        f.addData("backward", true);
-        baseFilterBank->filter(f, f);
-        f.removeData("backward");
-        for (size_t i = 0; i < vec.size(); i++) {
-            ((ParallelFilter *)vec[i])->stop();
-        }
-    } else {
-        //already RUNNING
-        return false;
-    }
-    //f.removeData("backward");
-    return true;
-}
+bool Controller::forward() { return run(Controller::FORWARD, false); }
+
+bool Controller::backward() { return run(Controller::BACKWARD, false); }
+
+bool Controller::stepForward() { return run(Controller::FORWARD, true); }
+
+bool Controller::stepBackward() { return run(Controller::BACKWARD, true); }
 
 bool Controller::stop()
 {
@@ -252,7 +210,9 @@ void Controller::loopFilters()
     // Core owns this name (see guiViewerTypeName in controller.hpp); it used to
     // reach into the viewers module for it. tests/test_layering.cpp pins it.
     int viewers = baseFilterBank->countFiltersByType(guiViewerTypeName);
-    while (_state > Controller::IDLE) {
+    // P2-6: was `while (_state > Controller::IDLE)`, which never exits on
+    // CERROR (0xff). See Controller::isRunning().
+    while (Controller::isRunning(_state)) {
         if (_state == Controller::BACKWARD) f.addData("backward", true);
         baseFilterBank->filter(f, f);
         if (_state == Controller::BACKWARD) f.removeData("backward");
