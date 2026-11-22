@@ -104,10 +104,16 @@ Controller::~Controller()
     //
     // The method itself stays: it is public API, and removing it is an X6 break.
     // Nothing in toffy calls it any more.
-    // TODO(P2-10): _loads is never drained, so dlopen() handles leak for the
-    // lifetime of the process. The dlclose() loop that used to sit here was
-    // commented out and has been deleted; unloading plug-ins cannot be
-    // reinstated until _loads stops being an untyped std::vector<void*>.
+    // P2-10, closing the TODO that was here: the plug-in handles are no longer
+    // this object's to drain. They have one owner, toffy::commons::plugins, and
+    // they are deliberately never dlclose()d -- a plug-in's init() registers
+    // creators into the process-wide FilterFactory, and those creators are
+    // function pointers into the .so, so unloading it while the registry still
+    // holds them makes the next createFilter() jump into unmapped memory.
+    // Reinstating unload needs the registry to give creators back first; that is
+    // a FilterFactory change, not a teardown detail here, and it is why this is
+    // documented rather than implemented. Controller never owned them correctly
+    // in the first place: FilterBank's copy of the loop discarded them outright.
 }
 
 bool Controller::forward()
@@ -347,47 +353,16 @@ int Controller::loadConfig(const boost::property_tree::ptree &pt)
 void Controller::loadPlugins(const boost::property_tree::ptree &pt)
 {
     toffy::log::debug() << __FUNCTION__;
-    BOOST_FOREACH (const boost::property_tree::ptree::value_type &v,
-                   pt.get_child("toffy.plugins")) {
-        toffy::log::debug() << "v.first " << v.first;
-        toffy::log::debug() << "v.second " << v.second.data();
-
-        loadPlugin(v.second.data());
-    }
-
-    return;
+    // P2-10: this used to walk pt.get_child("toffy.plugins") itself, which threw
+    // ptree_bad_path on a config with no <plugins> node. One implementation now;
+    // see toffy/common/plugins.hpp for what the three versions disagreed about.
+    toffy::commons::plugins::loadFromConfig(pt);
 }
 
 void Controller::loadPlugin(std::string lib)
 {
-    // POSIX only: toffy has no Windows plugin loader (P2-2, cleanup/findings/build.md).
-    // The LoadLibrary/GetProcAddress half of this function was never compiled, because
-    // MSVC is not defined for the library in any configuration. The dlopen() handles are
-    // pushed onto _loads and never closed -- see the TODO(P2-10) at the top of this file.
-    void *libHandle;
-    toffy::log::debug() << "Loading plug-in from: " << lib;
-    libHandle = dlopen(lib.c_str(), RTLD_LAZY);
-    if (!libHandle) {
-        toffy::log::warning()
-            << "Could not load library: " << lib << std::endl
-            << dlerror();
-
-        // reset errors
-        dlerror();
-        return;
-    }
-    toffy::commons::plugins::init_t init =
-        (toffy::commons::plugins::init_t)dlsym(libHandle, "init");
-    const char *dlsym_error = dlerror();
-    if (dlsym_error) {
-        toffy::log::warning()
-            << "Could not load plug-in filters from: " << lib << std::endl
-            << dlsym_error;
-    } else {
-        toffy::log::info() << "Loaded plug-in filters from: " << lib;
-        init(FilterFactory::getInstance());
-        _loads.push_back(libHandle);
-    }
-    // reset errors
-    dlerror();
+    // P2-10: the dlopen/dlsym/init sequence now lives in commons::plugins::loadOne,
+    // shared with loadPlugins() and with FilterBank. Handles are recorded there,
+    // not on Controller::_loads, which is gone -- see getLoadedFilters().
+    toffy::commons::plugins::loadOne(lib);
 }

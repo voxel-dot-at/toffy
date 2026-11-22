@@ -464,40 +464,18 @@ const boost::property_tree::ptree& FilterBank::getGlobals(
 int FilterBank::loadPlugins(const boost::property_tree::ptree& pt)
 {
     toffy::log::debug() << __FUNCTION__;
-    BOOST_FOREACH (const boost::property_tree::ptree::value_type& v,
-                   pt.get_child("plugins")) {
-        toffy::log::debug() << "v.first " << v.first;
-        toffy::log::debug() << "v.second " << v.second.data();
-
-        // POSIX only: toffy has no Windows plugin loader (P2-2, cleanup/findings/build.md).
-        // The LoadLibrary/GetProcAddress half of this loop was never compiled, because
-        // MSVC is not defined for the library in any configuration.
-        void* libHandle;
-        libHandle = dlopen(v.second.data().c_str(), RTLD_LAZY);
-        if (!libHandle) {
-            toffy::log::warning()
-                << "Could not load library: " << v.second.data() << std::endl
-                << dlerror();
-
-            // reset errors
-            dlerror();
-            continue;
-        }
-        toffy::commons::plugins::init_t init =
-            (toffy::commons::plugins::init_t)dlsym(libHandle, "init");
-        const char* dlsym_error = dlerror();
-        if (dlsym_error) {
-            toffy::log::warning()
-                << "Could not load plug-in filters from: " << v.second.data()
-                << std::endl
-                << dlerror();
-        } else {
-            toffy::log::info()
-                << "Loaded plug-in filters from: " << v.second.data();
-            init(FilterFactory::getInstance());
-        }
-        // reset errors
-        dlerror();
-    }
+    // P2-10: the third copy of the loader, and the worst of them. It looked up
+    // "plugins" while every config in this tree and both consumers nests the node
+    // as /toffy/plugins, so it could never find what the other two found; it threw
+    // ptree_bad_path when even that was absent; and it kept the dlopen handle in a
+    // local that was never stored anywhere, so every plug-in it did manage to open
+    // was leaked with no record at all. Nothing in toffy or either consumer calls
+    // it -- it is protected, and the only FilterBank subclasses here are Cond and
+    // ParallelFilter, neither of which does.
+    //
+    // Kept rather than deleted: it is protected API and a downstream subclass
+    // could call it. It now shares the one implementation, so the node name, the
+    // missing-node behaviour and the handle ownership match everywhere.
+    toffy::commons::plugins::loadFromConfig(pt);
     return 1;
 }

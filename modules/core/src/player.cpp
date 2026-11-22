@@ -109,17 +109,10 @@ void Player::loadPlugin(std::string lib) {
 void Player::loadPlugins(const boost::property_tree::ptree& pt) {
     toffy::log::debug() << __FILE__ << " " << __FUNCTION__ ;
 
-    try {
-        BOOST_FOREACH(const boost::property_tree::ptree::value_type &v, pt.get_child("toffy.plugins")) {
-
-            toffy::log::debug() << "v.first " << v.first;
-            toffy::log::debug() << "v.second " << v.second.data();
-
-            _controller.loadPlugin(v.second.data());
-        }
-    } catch (std::exception& e) {
-        toffy::log::warning() << "Exception while loading plugins! " << e.what();
-    }
-
-    return;
+    // P2-10: this was the only one of the three loaders that survived a missing
+    // <plugins> node, and it did so by wrapping the whole loop in a try/catch --
+    // which also swallowed genuine failures from a node that WAS present. The
+    // single loader treats an absent node as "nothing to do", so the catch is no
+    // longer needed and nothing is swallowed any more.
+    _controller.loadPlugins(pt);
 }

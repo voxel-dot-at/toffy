@@ -24,6 +24,7 @@
 
 #include <toffy/filterbank.hpp>
 #include <toffy/frame.hpp>
+#include <toffy/common/plugins.hpp>  // P2-10: getLoadedFilters() returns the loader's handle list
 
 namespace toffy {
 
@@ -161,7 +162,18 @@ public:
 
     int loadConfig(const boost::property_tree::ptree& pt);
 
-    const std::vector<void *>& getLoadedFilters() const {return _loads;}
+    /**
+     * @brief the dlopen() handles of the plug-ins this process has loaded
+     *
+     * P2-10: these used to live in `Controller::_loads`. They now belong to
+     * `toffy::commons::plugins`, which is the single loader and therefore the
+     * single owner -- `FilterBank` had a second copy of the loop that threw its
+     * handles away entirely. The return type is unchanged.
+     */
+    const std::vector<void *>& getLoadedFilters() const
+    {
+        return toffy::commons::plugins::loadedHandles();
+    }
 
     /**
      * @brief the base and unique object container this Controller runs on
@@ -231,7 +243,8 @@ private:
      */
     std::thread _thread;
     state _state; ///< running state of toffy.
-    std::vector<void *> _loads;
+    // P2-10: `std::vector<void*> _loads` used to sit here. The plug-in handles
+    // now have one owner, toffy::commons::plugins -- see getLoadedFilters().
 
     void loopFilters();
     void loopFiltersOnce();

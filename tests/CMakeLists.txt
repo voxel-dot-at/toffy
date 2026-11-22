@@ -125,3 +125,21 @@ add_test(NAME layering COMMAND test_layering)
 add_executable(test_btaframe_constants test_btaframe_constants.cpp test_btaframe_constants_addr.cpp)
 target_link_libraries(test_btaframe_constants toffy GTest::gtest GTest::gtest_main)
 add_test(NAME btaframe_constants COMMAND test_btaframe_constants)
+
+# P2-10: three plugin loaders with three failure modes. This test pins the
+# consolidated behaviour -- a missing <plugins> node is not an error, and all
+# three look at the same node. Needs log4cplus directly: it captures log records
+# to observe whether a loader actually visited the node.
+# A real plug-in, built as a MODULE, so the loader test has something that
+# actually loads. Before this the plug-in path was only ever exercised with a
+# library that does not exist -- which covers the failure branch and nothing else.
+add_library(toffy_test_plugin MODULE plugin_fixture.cpp)
+set_target_properties(toffy_test_plugin PROPERTIES PREFIX "" SUFFIX ".so")
+target_link_libraries(toffy_test_plugin toffy)
+
+add_executable(test_plugin_loading test_plugin_loading.cpp)
+add_dependencies(test_plugin_loading toffy_test_plugin)
+target_compile_definitions(test_plugin_loading PRIVATE
+  TOFFY_TEST_PLUGIN="$<TARGET_FILE:toffy_test_plugin>")
+target_link_libraries(test_plugin_loading toffy ${LOG4CPLUS_LIBRARIES} GTest::gtest GTest::gtest_main)
+add_test(NAME plugin_loading COMMAND test_plugin_loading)
