@@ -76,7 +76,7 @@ Windows branches were deleted rather than enabled.
 | ~~**12**~~ | ~~`P2-7` threading~~ | ✅ **landed as PR 37** (`b9e3032`) — the atomic flag, the semaphore, the copy ctor and `delete lanes[i]` all went; see *Landed*. TSan was named as the gate on this one and it is the weakest part of its evidence: `b9e3032` landed on 2026-10-18, inside the window in which **every** CI job was red on the runner's toolchain (**P0-4**), so no TSan run of `P2-7` exists before 2026-10-29. What exists is the `ThreadSanitizer` job green on every push since, `a3d882f` included (run 43760237608, 2026-11-15) |
 | **13** | `P2-9` module layering | ❌ `imageview.hpp` still included by `controller.cpp`. `getFilter(name)` can now be reimplemented against `_pipe`, which is what `P2-5` was waiting on |
 | **14** | `P2-10` three plugin loaders | ❌ all three still exist |
-| **16** | `P2-11` + `P2-12` `Frame` API, `filter()` overload | ❌ see `P3-9` before touching `P2-12` |
+| **16** | `P2-11` + `P2-12` `Frame` API, `filter()` overload | `P2-12` ✅ done (step 1 `661424d`, step 2 with the reserved vtable slot); `P2-11` still open. `P2-12` turned up a vtable-shift problem neither `P3-3` nor `P3-9` covered — see [`findings/api.md`](findings/api.md) N4 |
 | **18** | `P2-15` formatting | ❌ 11 of 20 core files have hard tabs; clang-format 18.1.3 **is** installed. `P2-17` touched 75 files and deliberately did **not** reformat any of them, so the whitespace-only commit is still whitespace-only |
 | **39** | `P2-17` `toffy::log`, off Boost.Log | ◐ **steps A and C landed** — the abstraction, the 658 call sites, the 5 installed headers, both Boost-typed signatures, and the backend is now log4cplus: `libtoffy.so` has no `libboost_log` in `NEEDED` and `test_logging_abstraction` passes unchanged against the new backend. ✅ **complete** — step D landed (`boxes@b31d899`): `boxes`' 378 `BOOST_LOG_TRIVIAL` sites → 0 and `readelf -d` over the whole target image finds **0** `libboost_log` anywhere. Boost.Log is out of the stack. Two things it exposed: `boxes` used `boost::thread` without declaring it (carried by `Boost::log`), and toffy's log4cplus appenders had **no layout**, so converting 378 sites would have stripped the timestamp and thread id from a machine's whole log — fixed first, in `4f1c06c`. Counters 42, 43. See [`plan/logging.md`](plan/logging.md) |
 | **40** | The `P2-4` fence could not fail on a machine without OpenCV `tracking` | ✅ **landed** — found by building on the target (`toreo-vxl`, OpenCV 4.1, no contrib `tracking`): `ThreeChainNamesAreUnreachableToday` passed there with one of its three classes absent from the library entirely. It now asserts only where the class is compiled, names each skip, and fails at zero assertions. Also found: **`cvTracker` was never in the fence** despite being a registered, name-creatable type throughout (measured `hasCreator=1 creatable=1`), and `OPENCV_TRACKING` was directory-scoped — the same defect that killed the chain's guard, still live in the flag's scope, now hoisted to the top level. Counters 37, 38; [`findings/build.md`](findings/build.md) |
@@ -88,8 +88,10 @@ The second-pass work (`P3-1` … `P3-12`) is listed in
 be merged without — `P3-6` in full, `P3-2`/`P3-12` (PR 28) and `P3-5` (PR 35). What is left
 there is the `P3-8` note. `P3-10` has since landed — it was mechanical and provably
 ABI-neutral (`readelf --dyn-syms` byte-identical at 2499 symbols), so it needed no tag of
-its own, only a mention in the next one. `P2-12` is now the only remaining API-surface
-change.
+its own, only a mention in the next one. `P2-12` has landed too, and it is the one that
+mattered: the only change in the programme that `abi_surface.sh` could not have guarded, because
+deleting a virtual moves a vtable and the tool filters weak symbols out
+([`findings/api.md`](findings/api.md) N4). Counters 44 and 45.
 
 The controller extraction (`X1` … `X6`,
 [`plan/controller-extraction.md`](plan/controller-extraction.md)) is the other half of PR 28:

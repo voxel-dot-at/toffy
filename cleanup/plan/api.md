@@ -17,7 +17,7 @@
   break — decide whether the accessor maps should be `mutable` + guarded, or whether the
   method should be non-`const`.
 
-### 12 — Resolve the `filter()` const/non-const overload trap
+### 12 — Resolve the `filter()` const/non-const overload trap — **done**
 
 `Filter` declares two virtuals (`filter.hpp`):
 
@@ -46,6 +46,18 @@ sites instead of silently dropping them out of the pipeline. `P3-9` added
 shape — including a negative control proving a filter that overrides nothing is detected as
 not running. Expect this to be a compile-error-driven change with a test that has to be
 updated deliberately, not a silent one; run the `DOD 2.4` gate, not just a build.
+
+**Landed, in the two commits `N2` asked for.** Step 1 (`661424d`) dropped `const` from the four
+classes; step 2 deleted the base's `const` overload. Both predictions came true — the only
+fallout was `tests/test_filter_overloads.cpp`, which failed exactly where designed, and the
+change was compile-error-driven rather than silent.
+
+**The plan's own gate was not enough, though.** `abi_surface.sh` reported 4 changes (step 1's
+qualifier renames) and said nothing about the thing that actually mattered: deleting the base's
+`const` virtual shifts every later virtual down a slot, and the tool filters weak symbols out, so
+it cannot see a vtable at all. Honouring `X6`'s plug-in-ABI promise needed a reserved slot in
+place of the deleted virtual, which this plan did not anticipate. See
+[`../findings/api.md`](../findings/api.md) N4 and `DOD 2.4` rule 3. Counters 44, 45.
 
 ### 13 — Unify run state and rename the remaining typos
 

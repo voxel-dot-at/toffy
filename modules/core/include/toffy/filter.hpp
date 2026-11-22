@@ -233,27 +233,61 @@ class Filter
      *
      * @return true if processing worked, false on error
      */
-    virtual bool filter(const Frame& /*in*/, Frame& /*out*/) const
+    /**
+     * There is exactly one `filter()` virtual, and it is not `const`.
+     *
+     * `Filter` used to declare two: a `const` one returning false, and a
+     * non-`const` one whose default body delegated to it. `FilterBank` and
+     * `ParallelFilter` overrode only the non-`const` one, so anything holding a
+     * `const Filter&` -- a const-correct caller, a shared const handle -- got a
+     * silent `false`: no log line, no error state, and the filter still sitting
+     * in the pipeline counted by `size()`. Two virtuals where the pipeline calls
+     * one is not an interface, it is a trap with two entrances.
+     *
+     * Filters that genuinely do not modify state can still be `const` internally;
+     * the interface does not have to express it. `P2-12` step 1 moved the four
+     * classes that overrode only the `const` form (`OffSet`, `Transform`,
+     * `Merge`, `CloudViewOpenCv`) onto this one first, so deleting the other is a
+     * compile error anywhere it is still referenced rather than a filter that
+     * quietly stops running.
+     */
+    /** Reserved. Formerly `filter(const Frame&, Frame&) const`.
+     *
+     *  Do not call it. Do not override it. Do not delete it.
+     *
+     *  `P2-12` removed the `const` `filter()` overload, and deleting a virtual
+     *  moves every virtual declared after it down one vtable slot. Measured, on
+     *  the Itanium ABI, via pointer-to-member offsets:
+     *      filter      slot 2 -> 1
+     *      loadConfig  slot 3 -> 2
+     *      getState    slot 7 -> 6
+     *  `tools/abi_surface.sh` cannot see that: it filters to symbol types T/D/B,
+     *  and a virtual with an inline body is emitted WEAK, so the whole class of
+     *  change is outside what it looks at.
+     *
+     *  Why that matters here rather than being academic: `X6` records the filter
+     *  plug-in ABI as deliberately NOT broken -- `CreateFilterFn`,
+     *  `init(FilterFactory*)` and `registerCreator()` keep their symbols, so a
+     *  plug-in `.so` built against an older toffy still loads and still
+     *  registers. A plug-in is also a `Filter` subclass, so if this slot moved it
+     *  would load, register, and then dispatch `loadConfig` into `filter` with no
+     *  link error and no diagnostic. The half that was promised would hold and the
+     *  half that broke would be silent, which is the worst available outcome.
+     *
+     *  Keeping the slot under a name that cannot be confused with `filter()` is
+     *  what makes both true: the overload trap is gone (there is exactly one
+     *  `filter()`), and the layout a prebuilt plug-in was compiled against is
+     *  unchanged. This can be deleted at the next major, when the layout is
+     *  allowed to move anyway.
+     */
+    virtual bool reservedConstFilterSlot_(const Frame& /*in*/, Frame& /*out*/) const
     {
         return false;
     }
 
-    /**
-     * @brief perform a filter operation on in, sending result to out
-     * both Mat's may refer to the same memory region.
-     *
-     * @param in
-     * @param out
-     * @return true if processing worked, false on error
-     *
-     * The default behavior of this non-const variant is to call
-     * the const filter method defined above.
-     *
-     */
-    virtual bool filter(const Frame& in, Frame& out)
+    virtual bool filter(const Frame& /*in*/, Frame& /*out*/)
     {
-        const Filter& constF = *this;
-        return constF.filter(in, out);
+        return false;
     }
 
     /**

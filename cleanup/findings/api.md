@@ -100,6 +100,57 @@ the exact failure mode `P2-12` exists to eliminate.
 Add to `DOD 2.4`: *"a filter that overrides only one `filter()` overload is exercised by a
 test that asserts its body ran"* — one test, and it is the only thing that distinguishes
 "compiles" from "works" here.
+### N4 — deleting a virtual from `Filter` shifts its vtable, and no gate here can see it
+
+Found while landing `P2-12`, not predicted by it. `N2` above is about filters silently
+stopping; this is about the plug-in ABI, and it survived every check the repository has.
+
+`P2-12` step 2 deletes `Filter::filter(const Frame&, Frame&) const`. Deleting a virtual moves
+every virtual declared after it down one vtable slot. Measured directly, via pointer-to-member
+offsets (Itanium ABI encodes `8 * index + 1`):
+
+| virtual | slot before | slot after |
+|---|---|---|
+| `filter` | 2 | 1 |
+| `loadConfig` | 3 | 2 |
+| `getState` | 7 | 6 |
+
+`tools/abi_surface.sh` reported nothing about this. It is blind twice over: it filters to symbol
+types `T`/`D`/`B`, and a virtual with an inline body is emitted `WEAK`, so the symbol is not in
+the baseline to begin with. The 4-symbol diff it *did* report was step 1's four qualifier
+renames — real, but not this.
+
+Why it is not academic: `X6` records the filter plug-in ABI as deliberately **not** broken —
+`CreateFilterFn`, `init(FilterFactory*)` and `registerCreator()` keep their symbols, so a `.so`
+built against an older toffy still loads and still registers. A filter plug-in is also a `Filter`
+subclass, so with a shifted vtable it would load, register, and then dispatch `loadConfig` into
+`filter`. No link error, no diagnostic, wrong function. The half that was promised holds and the
+half that broke is silent — the worst available outcome, and precisely the shape `DOD 2.4` was
+written to prevent.
+
+**What was done about it.** `filter.hpp` keeps the deleted slot under a name that cannot be
+confused with `filter()` — `reservedConstFilterSlot_(const Frame&, Frame&) const` — placed where
+the old virtual was. There is exactly one `filter()`, so the overload trap is gone; the layout a
+prebuilt plug-in was compiled against is unchanged, verified by re-running the probe:
+
+| virtual | step 1 (pre-deletion) | naive deletion | with the reserved slot |
+|---|---|---|---|
+| `filter` | 2 | 1 | **2** |
+| `loadConfig` | 3 | 2 | **3** |
+| `getState` | 7 | 6 | **7** |
+
+`tests/test_filter_overloads.cpp`'s `FilterVtableLayoutIsPinned` now asserts 2/3/7, so the next
+person who deletes that slot — or inserts a virtual in the wrong place — gets a failing test
+rather than a release. Observed failing: inserting a virtual before `loadConfig` moves them to
+4 and 8.
+
+**The general rule, added to `DOD 2.4`:** touching the set or order of `Filter`'s virtuals is a
+major-version change, and a clean `abi_surface.sh` is not evidence that it did not happen.
+
+**Cost, stated:** one dead virtual in `Filter`, permanently, until a major bump where the layout
+is allowed to move anyway. That is cheap against a silent mis-dispatch in the field, but it is a
+cost and it should be deleted deliberately at the next major rather than inherited by accident.
+
 
 ### N3 — ~~core can be warning-free today, without waiting for `P2-12`~~ **DONE (`P3-4`)**
 

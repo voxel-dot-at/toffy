@@ -85,6 +85,25 @@ races, so `P2-7`'s TSan requirement stands on its own.
      inline/template symbols appear and vanish with the inliner and will bury the real diff;
   2. any change to a **return type** is an ABI change even when `readelf` says it is not, and
      is therefore a major-version change. That is what makes `v2.0.0` a major.
+  3. **Deleting a virtual function changes the vtable, and no gate here can see it.** Every
+     virtual declared after the deleted one moves down a slot. `tools/abi_surface.sh` is blind to
+     it twice over: it filters to symbol types `T`/`D`/`B`, and a virtual with an inline body is
+     emitted `WEAK`, so the symbol is not in the baseline at all. `P2-12` measured the shift
+     directly, via pointer-to-member offsets (Itanium ABI: `8 * index + 1`):
+
+     | virtual | before | after deleting `filter(...) const` |
+     |---|---|---|
+     | `filter` | 2 | 1 |
+     | `loadConfig` | 3 | 2 |
+     | `getState` | 7 | 6 |
+
+     A plug-in `.so` built against an older toffy still loads and still registers — `X6`'s promise
+     holds — and then dispatches `loadConfig` into `filter`, because a filter plug-in is a `Filter`
+     subclass and its vtable was compiled against the old layout. The promised half works and the
+     broken half is silent, which is the worst outcome available. So: **touching the set or order
+     of `Filter`'s virtuals is a major-version change**, and
+     `tests/test_filter_overloads.cpp`'s `FilterVtableLayoutIsPinned` is what catches it. Verified
+     to fail by inserting a virtual before `loadConfig` (slots become 4 and 8).
 - **A new version tag is pushed.** This is not ceremony: the library version is
   derived from `git_describe` (`CMakeLists.txt`, the version block; `SOVERSION` comes
   from it via `set_property(TARGET toffy PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})`,
