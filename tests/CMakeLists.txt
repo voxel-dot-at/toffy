@@ -118,3 +118,10 @@ add_test(NAME filter_registry COMMAND test_filter_registry)
 add_executable(test_layering test_layering.cpp)
 target_link_libraries(test_layering toffy GTest::gtest GTest::gtest_main)
 add_test(NAME layering COMMAND test_layering)
+
+# P2-9: the bta* slot-name constants used to be defined in an installed header, so
+# each TU got its own copy. Two sources on purpose -- the single-instance property
+# is only observable across translation units. See tests/test_btaframe_constants.cpp.
+add_executable(test_btaframe_constants test_btaframe_constants.cpp test_btaframe_constants_addr.cpp)
+target_link_libraries(test_btaframe_constants toffy GTest::gtest GTest::gtest_main)
+add_test(NAME btaframe_constants COMMAND test_btaframe_constants)

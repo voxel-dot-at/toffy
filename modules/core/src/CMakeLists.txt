@@ -1,4 +1,5 @@
 add_library(toffy_core OBJECT 
+    btaFrame.cpp
     controller.cpp
     filter.cpp
     filterbank.cpp
