@@ -55,7 +55,7 @@ int Transform::loadConfig(const boost::property_tree::ptree& pt) {
 }
 */
 
-bool Transform::filter(const Frame &in, Frame& out) const {
+bool Transform::filter(const Frame &in, Frame& out) {
 	toffy::log::debug() << __FUNCTION__ << " " << id();
 	pcl::RangeImagePlanar::Ptr planar;
 	try {

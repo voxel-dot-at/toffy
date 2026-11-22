@@ -49,7 +49,7 @@ class Transform : public Filter
     // P3-3: const-only override, reached through the base's non-const filter().
     // The override keyword is load-bearing: P2-12 must fail to compile here
     // rather than leave this filter silently out of the pipeline.
-    virtual bool filter(const Frame& in, Frame& out) const override;
+    virtual bool filter(const Frame& in, Frame& out) override;
 
     virtual boost::property_tree::ptree getConfig() const;
     void updateConfig(const boost::property_tree::ptree& pt);

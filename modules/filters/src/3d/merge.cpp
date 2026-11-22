@@ -156,7 +156,7 @@ boost::property_tree::ptree Merge::getConfig() const
 	return 1;
 }*/
 
-bool Merge::filter(const Frame &in, Frame& out) const {
+bool Merge::filter(const Frame &in, Frame& out) {
 	toffy::log::debug() << __FUNCTION__ << " " << id();
 
 	pcl::RangeImagePlanar::Ptr planar;

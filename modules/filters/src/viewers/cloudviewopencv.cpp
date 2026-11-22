@@ -64,7 +64,7 @@ boost::property_tree::ptree CloudViewOpenCv::getConfig() const {
 }
 
 
-bool CloudViewOpenCv::filter(const Frame &in, Frame& out) const {
+bool CloudViewOpenCv::filter(const Frame &in, Frame& out) {
     toffy::log::debug() << __FUNCTION__ << " " << id();
 
 	matPtr img3d;

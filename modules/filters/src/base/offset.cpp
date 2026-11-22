@@ -87,7 +87,7 @@ void OffSet::updateConfig(const boost::property_tree::ptree &pt) {
   }
 }
 
-bool OffSet::filter(const Frame &in, Frame &out) const {
+bool OffSet::filter(const Frame &in, Frame &out) {
   LOG(debug) << __FUNCTION__;
   using namespace boost::posix_time;
 
