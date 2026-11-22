@@ -1,6 +1,6 @@
 # Public API: `Frame` accessors, the `filter()` overload, run state, `Event`
 
-### 11 — Fix the `Frame` accessor API
+### 11 — Fix the `Frame` accessor API — **done**
 
 - **The `SlotDataType` tag is decorative.** `addData(long)` (`frame.hpp:140`) stores a
   `long` under the `Int` tag, but `getInt()` (`:314`) does `any_cast<int>`, which checks
@@ -16,6 +16,41 @@
   from a `const` method. When `Frame` gains any concurrency this is the first thing to
   break — decide whether the accessor maps should be `mutable` + guarded, or whether the
   method should be non-`const`.
+
+**Landed.** Three of the four items were real; the fourth was not, and the two claims
+that turned out to be wrong are worth recording because both were confident.
+
+- **`getSertMatPtr` is not `const` in the current tree.** The item says it "inserts into
+  `data`/`meta` from a `const` method"; the declaration is
+  `inline matPtr getSertMatPtr(const std::string&, cv::Size, int)` with no trailing
+  `const`, and no version of the concurrency question applies. Nothing was done for it.
+  A plan item that describes a defect the code does not have is still a defect — in the
+  plan — and the fix is to say so rather than to quietly skip it.
+- **"nothing in the repo calls it, so a deprecated alias is cheap" was true of toffy and
+  false of the stack.** `becom-knapp-wurthbox` calls it twice
+  (`src/toffy/colorbox.cpp`, `src/toffy/colorblob.cpp`). So this rename took a
+  `[[deprecated]]` alias where `stedBackward` → `stepBackward` deliberately did not.
+  That is a reversal of the recorded precedent, and the reason is evidence rather than
+  taste: nothing outside toffy called `stedBackward`, so a bare rename broke nobody;
+  this one had a live caller, so a bare rename would make the next toffy tag fail
+  someone else's build over a spelling mistake of ours. boxes has since moved to the
+  new name (`boxes@8d49cc2`), and the alias can be deleted at the next major.
+
+The tag fix is the substantive one. `addData(long)` stored a `long` in the `boost::any`
+while labelling it `Int`; every getter does `any_cast<T>` on the **real** type, so
+`addData(k, 42L)` then `getInt(k)` threw `bad_any_cast` while `getDataType()` answered
+`Int`. The tag was decorative. `Long`/`ULong` were added **at the end** of `SlotDataType`
+— renumbering existing enumerators would silently re-label data written by an older
+build, the same reason `CloudXyz`/`CloudXyzRgb` are not behind `#ifdef PCL`.
+
+Real shape of the bug, in-tree: `modules/filters/src/tracking/tracker.cpp:265` does
+`out.addData(_out_count, detObjs.size())`. `size()` is `size_t` = `unsigned long` on LP64,
+so it went through the `unsigned long` overload and was tagged `Uint`. Nothing in toffy or
+either consumer reads that slot back today, which is the only reason this is a docs
+finding rather than a crash report.
+
+`abi_surface.sh` reports no change at 554 symbols: the new getters and the alias are all
+inline in the header, so nothing new is exported. Counter 46.
 
 ### 12 — Resolve the `filter()` const/non-const overload trap — **done**
 

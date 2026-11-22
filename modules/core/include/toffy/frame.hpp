@@ -115,7 +115,14 @@ class Frame
         Mat,
         String,
         CloudXyz,
-        CloudXyzRgb
+        CloudXyzRgb,
+        // Added by P2-11, and added AT THE END on purpose. The tag values are
+        // observable through getDataType() and through the slot descriptions,
+        // so renumbering existing enumerators would silently re-label data written
+        // by an older build -- the same reason CloudXyz/CloudXyzRgb are not
+        // behind #ifdef PCL (see the note near the top of this header).
+        Long,
+        ULong
     } SlotDataType;
 
     typedef struct
@@ -155,11 +162,16 @@ class Frame
 
     void addData(std::string key, int v) { addData(key, v, Int); }
 
-    void addData(std::string key, long v) { addData(key, v, Int); }
+    // P2-11: these two used to tag themselves `Int` / `Uint`. The tag is only a
+    // label -- the boost::any keeps the real type -- and every getter does
+    // any_cast<T> on that real type, so `addData(k, 42L)` followed by `getInt(k)`
+    // threw bad_any_cast while getDataType() cheerfully answered `Int`. The tag
+    // now describes what is actually stored; see getLong() / getULong().
+    void addData(std::string key, long v) { addData(key, v, Long); }
 
     void addData(std::string key, unsigned int v) { addData(key, v, Uint); }
 
-    void addData(std::string key, unsigned long v) { addData(key, v, Uint); }
+    void addData(std::string key, unsigned long v) { addData(key, v, ULong); }
 
     void addData(std::string key, float v) { addData(key, v, Float); }
 
@@ -223,6 +235,29 @@ class Frame
     inline int getInt(const std::string& key) const;
 
     /**
+     * @brief Short getter for `long` and `size_t` values in frame
+     *
+     *  Pairs with `addData(std::string, long)`. `getInt()` will NOT read these:
+     *  it does `any_cast<int>`, which checks the real stored type, and a `long`
+     *  is not an `int` on LP64. That is deliberate -- the alternative is a getter
+     *  that quietly narrows, or one that guesses.
+     *
+     *  This is the getter `addData(key, someVector.size())` needs, since `size()`
+     *  returns `size_t`, which is `unsigned long` here.
+     *
+     * @param key
+     * @return
+     */
+    inline long getLong(const std::string& key) const;
+
+    /**
+     * @brief Short getter for `unsigned long` values in frame
+     * @param key
+     * @return
+     */
+    inline unsigned long getULong(const std::string& key) const;
+
+    /**
      * @brief Shorted getter for doubles in frame
      * @param key
      * @return
@@ -274,8 +309,10 @@ class Frame
     inline double optDouble(const std::string& key, double dfault) const;
     inline float optFloat(const std::string& key, float dfault) const;
     inline matPtr optMatPtr(const std::string& key, matPtr dfault) const;
+    // P2-11: was `std::string& dfault`, a non-const reference -- so no literal
+    // and no `const std::string` could be passed, unlike every sibling opt*.
     inline std::string optString(const std::string& key,
-                                 std::string& dfault) const;
+                                 const std::string& dfault) const;
 
     // insGet: get a value, if key key does not exist insert it
     // inline bool optBool(const std::string& key, bool dfault) const;
@@ -297,8 +334,25 @@ class Frame
     inline std::string setGetString(const std::string& key, std::string& dfault);
 */
     /** get matPtr, if not set, create and insert a new one: */
-    inline matPtr getSertMatPtr(const std::string& key, cv::Size size,
-                                int type);
+    inline matPtr getOrInsertMatPtr(const std::string& key, cv::Size size,
+                                    int type);
+
+    /**
+     * @deprecated Misspelling of getOrInsertMatPtr(), renamed in P2-11.
+     *
+     *  A deprecated alias rather than a clean rename, which is what `stedBackward`
+     *  got. The difference is evidence, not taste: nothing outside toffy called
+     *  `stedBackward`, whereas `becom-knapp-wurthbox` calls this one twice
+     *  (`src/toffy/colorbox.cpp`, `src/toffy/colorblob.cpp`). An alias costs one
+     *  inline function and lets that consumer move on its own schedule; a bare
+     *  rename would make the next toffy tag fail someone else's build for a
+     *  spelling mistake of ours.
+     */
+    [[deprecated("use getOrInsertMatPtr() -- 'Sert' was a typo")]]
+    inline matPtr getSertMatPtr(const std::string& key, cv::Size size, int type)
+    {
+        return getOrInsertMatPtr(key, size, type);
+    }
 
    private:
     /**
@@ -332,6 +386,18 @@ inline bool Frame::getBool(const std::string& key) const
 inline int Frame::getInt(const std::string& key) const
 {
     int u = boost::any_cast<int>(getData(key));
+    return u;
+}
+
+inline long Frame::getLong(const std::string& key) const
+{
+    long u = boost::any_cast<long>(getData(key));
+    return u;
+}
+
+inline unsigned long Frame::getULong(const std::string& key) const
+{
+    unsigned long u = boost::any_cast<unsigned long>(getData(key));
     return u;
 }
 
@@ -402,13 +468,13 @@ inline matPtr Frame::optMatPtr(const std::string& key, matPtr dfault) const
 };
 
 inline std::string Frame::optString(const std::string& key,
-                                    std::string& dfault) const
+                                    const std::string& dfault) const
 {
     return hasKey(key) ? getString(key) : dfault;
 };
 
-inline matPtr Frame::getSertMatPtr(const std::string& key, cv::Size size,
-                                   int type)
+inline matPtr Frame::getOrInsertMatPtr(const std::string& key, cv::Size size,
+                                       int type)
 {
     if (!hasKey(key)) {
         matPtr mp(new cv::Mat(size, type));
