@@ -272,7 +272,7 @@ capable of failing — the gate only after I caught my first check of it being v
 `sed` anchored on a line `controller.cpp` does not contain, so nothing was inserted and the
 gate correctly stayed quiet). Counters 47–50.
 
-### 10 — Consolidate the three plugin loaders
+### 10 — Consolidate the three plugin loaders — **done**
 
 The same feature is implemented three times, with three different failure modes:
 
@@ -290,6 +290,46 @@ points also each trigger their own loader, so the same node can be processed twi
 
 `FilterBank::loadPlugins` additionally uses a different node name (`plugins`, not
 `toffy.plugins`), so it never finds the node the other two expect.
+
+**Landed in `9fcfd40`.** One implementation in `toffy::commons::plugins` —
+`loadOne()` for the `dlopen`/`dlsym`/`init` sequence, `loadFromConfig()` for walking the
+node, `loadedHandles()` as the single owner — with all three entry points delegating.
+Node found with `get_child_optional`, so an absent node is "nothing to do". `Player`'s
+`try`/`catch` around the whole loop went away with it, which also stops it swallowing
+genuine failures from a node that *was* present.
+
+Three things the plan did not say, all measured:
+
+- **The worst defect was not in the table.** `FilterBank::loadPlugins` kept the `dlopen`
+  handle in a local that was never stored anywhere. Every plug-in it managed to open was
+  leaked with no record at all — unclosable even in principle. Counter 52.
+- **`FilterBank::loadPlugins` is `protected`, not public, and nothing calls it.** The only
+  `FilterBank` subclasses in the tree are `Cond` and `ParallelFilter`, neither of which
+  calls it, and no consumer subclasses `FilterBank` at all. Consolidating it was not the
+  API break the plan assumed; it is kept anyway, because a downstream subclass could.
+- **The throwing path was unreachable in practice.** `Controller::loadPlugins` is called
+  only from `Controller::loadConfigFile()` and `Controller::loadConfig()`, and neither is
+  called by toffy or either consumer. `Player::loadConfig()` is the live path and is the
+  one that catches — which is exactly why production works and the other two never showed
+  up as failures.
+
+**Why the handles are still never `dlclose()`d.** The plan's last line — "keep `dlopen`
+handles in a single owner so they can actually be closed" — assumed closability was the
+goal and ownership the blocker. Ownership *was* the blocker, and fixing it makes the real
+blocker visible: a plug-in's `init()` registers creators into the process-wide
+`FilterFactory`, and those creators are function pointers into the `.so`. Unloading it
+while the registry still holds them makes the next `createFilter()` jump into unmapped
+memory. Closing safely needs `FilterFactory` to give creators back first, which it cannot
+do. So the handles are now a documented process-lifetime registry rather than a TODO. The
+old comment asked for `_loads` to stop being an untyped `std::vector<void*>` as if that
+were the obstacle; it was not.
+
+Also fixed on the way: the `dlsym`-failure path now `dlclose()`es the library it
+successfully opened. None of the three copies did that.
+
+There is now a **real plug-in in the tree** (`tests/plugin_fixture.cpp`, built as a
+`MODULE`). Until this, the plug-in path was only ever exercised with a library that does
+not exist — which tests the failure branch and nothing else. Counters 51–53.
 
 Plan: one `loadPlugins(ptree&)` in one place, taking the node name as a parameter or
 locating it with `get_child_optional`. Delete the other two. Keep `dlopen` handles in a

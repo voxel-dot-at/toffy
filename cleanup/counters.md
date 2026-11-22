@@ -100,6 +100,9 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 48 | `const std::string` objects *defined* in an installed header (internal linkage → one copy, one initialiser and one address per including TU) | `modules/core/include/toffy/btaFrame.hpp` | **0** (was 5: `btaMf`, `btaIt`, `btaFc`, `btaDepth`, `btaAmpl`) | 0 | ✅ `btaframe_constants` cross-TU test |
 | 49 | `FilterBank` string lookups that query the process-wide `FilterFactory` registry instead of `_pipe` | `modules/core/src/filterbank.cpp` | **0** (was 2: both `getFilter(const std::string&)` overloads) | 0 | ✅ 3 red-first tests |
 | 50 | public data members on `Controller` | `modules/core/include/toffy/controller.hpp` | **0** (was 2: `baseFilterBank`, `f`) | 0 | ✅ source-level, checked by hand |
+| 51 | implementations of the plug-in loader (walk a config node, `dlopen`, run `init()`) | `player.cpp`, `controller.cpp`, `filterbank.cpp` | **1** (was 3; all now delegate to `toffy::commons::plugins`) | 1 | ✅ `plugin_loading` |
+| 52 | `dlopen` handles discarded by a loader (opened, never recorded, so unclosable even in principle) | `modules/core/src/filterbank.cpp` | **0** (was 1: `FilterBank::loadPlugins` kept it in a local) | 0 | ✅ `plugin_loading` handle tests |
+| 53 | loaders that throw `ptree_bad_path` on a config with no `<plugins>` node | as above | **0** (was 2) — and `wbox.xml`, boxes' production config, has none | 0 | ✅ red-first |
 
 ## The commands
 

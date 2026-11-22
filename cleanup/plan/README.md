@@ -63,7 +63,7 @@ in [`../order.md`](../order.md), the gates in [`../dod/`](../dod/).
 | `P2-7` | make the threading honest | [`structure.md`](structure.md) | ✅ landed as PR 37 (`b9e3032`) — `std::thread`/`mutex`/`condition_variable`/`atomic`, `interprocess_semaphore` gone, and `<boost/thread.hpp>` no longer reaches a consumer |
 | `P2-8` | logging policy out of `Filter` | [`structure.md`](structure.md) | ✅ |
 | ✅ `P2-9` | module layering | **0** core includes from a module above it (allowlisted BTA hook excepted); 0 header-defined `const std::string`; 0 registry-backed `FilterBank` lookups; 0 public `Controller` data members | ✅ |
-| `P2-10` | consolidate the three plugin loaders | [`structure.md`](structure.md) | ❌ |
+| ✅ `P2-10` | consolidate the three plugin loaders | **1** loader (was 3), 0 discarded `dlopen` handles, 0 loaders throwing on a missing `<plugins>` node | ✅ |
 | ✅ `P2-11` | `Frame` accessor API | **0** defects left (was 3 real + 1 already-not-true); `SlotDataType` gains `Long`/`ULong` at the end; `abi_surface.sh` unchanged at 554 | ✅ |
 | ✅ `P2-12` | the `filter()` const/non-const overload trap | **1** virtual `filter()` (was 2); `Filter`'s vtable slots pinned at 2/3/7 by a test; `abi_surface.sh` re-blessed at 554 symbols with 4 qualifier renames | ✅ |
 | `P2-13` | unify run state, rename the typos | [`api.md`](api.md) | ◐ one of the three renames landed (`stedBackward` → `stepBackward`, `b397f44`); `CERROR`, `getSertMatPtr` and the state unification are open |
