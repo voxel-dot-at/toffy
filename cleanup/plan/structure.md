@@ -210,7 +210,7 @@ of this change silently inverted by collapsing the two `get<int>()` calls into o
 expression. The headline test also asserts a warning *is* captured, so it cannot pass
 vacuously on a broken sink. 8/8 `ctest` after the change.
 
-### 9 — Fix the module layering
+### 9 — Fix the module layering — **done**
 
 - `controller.cpp:30` includes `<toffy/viewers/imageview.hpp>` — **core depends on the
   viewers module**, purely to reach `ImageView::id_name` at `:202`. Core also links viewers
@@ -227,6 +227,50 @@ vacuously on a broken sink. 8/8 `ctest` after the change.
 - `Controller` exposes `baseFilterBank` and `f` as **public data members**, and `Player`
   both wraps `Controller` and hands it out via `getController()` — so the facade protects
   nothing. Make them private with accessors.
+
+**Landed in four commits** (`7b044f4`, `359d103`, `95b4fff`, and the `Controller`
+encapsulation commit). Each item is its own commit because each is a separate behaviour
+question; item 3 in particular would have been two behaviour changes in one commit if the
+lookup key had been changed along with the scope.
+
+Two of this item's claims were wrong, continuing a run: `P2-11` had two, this has two.
+
+- **"Core also links viewers as a result" — it does not.** `modules/core` and
+  `toffy_viewers` are both `OBJECT` libraries whose objects are merged into a single
+  `libtoffy` (`CMakeLists.txt:599` and `:611`). There is no link step between them. The
+  dependency was compile-time only: core's TU needed viewers' header on the include path.
+  Invisible in the build graph, no less real, but not a link dependency and not fixable by
+  anything that touches linking.
+- **`getSertMatPtr`-style "belongs in `modules/bta/`" for `btaFrame.hpp` is not doable as
+  written.** The three filters that include it (`blobs`, `blobsDetector`, `simpleBlobs`)
+  are built unconditionally, so moving the header into `modules/bta/` would make them
+  depend on bta and break `-DWITHOUT_BTA=ON`. The real defect there — five `const
+  std::string` objects *defined* in an installed header, hence one copy, one dynamic
+  initialiser and one address per including TU — was fixed in place instead, with
+  `extern` + one `.cpp`. Placement is left as a finding.
+
+Notable consequences, both measured:
+
+- The five `bta*` constants are now **exported ABI** (type `B`) where before each TU had a
+  private copy and nothing was exported. `abi_surface.sh` reports exactly +5, no removals;
+  baseline re-blessed from a verified BTA-off build. They are frozen from here.
+- `FilterBank::getFilter(name)` keeps its `id()` key. `findPos()`/`remove()` in the same
+  class match on `name()`. That split predates this work and is recorded as **suggestion
+  S5** in `findings/api.md` with a route to fixing it; fixing scope and key together would
+  have been two behaviour changes in one commit.
+- Making `Controller`'s members private is a **source** change and **not an ABI** change —
+  the layout is identical — which is why it can land inside major 2 under the rule the
+  `v2.1.0` tag set. Measured first: neither member is referenced by either consumer; the
+  only external users were `Player` (which got `baseBank()` / `getFrame()`) and toffy's own
+  tests. A `const Frame& getFrame() const` overload was needed because `Player::hasKey()`
+  is const and holds a const `Controller`.
+
+Gates added: a hygiene step stops `modules/core` including anything from a module above it
+(allowlisting only the `HAS_BTA` hook, which `P2-10` owns), and `tests/test_layering.cpp`
+pins core's copy of the HighGUI-pump type name against `ImageView::id_name`. Both verified
+capable of failing — the gate only after I caught my first check of it being vacuous (a
+`sed` anchored on a line `controller.cpp` does not contain, so nothing was inserted and the
+gate correctly stayed quiet). Counters 47–50.
 
 ### 10 — Consolidate the three plugin loaders
 

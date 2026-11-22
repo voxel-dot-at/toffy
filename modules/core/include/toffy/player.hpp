@@ -129,7 +129,7 @@ public:
      * with P2-5 -- Controller::baseFilterBank is a FilterPtr now -- and is the
      * only change a caller of this function has to make.
      */
-    FilterBank* filterBank() {return _controller.baseFilterBank.get();}
+    FilterBank* filterBank() {return _controller.baseBank().get();}
 
     Controller * getController() {return &_controller;}
 

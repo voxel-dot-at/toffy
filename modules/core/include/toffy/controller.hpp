@@ -85,24 +85,6 @@ public:
         CERROR = 0xff
     };
 
-    /**
-     * @brief keeps instance of the root FilterBank
-     *
-     * A shared_ptr since P2-5, because the Controller really is the owner: the
-     * root bank is created here and nobody else is ever handed it. ~Controller
-     * used to release it with FilterFactory::deleteFilter(baseFilterBank->id()),
-     * i.e. by asking a process-wide registry to `delete` an object this object
-     * owned -- which released it only while the registry still knew the name,
-     * and destroyed it while any other holder of the pointer was still using
-     * it. Letting the FilterPtr go is now the teardown, and the bank's own
-     * children go with it.
-     *
-     * `->`, `== nullptr` and `.get()` all behave as they did with the raw
-     * member. Code that assigned the member to a `FilterBank*` needs `.get()`.
-     */
-    std::shared_ptr<FilterBank> baseFilterBank;
-    Frame f; ///< base and unique object container
-
     Controller();
 
     virtual ~Controller();
@@ -181,9 +163,62 @@ public:
 
     const std::vector<void *>& getLoadedFilters() const {return _loads;}
 
+    /**
+     * @brief the base and unique object container this Controller runs on
+     *
+     * Was the public data member `f`. P2-9 made it private: `Player` both wraps
+     * `Controller` and handed it out via `getController()`, so the facade
+     * protected nothing and any caller could reseat the frame under it.
+     */
     Frame& getFrame() { return f; }
 
+    /**
+     * @brief read-only view of the frame, for const callers
+     *
+     * `Player::hasKey()` and friends are const and hold a const Controller, so
+     * they need this; without it P2-9 would have had to make them non-const, which
+     * is a wider change than the one being made.
+     */
+    const Frame& getFrame() const { return f; }
+
+    /**
+     * @brief the root FilterBank, or null before the pipeline is built
+     *
+     * Was the public data member `baseFilterBank` (P2-9). Prefer this accessor:
+     * assigning to the member was a way to reseat the root bank without the
+     * Controller's knowledge, and the ownership story below only holds if the
+     * Controller is the only thing that ever assigns it.
+     */
+    const std::shared_ptr<FilterBank>& baseBank() const { return baseFilterBank; }
+
 private:
+    // P2-9: these two used to be public data members. `Player` wraps `Controller`
+    // and also hands it out through `getController()`, so a public member meant the
+    // facade protected nothing: any caller could reseat the root bank or the frame
+    // underneath a running Controller. Making them private is a source change for
+    // external code and not an ABI change -- the object layout is identical, which
+    // is why this can land inside major 2. Measured before doing it: neither member
+    // is referenced by toffy-oatpp or becom-knapp-wurthbox; the only external users
+    // were Player (which has baseBank()/getFrame()) and toffy's own tests.
+
+    /**
+     * @brief keeps instance of the root FilterBank
+     *
+     * A shared_ptr since P2-5, because the Controller really is the owner: the
+     * root bank is created here and nobody else is ever handed it. ~Controller
+     * used to release it with FilterFactory::deleteFilter(baseFilterBank->id()),
+     * i.e. by asking a process-wide registry to `delete` an object this object
+     * owned -- which released it only while the registry still knew the name,
+     * and destroyed it while any other holder of the pointer was still using
+     * it. Letting the FilterPtr go is now the teardown, and the bank's own
+     * children go with it.
+     *
+     * `->`, `== nullptr` and `.get()` all behave as they did with the raw
+     * member. Code that assigned the member to a `FilterBank*` needs `.get()`.
+     */
+    std::shared_ptr<FilterBank> baseFilterBank;
+    Frame f; ///< base and unique object container
+
     /**
      * @brief thread to run the toffy filtering
      *

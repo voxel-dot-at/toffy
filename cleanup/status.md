@@ -59,9 +59,14 @@ public header surface proved compilable rather than assumed, one long-standing "
 then act" item actually decided, and the ownership model the rest of the structural work was
 blocked on.
 
-`P1`/`P2` items closed: **9 of 17** (`P1-1`, `P2-2`, `P2-4`, `P2-5`, `P2-7`, `P2-8`, `P2-14`,
-`P2-16`, `P2-17`) — 17 because `P2-17` is new, opened by the decision to move off Boost.Log
-rather than by the original `CLEANUP_PLAN.md`,
+`P1`/`P2` items closed: **11 of 17** (`P1-1`, `P2-2`, `P2-4`, `P2-5`, `P2-7`, `P2-8`, `P2-9`,
+`P2-11`, `P2-14`, `P2-16`, `P2-17`) — 17 because `P2-17` is new, opened by the decision to
+move off Boost.Log rather than by the original `CLEANUP_PLAN.md`. `P2-11` is counted here only
+now: it landed in `5226af2` and its own commit updated `plan/README.md` and `counters.md` but
+not this line, which is the kind of drift that happens when a count is duplicated instead of
+linked — counter 2 is the canonical number and this paragraph should point at it.
+`P2-9` closed with all four of its items in four commits, two of its claims found wrong in
+the process (see `plan/structure.md` §9).
 with `P2-3` core-only and `P2-13` one-third done (`stedBackward()` → `stepBackward()`,
 `b397f44`; the rest of the renames and the four duplicated run-method bodies are still open,
 with `P2-6`). `P2-16` closed when `P3-4` landed the `-Werror` half of it, `P2-2` when the
@@ -74,7 +79,7 @@ Windows branches were deleted rather than enabled.
 | ~~**10**~~ | ~~`P2-5` one owner per `Filter`~~ | ✅ **landed as PR 36** — the keystone, so 11, 12 and 13 are no longer blocked on it |
 | **11** | `P2-6` + `P2-13` run methods, state, typos | ◐ unblocked by `P2-5`; the first typo is landed (`stedBackward()` → `stepBackward()`, `b397f44` — renamed, not aliased, and `nm -D` shows exactly that pair). What is left is the other run-method renames, the unified state and the four duplicated bodies |
 | ~~**12**~~ | ~~`P2-7` threading~~ | ✅ **landed as PR 37** (`b9e3032`) — the atomic flag, the semaphore, the copy ctor and `delete lanes[i]` all went; see *Landed*. TSan was named as the gate on this one and it is the weakest part of its evidence: `b9e3032` landed on 2026-10-18, inside the window in which **every** CI job was red on the runner's toolchain (**P0-4**), so no TSan run of `P2-7` exists before 2026-10-29. What exists is the `ThreadSanitizer` job green on every push since, `a3d882f` included (run 43760237608, 2026-11-15) |
-| **13** | `P2-9` module layering | ❌ `imageview.hpp` still included by `controller.cpp`. `getFilter(name)` can now be reimplemented against `_pipe`, which is what `P2-5` was waiting on |
+| **13** | `P2-9` module layering | ✅ **all four items landed** — core no longer includes viewers (`7b044f4`, gate added); `btaFrame.hpp` constants get one definition (`359d103`, +5 exported ABI, re-blessed); `getFilter(name)` searches `_pipe` (`95b4fff`); `Controller`'s two public data members are private behind `baseBank()`/`getFrame()`. Two of the item's claims were wrong — "core also links viewers" (both are OBJECT libraries merged into one `libtoffy`, no link step) and "`btaFrame.hpp` belongs in `modules/bta/`" (its includers are unconditional, so the move would break `WITHOUT_BTA`). Counters 47–50 |
 | **14** | `P2-10` three plugin loaders | ❌ all three still exist |
 | **16** | `P2-11` + `P2-12` `Frame` API, `filter()` overload | `P2-12` ✅ done (step 1 `661424d`, step 2 with the reserved vtable slot); `P2-11` still open. `P2-12` turned up a vtable-shift problem neither `P3-3` nor `P3-9` covered — see [`findings/api.md`](findings/api.md) N4 |
 | **18** | `P2-15` formatting | ❌ 11 of 20 core files have hard tabs; clang-format 18.1.3 **is** installed. `P2-17` touched 75 files and deliberately did **not** reformat any of them, so the whitespace-only commit is still whitespace-only |

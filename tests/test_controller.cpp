@@ -44,7 +44,7 @@ TEST(ControllerLifecycle, ConstructAndDestroy)
 {
     ASSERT_NO_THROW({
         Controller c;
-        EXPECT_NE(nullptr, c.baseFilterBank);
+        EXPECT_NE(nullptr, c.baseBank());
     });
 }
 
@@ -66,7 +66,7 @@ TEST(ControllerLifecycle, SequentialControllersStillWork)
     ASSERT_NO_THROW({ Controller first; });
     ASSERT_NO_THROW({
         Controller second;
-        EXPECT_NE(nullptr, second.baseFilterBank);
+        EXPECT_NE(nullptr, second.baseBank());
     });
 }
 
@@ -94,7 +94,7 @@ TEST(ControllerLifecycle, DestroyingAControllerKeepsRegisteredCreators)
 
     {
         Controller c;
-        EXPECT_NE(nullptr, c.baseFilterBank);
+        EXPECT_NE(nullptr, c.baseBank());
     }
 
     EXPECT_TRUE(toffy::FilterFactory::hasCreator(name))
@@ -112,7 +112,7 @@ TEST(ControllerLifecycle, BaseBankHasNoParentBank)
 {
     Controller c;
 
-    ASSERT_NE(nullptr, c.baseFilterBank);
-    EXPECT_EQ(nullptr, c.baseFilterBank->bank())
+    ASSERT_NE(nullptr, c.baseBank());
+    EXPECT_EQ(nullptr, c.baseBank()->bank())
         << "if this is non-null, getBaseFilterbank() recurses forever (A10)";
 }

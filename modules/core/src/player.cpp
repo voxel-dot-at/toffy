@@ -62,24 +62,24 @@ int Player::loadConfig(const std::string &configFile) {
     }
 
     loadPlugins(pt);
-    return _controller.baseFilterBank->loadConfig(pt,configFile);
+    return _controller.baseBank()->loadConfig(pt,configFile);
 }
 
 bool Player::hasKey(const std::string& key) const
 {
-    return _controller.f.hasKey(key);
+    return _controller.getFrame().hasKey(key);
 }
 
 boost::any Player::getData(const std::string& key) {
-    return _controller.f.getData(key);
+    return _controller.getFrame().getData(key);
 }
 
 void Player::loadData(std::string key, boost::any data) {
-    _controller.f.addData(key,data);
+    _controller.getFrame().addData(key,data);
 }
 
 void Player::removeData(const std::string& key) {
-    _controller.f.removeData(key);
+    _controller.getFrame().removeData(key);
 }
 
 void Player::runOnce() {
