@@ -106,6 +106,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 54 | copies of the controller run-method thread lifecycle | `controller.cpp` | **1** (was 4: `forward`, `backward`, `stepForward`, `stepBackward` → one `run(state, bool)`) | 1 | ✅ 8 `ControllerRun` tests |
 | 55 | run methods with test coverage | `tests/test_controller.cpp` | **4 of 4** (was 0 of 4) | 4 | ✅ |
 | 56 | states that keep the run loop spinning when they should not | `Controller::isRunning()` | **0** (was 1: `CERROR = 0xff > IDLE` spun forever; unreachable — `CERROR` is never assigned) | 0 | ✅ red-first |
+| 57 | unsynchronised cross-thread accesses to `Controller::_state` | `modules/core/include/toffy/controller.hpp` | **0** (was a plain `state` raced between `stop()`/`run()` and `loopFilters()`; found by TSan only once the methods had tests) | 0 | ✅ TSan job |
 
 ## The commands
 

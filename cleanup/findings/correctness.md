@@ -300,3 +300,33 @@ consumer — it exists only as the enumerator. So the infinite-spin this fixes w
 unreachable, in the same way `P2-10`'s throwing loaders were unreachable. Both are
 worth fixing anyway: the enum value and the public methods are API, so the defect is
 one line of someone else's code away.
+
+## A27 — `Controller::_state` was a plain enum raced between two threads
+
+Found by CI's ThreadSanitizer job on `f623259` (`P2-6`), not by review.
+
+`state _state` was written by `stop()` and `run()` on the caller's thread and read
+every iteration by `loopFilters()` on the worker, with no lock anywhere between them.
+TSan reported the pair as soon as anything exercised it — and nothing had: the four
+run methods had **zero test coverage** until the `P2-6` tests were added.
+
+So the race predates everything in this session. It is the same lesson `P2-7`
+recorded about ctest being weak evidence for a race, arriving from the opposite
+direction: **adding coverage to untested code is how latent races get found**, and a
+structural cleanup that adds tests can legitimately turn a green CI red for a reason
+that is not its own fault.
+
+Not cosmetic: with a non-atomic flag the compiler may hoist the read out of the loop,
+so `stop()` is ignored and the worker never exits.
+
+Fixed by `std::atomic<state>` (`fbadd32`). Layout-compatible with the plain enum, so
+`abi_surface.sh` is unchanged — but it is a header change, so everything including
+`controller.hpp` recompiles.
+
+Verified the fence rather than assuming it: with `state _state` restored, TSan reports
+2 races; with `std::atomic`, 0. Full TSan `ctest`: 0 warnings, 19/19.
+
+**Related, also fixed:** `loopFiltersOnce()` had the same `> IDLE` comparison as
+`loopFilters()`. It is never called — its only launcher was the commented-out
+`boost::thread` that `stepForward()`/`stepBackward()` lost — so it was latent, but
+fixing one of two copies of a condition is how the other one stays wrong.
