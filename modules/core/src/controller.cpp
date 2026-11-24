@@ -228,7 +228,11 @@ void Controller::loopFiltersOnce()
     toffy::log::debug() << __FUNCTION__;
     if (baseFilterBank->size() == 0) _state = Controller::IDLE;
 
-    if (_state > Controller::IDLE) {
+    // P2-6: same `> IDLE` trap as loopFilters(), and the same fix. This function
+    // is currently never called -- its only launcher was the commented-out
+    // boost::thread that stepForward()/stepBackward() lost -- so the trap is
+    // latent here too, but it is the same enum and the same comparison.
+    if (Controller::isRunning(_state)) {
         if (_state == Controller::BACKWARD) f.addData("backward", true);
         baseFilterBank->filter(f, f);
         if (_state == Controller::BACKWARD) f.removeData("backward");

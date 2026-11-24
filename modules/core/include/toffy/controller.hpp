@@ -19,6 +19,7 @@
 
 // P2-7: the run thread is a std::thread. <boost/thread.hpp> is gone, and with
 // it the requirement that anything including this header link Boost.Thread.
+#include <atomic>
 #include <memory>
 #include <thread>
 
@@ -273,7 +274,22 @@ private:
      * detached the old worker.
      */
     std::thread _thread;
-    state _state; ///< running state of toffy.
+    /**
+     * @brief running state of toffy
+     *
+     * `std::atomic` since P2-6. It is written by `stop()` and `run()` on the
+     * caller's thread and read every iteration by `loopFilters()` on the worker,
+     * with no lock anywhere between them -- it used to be a plain `state`, and
+     * ThreadSanitizer reported the pair (controller.cpp `stop()` vs `loopFilters()`)
+     * as soon as anything exercised them, which nothing did until the P2-6 tests.
+     * A non-atomic flag here is not theoretical: the compiler may hoist the read
+     * out of the loop, so `stop()` is ignored and the worker never exits.
+     *
+     * Layout-compatible with the plain enum (same size and alignment), so this is
+     * not an ABI change -- but it is a header change, so everything including
+     * controller.hpp must be recompiled.
+     */
+    std::atomic<state> _state;
     // P2-10: `std::vector<void*> _loads` used to sit here. The plug-in handles
     // now have one owner, toffy::commons::plugins -- see getLoadedFilters().
 
