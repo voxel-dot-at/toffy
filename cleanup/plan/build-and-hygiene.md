@@ -126,6 +126,49 @@ Plan:
    `git blame --ignore-rev`.
 3. Add a CI check (`clang-format --dry-run -Werror`) so the tree cannot drift again.
 
+**Steps 1 and 3 landed as tooling in `<this commit>`; step 2 is now a decision, not a
+checkbox, and the reason is worth recording.**
+
+Added: `cmake/Formatting.cmake`, wired in from the top-level `CMakeLists.txt`, providing
+`make format` and `make format-check` over `modules/core` (same scope as `CORE_WERROR`),
+with the major version pinned to **18** and a configure-time warning when the found
+version differs. Instructions are in `README.md` under "Formatting".
+
+Three claims in this item turned out to be wrong:
+
+- **"It is _not_ installed in the dev container today, so nobody can verify compliance
+  locally."** It is: `Ubuntu clang-format version 18.1.3`. That sentence made the item
+  blocked on work that was already done.
+- **"20 header/source files"** in `modules/core`. It is **23** now (`btaFrame.cpp` and
+  others arrived with P2-9/P2-10). The tab count — 11 of 20 — was not re-measured here and
+  should be treated as historical.
+- **"Land one whitespace-only commit (`clang-format -i`)"** — it is **not whitespace-only**.
+  Checked by comparing the token stream of every file before and after, not by reading the
+  diff:
+
+  | change | where | semantic? |
+  |---|---|---|
+  | `#define UNUSED(expr) do { (void)(expr); } while (0)` split across 4 lines with `\` | `filter_helpers.hpp` | no |
+  | `"the only argument supplied"` → `"the only argument" "supplied"` | `filter_helpers.hpp` | no (adjacent-literal concatenation) |
+  | block-comment `*` realignment; `// namespace toffy` closing comments added | several | no |
+
+  All inert, but a commit message calling that "whitespace-only" would be false, and the
+  string split breaks grepping for that error message.
+
+Measured state of the tooling, on `bcad264`:
+
+- `format-check` on the current tree: **rc 2, 357 diagnostics** — 22 of 23 files deviate,
+  687 changed lines. Red is the accurate answer, not a broken target.
+- After `format`: `format-check` **rc 0** (converges), a second `format` run changes
+  nothing (idempotent), build clean with the warning count unchanged, **19/19 `ctest`**,
+  and `abi_surface.sh` reports the same **563** symbols against the BTA-off baseline.
+
+**The CI gate is deliberately not added yet.** A gate wired in before the code complies is
+a permanently red build, and permanently red gates get deleted. It goes in the same commit
+as the reformat; the snippet is in `README.md`.
+
+Counter 58.
+
 ## P2-16 — Clean up the build flags
 
 | sub-item | state |

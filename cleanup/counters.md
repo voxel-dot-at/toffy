@@ -107,6 +107,7 @@ scratch directory: its object libraries are linked into `libtoffy.so`
 | 55 | run methods with test coverage | `tests/test_controller.cpp` | **4 of 4** (was 0 of 4) | 4 | ✅ |
 | 56 | states that keep the run loop spinning when they should not | `Controller::isRunning()` | **0** (was 1: `CERROR = 0xff > IDLE` spun forever; unreachable — `CERROR` is never assigned) | 0 | ✅ red-first |
 | 57 | unsynchronised cross-thread accesses to `Controller::_state` | `modules/core/include/toffy/controller.hpp` | **0** (was a plain `state` raced between `stop()`/`run()` and `loopFilters()`; found by TSan only once the methods had tests) | 0 | ✅ TSan job |
+| 58 | `modules/core` files deviating from `.clang-format` | `cmake --build build --target format-check` | **22 of 23** (687 lines) — the tree has never been formatted; tooling now exists, the reformat commit has not landed | 0 | ⚠ gate not wired (would be permanently red) |
 
 ## The commands
 

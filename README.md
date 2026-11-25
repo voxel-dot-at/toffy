@@ -51,3 +51,62 @@ All four PCL × BTA combinations are expected to configure, build and pass `ctes
 `Welcome.txt` is a verbatim duplicate of this file's opening five lines (verified with
 `diff`, not assumed). It is generated from nothing, so it drifts the moment one of those
 lines is edited here and not there.
+
+## Formatting
+
+```sh
+cmake --build build --target format         # rewrite modules/core in place
+cmake --build build --target format-check   # check, do not write; non-zero on any deviation
+```
+
+Both come from [`cmake/Formatting.cmake`](cmake/Formatting.cmake) and cover
+**`modules/core` only** — the same scope as `CORE_WERROR` (P3-4), because that is the
+part of the tree the cleanup programme is actually holding to a standard. The rest of the
+tree is not gated and is not formatted.
+
+**Pinned version: clang-format 18.** The target looks for `clang-format-18` first and
+falls back to whatever `clang-format` is on `PATH`, and warns at configure time if the
+major differs. Different majors disagree about output, so a gate that accepted any version
+would flip depending on which machine ran it.
+
+Formatting your own changes, if you are working outside `modules/core`:
+
+```sh
+clang-format-18 -i path/to/file.cpp     # or: git clang-format --diff  (staged changes only)
+```
+
+### `format-check` is red today, and that is the accurate answer
+
+The tree has never been formatted. Measured on `bcad264`: **22 of the 23 files in
+`modules/core` deviate, 687 changed lines.** The gate is not wired into CI for exactly
+this reason — a gate added before the code complies is a permanently red build, and
+nobody keeps a permanently red build.
+
+### Before you run `make format`: it is not whitespace-only
+
+`P2-15` assumed a `clang-format -i` commit would be whitespace-only. It is not. Checked
+by comparing the token stream of every file before and after, not by eyeballing the diff:
+
+- `#define UNUSED(expr) do { (void)(expr); } while (0)` in `filter_helpers.hpp` gets split
+  across four lines with backslash continuations.
+- A string literal in the same header gets split: `"the only argument supplied"` becomes
+  `"the only argument" "supplied"`. Adjacent-literal concatenation makes the runtime string
+  identical, but it is a content change and it breaks grepping for that message.
+- Block comments get their `*` realigned, and `// namespace toffy` closing comments are
+  added where they were absent.
+
+All of it is semantically inert — verified, not assumed: after formatting, `format-check`
+converges (rc 0), a second `format` run changes nothing, the tree builds with its warning
+count unchanged, `19/19 ctest` passes, and `abi_surface.sh` reports the same **563**
+symbols against the BTA-off baseline.
+
+So the reformat is a decision about whether those three rewrites are acceptable, not a
+checkbox. If they are, the commit should be recorded in `.git-blame-ignore-revs` so
+`git blame` skips it, and the CI gate should land **in that same commit**:
+
+```yaml
+- name: formatting (P2-15)
+  run: cmake --build build --target format-check
+```
+
+See [`cleanup/plan/build-and-hygiene.md`](cleanup/plan/build-and-hygiene.md) (P2-15).

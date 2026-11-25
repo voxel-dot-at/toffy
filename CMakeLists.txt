@@ -860,6 +860,15 @@ install(
 )
 
 ################################################################################
+# Formatting (P2-15)
+################################################################################
+# 'make format' and 'make format-check' over modules/core. Scoped there for the
+# same reason CORE_WERROR is: that is the part of the tree held to a standard.
+# See cmake/Formatting.cmake for the pinned version and for why format-check is
+# red until the tree is actually formatted.
+include(Formatting)
+
+################################################################################
 # Documentation
 ################################################################################
 # add a target to generate API documentation with Doxygen
